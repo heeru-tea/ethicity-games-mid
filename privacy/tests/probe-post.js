@@ -1040,14 +1040,18 @@
 
     else if (s === 'normal-speed') {
       $('#btn-new').click(); await wait();
+      var tLines = [];
+      new MutationObserver(function () { var n = $$('#g-log li').length; if (n > tLines.length) tLines.push(performance.now()); }).observe($('#g-log'), { childList: true });
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk();
       var gw = 0; while (!$$('#g-log li').length && gw++ < 200) await wait(20);
       var shown = $$('#g-log li').length;
+      await wait(1700);
+      ok(tLines.length >= 2 && tLines[1] - tLines[0] >= 1300, '메시지가 하나씩 천천히(간격 ' + (tLines.length >= 2 ? Math.round(tLines[1] - tLines[0]) : '?') + 'ms ≥ 1.3초)');
       ok(shown >= 1 && shown < 6 && !!$('.skip-btn'), '대사가 차례로 나옴(100ms 뒤 ' + shown + '줄)');
       $('#g-log').click(); await wait();
       ok($$('#g-log li').length === 6 && $$('#g-dock .choice').length === 3, '화면 누르면 모두 보기 → 선택지');
       $$('#g-dock .choice')[0].click();
-      await wait(3000);
+      var gn = 0; while (!$('#btn-next') && gn++ < 160) await wait(50); // 반응 줄도 1.5초 간격으로 하나씩
       ok(!!$('#btn-next'), '반응 표시 뒤 계속 버튼');
       ok(document.activeElement === $('#btn-next'), '계속 버튼에 키보드 포커스');
       $('#btn-menu').click(); await wait();

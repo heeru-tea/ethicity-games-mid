@@ -11,7 +11,7 @@
   var S = window.PrivacyStorage;
   var CFG = window.PRIVACY_CONFIG || { characterImages: {}, defaultAvatar: 'assets/avatar-default.svg', defaultNickname: '플레이어' };
 
-  var SPEED_MS = { normal: 900, fast: 300, instant: 0 }; // 메시지 간격(ms): 읽을 틈을 두고 천천히
+  var SPEED_MS = { normal: 1500, fast: 500, instant: 0 }; // 메시지 간격(ms): 한 개씩 '두욱' 소리와 함께, 읽을 틈을 두고
   var VIEW_ICON = { group: '👥', dm: '💬', sns: '📱', ai: '✦', pc: '🖥', place: '📍' };
   // 장면을 띄우는 기기: 폰(메신저·SNS) / 모니터(공용 PC·AI) / 없음(그 자리 대화 → 대화창)
   var DEVICE = { group: 'phone', dm: 'phone', sns: 'phone', ai: 'monitor', pc: 'monitor', place: 'none' };
@@ -352,14 +352,15 @@
       audioCtx = audioCtx || new AC();
       if (audioCtx.state === 'suspended' && audioCtx.resume) audioCtx.resume();
       var t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, t);
-      osc.frequency.setValueAtTime(1320, t + 0.07);
+      // '두욱~': 낮고 부드러운 한 번의 울림 — 음이 살짝 내려가며 사라진다(소리 1개 = 메시지 1개)
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(392, t);
+      osc.frequency.exponentialRampToValueAtTime(262, t + 0.16);
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.12, t + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      gain.gain.exponentialRampToValueAtTime(0.22, t + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
       osc.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(t); osc.stop(t + 0.24);
+      osc.start(t); osc.stop(t + 0.45);
     } catch (e) { /* 소리를 못 내는 환경이면 조용히 넘어간다 */ }
   }
   function nodeOf(line) { var n = lineNode(line); n._line = line; return n; }
