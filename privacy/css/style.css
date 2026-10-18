@@ -14,8 +14,8 @@
   --radius-in: 10px;
   --pad: 6px;
   --radius-out: 16px; /* = 안쪽 10 + 여백 6 */
-  --pixel: "Galmuri11", "Pretendard", sans-serif;
-  --font: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --pixel: "Galmuri11", "NanumSquare", sans-serif;
+  --font: "NanumSquare", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -524,3 +524,8 @@ h2 .event-topic { display: block; margin-top: 2px; }
 /* 메신저 프로필 얼굴: 2:3 초상화에서 머리 부분만 동그랗게 */
 .av.has-face { width: 40px; height: 40px; overflow: hidden; background: #F3EFE6; padding: 0; place-items: start; }
 .av.has-face img { display: block; width: 84px; max-width: none; height: auto; margin: -15px 0 0 -22px; }
+/* CG 장면(그림 + 아래 대화창): 대화 글자를 키운다 */
+.cg-on .talk-text { font-size: 1.3rem; line-height: 1.75; }
+.cg-on .talk-name { font-size: .95rem; }
+.cg-on #v-game .choice-text { font-size: 1.08rem; }
+@media (max-width: 720px) { .cg-on .talk-text { font-size: 1.15rem; line-height: 1.7; } .cg-on #v-game .choice-text { font-size: 1rem; } }

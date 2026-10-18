@@ -524,6 +524,7 @@
       if (ch === 'd' && x === 22 && y === 17 && !hood) list.push({ y: y, fn: function () { blit('gate', 22, 17); } });
     }
     if (!inside && outdoor) outdoor.draw(ctx, 'pond', 26.9, 21.1, 4.2, 2.2, T, cam);
+    if (!inside && outdoor && outdoor.collectDecorations) outdoor.collectDecorations(list, ctx, T, cam);
     if (hood) hood.collect(list, ctx, T, cam, { x0: x0, y0: y0, x1: x1, y1: y1 });
     if (inside && room) room.details(ctx, T, cam);
     if (!inside && school) {

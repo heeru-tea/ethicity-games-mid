@@ -385,7 +385,7 @@
     var box = $('cg'), im = box.querySelector('.cg-img');
     box.classList.remove('shake', 'dim');
     box.querySelector('.cg-rec').hidden = true;
-    if (!key) { box.hidden = true; box.removeAttribute('data-cg'); return; }
+    if (!key) { box.hidden = true; box.removeAttribute('data-cg'); document.body.classList.remove('cg-on'); return; }
     var file = cgFile(key);
     box.setAttribute('data-cg', key);
     im.alt = CG_ALT[key] || '';
@@ -396,6 +396,7 @@
       window.PrivacyImg.load(im, file);
     }
     box.hidden = im.hasAttribute('data-failed'); // 그림을 못 불러오면 빈 레이어 대신 무대가 보이게
+    document.body.classList.toggle('cg-on', !box.hidden); // CG 장면: 대화창 글자를 키운다
   }
   function cgLine(line, quiet) {
     if (!line) return;
@@ -413,7 +414,7 @@
   function cgSetup() {
     var box = $('cg'), im = box.querySelector('.cg-img');
     // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 숨긴다
-    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; } };
+    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; document.body.classList.remove('cg-on'); } };
     im.onload = function () { im.removeAttribute('data-loading'); };
     box.addEventListener('animationend', function () { box.classList.remove('shake'); });
   }

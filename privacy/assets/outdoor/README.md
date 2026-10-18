@@ -27,3 +27,9 @@
 재현 스크립트: tests/terrain-browser-check.cjs. Playwright 설치 위치는 PLAYWRIGHT_PATH로 지정 가능. tests/_shot-outdoor.png, _shot-terrain.png, _shot-terrain-mobile.png는 로컬 확인 캡처다.
 
 로컬 파일만 변경했다. 원격 push/배포는 하지 않았다. 새로고침 후 확인하며 캐시가 남으면 Ctrl+F5.
+
+## 2026-10-18 장식 동물
+- rabbit.png / squirrel.png: 투명 배경 단일 정지 포즈. 풀잎 먹는 토끼와 도토리를 든 다람쥐.
+- outdoor.js collectDecorations → map.js 깊이 정렬 목록에 연결. 토끼 (39,14)·다람쥐 (46,14) — 우리 집 양옆 잔디에 배치(2026-10-18 사용자 요청으로 옮김). 알파 경계 기준 최대 0.68칸, 종횡비 보존.
+- world 객체/충돌/트리거/저장 데이터에 등록하지 않는 순수 장식. 애니메이션·소리·상호작용 없음.
+- 로컬 실제 맵 PC/모바일 캡처 및 pageerror 0 확인(terrain-browser-check.cjs). 미배포.
