@@ -202,3 +202,11 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
 .textarea { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-in); padding: 8px; margin: 4px 0 12px; }
 #reflection label { display: block; font-weight: 600; }
 .player-name { font-weight: 700; overflow-wrap: anywhere; word-break: break-all; }
+
+/* 3D 라벨 */
+.stage-3d canvas { display: block; width: 100%; height: 100%; }
+.labels-3d { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.label-3d { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font-size: 12px; font-weight: 700; }
+.stop-name { background: rgba(255,255,255,.85); padding: 0 6px; border-radius: 4px; color: var(--text); }
+.wait-num { background: var(--warn); color: #fff; padding: 0 6px; border-radius: 9px; font-size: 11px; }
+.bus-num { color: #fff; padding: 0 5px; border-radius: 4px; font-size: 11px; border: 1px solid #fff; }

@@ -279,6 +279,47 @@
     ok(new RegExp(String(s.seed)).test($('#end-seed').textContent), '결말에 세팅 번호 표시');
   };
 
+  SC['stage-3d'] = async function () {
+    var v = PB.App.view;
+    ok(v && v.kind === '3d' && v.ok, '3D 무대 사용');
+    ok(!!document.querySelector('#stage-3d canvas'), '캔버스');
+    ok(getComputedStyle($('#stage-svg')).display === 'none', '3D일 땐 SVG 숨김');
+    ok(!$('#btn-view-toggle').hidden, '지도·텍스트 보기 전환 버튼');
+    await toPlan();
+    ok(v.__nodeIds().indexOf('I') < 0, '1단계 3D 장면에 신도시 없음');
+    ok(!/신도시/.test($('#stage-overlay').textContent), '1단계 3D 라벨에 신도시 없음');
+    press('#btn-new-route');
+    v.__pickForTest('B');
+    await wait(0);
+    var nexts = $$('.next-stop').map(function (b) { return b.getAttribute('data-node'); }).sort().join('');
+    ok(nexts === 'ACF', '3D에서 B를 고르면 다음 정류장 A·C·F (' + nexts + ')');
+    press('#btn-view-toggle');
+    await wait(0);
+    ok(PB.App.view.kind === '2d' && getComputedStyle($('#stage-svg')).display !== 'none', '지도 보기로 전환');
+    press('#btn-view-toggle');
+    await wait(0);
+    ok(PB.App.view.kind === '3d', '다시 3D로');
+    var editing = $('.route-card.editing');
+    press('.next-stop[data-node="A"]');
+    await wait(0);
+    press($('.route-card.editing .btn-finish'), '노선 완성');
+    await runToResult();
+    ok(screen() === 'result', '3D로 운행 재생 후 결과');
+    var s = PB.App.state();
+    PB.Session.nextPhase(s); PB.Session.beginPlan(s); PB.Session.startRun(s); PB.Session.finishRun(s); PB.Session.nextPhase(s);
+    PB.App.go('reveal');
+    await wait(900);
+    ok(v.__nodeIds().indexOf('I') >= 0, '3단계 3D 장면에 신도시');
+  };
+
+  SC['webgl-fail'] = async function () {
+    ok(PB.App.view.kind === '2d', 'WebGL이 없으면 SVG 지도');
+    ok(!$('#no3d-note').hidden && /지도/.test($('#no3d-note').textContent), '안내 문구');
+    await toPlan();
+    await runToResult();
+    ok(screen() === 'result', 'SVG로 운행·결과');
+  };
+
   // 운행 중간 모습: 지정 분에서 ‘숨은 탭’으로 재생을 얼려 둔다
   SC['shot-run'] = async function () {
     await toPlan();
@@ -286,7 +327,7 @@
     Object.defineProperty(document, 'hidden', { configurable: true, get: function () { return hidden; } });
     press('#btn-depart');
     await until(function () { return $('#confirm-depart').open; });
-    window.__pbFast = false;
+    window.__pbFast = new URLSearchParams(location.search).get('fast') === '1';
     press('#confirm-yes');
     var stopAt = Number(new URLSearchParams(location.search).get('at') || 45);
     await until(function () { return parseInt($('#top-clock').textContent, 10) >= stopAt; }, 120000);

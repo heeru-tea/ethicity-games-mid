@@ -21,4 +21,8 @@
     localStorage.setItem('ethicity.player', window.__probe.PLAYER);
   } catch (e) { /* 저장소가 막힌 환경 */ }
   if (scenario === 'reduced-motion') window.__pbReduceMotion = true;
+  if (scenario === 'webgl-fail') {
+    var gc = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (t) { return /webgl/.test(t) ? null : gc.apply(this, arguments); };
+  }
 })();

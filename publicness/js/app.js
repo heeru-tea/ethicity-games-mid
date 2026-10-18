@@ -121,6 +121,18 @@
 
   function onNode(id) { if (App.onNodeClick) App.onNodeClick(id); }
 
+  // 3D 마을 ↔ 지도(SVG) 전환. 운행 중이면 재생이 다음 틱에 버스·대기를 다시 그린다
+  App.toggleView = function () {
+    if (!App.view3d) return;
+    var to3d = App.view !== App.view3d;
+    App.view = to3d ? App.view3d : App.map2d;
+    App.view3d.show(to3d); App.map2d.show(!to3d);
+    App.view.setReducedMotion(App.reducedMotion());
+    $('#btn-view-toggle').textContent = to3d ? '지도·텍스트 보기' : '3D 마을 보기';
+    App._sceneKey = null;
+    if (App.s && App.s.stage === 'run') App.syncStage({ keepBuses: true }); else if (App.s) { App.keepFocus = true; App.render(); }
+  };
+
   /* ── 글로 보는 노선·버스 ───────────── */
   App.describeRoute = function (r) {
     return r.nodes.map(function (id, i) { return App.nodeName(id) + '(' + id + ') ' + (r.stops[i] ? '정차' : '통과'); }).join(' → ');
@@ -210,6 +222,17 @@
 
     App.map2d = PB.Map2D.create($('#stage-svg'), { onNode: onNode });
     App.view = App.map2d;
+    var want3d = new URLSearchParams(location.search).get('no3d') !== '1';
+    var note3d = $('#no3d-note');
+    if (want3d && PB.View3D) {
+      var v3 = PB.View3D.create($('#stage-3d'), { onNode: onNode });
+      if (v3.ok) {
+        App.view3d = v3; App.view = v3;
+        $('#stage-3d').hidden = false; App.map2d.show(false);
+        $('#btn-view-toggle').hidden = false;
+      } else { note3d.hidden = false; note3d.textContent = '이 기기에서는 3D 화면을 쓸 수 없어 지도로 보여 드려요. 모든 기능은 그대로예요.'; }
+    } else if (!want3d) { note3d.hidden = false; note3d.textContent = '지도 보기로 시작했어요.'; }
+    $('#btn-view-toggle').addEventListener('click', App.toggleView);
     App.motion = !!root.__pbReduceMotion;
     $('#opt-motion').checked = App.reducedMotion();
     $('#opt-motion').addEventListener('change', function (e) { App.motion = e.target.checked; App.view.setReducedMotion(App.reducedMotion()); });
