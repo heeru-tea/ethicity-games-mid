@@ -1,15 +1,16 @@
 /* School grounds: quiet soil, running lanes and paved circulation.
  * 2026-10-19 형태 수정: 트랙을 가로로 긴 경기장 모양(19.8×14.6칸)으로, 골대는 위에서 본 모양으로 골라인 바로 바깥에 직접 그린다.
- * LAYOUT(칸 단위 [x, y, w, h])은 world.js 골대 충돌 칸(3·19, 28~30)과 맞춘다 — 프로브 'yard'가 확인. */
+ * LAYOUT(칸 단위 [x, y, w, h])은 world.js 골대 충돌 칸(3·19, 24~26)과 맞춘다 — 프로브 'yard'가 확인. */
 (function () {
   'use strict';
   var tileSize = 48, images = {}, ground;
-  var BOTTOM = 38; // 운동장 아래 담장 줄(world.js와 같음)
+  var BOTTOM = 33; // 운동장 아래 담장 줄(world.js와 같음)
   var LAYOUT = {
-    apron: [1.15, 22, 20.7, 15.6],
-    track: [1.6, 22.5, 19.8, 14.6], trackR: 4.5,
-    infield: [3.1, 24, 16.8, 11.6], infieldR: 3, // 경기장 네 모서리가 안쪽 곡선 밖(트랙)으로 나가지 않는 반지름
-    pitch: [4, 25, 15, 9.6],
+    // 2026-10-19: 매점·현관→교문 길(16~17줄) 바로 밑에서 시작, 축제 부스(18줄)가 트랙 윗부분에 올라선다
+    apron: [1.15, 17.6, 20.7, 15.2],
+    track: [1.6, 18, 19.8, 14.6], trackR: 4.5,
+    infield: [3.1, 19.5, 16.8, 11.6], infieldR: 3, // 경기장 네 모서리가 안쪽 곡선 밖(트랙)으로 나가지 않는 반지름
+    pitch: [4, 20.5, 15, 9.6],
     goalMouth: 2.2, goalDepth: 0.65
   };
   function rounded(ctx, x, y, w, h, r) {
