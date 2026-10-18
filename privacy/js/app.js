@@ -101,6 +101,7 @@
     stopReveal();
     if (STAGE_VIEWS.indexOf(id) < 0) { window.PrivacyMap.hide(); stagedScene = null; stageToken++; }
     if (id !== 'v-map') window.PrivacyTalk.close();
+    if (id !== 'v-game') cgShow(null);
     if (id !== 'v-ending' && $('finale')) { clearTimeout(finaleTimer); finaleState = null; $('finale').hidden = true; }
     $('stage').hidden = STAGE_VIEWS.indexOf(id) < 0;
     VIEWS.forEach(function (v) { $(v).hidden = v !== id; });
@@ -332,6 +333,46 @@
     }
     (st.bubbles || []).forEach(function (b) { if (text.indexOf(b.on) >= 0) window.PrivacyMap.bubble(b.who, b.text); });
   }
+  /* ── 사건 CG(전체 화면 그림): 장면 view.cg로 시작, 대사 줄의 cg·rec·fx로 바뀐다(story.js 작성법) ── */
+  var CG_DIR = 'assets/nightfox-event/';
+  var CG_LOOK = { arrival: 1, confrontation: 1, clash: 1, recorded: 1 }; // 주인공 남/여 그림이 따로 있는 키
+  var CG_ALT = { arrival: '밤의 학교 정문 앞에 도착한 나', confrontation: '@nightfox와 마주 선 나', clash: '서로 옷을 붙잡고 밀치는 두 사람',
+    recorded: '휴대폰을 들어 두 사람을 찍는 구경꾼들', 'classroom-reaction': '영상을 본 반 친구들', 'teacher-support': '이야기를 들어 주는 담임 선생님' };
+  function cgFile(key) { return CG_DIR + (CG_LOOK[key] ? (playerLook() === 'f' ? 'girl-' : 'boy-') : '') + key + '.png'; }
+  function cgShow(key) {
+    var box = $('cg'), im = box.querySelector('.cg-img');
+    box.classList.remove('shake', 'dim');
+    box.querySelector('.cg-rec').hidden = true;
+    if (!key) { box.hidden = true; box.removeAttribute('data-cg'); return; }
+    var file = cgFile(key);
+    box.setAttribute('data-cg', key);
+    im.alt = CG_ALT[key] || '';
+    if (im.getAttribute('data-file') !== file) {
+      im.setAttribute('data-file', file);
+      im.removeAttribute('data-failed');
+      window.PrivacyImg.load(im, file);
+    }
+    box.hidden = im.hasAttribute('data-failed'); // 그림을 못 불러오면 빈 레이어 대신 무대가 보이게
+  }
+  function cgLine(line, quiet) {
+    if (!line) return;
+    if (line.cg) cgShow(line.cg);
+    var box = $('cg');
+    if (box.hidden && !box.hasAttribute('data-cg')) return;
+    if (line.rec) box.querySelector('.cg-rec').hidden = false;
+    if (line.fx === 'dim') { box.classList.add('dim'); box.querySelector('.cg-rec').hidden = true; }
+    if (line.fx === 'shake' && !quiet && !settings.reduceMotion) {
+      box.classList.remove('shake');
+      void box.offsetWidth; // 같은 클래스로 다시 흔들리게
+      box.classList.add('shake');
+    }
+  }
+  function cgSetup() {
+    var box = $('cg'), im = box.querySelector('.cg-img');
+    // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 숨긴다
+    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.setAttribute('data-failed', ''); box.hidden = true; } };
+    box.addEventListener('animationend', function () { box.classList.remove('shake'); });
+  }
   // 그 자리 대화(장소 장면)는 포켓몬식 대화창으로 한 줄씩
   function talkLines(list) {
     var items = list.filter(function (l) { return l.who !== 'sys' && !l.kind; }).map(function (l) {
@@ -340,7 +381,7 @@
       var ch = story.characters[who] || { name: who };
       return { who: who, name: who === 'me' ? player.nickname + ' (나)' : ch.name, text: fill(l.text), line: l };
     });
-    return window.PrivacyTalk.open(items, { instant: settings.speed === 'instant', onLine: function (it) { stageBubble(Object.assign({ talk: true }, it.line)); } });
+    return window.PrivacyTalk.open(items, { instant: settings.speed === 'instant', onLine: function (it) { cgLine(it.line); stageBubble(Object.assign({ talk: true }, it.line)); } });
   }
   function reactionLines(run, scene) {
     var c = (scene.choices || []).filter(function (x) { return x.id === run.reaction; })[0];
@@ -377,6 +418,7 @@
     $('g-log').textContent = '';
     $('g-dock').textContent = '';
     if (current !== 'v-game') show('v-game', $('g-chap'));
+    if (!v.cg) cgShow(null);
     // 무대: 장면이 바뀌면 그 장소로(처음 들어갈 때만 컷 카드)
     var token = ++stageToken;
     var st = WD.STAGES[run.scene] || { place: 'classroom', tint: 'day', cast: [] };
@@ -391,6 +433,10 @@
       if (token !== stageToken) return;
       var pre = preChoiceState(run);
       var lines = E.visibleLines(story, scene.lines, pre);
+      if (v.cg) {
+        cgShow(v.cg);
+        if (run.reaction) lines.forEach(function (l) { cgLine(l, true); }); // 반응 중 복원: 장면 대사가 바꿔 둔 그림까지
+      }
       if (device === 'none') {
         talkLines(run.reaction ? reactionLines(run, scene) : lines).then(function () { if (token === stageToken) renderDock(); });
         return;
@@ -911,6 +957,7 @@
   }
 
   /* ── 시작 ─────────────────────────── */
+  cgSetup();
   loadAll();
   applySettings();
   bind();
