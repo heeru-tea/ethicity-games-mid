@@ -418,6 +418,20 @@
       ok(rpt.y < pr.top && rpt.x > sr.left && rpt.x < sr.right, '좁아진 뒤에도 주인공이 폰 위에 보임 ' + JSON.stringify([Math.round(rpt.x), Math.round(rpt.y), Math.round(pr.top)]));
     }
 
+    else if (s === 'chat-face') { // 단톡·개인 대화 프로필에 친구 얼굴 그림(이니셜 대신)
+      $('#btn-new').click();
+      await play(R.A, { upto: 0 });
+      var avs = $$('#g-log .ln.msg:not(.me) .av');
+      ok(avs.length > 0, '대화 프로필 있음');
+      var named = avs.filter(function (a) { return /hayun|dohyun|seoa|minjun|teacher/.test(a.getAttribute('data-who') || ''); });
+      ok(named.length > 0 && named.every(function (a) { var im = a.querySelector('img'); return a.classList.contains('has-face') && im && /portraits\/(hayun|dohyun|seoa|minjun|teacher)\.(webp|png)/.test(im.getAttribute('src') || ''); }), '친구 프로필 = 작은 초상화(portraits/): ' + named.map(function (a) { return a.getAttribute('data-who'); }).join(','));
+      ok(named.every(function (a) { return a.textContent === ''; }), '얼굴이 있으면 이니셜 글자 없음');
+      var hy = named.filter(function (a) { return a.getAttribute('data-who') === 'hayun'; })[0];
+      if (hy) { var him = hy.querySelector('img'); him.src = 'assets/__missing__.png'; } // 그림을 못 받은 경우
+      await wait(400);
+      ok(!!hy && !hy.querySelector('img') && hy.textContent === '하' && !hy.classList.contains('has-face'), '그림 실패 → 이니셜로 돌아감');
+    }
+
     else if (s === 'photo') { // 민준이 엎드려 자는 사진: 흐리게 올라오고, 눌러야 보인다
       $('#btn-new').click();
       await play(R.A, { upto: 4 });
@@ -852,7 +866,8 @@
       $('#g-dock .choice').click(); await wait();
       var body = document.body;
       ok(!window.__xss, '별명 속 스크립트 실행 안 됨');
-      ok($$('#v-game img, #v-start .player-chip img').length === 1, '별명이 이미지 태그로 해석되지 않음');
+      // 프로필 얼굴·대화방 사진 자리는 게임이 넣는 그림 — 그 밖의 img가 생기면 별명이 태그로 해석된 것
+      ok($$('#v-game img, #v-start .player-chip img').filter(function (im) { return !im.closest('.av.has-face, .photo'); }).length === 1 && !$$('#v-game img').some(function (im) { return /(^|\/)x$/.test(im.getAttribute('src') || ''); }), '별명이 이미지 태그로 해석되지 않음');
       ok(!$('#v-game b'), '별명이 굵게 태그로 해석되지 않음');
       var who = $$('.who').filter(function (w) { return w.textContent.indexOf('<img') === 0; })[0];
       ok(!!who && who.scrollWidth >= who.clientWidth, '긴 별명 줄임 처리 요소 존재');
