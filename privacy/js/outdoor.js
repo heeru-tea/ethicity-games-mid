@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var assets = {};
-  ['tree', 'lamp', 'bench', 'pond'].forEach(function (name) {
+  ['tree', 'lamp', 'bench', 'pond', 'rabbit', 'squirrel'].forEach(function (name) {
     var im = new Image();
     im.onload = function () {
       var box = [0, 0, im.naturalWidth, im.naturalHeight];
@@ -31,5 +31,18 @@
       Math.round(width * tile), Math.round(height * tile));
     return true;
   }
-  window.PrivacyOutdoor = { ready: function (name) { return !!assets[name]; }, draw: draw };
+  // Cosmetic only: no entries in world objects, collision, triggers or save data.
+  function collectDecorations(list, ctx, tile, cam) {
+    // 우리 집(41~45, 13~17) 왼쪽·오른쪽 잔디
+    [{name:'rabbit',x:39,y:14}, {name:'squirrel',x:46,y:14}].forEach(function (d) {
+      var a = assets[d.name]; if (!a) return;
+      var ratio = a.box[2] / a.box[3], w = Math.min(0.68, 0.68 * ratio), h = w / ratio;
+      list.push({y:d.y, fn:function () {
+        ctx.save(); ctx.imageSmoothingEnabled = true;
+        draw(ctx, d.name, d.x + (1-w)/2, d.y+0.9, w, h, tile, cam);
+        ctx.restore();
+      }});
+    });
+  }
+  window.PrivacyOutdoor = { ready: function (name) { return !!assets[name]; }, draw: draw, collectDecorations: collectDecorations };
 }());

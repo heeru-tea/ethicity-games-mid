@@ -27,6 +27,8 @@ window.PRIVACY_WEBP = {
  "assets/outdoor/bench.png": 1,
  "assets/outdoor/lamp.png": 1,
  "assets/outdoor/pond.png": 1,
+ "assets/outdoor/rabbit.png": 1,
+ "assets/outdoor/squirrel.png": 1,
  "assets/outdoor/tree.png": 1,
  "assets/portraits/dohyun.png": 1,
  "assets/portraits/hayun.png": 1,
@@ -47,6 +49,8 @@ window.PRIVACY_WEBP = {
  "assets/school/window.png": 1,
  "assets/school/wood.png": 1,
  "assets/sprites/house-exterior.png": 1,
+ "assets/terrain/grass-soft.png": 1,
  "assets/terrain/grass.png": 1,
+ "assets/terrain/path-soft.png": 1,
  "assets/terrain/path.png": 1
 };

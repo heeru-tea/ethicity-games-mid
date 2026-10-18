@@ -26,7 +26,7 @@
   var o = null;                 // init 옵션
   var canvas, ctx, wrap;
   var active = false, raf = null, tmr = null, lastT = 0;
-  var camS = null, camT = 0, camTarget = { x: 0, y: 0 }, frameDt = 0; // 부드러운 카메라: 실제 위치(camS)가 목표(camTarget)를 살짝 늦게 따라감
+  var camS = null, camT = 0, camTarget = { x: 0, y: 0 }, frameDt = 0; // 걷기 카메라(camS): 데드존 — 가운데 상자를 벗어날 때만 바로 따라감. camTarget = 그 목표(프로브용)
   var mode = null, stageInfo = null, focus = null, gen = 0; // gen: show()마다 +1(지난 인사말이 새 걷기를 넘기지 않게) // focus: 장면 중 주인공을 둘 화면 위치(비율). 폰·선택 상자에 가리지 않게 // mode: 'walk'(걷기·입력) | 'stage'(장면 무대: 그리기만)
   var run = null, trig = null, targetId = null;
   var cast = [], blocked = {};
@@ -234,7 +234,7 @@
   function finishStep() {
     me.moving = false;
     me.x = me.to.x; me.y = me.to.y;
-    if (me.door) { me.x = me.door.to[0]; me.y = me.door.to[1]; me.dir = me.door.dir; say(me.door.label === '집 안으로' ? '우리 집에 들어왔다.' : '밖으로 나왔다.'); }
+    if (me.door) { me.x = me.door.to[0]; me.y = me.door.to[1]; me.dir = me.door.dir; flashSay(me.door.label === '집 안으로' ? '우리 집에 들어왔다.' : '밖으로 나왔다.'); }
     me.fx = me.x; me.fy = me.y;
     me.frame = (me.frame + 1) % 4;
     me.walked = (me.walked || 0) + 1; // 걸은 칸 수: 걷기 동작을 칸이 바뀌어도 이어 가게
@@ -326,9 +326,21 @@
     } });
   }
   // 짧은 안내(문 드나들기·길 안내)는 대화창 대신 무대 위 한 줄로
+  var sayTimer = null;
   function say(text, speaker) {
+    clearTimeout(sayTimer);
+    $('m-say').classList.remove('fade-out');
     if (text && speaker) setBubble(speaker, text);
     rich($('m-say'), text || '');
+  }
+  // 잠깐 알리는 말(문 드나들기 등): 1.3초 보인 뒤 0.5초에 걸쳐 사라진다(움직임 줄이기면 바로)
+  function flashSay(text) {
+    say(text);
+    var n = $('m-say');
+    sayTimer = setTimeout(function () {
+      n.classList.add('fade-out');
+      sayTimer = setTimeout(function () { if (n.textContent === text) say(''); else n.classList.remove('fade-out'); }, o.reduceMotion() ? 0 : 500);
+    }, 1300);
   }
   function updateHint() {
     var near = nearTarget();
@@ -455,14 +467,18 @@
     cam.x = Math.max(-viewW * slack, Math.min(mapW - viewW * (1 - slack), me.fx * T + T / 2 - viewW * fx));
     cam.y = Math.max(-viewH * slack, Math.min(mapH - viewH * (1 - slack), me.fy * T + T / 2 - viewH * fy));
     if (mapW < viewW) cam.x = (mapW - viewW) / 2;
-    // 걷는 동안 카메라는 0.1초 남짓 늦게 미끄러지듯 따라간다(움직임 줄이기·장면·순간이동이면 바로)
-    camTarget.x = cam.x; camTarget.y = cam.y;
-    if (mode === 'walk' && !o.reduceMotion() && camS && camT === T && Math.abs(camS.x - cam.x) < viewW && Math.abs(camS.y - cam.y) < viewH) {
-      var kk = 1 - Math.exp(-frameDt / 110);
-      camS.x += (cam.x - camS.x) * kk; camS.y += (cam.y - camS.y) * kk;
-      if (Math.abs(camS.x - cam.x) < 0.5) camS.x = cam.x;
-      if (Math.abs(camS.y - cam.y) < 0.5) camS.y = cam.y;
+    // 걷기: 데드존 카메라(어지러움 줄이기). 화면 가운데 상자(가로 50%·세로 40%) 안에서는 배경을 그대로 두고 주인공만 걷는다.
+    // 상자 밖으로 나갈 때만, 늦게 미끄러지지 않고 바로 따라간다. 순간이동·칸 크기 변경·장면 뒤엔 주인공 중심으로 다시 맞춘다
+    if (mode === 'walk') {
+      var px = me.fx * T + T / 2, py = me.fy * T + T / 2;
+      if (!camS || camT !== T || Math.abs(camS.x + viewW / 2 - px) > viewW || Math.abs(camS.y + viewH / 2 - py) > viewH) camS = { x: cam.x, y: cam.y };
+      var hx = viewW * 0.25, hy = viewH * 0.2, ccx = camS.x + viewW / 2, ccy = camS.y + viewH / 2;
+      if (px > ccx + hx) camS.x = px - hx - viewW / 2; else if (px < ccx - hx) camS.x = px + hx - viewW / 2;
+      if (py > ccy + hy) camS.y = py - hy - viewH / 2; else if (py < ccy - hy) camS.y = py + hy - viewH / 2;
+      camS.x = mapW < viewW ? (mapW - viewW) / 2 : Math.max(0, Math.min(mapW - viewW, camS.x));
+      camS.y = Math.max(0, Math.min(mapH - viewH, camS.y));
     } else camS = { x: cam.x, y: cam.y };
+    camTarget.x = camS.x; camTarget.y = camS.y;
     camT = T;
     cam.x = Math.round(camS.x); cam.y = Math.round(camS.y); // 정수 픽셀: 그림이 반 픽셀씩 떨리지 않게
     ctx.fillStyle = '#5E8F55';
@@ -520,6 +536,7 @@
       if (ch === 'd' && x === 22 && y === 17 && !hood) list.push({ y: y, fn: function () { blit('gate', 22, 17); } });
     }
     if (!inside && outdoor) outdoor.draw(ctx, 'pond', 26.9, 21.1, 4.2, 2.2, T, cam);
+    if (!inside && outdoor && outdoor.collectDecorations) outdoor.collectDecorations(list, ctx, T, cam);
     if (hood) hood.collect(list, ctx, T, cam, { x0: x0, y0: y0, x1: x1, y1: y1 });
     if (inside && room) room.details(ctx, T, cam);
     if (!inside && school) {

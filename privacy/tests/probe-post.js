@@ -168,6 +168,7 @@
       var iT = log.findIndex(function (e) { return e.cg === 'teacher-support'; });
       ok(iT > 0 && !log.slice(iT).some(function (e) { return e.view === 'v-map'; }), '싸움 경로는 사건 9 전에 다시 걷지 않음');
       ok($('#cg').hidden, '사건 9 교실에선 CG 숨김');
+      ok(!document.body.classList.contains('cg-on'), 'CG가 없으면 대화창 글자도 원래 크기');
       var prevK = null, stale = [];
       log.forEach(function (e) { if (!('cg' in e)) return; if (e.cg && e.cg !== prevK && !e.loading) stale.push(e.cg); prevK = e.cg; });
       ok(!stale.length, '새 그림을 받는 동안 앞 그림을 보여 주지 않음(잔상 없음): ' + stale.join(','));
@@ -197,11 +198,16 @@
         $('#btn-continue').click(); await wait(300);
         var c1 = cgNow();
         ok(!!c1 && c1.k === 'confrontation' && /boy-confrontation/.test(c1.src), '반응 중 복원 → 대치 CG(남): ' + JSON.stringify(c1));
+        var tf = parseFloat(getComputedStyle($('#talk .talk-text')).fontSize), bf = parseFloat(getComputedStyle(document.body).fontSize);
+        ok(document.body.classList.contains('cg-on') && tf >= bf * 1.15, 'CG 장면 대화창 글자가 더 큼: ' + tf + 'px / 본문 ' + bf + 'px');
+        ok(/NanumSquare/.test(getComputedStyle(document.body).fontFamily), '본문 글꼴 나눔스퀘어');
+        var shook = false; // 흔들림은 0.36초 뒤 클래스가 빠지므로, 한 번이라도 붙었는지 기록
+        new MutationObserver(function () { if ($('#cg').classList.contains('shake')) shook = true; }).observe($('#cg'), { attributes: true, attributeFilter: ['class'] });
         await passTalk(); await wait(); $('#btn-next').click(); await wait(300);
         var g = 0; while (PrivacyApp.staging() && g++ < 100) await wait(50);
         var c2 = cgNow();
         ok(PrivacyApp.state().scene === 'c3_e8_d' && !!c2 && c2.k === 'clash' && /boy-clash/.test(c2.src), '충돌 장면 첫 CG: ' + JSON.stringify(c2));
-        ok(!!c2 && c2.shake, '움직임 허용이면 충돌 순간 흔들림');
+        ok(shook, '움직임 허용이면 충돌 순간 흔들림');
         sessionStorage.setItem('probe-phase', '2'); carry(); location.reload(); return;
       }
       $('#btn-continue').click(); await wait(300);
@@ -312,8 +318,14 @@
       ok(/내 방/.test($('#m-area').textContent), '내 방에서 시작: ' + $('#m-area').textContent);
       ok(/방향키/.test($('#m-say').textContent), '첫 걸음 안내: ' + $('#m-say').textContent);
       ok(/교실/.test($('#m-mission').textContent), '지금 할 일: ' + $('#m-mission').textContent);
-      var ow = { walk: true, areas: [] };
+      var ow = { walk: true, areas: [] }, tOut = null, tGone = null;
+      new MutationObserver(function () {
+        var tx = $('#m-say').textContent, now = performance.now();
+        if (tOut == null && /밖으로 나왔다/.test(tx)) tOut = now;
+        else if (tOut != null && tGone == null && !/밖으로 나왔다/.test(tx)) tGone = now;
+      }).observe($('#m-say'), { childList: true, characterData: true, subtree: true });
       await walkToTarget(ow);
+      ok(tOut != null && tGone != null && tGone - tOut <= 2600, '“밖으로 나왔다”는 잠깐 뜨고 사라짐: ' + (tGone != null && tOut != null ? Math.round(tGone - tOut) + 'ms' : '안 사라짐'));
       var oseq = ow.areas.join('>');
       ok(/우리 집 앞.*마을 길.*교문.*복도.*2학년 3반 교실/.test(oseq), '집→마을 길→교문→복도→교실: ' + oseq);
       ok($('#m-say').textContent.indexOf('방향키') < 0, '걷기 시작하면 첫 안내가 사라짐');
@@ -416,6 +428,20 @@
       ok(pr.top > sr.top + 60, '폰 위로 맵이 보임');
       var rme = PrivacyMap.debug.me(), rpt = PrivacyMap.debug.tileToClient(rme.x, rme.y);
       ok(rpt.y < pr.top && rpt.x > sr.left && rpt.x < sr.right, '좁아진 뒤에도 주인공이 폰 위에 보임 ' + JSON.stringify([Math.round(rpt.x), Math.round(rpt.y), Math.round(pr.top)]));
+    }
+
+    else if (s === 'chat-face') { // 단톡·개인 대화 프로필에 친구 얼굴 그림(이니셜 대신)
+      $('#btn-new').click();
+      await play(R.A, { upto: 0 });
+      var avs = $$('#g-log .ln.msg:not(.me) .av');
+      ok(avs.length > 0, '대화 프로필 있음');
+      var named = avs.filter(function (a) { return /hayun|dohyun|seoa|minjun|teacher/.test(a.getAttribute('data-who') || ''); });
+      ok(named.length > 0 && named.every(function (a) { var im = a.querySelector('img'); return a.classList.contains('has-face') && im && /portraits\/(hayun|dohyun|seoa|minjun|teacher)\.(webp|png)/.test(im.getAttribute('src') || ''); }), '친구 프로필 = 작은 초상화(portraits/): ' + named.map(function (a) { return a.getAttribute('data-who'); }).join(','));
+      ok(named.every(function (a) { return a.textContent === ''; }), '얼굴이 있으면 이니셜 글자 없음');
+      var hy = named.filter(function (a) { return a.getAttribute('data-who') === 'hayun'; })[0];
+      if (hy) { var him = hy.querySelector('img'); him.src = 'assets/__missing__.png'; } // 그림을 못 받은 경우
+      await wait(400);
+      ok(!!hy && !hy.querySelector('img') && hy.textContent === '하' && !hy.classList.contains('has-face'), '그림 실패 → 이니셜로 돌아감');
     }
 
     else if (s === 'photo') { // 민준이 엎드려 자는 사진: 흐리게 올라오고, 눌러야 보인다
@@ -597,16 +623,24 @@
       var r0 = SM.routeTo(30, 16) || [];
       for (var k = 0; k < r0.length; k++) { key(ARROW[r0[k]]); key(ARROW[r0[k]], 'keyup'); var g = 0; await wait(16); while (SM.me().moving && g++ < 100) await wait(16); }
       $('#opt-motion').checked = true; $('#opt-motion').click(); await wait(400);
+      // 데드존 카메라: 화면 가운데 상자 안에서는 배경이 움직이지 않고, 벗어날 때만 지연 없이 따라간다(어지러움 줄이기)
+      async function step(k) { key(k); key(k, 'keyup'); var gg = 0; await wait(16); while (SM.me().moving && gg++ < 100) await wait(16); }
       var c0 = SM.cam();
-      ok(Math.abs(c0.x - c0.tx) < 1, '멈춰 있으면 카메라가 주인공에 맞춰짐');
-      key('ArrowRight'); SM.tick(50); // 기다리지 않고 50ms만 진행
+      await step('ArrowLeft'); await step('ArrowRight'); await step('ArrowUp'); await step('ArrowDown');
       var c1 = SM.cam();
-      ok(c1.tx - c1.x > 1, '걷기 시작하면 카메라가 살짝 늦게 따라옴 ' + JSON.stringify(c1));
-      ok(c1.x === Math.round(c1.x), '카메라 좌표는 정수 픽셀(흔들림 방지)');
+      ok(c1.x === c0.x && c1.y === c0.y, '가운데 상자 안에서 한 칸씩 움직이면 배경 고정 ' + JSON.stringify([c0, c1]));
+      key('ArrowRight'); SM.tick(50); // 걷는 도중에도
+      var cm = SM.cam();
+      ok(Math.abs(cm.x - cm.tx) < 1 && Math.abs(cm.y - cm.ty) < 1, '카메라가 늦게 미끄러지지 않음(지연 없음) ' + JSON.stringify(cm));
+      ok(cm.x === Math.round(cm.x), '카메라 좌표는 정수 픽셀(흔들림 방지)');
       key('ArrowRight', 'keyup');
-      await wait(900);
+      var gw = 0; while (SM.me().moving && gw++ < 100) await wait(16);
+      for (var kk = 0; kk < 8; kk++) await step('ArrowRight');
       var c2 = SM.cam();
-      ok(Math.abs(c2.x - c2.tx) < 1, '멈추면 곧 따라잡음 ' + JSON.stringify(c2));
+      ok(c2.x > c0.x, '상자 밖으로 계속 걸으면 카메라가 따라감 ' + JSON.stringify([c0, c2]));
+      await wait(300);
+      var c3 = SM.cam();
+      ok(c3.x === c2.x && c3.y === c2.y, '멈추면 배경도 바로 멈춤(뒤늦게 흐르지 않음)');
       // 걷기 동작: 반 칸마다 한 프레임(한 칸에 약 2번 바뀜, 칸이 바뀌어도 이어짐). 시간 대신 걸은 칸 수로 잰다
       var r1 = SM.routeTo(40, 20) || [];
       for (var k1 = 0; k1 < r1.length; k1++) { key(ARROW[r1[k1]]); key(ARROW[r1[k1]], 'keyup'); var g1 = 0; await wait(16); while (SM.me().moving && g1++ < 100) await wait(16); }
@@ -844,7 +878,8 @@
       $('#g-dock .choice').click(); await wait();
       var body = document.body;
       ok(!window.__xss, '별명 속 스크립트 실행 안 됨');
-      ok($$('#v-game img, #v-start .player-chip img').length === 1, '별명이 이미지 태그로 해석되지 않음');
+      // 프로필 얼굴·대화방 사진 자리는 게임이 넣는 그림 — 그 밖의 img가 생기면 별명이 태그로 해석된 것
+      ok($$('#v-game img, #v-start .player-chip img').filter(function (im) { return !im.closest('.av.has-face, .photo'); }).length === 1 && !$$('#v-game img').some(function (im) { return /(^|\/)x$/.test(im.getAttribute('src') || ''); }), '별명이 이미지 태그로 해석되지 않음');
       ok(!$('#v-game b'), '별명이 굵게 태그로 해석되지 않음');
       var who = $$('.who').filter(function (w) { return w.textContent.indexOf('<img') === 0; })[0];
       ok(!!who && who.scrollWidth >= who.clientWidth, '긴 별명 줄임 처리 요소 존재');
@@ -1004,9 +1039,9 @@
       if (s === 'shot-portrait') { $('#btn-new').click(); await wait(30); PrivacyApp.setSpeed('normal'); $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(400); return; }
       if (s === 'shot-opening') { $('#btn-new').click(); await wait(500); return; }
       if (s === 'shot-talk') { $('#btn-new').click(); await play(R.A, { upto: 1, stopAtMap: true }); var pd = PrivacyMap.debug.tileToClient(8, 2); $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true })); await wait(1500); return; }
-      if (s === 'shot-hood' || s === 'shot-gate' || s === 'shot-south' || s === 'shot-edge' || s === 'shot-front') { // 주택가·교문 화면 확인용: 그 자리까지 걸어감
+      if (s === 'shot-hood' || s === 'shot-gate' || s === 'shot-south' || s === 'shot-edge' || s === 'shot-front' || s === 'shot-house') { // 주택가·교문 화면 확인용: 그 자리까지 걸어감
         $('#btn-new').click(); await play(R.A, { upto: 1, stopAtMap: true });
-        var dest = { 'shot-hood': [46, 20], 'shot-gate': [24, 16], 'shot-south': [44, 27], 'shot-edge': [58, 30], 'shot-front': [12, 14] }[s];
+        var dest = { 'shot-hood': [46, 20], 'shot-gate': [24, 16], 'shot-south': [44, 27], 'shot-edge': [58, 30], 'shot-front': [12, 14], 'shot-house': [42, 19] }[s];
         var rr = PrivacyMap.debug.routeTo(dest[0], dest[1]) || [];
         for (var q = 0; q < rr.length; q++) { key(ARROW[rr[q]]); key(ARROW[rr[q]], 'keyup'); await wait(16); while (PrivacyMap.debug.me().moving) await wait(16); }
         await wait(500); return;

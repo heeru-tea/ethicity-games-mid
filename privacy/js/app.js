@@ -224,11 +224,7 @@
     var ch = story.characters[who] || { name: who, initial: '?' };
     var isMe = who === 'me';
     li = el('li', 'ln msg' + (isMe ? ' me' : '') + (line.kind === 'post' ? ' post' : '') + (who === 'lumi' ? ' ai' : ''));
-    if (!isMe) {
-      var av = el('span', 'av', ch.initial);
-      av.setAttribute('aria-hidden', 'true');
-      li.appendChild(av);
-    }
+    if (!isMe) li.appendChild(avatarNode(who, ch));
     var body = el('div', 'msg-body');
     var name = el('span', 'who', isMe ? player.nickname + ' (나)' : ch.name);
     body.appendChild(name);
@@ -238,6 +234,24 @@
     body.appendChild(bubble);
     li.appendChild(body);
     return li;
+  }
+
+  /* 메신저 프로필: 그림이 있는 친구·선생님은 작은 초상화(assets/portraits, webp ~35KB), 나머지·실패 시 이니셜 */
+  var AV_FACE = { hayun: 1, dohyun: 1, seoa: 1, minjun: 1, teacher: 1 };
+  function avatarNode(who, ch) {
+    var av = el('span', 'av');
+    av.setAttribute('aria-hidden', 'true');
+    av.setAttribute('data-who', who);
+    if (!AV_FACE[who]) { av.textContent = ch.initial; return av; }
+    av.classList.add('has-face');
+    var im = document.createElement('img');
+    im.alt = '';
+    im.decoding = 'async';
+    // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 이니셜로
+    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.remove(); av.classList.remove('has-face'); av.textContent = ch.initial; } };
+    av.appendChild(im);
+    window.PrivacyImg.load(im, 'assets/portraits/' + who + '.png');
+    return av;
   }
 
   /* 대화방에 올라온 사진: 흐리게 가려 두고, 플레이어가 눌러야 보인다(무엇을 볼지 스스로 고르게).
@@ -371,7 +385,7 @@
     var box = $('cg'), im = box.querySelector('.cg-img');
     box.classList.remove('shake', 'dim');
     box.querySelector('.cg-rec').hidden = true;
-    if (!key) { box.hidden = true; box.removeAttribute('data-cg'); return; }
+    if (!key) { box.hidden = true; box.removeAttribute('data-cg'); document.body.classList.remove('cg-on'); return; }
     var file = cgFile(key);
     box.setAttribute('data-cg', key);
     im.alt = CG_ALT[key] || '';
@@ -382,6 +396,7 @@
       window.PrivacyImg.load(im, file);
     }
     box.hidden = im.hasAttribute('data-failed'); // 그림을 못 불러오면 빈 레이어 대신 무대가 보이게
+    document.body.classList.toggle('cg-on', !box.hidden); // CG 장면: 대화창 글자를 키운다
   }
   function cgLine(line, quiet) {
     if (!line) return;
@@ -399,7 +414,7 @@
   function cgSetup() {
     var box = $('cg'), im = box.querySelector('.cg-img');
     // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 숨긴다
-    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; } };
+    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; document.body.classList.remove('cg-on'); } };
     im.onload = function () { im.removeAttribute('data-loading'); };
     box.addEventListener('animationend', function () { box.classList.remove('shake'); });
   }
