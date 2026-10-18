@@ -149,7 +149,7 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
   .game { grid-template-columns: 1fr; }
   .stage-col { border-right: 0; padding: 8px 16px; }
   .panel { max-height: none; position: static; padding: 16px; }
-  .topbar { gap: 8px; }
+  .topbar { gap: 8px; position: static; }
   .top-actions { margin-left: 0; }
 }
 
@@ -210,3 +210,5 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
 .stop-name { background: rgba(255,255,255,.85); padding: 0 6px; border-radius: 4px; color: var(--text); }
 .wait-num { background: var(--warn); color: #fff; padding: 0 6px; border-radius: 9px; font-size: 11px; }
 .bus-num { color: #fff; padding: 0 5px; border-radius: 4px; font-size: 11px; border: 1px solid #fff; }
+
+.panel { min-width: 0; }

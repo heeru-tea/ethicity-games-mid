@@ -30,7 +30,14 @@
     return fn();
   }
   function bodyText() { return document.body.innerText; }
+  // 지금 무대(3D 또는 SVG)에 그려진 정류장 ID
+  function stageNodes() {
+    var v = PB.App.view;
+    if (v && v.kind === '3d') return v.__nodeIds();
+    return $$('#stage-svg [data-node]').map(function (g) { return g.getAttribute('data-node'); });
+  }
   function noNewTown(where) {
+    ok(stageNodes().indexOf('I') < 0, where + ': 무대(' + (PB.App.view && PB.App.view.kind) + ')에 I 없음');
     ok(bodyText().indexOf('신도시') < 0, where + ': 화면 글에 신도시 없음');
     ok(!$('[data-node="I"]'), where + ': 지도에 I 정류장 없음');
     ok(document.body.innerHTML.indexOf('신도시') < 0, where + ': DOM(접근성 텍스트 포함)에 신도시 없음');
@@ -70,7 +77,7 @@
     press('#btn-begin-plan');
     await until(function () { return screen() === 'plan'; });
     noNewTown('1단계 계획');
-    ok($$('[data-node]').length >= 8, '지도 정류장 8곳');
+    ok(stageNodes().length === 8, '무대 정류장 8곳 (' + stageNodes().join('') + ')');
   };
 
   async function toPlan() {
@@ -320,6 +327,50 @@
     ok(screen() === 'result', 'SVG로 운행·결과');
   };
 
+  // 접근성 점검: 이름·터치 크기·탭 순서·색 외 단서·대비
+  function a11yCheck(where) {
+    var ctrls = Array.prototype.filter.call(document.querySelectorAll('button, input, select, textarea, summary, a[href]'), function (e) {
+      return e.offsetParent !== null && !e.closest('dialog:not([open])');
+    });
+    var unnamed = ctrls.filter(function (e) {
+      var name = (e.getAttribute('aria-label') || e.textContent || '').trim();
+      if (!name && e.id) { var l = document.querySelector('label[for="' + e.id + '"]'); name = l ? l.textContent.trim() : ''; }
+      if (!name && e.closest('label')) name = e.closest('label').textContent.trim();
+      return !name;
+    });
+    ok(!unnamed.length, where + ': 이름 없는 조작 요소 없음' + (unnamed.length ? ' (' + unnamed.map(function (e) { return e.outerHTML.slice(0, 60); }).join(' | ') + ')' : ''));
+    var small = ctrls.filter(function (e) {
+      if (e.matches('input[type=radio], input[type=checkbox]')) e = e.closest('label') || e;
+      if (e.matches('a.skip-link')) return false;
+      var r = e.getBoundingClientRect(); return r.height < 43.5;
+    });
+    ok(!small.length, where + ': 터치 영역 44px 이상' + (small.length ? ' (' + small.map(function (e) { return (e.id || e.className || e.tagName) + ':' + Math.round(e.getBoundingClientRect().height); }).join(', ') + ')' : ''));
+    ok(!document.querySelector('[tabindex]:not([tabindex="-1"]):not([tabindex="0"])'), where + ': 양수 tabindex 없음(시각 순서 = 탭 순서)');
+  }
+  function lum(hex) {
+    var c = hex.replace('#', '').match(/../g).map(function (x) { x = parseInt(x, 16) / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  function contrast(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  SC.a11y = async function () {
+    var cs = getComputedStyle(document.documentElement), v = function (n) { return cs.getPropertyValue(n).trim(); };
+    ok(contrast(v('--text'), v('--bg')) >= 4.5, '본문 대비 4.5:1');
+    ok(contrast(v('--text-mute'), v('--bg')) >= 4.5, '보조 글 대비 4.5:1');
+    ok(contrast(v('--text-mute'), v('--surface')) >= 4.5, '회색 바탕 위 보조 글 4.5:1');
+    ok(contrast('#FFFFFF', v('--accent')) >= 4.5, '파란 버튼 흰 글 4.5:1');
+    ok(contrast('#FFFFFF', v('--warn')) >= 4.5, '대기 배지 대비');
+    a11yCheck('시작');
+    await toPlan();
+    await chooseGoal('time');
+    a11yCheck('계획');
+    ok($$('.route-card').every(function (c) { return /번 노선/.test(c.textContent); }), '노선은 색 말고 번호로도 구분');
+    await runToResult();
+    a11yCheck('결과');
+    for (var p = 2; p <= 5; p++) { await nextFromResult(); press('#btn-begin-plan'); await until(function () { return screen() === 'plan'; }); await runToResult(); }
+    await nextFromResult();
+    a11yCheck('결말');
+  };
+
   // 운행 중간 모습: 지정 분에서 ‘숨은 탭’으로 재생을 얼려 둔다
   SC['shot-run'] = async function () {
     await toPlan();
@@ -394,7 +445,7 @@
     skipPhases(2);
     await wait(0);
     ok(/4호차/.test($('#panel').textContent) && /신도시/.test($('#panel').textContent), '3단계 공개: 신도시·4호차 안내');
-    ok(!!$('[data-node="I"]'), '3단계 지도에 신도시');
+    ok(stageNodes().indexOf('I') >= 0, '3단계 무대에 신도시');
     press('#btn-begin-plan');
     await until(function () { return screen() === 'plan'; });
     await chooseGoal('reach');

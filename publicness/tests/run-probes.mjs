@@ -10,7 +10,11 @@ import { startServer } from './serve.mjs';
 const EDGE = process.env.EDGE || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 // 시나리오별 Edge 추가 인자(3D는 소프트웨어 WebGL 필요)
 const EXTRA = { 'stage-3d': ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] };
-const ALL = (process.env.PROBES || 'title,seed-param?seed=7,newtown-hidden').split(',');
+// 앱이 아닌 검사 페이지
+const PAGES = { mobile: 'tests/mobile.html' };
+const ALL = (process.env.PROBES || ['title', 'seed-param?seed=7', 'newtown-hidden', 'plan-keyboard', 'nonadjacent-blocked', 'cycle-display', 'fourth-bus', 'double-start', 'invalid-draft-ai',
+  'run-locked', 'hidden-tab', 'result-table', 'newtown-phase2', 'reduced-motion', 'sound-off-default', 'keyboard-full', 'no3d-full?no3d=1', 'ending-records',
+  'result-key', 'xss-nickname', 'random-seed', 'stage-3d', 'webgl-fail', 'a11y', 'mobile'].join(',')).split(',');
 const list = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
 
 const server = await startServer(0);
@@ -28,7 +32,8 @@ let totalPass = 0, totalFail = 0;
 for (const item of list) {
   const [sc, qs] = item.split('?');
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'publicness-probe-'));
-  const dom = await runEdge(`http://127.0.0.1:${port}/publicness/?probe=${sc}${qs ? '&' + qs : ''}`, profile, EXTRA[sc] || []);
+  const url = PAGES[sc] ? `http://127.0.0.1:${port}/publicness/${PAGES[sc]}` : `http://127.0.0.1:${port}/publicness/?probe=${sc}${qs ? '&' + qs : ''}`;
+  const dom = await runEdge(url, profile, EXTRA[sc] || []);
   const m = dom.match(/<pre id="probe-out">([\s\S]*?)<\/pre>/);
   if (!m) { console.log(`✗ ${item}: 결과 없음 (DOM ${dom.length}자)`); totalFail++; continue; }
   const txt = m[1].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');

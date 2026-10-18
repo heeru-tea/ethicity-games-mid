@@ -14,7 +14,8 @@ const [name = 'title', qs = '', size = '1280x860'] = process.argv.slice(2);
 const [w, h] = size.split('x');
 const out = path.join(path.dirname(fileURLToPath(import.meta.url)), `_shot-${name}.png`);
 const server = await startServer(0);
-const url = `http://127.0.0.1:${server.address().port}/publicness/${qs ? '?' + qs : ''}`;
+const base = `http://127.0.0.1:${server.address().port}/publicness/`;
+const url = qs.startsWith('page:') ? base + qs.slice(5) : base + (qs ? '?' + qs : '');
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'pb-shot-'));
 const extra = (process.env.EXTRA || '').split(' ').filter(Boolean);
 await new Promise((resolve) => execFile(EDGE, ['--headless=new', '--disable-gpu', '--no-first-run', `--user-data-dir=${profile}`, `--window-size=${w},${h}`,
