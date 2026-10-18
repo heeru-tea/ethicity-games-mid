@@ -911,6 +911,13 @@
     $('opt-sound').checked = settings.sound;
   }
 
+  // 새로 시작할 때마다: 어두운 화면에 주의 안내 → '확인했어요'를 눌러야 시작(이어 하기에는 없음)
+  function showWarning(done) {
+    var w = $('warning'), ok = $('btn-warning-ok');
+    w.hidden = false;
+    ok.onclick = function () { w.hidden = true; ok.onclick = null; done(); };
+    ok.focus({ preventScroll: true });
+  }
   function startNew() {
     stopReveal();
     progress.pos = null;
@@ -926,8 +933,8 @@
     $('btn-new').addEventListener('click', function () {
       if (needLook()) return;
       if (progress.run && progress.run.screen !== 'ending') {
-        ask('처음부터 시작할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', startNew);
-      } else startNew();
+        ask('처음부터 시작할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', function () { showWarning(startNew); });
+      } else showWarning(startNew);
     });
     $('btn-continue').addEventListener('click', function () { if (needLook()) return; routeRun(false); });
     $('name-input').addEventListener('input', function () {

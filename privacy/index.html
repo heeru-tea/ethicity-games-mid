@@ -18,6 +18,17 @@
   <main id="main" class="app">
 
     <!-- 1. 시작 -->
+    <!-- 시작하자마자 뜨는 주의 화면: 가상 상황 고지·다루는 장면·도움 연락처. 확인을 눌러야 시작(저절로 넘어가지 않음) -->
+    <div id="warning" class="warning" role="dialog" aria-modal="true" aria-labelledby="warning-title" hidden>
+      <div class="warning-inner">
+        <p id="warning-title" class="warning-title">WARNING</p>
+        <p class="warning-lead">본 게임에 나오는 인물·학교·상황은 모두 가상이며, 실제와 관계없습니다.</p>
+        <p class="warning-text">친구 사진 유포, 신상 공개, 합성 이미지, 몸싸움과 촬영 같은 장면이 나옵니다.</p>
+        <p class="warning-help">비슷한 일로 힘들다면 선생님이나 보호자에게, 또는 청소년상담 <strong>1388</strong> · 학교폭력 <strong>117</strong> · 개인정보 침해 <strong>118</strong>에 도움을 청할 수 있어요.</p>
+        <button id="btn-warning-ok" class="btn primary warning-ok" type="button">확인했어요</button>
+      </div>
+    </div>
+
     <section id="v-start" class="view title" aria-labelledby="start-title">
       <header class="title-head">
         <p class="eyebrow">프라이버시 선택 게임</p>
@@ -49,7 +60,6 @@
         <button id="btn-continue" class="btn primary" type="button" hidden>이어 하기</button>
         <button id="btn-new" class="btn primary" type="button">시작하기</button>
       </div>
-      <p id="content-note" class="small mute content-note">이 게임의 인물·학교·사건은 모두 지어낸 이야기로, 실제와 관계없습니다. 친구 사진 유포, 신상 공개, 합성 이미지, 몸싸움과 촬영 같은 장면이 나옵니다. 비슷한 일로 힘들다면 선생님이나 보호자에게, 또는 청소년상담 <strong>1388</strong> · 학교폭력 <strong>117</strong> · 개인정보 침해 <strong>118</strong>에 도움을 청할 수 있어요.</p>
 
       <div class="title-foot">
         <div class="player-chip" id="player-chip">
@@ -231,6 +241,7 @@
   <script src="js/talk.js"></script>
   <script src="js/sprite-dom.js"></script>
   <script src="js/terrain.js"></script>
+  <script src="js/schoolyard.js"></script>
   <script src="js/outdoor.js"></script>
   <script src="js/school.js"></script>
   <script src="js/room.js"></script>

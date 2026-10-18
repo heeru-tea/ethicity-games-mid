@@ -514,6 +514,7 @@
       var ch = tileAt(x, y);
       if (inside && room && room.cell(ctx, ch, x, y, T, cam)) continue;
       if (school && !schoolCovered && school.cell(ctx, ch, x, y, T, cam)) continue;
+      if (!inside && window.PrivacySchoolyard && window.PrivacySchoolyard.drawCell(ctx, ch, x, y, T, cam)) continue;
       var pondGround = !inside && ch === 'w' && outdoor && outdoor.ready('pond');
       if (pondGround) {
         if (!(window.PrivacyTerrain && window.PrivacyTerrain.drawCell(ctx, 'g', x, y, T, cam))) blit('floor_grass', x, y);
@@ -558,6 +559,10 @@
       if (!(ob.x - 1 <= x1 + 1 && ob.x + ob.w + 1 >= x0 - 1 && ob.y - up <= y1 + 2 && ob.y + ob.h >= y0 - 1)) return;
       var name = art && artFor(ob);
       var bottom = ob.y + ob.h - 1;
+      if (!inside && (/^yardGoal/.test(ob.id) || ['store','tent1','tent2'].indexOf(ob.id)>=0) && window.PrivacySchoolyard) {
+        list.push({y:bottom,fn:function(){if(!window.PrivacySchoolyard.object(ctx,ob,T,cam)) drawObject(ob);}});
+        return;
+      }
       if (inside && room && ['bed', 'mypc', 'mybook', 'plush'].indexOf(ob.id) >= 0) {
         list.push({ y: bottom, fn: function () {
           if (!room.object(ctx, ob, T, cam)) { if (!name || !blit(name, ob.x, bottom)) drawObject(ob); }
