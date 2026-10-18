@@ -184,6 +184,18 @@ for (const [code, route] of Object.entries(ROUTES)) {
   routeResult[code] = r;
 }
 
+// ── 5b. 엔진: 트리거 skipIf(조건이 맞으면 걷기 생략) ──
+{
+  const mini = { start: 'a', trustable: [], characters: {},
+    scenes: { a: { choices: [{ id: 'x', set: { f: true }, next: 'b' }, { id: 'y', next: 'b' }] }, b: { next: '@ending' } },
+    endings: [{ code: 'C' }], triggers: { b: { skipIf: 'f' } } };
+  const go = (id) => E.advance(mini, E.choose(mini, E.createState(mini), id));
+  const sx = go('x'), sy = go('y');
+  if (sx.screen !== 'scene' || sx.scene !== 'b') err('skipIf 참인데 걷기를 건너뛰지 않음: ' + sx.screen);
+  if (sy.screen !== 'map' || sy.mapTarget !== 'b') err('skipIf 거짓인데 걷기가 없음: ' + sy.screen);
+  if (E.isValidState(mini, Object.assign(E.clone(sy), { flags: { f: true } }))) err('skipIf 참인 map 상태가 유효로 판정됨');
+}
+
 // ── 6. 커버리지 ──────────────────────────
 for (const id of sceneIds) if (!seenScene.has(id)) err('도달하지 않은 장면: ' + id);
 for (const [id, sc] of Object.entries(story.scenes)) {
