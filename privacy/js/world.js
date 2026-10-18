@@ -14,7 +14,7 @@
 (function (root) {
   'use strict';
 
-  var W = 64, H = 34; // 2026-10-18 주택가 확장(옛 48×23의 학교·교문·마을 길·우리 집·내 방 좌표는 그대로)
+  var W = 64, H = 46; // 학교 남쪽에 대형 운동장 확장. 기존 마을·실내 좌표 유지.
   var grid = [];
   var y, x;
   for (y = 0; y < H; y++) { grid.push([]); for (x = 0; x < W; x++) grid[y].push('g'); }
@@ -46,6 +46,7 @@
   /* ── 지형 ───────────────────────── */
   rect(22, 0, 42, 11, 'T');                 // 학교 오른쪽 위 숲(방은 이 안에 따로 있음)
   rect(0, 23, 23, 11, 'T');                 // 학교 담장 아래 숲
+  rect(0, 34, 64, 12, 'T');                // 확장 맵의 남쪽 외곽
   // 학교 건물
   rect(0, 0, 22, 11, '#');
   rect(1, 1, 10, 6, 'c');                   // 2학년 3반 교실
@@ -54,7 +55,8 @@
   at(8, 7, 'd'); at(15, 7, 'd');            // 교실·도서관 문
   at(10, 10, 'd'); at(11, 10, 'd');         // 건물 현관
   // 운동장(울타리 안)
-  rect(0, 11, 1, 12, 'f'); rect(0, 22, 23, 1, 'f'); rect(22, 0, 1, 23, 'f');
+  rect(1, 11, 21, 33, 'y');                // 넓어진 학교 공터·운동장
+  rect(0, 11, 1, 34, 'f'); rect(0, 44, 23, 1, 'f'); rect(22, 0, 1, 45, 'f');
   rect(10, 11, 2, 6, 'p'); rect(10, 16, 13, 2, 'p');  // 현관 → 교문 길
   rect(1, 12, 7, 3, 'p');                   // 매점 앞
   rect(12, 18, 9, 3, 'y');                  // 축제 부스 운동장
@@ -95,7 +97,7 @@
     { name: '2학년 3반 교실', x: 1, y: 1, w: 10, h: 6 },
     { name: '도서관', x: 12, y: 1, w: 9, h: 6 },
     { name: '복도', x: 1, y: 7, w: 20, h: 4 },
-    { name: '매점 앞', x: 1, y: 11, w: 8, h: 4 },
+    { name: '매점 앞', x: 1, y: 11, w: 8, h: 6 },
     { name: '운동장 축제 부스', x: 11, y: 18, w: 11, h: 4 },
     { name: '교문', x: 19, y: 15, w: 4, h: 4 },
     { name: '마을 길', x: 23, y: 12, w: 16, h: 10 },
@@ -103,7 +105,7 @@
     { name: '주택가', x: 47, y: 12, w: 16, h: 10 },
     { name: '주택가', x: 23, y: 22, w: 40, h: 11 },
     { name: '내 방', x: 31, y: 3, w: 8, h: 5 },
-    { name: '운동장', x: 1, y: 11, w: 21, h: 11 }
+    { name: '운동장', x: 1, y: 11, w: 21, h: 33 }
   ];
 
   /* ── 가구·사물 (w×h = 바닥을 차지하는 칸, 0이면 벽에 걸림) ── */
@@ -120,7 +122,9 @@
     { id: 'pc1', name: '공용 PC 1번', x: 13, y: 4, w: 1, h: 1, icon: '🖥', look: '공용 PC 1번. 꺼져 있다.' },
     { id: 'pc2', name: '공용 PC 2번', x: 15, y: 4, w: 1, h: 1, icon: '🖥', look: '공용 PC 2번. 검색 전용이라고 붙어 있다.' },
     { id: 'pc3', name: '공용 PC 3번', x: 17, y: 4, w: 1, h: 1, icon: '🖥', label: '3', look: '공용 PC 3번.' },
-    { id: 'store', name: '매점 진열대', x: 2, y: 12, w: 4, h: 1, icon: '🧃', look: '매점. 오늘은 컵떡볶이가 제일 잘 팔린다.' },
+    { id: 'store', name: '학교 매점', x: 2, y: 14, w: 4, h: 1, icon: '🧃', look: '매점. 오늘은 컵떡볶이가 제일 잘 팔린다.' },
+    { id: 'yardGoalLeft', name: '운동장 왼쪽 골대', x: 3, y: 31, w: 1, h: 3, icon: '⚽', look: '넓은 운동장 건너편 골대와 마주 보고 있다.' },
+    { id: 'yardGoalRight', name: '운동장 오른쪽 골대', x: 19, y: 31, w: 1, h: 3, icon: '⚽', look: '체육 시간에 쓰는 골대. 흰 그물이 걸려 있다.' },
     { id: 'tent1', name: '레트로 사진관 천막', x: 13, y: 18, w: 3, h: 1, icon: '⛺', look: '우리 반 부스 ‘레트로 사진관’. 1컷 500원.' },
     { id: 'tent2', name: '옆 반 천막', x: 17, y: 18, w: 3, h: 1, icon: '⛺', look: '옆 반 부스. 솜사탕 냄새가 난다.' },
     { id: 'sign', name: '안내 표지판', x: 24, y: 15, w: 1, h: 1, icon: '🪧', look: '← 솔빛학교 · 우리 집 →' },
@@ -189,10 +193,10 @@
       cast: [{ who: 'minjun', x: 7, y: 6, dir: 'up', pose: 'sleep' }, { who: 'dohyun', x: 6, y: 6, dir: 'right' },
         { who: 'hayun', x: 6, y: 1, dir: 'down' }, { who: 'seoa', x: 2, y: 1, dir: 'down' }] },
     c1_e3_a: { time: 'D-2 · 하교 시간', mission: '집에 가서 쉬기 — 교문을 지나 마을 길 끝 우리 집으로', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
-      cast: [{ who: 'hayun', x: 15, y: 8, dir: 'down' }, { who: 'dohyun', x: 4, y: 13, dir: 'down' }, { who: 'minjun', x: 14, y: 19, dir: 'down' }],
+      cast: [{ who: 'hayun', x: 15, y: 8, dir: 'down' }, { who: 'dohyun', x: 4, y: 15, dir: 'down' }, { who: 'minjun', x: 14, y: 19, dir: 'down' }],
       enterLine: '하루 종일 부스를 꾸몄더니 피곤하다. 침대에 눕자 휴대폰이 울렸다.' },
     c2_e4_a: { time: 'D-1 · 오후', mission: '매점 앞에서 손짓하는 도현이에게 가기', target: { npc: 'dohyun' }, spawn: 'gate', tint: 'day',
-      cast: [{ who: 'dohyun', x: 4, y: 13, dir: 'right' }, { who: 'seoa', x: 14, y: 19, dir: 'up' },
+      cast: [{ who: 'dohyun', x: 4, y: 15, dir: 'right' }, { who: 'seoa', x: 14, y: 19, dir: 'up' },
         { who: 'minjun', x: 16, y: 19, dir: 'up' }, { who: 'hayun', x: 6, y: 9, dir: 'down' }] },
     c2_e5_a: { time: 'D-1 · 저녁', mission: '집에 가서 부스 안내문 쓰기 — 내 방 컴퓨터', target: { obj: 'mypc' }, spawn: 'road', tint: 'night',
       cast: [{ who: 'seoa', x: 14, y: 19, dir: 'up' }, { who: 'minjun', x: 16, y: 19, dir: 'up' }] },
@@ -224,7 +228,7 @@
     room: { name: '내 방', me: { x: 32, y: 4, dir: 'down' } },
     road: { name: '마을 길', me: { x: 33, y: 16, dir: 'right' } },
     gate: { name: '교문', me: { x: 21, y: 16, dir: 'left' } },
-    store: { name: '매점 앞', me: { x: 5, y: 13, dir: 'left' } },
+    store: { name: '매점 앞', me: { x: 5, y: 15, dir: 'left' } },
     library: { name: '도서관', me: { x: 17, y: 5, dir: 'up' } },
     hall: { name: '복도', me: { x: 10, y: 9, dir: 'down' } },
     booth: { name: '운동장 축제 부스', me: { x: 16, y: 20, dir: 'right' } }
@@ -256,7 +260,7 @@
       bubbles: [{ on: '역할 바꿨어', who: 'seoa', text: '😌' }] },
     c1_e3_cap: { place: 'classroom', tint: 'day', card: 'D-1 점심 · 교실', cast: only(classmates, ['hayun', 'seoa', 'dohyun']),
       bubbles: [{ on: '…화나. 아무한테도', who: 'seoa', text: '💢' }] },
-    c2_e4_a: { place: 'store', tint: 'evening', cast: [{ who: 'dohyun', x: 4, y: 13, dir: 'right' }],
+    c2_e4_a: { place: 'store', tint: 'evening', cast: [{ who: 'dohyun', x: 4, y: 15, dir: 'right' }],
       bubbles: [{ on: '누가 만든 거래', who: 'dohyun', text: '이거 봐 ㅋㅋ' }, { on: '나 보낸 거 지울게', who: 'dohyun', text: '…' }] },
     c2_e4_b: { place: 'road', tint: 'evening', card: '그날 저녁 · 집에 가는 길', cast: [] },
     c2_e5_a: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
@@ -401,3 +405,4 @@
   root.PRIVACY_WORLD = WORLD;
   if (typeof module !== 'undefined' && module.exports) module.exports = WORLD;
 })(typeof window !== 'undefined' ? window : globalThis);
+
