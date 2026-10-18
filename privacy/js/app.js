@@ -350,6 +350,7 @@
     if (im.getAttribute('data-file') !== file) {
       im.setAttribute('data-file', file);
       im.removeAttribute('data-failed');
+      im.setAttribute('data-loading', ''); // 새 그림이 다 올 때까지 앞 그림(잔상)을 감춘다
       window.PrivacyImg.load(im, file);
     }
     box.hidden = im.hasAttribute('data-failed'); // 그림을 못 불러오면 빈 레이어 대신 무대가 보이게
@@ -370,7 +371,8 @@
   function cgSetup() {
     var box = $('cg'), im = box.querySelector('.cg-img');
     // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 숨긴다
-    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.setAttribute('data-failed', ''); box.hidden = true; } };
+    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; } };
+    im.onload = function () { im.removeAttribute('data-loading'); };
     box.addEventListener('animationend', function () { box.classList.remove('shake'); });
   }
   // 그 자리 대화(장소 장면)는 포켓몬식 대화창으로 한 줄씩
@@ -424,6 +426,7 @@
     var st = WD.STAGES[run.scene] || { place: 'classroom', tint: 'day', cast: [] };
     var ready = Promise.resolve();
     if (stagedScene !== run.scene) {
+      if (animate && st.card) cgShow(null); // 컷 카드 뒤로 앞 장면 그림이 비치지 않게
       stagedScene = run.scene;
       cutPending = true;
       ready = window.PrivacyMap.stage(st, { card: animate && st.card ? st.card : null, focus: function () { return stageFocus(device); } });

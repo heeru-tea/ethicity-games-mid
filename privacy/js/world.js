@@ -274,7 +274,7 @@
     c3_e8_a: { place: 'room', tint: 'evening', me: ATDESK, pcOn: true, device: 'monitor', cast: [] },
     c3_e8_b: { place: 'room', tint: 'night', cast: [] },
     // 사건 8 현장 「렌즈 안에 갇힌 밤」: CG가 무대를 덮는다(장소는 CG 뒤 배경·컷 카드용)
-    c3_e8_c: { place: 'gate', tint: 'night', card: '저녁 9:00 · 학교 정문 앞', cast: [] },
+    c3_e8_c: { place: 'gate', tint: 'night', card: '렌즈 안에 갇힌 밤 — 저녁 9:00 · 학교 정문 앞', cast: [] },
     c3_e8_d: { place: 'gate', tint: 'night', cast: [] },
     c3_e8_e: { place: 'room', tint: 'night', card: '그날 밤 · 내 방', cast: [] },
     c3_e8_f: { place: 'classroom', tint: 'day', card: '축제 다음 날 · 아침', cast: classmates },

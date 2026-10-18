@@ -108,7 +108,7 @@
     ok($$('.path-opts li.other').length > 0, '고르지 않은 선택지도 표시');
     ok($$('.ending-chips li').length === 4, '엔딩 목록 4종');
     $('#btn-path-reflect').click(); await wait();
-    ok(view() === 'v-reflect' && $$('#r-basic li').length === 5 && $$('#r-deep li').length === 5, '성찰 질문 5+5');
+    ok(view() === 'v-reflect' && $$('#r-basic li').length === PRIVACY_STORY.reflection.basic.length && $$('#r-basic li').length === 6 && $$('#r-deep li').length === 6, '성찰 질문 6+6');
     $('#btn-reflect-back').click(); await wait();
     ok(view() === 'v-path', '성찰 → 경로로 돌아가기');
     $('#btn-path-back').click(); await wait();
@@ -123,14 +123,16 @@
     var c = $('#cg');
     if (!c || c.hidden) return null;
     var im = c.querySelector('.cg-img'), rec = c.querySelector('.cg-rec');
-    return { k: c.getAttribute('data-cg'), src: im && !im.hidden ? im.getAttribute('src') || '' : '', rec: !!rec && !rec.hidden, shake: c.classList.contains('shake'), dim: c.classList.contains('dim') };
+    return { k: c.getAttribute('data-cg'), src: im && !im.hidden ? im.getAttribute('src') || '' : '', rec: !!rec && !rec.hidden, shake: c.classList.contains('shake'), dim: c.classList.contains('dim'),
+      loading: !!im && im.hasAttribute('data-loading') };
   }
   // CG·화면 변화를 순서대로 적는다(같은 값 연속은 하나로)
   function nfWatch() {
     var log = [];
     function push(e) { var last = log[log.length - 1]; if (!last || JSON.stringify(last) !== JSON.stringify(e)) log.push(e); }
-    function snap() { var c = cgNow(); push(c ? { cg: c.k, src: c.src, rec: c.rec, shake: c.shake, dim: c.dim } : { cg: null }); }
+    function snap() { var c = cgNow(); push(c ? { cg: c.k, src: c.src, rec: c.rec, shake: c.shake, dim: c.dim, loading: c.loading } : { cg: null }); }
     new MutationObserver(snap).observe($('#cg'), { attributes: true, subtree: true });
+    new MutationObserver(function () { if (!$('#cut').hidden) push({ cut: $('#cut').textContent, cgOn: !$('#cg').hidden }); }).observe($('#cut'), { attributes: true, childList: true, characterData: true, subtree: true });
     new MutationObserver(function () { push({ view: view(), scene: (PrivacyApp.state() || {}).scene }); }).observe(document.body, { attributes: true, attributeFilter: ['data-view'] });
     return log;
   }
@@ -142,6 +144,8 @@
     ok(!/야차룰|승리|콤보|체력바/.test(text), '이야기에 싸움을 경기처럼 보이게 하는 말 없음');
     if (s === 'nf-flow') { // 여 주인공 · 한 번에+움직임 줄이기(기본 프로브 설정) → 줄 단위 보려고 보통 속도
       ok(!!$('#cg') && $('#cg').hidden, 'CG 레이어는 처음엔 숨김');
+      var note = ($('#content-note') || {}).textContent || '';
+      ok(/지어낸 이야기/.test(note) && /1388/.test(note) && /117/.test(note) && /118/.test(note), '시작 화면 콘텐츠 안내·도움 연락처: ' + note.slice(0, 40));
       var log = nfWatch();
       $('#btn-new').click();
       await play(route, { upto: 13 });
@@ -164,6 +168,12 @@
       var iT = log.findIndex(function (e) { return e.cg === 'teacher-support'; });
       ok(iT > 0 && !log.slice(iT).some(function (e) { return e.view === 'v-map'; }), '싸움 경로는 사건 9 전에 다시 걷지 않음');
       ok($('#cg').hidden, '사건 9 교실에선 CG 숨김');
+      var prevK = null, stale = [];
+      log.forEach(function (e) { if (!('cg' in e)) return; if (e.cg && e.cg !== prevK && !e.loading) stale.push(e.cg); prevK = e.cg; });
+      ok(!stale.length, '새 그림을 받는 동안 앞 그림을 보여 주지 않음(잔상 없음): ' + stale.join(','));
+      ok(log.some(function (e) { return /렌즈 안에 갇힌 밤/.test(e.cut || ''); }), '에피소드 제목이 화면(컷 카드)에 나옴');
+      var cutCounsel = log.filter(function (e) { return /상담실/.test(e.cut || ''); })[0];
+      ok(!!cutCounsel && !cutCounsel.cgOn, '컷 카드 뒤로 앞 장면 CG가 비치지 않음');
       ok(st.flags.e8_confrontation === 'fight' && st.flags.e8_video_spread === true && st.flags.e8_response === 'support', '플래그 기록');
       PrivacyApp.setSpeed('instant');
       await play(route, { from: 16 });
