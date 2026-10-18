@@ -205,6 +205,80 @@
     ok(PB.App.audioCreated(), '켜면 오디오 생성');
   };
 
+  // 다섯 단계를 화면 조작(키보드로 누를 수 있는 요소)만으로 끝까지
+  async function playAll(goal) {
+    press('#btn-start');
+    await until(function () { return screen() === 'reveal'; });
+    for (var p = 1; p <= 5; p++) {
+      press('#btn-begin-plan');
+      await until(function () { return screen() === 'plan'; });
+      await chooseGoal(goal || 'time');
+      press('#rec-accept');
+      await wait(0);
+      if (p === 3 && $('#btn-fourth')) { press('#btn-fourth'); await wait(0); }
+      await runToResult();
+      await nextFromResult();
+    }
+    return screen() === 'ending';
+  }
+
+  SC['keyboard-full'] = async function () {
+    ok(await playAll('time'), '키보드로 다섯 단계 완주 → 결말');
+    ok($$('.resident-card').length === 4, '주민 카드 4장');
+    ok($('#records').hidden, '운행 기록은 접혀 있음');
+    press('#btn-records');
+    await wait(0);
+    ok(!$('#records').hidden, '운행 기록 보기 펼침');
+    ok($$('#reflection textarea').length === 3, '성찰 질문 3개(선택)');
+    ok(PB.App.state().history.length === 5, '기록 5단계');
+  };
+
+  SC['no3d-full'] = async function () {
+    ok(await playAll('reach'), '?no3d=1 다섯 단계 완주');
+    ok(!$('#stage-svg').closest('[hidden]') && getComputedStyle($('#stage-svg')).display !== 'none', 'SVG 지도 사용');
+  };
+
+  SC['ending-records'] = async function () {
+    await playAll('profit');
+    press('#btn-records');
+    await wait(0);
+    var zones = Object.keys(PB.Session.endingSummary(PB.App.state()).zones);
+    ok($$('#records .zone-subtitle').length === zones.length, '생활권 소제목 ' + zones.length + '개');
+    ok($$('.resident-card .closing').every(function (c) { return /이번 정류장은|아직/.test(c.textContent); }), '안내 방송 마무리 문장');
+    ok($$('.resident-card details').length === 4, '주민별 기록 펼침');
+    ok(/1단계/.test($('#goal-history').textContent) && /5단계/.test($('#goal-history').textContent), 'AI 목표 선택 이력');
+    ok(/누적 잔액/.test($('#records').textContent), '재정 합계');
+    ok(!/파산|게임오버|실패/.test(document.body.innerText), '파산·게임오버·실패 표현 없음');
+    ok(!/취업|합격|건강|성공/.test($('#panel').innerText), '운행 밖 삶의 결과 문장 없음');
+  };
+
+  SC['result-key'] = async function () {
+    await playAll('time');
+    var raw = localStorage.getItem('ethicity.result.publicness');
+    var r = raw && JSON.parse(raw);
+    ok(r && r.game === 'publicness' && r.completed === true, '팀 결과 키 기록');
+    ok(r && /^이번 정류장은…/.test(r.card), '결과 카드 문자열');
+    ok(localStorage.getItem('ethicity.player') === P.PLAYER, '플레이어 키 그대로');
+    ok(localStorage.getItem('ethicity.result.privacy') === P.OTHER['ethicity.result.privacy'], '다른 게임 키 그대로');
+  };
+
+  SC['xss-nickname'] = async function () {
+    await playAll('time');
+    ok(window.__x === undefined, '별명이 HTML로 실행되지 않음');
+    var nick = $('#end-player');
+    ok(nick && nick.textContent.indexOf('<img') >= 0, '별명은 글자로 표시');
+    var panel = $('#panel');
+    ok(nick && nick.scrollWidth <= panel.clientWidth + 1, '긴 별명이 패널을 넘치지 않음');
+  };
+
+  SC['random-seed'] = async function () {
+    $('input[name=setting][value=random]').click();
+    ok(await playAll('reach'), '랜덤 세팅 완주');
+    var s = PB.App.state();
+    ok(s.mode === 'random', '랜덤 모드');
+    ok(new RegExp(String(s.seed)).test($('#end-seed').textContent), '결말에 세팅 번호 표시');
+  };
+
   // 운행 중간 모습: 지정 분에서 ‘숨은 탭’으로 재생을 얼려 둔다
   SC['shot-run'] = async function () {
     await toPlan();
@@ -219,6 +293,7 @@
     hidden = true;
     ok(true, 'shot');
   };
+  SC['shot-ending'] = async function () { await playAll('reach'); ok(true, 'shot'); };
   SC['shot-result'] = async function () { await toPlan(); await runToResult(); ok(true, 'shot'); };
 
   SC['shot-plan'] = async function () { await toPlan(); await chooseGoal('reach'); ok(true, 'shot'); };
