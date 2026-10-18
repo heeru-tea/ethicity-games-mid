@@ -207,6 +207,7 @@
           return leg.from === e.v.node && leg.routeId === e.b.tl.routeId && ah[leg.to] != null;
         }).sort(function (a, c) { return a._waitStart - c._waitStart || a.id - c.id; });
         var free = cap - onBus[busId].length;
+        if (eligible.length > free) log.push({ t: t, type: 'full', bus: busId, node: e.v.node, data: { left: eligible.length - Math.max(0, free) } });
         eligible.slice(0, Math.max(0, free)).forEach(function (p) {
           p.waitTotal += t - p._waitStart;
           p._waitStart = null;

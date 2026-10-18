@@ -162,3 +162,11 @@ test('default draft leaves outer village F unlinked (hook fact)', () => {
   assert.ok(f.every((x) => x.fail === 'NO_LINK'));
   console.log(`  기본 세션 1회 시뮬레이션 ${ms}ms`);
 });
+
+test('full bus logs how many were left behind', () => {
+  const rs = Array.from({ length: 13 }, () => req('A', 'C', 0));
+  const res = run(plan(['A-B-C', 0], ['A-B-C', 8]), rs);
+  const full = res.log.filter((e) => e.type === 'full');
+  assert.equal(full.length, 1);
+  assert.deepEqual([full[0].t, full[0].node, full[0].bus, full[0].data.left], [0, 'A', 1, 1]);
+});
