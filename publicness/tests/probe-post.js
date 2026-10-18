@@ -111,6 +111,116 @@
     await until(function () { return screen() === 'run' || screen() === 'result'; });
   }
 
+  async function runToResult() {
+    await depart();
+    await until(function () { return screen() === 'result'; }, 30000);
+  }
+  async function nextFromResult() {
+    press('#btn-next-phase');
+    await until(function () { return screen() === 'reveal' || screen() === 'ending'; });
+  }
+
+  SC['run-locked'] = async function () {
+    await toPlan();
+    var before = JSON.stringify(PB.App.state().draft);
+    press('#btn-depart');
+    await until(function () { return $('#confirm-depart').open; });
+    press('#confirm-yes');
+    await until(function () { return screen() === 'run'; });
+    var labels = $$('#panel button').map(function (b) { return b.textContent; }).join(' ');
+    ok(!/편집|일시정지|멈춤|고치기|수정/.test(labels), '운행 중 편집·일시정지 버튼 없음');
+    ok(!$('#panel select'), '운행 중 배정 선택 없음');
+    PB.App.onNodeClick && PB.App.onNodeClick('C');
+    ok(JSON.stringify(PB.App.state().draft) === before, '지도 클릭해도 계획 그대로');
+    ok(/정류장|기다/.test(($('#node-info') || {}).textContent || ''), '지도 클릭은 정보 보기');
+    await until(function () { return screen() === 'result'; }, 30000);
+    ok(screen() === 'result', '운행이 끝나면 결과 화면');
+  };
+
+  SC['hidden-tab'] = async function () {
+    await toPlan();
+    press('#btn-depart');
+    await until(function () { return $('#confirm-depart').open; });
+    var hidden = false;
+    Object.defineProperty(document, 'hidden', { configurable: true, get: function () { return hidden; } });
+    press('#confirm-yes');
+    await until(function () { return screen() === 'run' && /[1-9]/.test($('#top-clock').textContent); });
+    hidden = true; document.dispatchEvent(new Event('visibilitychange'));
+    var c1 = $('#top-clock').textContent;
+    await wait(400);
+    ok($('#top-clock').textContent === c1 && screen() === 'run', '숨은 탭에서는 멈춤 (' + c1 + ')');
+    hidden = false; document.dispatchEvent(new Event('visibilitychange'));
+    await until(function () { return screen() === 'result'; }, 30000);
+    ok(screen() === 'result', '돌아오면 이어서 끝까지');
+    var s = PB.App.state();
+    ok(s.history.length === 1, '결과 한 번만 기록');
+  };
+
+  SC['result-table'] = async function () {
+    await toPlan();
+    await runToResult();
+    var rows = $$('#zone-table tbody tr');
+    ok(rows.length === 8, '생활권 8행 (' + rows.length + ')');
+    var tot = $('#zone-table tfoot tr');
+    var cells = tot ? Array.prototype.map.call(tot.children, function (c) { return c.textContent.trim(); }) : [];
+    var n = Number(cells[1]), sum = Number(cells[2]) + Number(cells[3]) + Number(cells[4]) + Number(cells[5]);
+    ok(n === 148 && n === sum, '합계: 요청 = 도착+미탑승+환승 중+탑승 중 (' + cells.slice(1, 6).join('/') + ')');
+    ok(/추가 사건 없는 기본 수요 기준/.test($('#result-compare').textContent), '예상/실제 카드');
+    ok(/지원금/.test($('#finance').textContent) && /누적/.test($('#finance').textContent), '재정 항목');
+    ok($$('#bubble-replay li').length > 0, '말풍선 다시 읽기');
+    ok(!/파산|게임오버|실패했/.test(document.body.innerText), '실패·파산 표현 없음');
+    await nextFromResult();
+    ok(screen() === 'reveal' && PB.App.state().phase === 2, '다음 단계로');
+  };
+
+  SC['newtown-phase2'] = async function () {
+    await toPlan();
+    await runToResult();
+    noNewTown('1단계 결과');
+    await nextFromResult();
+    noNewTown('2단계 공개');
+    press('#btn-begin-plan');
+    await until(function () { return screen() === 'plan'; });
+    await chooseGoal('reach');
+    noNewTown('2단계 계획·AI 제안');
+    await runToResult();
+    noNewTown('2단계 결과');
+    await nextFromResult();
+    ok(/신도시/.test($('#panel').textContent), '3단계에 신도시 공개');
+  };
+
+  SC['reduced-motion'] = async function () {
+    ok(PB.App.reducedMotion(), '움직임 줄이기 켜짐');
+    await toPlan();
+    await runToResult();
+    ok(screen() === 'result', '움직임 줄이기로 완주');
+  };
+
+  SC['sound-off-default'] = async function () {
+    ok(!$('#opt-sound').checked, '효과음 기본 꺼짐');
+    await toPlan();
+    await runToResult();
+    ok(!PB.App.audioCreated(), '꺼져 있으면 오디오를 만들지 않음');
+    $('#opt-sound').click();
+    ok(PB.App.audioCreated(), '켜면 오디오 생성');
+  };
+
+  // 운행 중간 모습: 지정 분에서 ‘숨은 탭’으로 재생을 얼려 둔다
+  SC['shot-run'] = async function () {
+    await toPlan();
+    var hidden = false;
+    Object.defineProperty(document, 'hidden', { configurable: true, get: function () { return hidden; } });
+    press('#btn-depart');
+    await until(function () { return $('#confirm-depart').open; });
+    window.__pbFast = false;
+    press('#confirm-yes');
+    var stopAt = Number(new URLSearchParams(location.search).get('at') || 45);
+    await until(function () { return parseInt($('#top-clock').textContent, 10) >= stopAt; }, 120000);
+    hidden = true;
+    ok(true, 'shot');
+  };
+  SC['shot-result'] = async function () { await toPlan(); await runToResult(); ok(true, 'shot'); };
+
   SC['shot-plan'] = async function () { await toPlan(); await chooseGoal('reach'); ok(true, 'shot'); };
 
   SC['plan-keyboard'] = async function () {

@@ -73,7 +73,7 @@
     });
     var bal = s.history.reduce(function (a, h) { return a + h.metrics.costs.total; }, 0);
     $('#top-balance').textContent = '누적 잔액 ' + App.won(bal);
-    if (s.stage !== 'run') $('#top-clock').textContent = s.stage === 'ending' ? '학기 끝' : '계획 중';
+    if (s.stage !== 'run') $('#top-clock').textContent = s.stage === 'ending' ? '학기 끝' : s.stage === 'result' ? '운행 끝' : '계획 중';
   }
 
   /* ── 무대 ───────────────────────── */

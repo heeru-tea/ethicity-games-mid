@@ -74,7 +74,9 @@
     // 같은 사람·같은 종류는 하나만
     var seen = {}, picked = [];
     list.forEach(function (b) {
-      var k = (b.pid || 'n' + b.node + b.t) + b.kind;
+      var p = b.pid != null ? byId[b.pid] : null;
+      // 주민이 아닌 사람의 ‘노선 없음’은 같은 출발·목적지에서 한 번만
+      var k = b.kind === 'noLink' && !b.residentId ? 'noLink' + p.o + p.d : (b.pid || 'n' + b.node + b.t) + b.kind;
       if (seen[k] || picked.length >= MAX_BUBBLES) return;
       seen[k] = true;
       picked.push(b);

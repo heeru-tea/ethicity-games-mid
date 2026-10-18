@@ -114,8 +114,8 @@ body[data-screen="title"] #topbar, body[data-screen="title"] #screen-game { disp
 .bus-g rect { stroke: #fff; stroke-width: 2; }
 .bus-g text { fill: #fff; font-size: 11px; font-weight: 800; }
 .pass-ring { fill: var(--bg); stroke-width: 3; }
-.flash { animation: flash 1.2s ease-out; }
-@keyframes flash { from { opacity: 1; } to { opacity: 0.2; } }
+.flash .stop-dot { animation: flash 1.2s ease-out; }
+@keyframes flash { from { stroke: #9A3412; stroke-width: 8px; } to { stroke: #1A1D24; stroke-width: 2px; } }
 
 /* 말풍선(무대 위) */
 .bubble { position: absolute; transform: translate(-50%, -110%); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-in); padding: 4px 8px; font-size: 0.8rem; max-width: 14rem; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
@@ -180,3 +180,10 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 @media (max-width: 1100px) { .goal-row { grid-template-columns: 1fr; } }
 
 h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outline: none; }
+
+/* 운행·결과 */
+.feed { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+.feed li { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.feed-event { font-weight: 700; }
+.feed-full { color: var(--warn); }
+#zone-table tfoot th, #zone-table tfoot td { font-weight: 700; border-top: 2px solid var(--border); }

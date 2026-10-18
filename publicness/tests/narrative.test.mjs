@@ -112,3 +112,13 @@ test('storage reads player and writes only the team result key', () => {
   assert.equal(St.readPlayer({ getItem: () => '{"nick' }), null);
   assert.equal(St.readPlayer({ getItem: () => '{"nickname":["x"]}' }), null);
 });
+
+test('non-resident no-link bubbles appear once per origin-destination pair', () => {
+  const s = S.create(cfg, { mode: 'default' });
+  S.beginPlan(s);
+  const res = S.startRun(s);
+  const bs = N.bubbles(res, cfg, 120).filter((b) => b.kind === 'noLink' && !b.residentId);
+  const pairs = bs.map((b) => { const p = res.passengers.find((x) => x.id === b.pid); return p.o + p.d; });
+  assert.equal(new Set(pairs).size, pairs.length);
+  assert.ok(N.bubbles(res, cfg, 120).some((b) => b.kind === 'wait'), '기다림 말풍선도 섞인다');
+});
