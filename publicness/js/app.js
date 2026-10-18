@@ -54,8 +54,9 @@
     var panel = $('#panel');
     panel.innerHTML = '';
     var fn = screen === 'reveal' ? renderReveal : (PB.UI && PB.UI[screen]);
-    if (fn) fn(App, panel);
-    App.syncStage();
+    App.onNodeClick = null;
+    var stageOpts = fn ? fn(App, panel) : null;
+    App.syncStage(stageOpts || {});
     renderTextRoutes();
     var h = panel.querySelector('h2');
     if (h && !App.keepFocus) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
@@ -105,7 +106,7 @@
     if (!opts.keepBuses) {
       v.setBuses(s.draft.buses.map(function (b) {
         var a = nodeXY(cfg.bus.depot);
-        return { id: b.id, x: a.x, y: a.y, dx: (b.id - 2.5) * 9, dy: 22, color: b.routeNum != null ? routeStyle(b.routeNum).color : '#6B7280' };
+        return { id: b.id, x: a.x, y: a.y, dx: -30, dy: -24 - (b.id - 1) * 21, color: b.routeNum != null ? routeStyle(b.routeNum).color : '#6B7280' };
       }));
       v.setWaiting({});
     }
