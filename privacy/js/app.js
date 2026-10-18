@@ -202,6 +202,7 @@
   function lineNode(line) {
     var who = line.who || 'narr';
     var li;
+    if (line.kind === 'image' && line.photo) { li = el('li', 'ln media'); li.appendChild(photoNode(line)); return li; }
     if (line.kind === 'image') {
       li = el('li', 'ln media');
       var box = el('div', 'media-box');
@@ -237,6 +238,24 @@
     body.appendChild(bubble);
     li.appendChild(body);
     return li;
+  }
+
+  /* 대화방에 올라온 사진: 흐리게 가려 두고, 플레이어가 눌러야 보인다(무엇을 볼지 스스로 고르게).
+   * line.photo = 납품 사진 경로. tools/to-webp.mjs로 webp 목록에 오르기 전엔 line.placeholder(맵 그림)를 쓴다 → 없는 파일 요청 없음 */
+  function photoNode(line) {
+    var real = !!(window.PRIVACY_WEBP || {})[line.photo];
+    var fig = el('figure', 'photo blurred' + (real ? '' : ' pixel'));
+    var im = document.createElement('img');
+    im.alt = line.alt || fill(line.text);
+    im.decoding = 'async';
+    window.PrivacyImg.load(im, real ? line.photo : line.placeholder);
+    fig.appendChild(im);
+    var btn = el('button', 'photo-reveal', '눌러서 보기');
+    btn.type = 'button';
+    btn.addEventListener('click', function () { fig.classList.remove('blurred'); btn.remove(); });
+    fig.appendChild(btn);
+    fig.appendChild(el('figcaption', null, fill(line.text)));
+    return fig;
   }
 
   function stopReveal() {

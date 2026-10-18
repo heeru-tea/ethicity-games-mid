@@ -418,6 +418,23 @@
       ok(rpt.y < pr.top && rpt.x > sr.left && rpt.x < sr.right, '좁아진 뒤에도 주인공이 폰 위에 보임 ' + JSON.stringify([Math.round(rpt.x), Math.round(rpt.y), Math.round(pr.top)]));
     }
 
+    else if (s === 'photo') { // 민준이 엎드려 자는 사진: 흐리게 올라오고, 눌러야 보인다
+      $('#btn-new').click();
+      await play(R.A, { upto: 4 });
+      ok(PrivacyApp.state().scene === 'c1_e2_b', '사진을 받은 도현 개인 대화');
+      var ph = $('#g-log .photo');
+      ok(!!ph && ph.classList.contains('blurred'), '사진은 흐리게 가려진 채 올라옴');
+      var pim = ph && ph.querySelector('img');
+      ok(!!pim && /minjun_sleep\.(png|webp)/.test(pim.getAttribute('src') || '') && !!pim.alt, '납품 전엔 맵 그림(엎드린 민준)으로 대신·대체 텍스트: ' + (pim && pim.getAttribute('src')));
+      ok(!/보여 주지 않아요/.test($('#g-log').textContent), '“보여 주지 않아요” 문구 없음');
+      var rv = ph && ph.querySelector('.photo-reveal');
+      ok(!!rv && /눌러서 보기/.test(rv.textContent), '눌러서 보기 버튼');
+      if (rv) rv.click();
+      await wait();
+      ok(!ph.classList.contains('blurred') && !ph.querySelector('.photo-reveal'), '누르면 선명해지고 버튼은 사라짐');
+      ok($$('#g-dock .choice').length > 0, '선택지는 그대로');
+    }
+
     else if (s === 'name-input') { // 공통 플레이어 정보가 없을 때 이 게임에서만 이름 입력
       var SK = 'ethicity.privacy.settings.v1';
       function typeName(v) { var f = $('#name-input'); f.value = v; f.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -958,6 +975,7 @@
     }
 
     else if (s.indexOf('shot-') === 0) { // 스크린샷용: 특정 지점까지 진행 후 멈춤(결과 출력 없음)
+      if (s === 'shot-photo') { $('#btn-new').click(); await play(R.A, { upto: 4 }); await wait(600); return; } // 도현 DM의 흐린 사진
       if (s === 'shot-start-noname') { await wait(300); return; } // 공통 정보 없는 시작 화면(이름 입력칸)
       if (/^shot-nf-/.test(s)) { // 렌즈 안에 갇힌 밤: 대치(선택지) · 촬영(REC) · 교실 반응(선택지)
         var nr = nfRoute(R, NF_FIGHT);

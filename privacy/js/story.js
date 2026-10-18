@@ -10,6 +10,7 @@
  *   { who:'hayun', text:'…', if:'e1=public' }   → 조건이 맞을 때만 표시
  *   { who:'anon', kind:'post', text:'…', meta:'좋아요 41' }  → SNS 게시물 카드
  *   { kind:'image', text:'…' }                   → 이미지 자리(실제 이미지는 보여 주지 않음)
+ *   { kind:'image', text, photo, placeholder, alt } → 흐리게 올라오는 사진(눌러서 보기). photo가 webp 목록에 없으면 placeholder
  *   { kind:'setting', text:'대화 기록 저장', meta:'켜짐' } → 설정 화면 한 줄
  *   {name} 은 플레이어 별명으로 바뀐다(텍스트로만 표시).
  *   CG(전체 화면 그림, 장소 장면만): view.cg = 장면 첫 그림, 줄에 cg:'clash' → 그 줄부터 그림 교체
@@ -332,7 +333,7 @@
         view: { type: 'dm', title: '도현' },
         lines: [
           'sys: D-3 · 저녁 9:03',
-          { kind: 'image', text: '민준이가 엎드려 자는 사진 (게임에서는 이미지를 보여 주지 않아요)' },
+          { kind: 'image', text: '민준이가 엎드려 자는 사진', alt: '교실 책상에 엎드려 자는 민준', photo: 'assets/photos/minjun-sleep.png', placeholder: 'assets/sprites/minjun_sleep.png' },
           'dohyun: 이거 스토리 올려도 되지? 아님 반톡?',
           { who: 'dohyun', text: '부스 홍보 계정에 올려도 웃기겠다 ㅋㅋ', if: 'role=sns' },
           { who: 'narr', text: '민준이는 분명 “올리진 마”라고 했다.', if: 'e2shot=asked' }
