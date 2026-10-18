@@ -418,8 +418,36 @@
       ok(rpt.y < pr.top && rpt.x > sr.left && rpt.x < sr.right, '좁아진 뒤에도 주인공이 폰 위에 보임 ' + JSON.stringify([Math.round(rpt.x), Math.round(rpt.y), Math.round(pr.top)]));
     }
 
+    else if (s === 'name-input') { // 공통 플레이어 정보가 없을 때 이 게임에서만 이름 입력
+      var SK = 'ethicity.privacy.settings.v1';
+      function typeName(v) { var f = $('#name-input'); f.value = v; f.dispatchEvent(new Event('input', { bubbles: true })); }
+      if (P.phase === 0) {
+        ok(!!$('#name-field') && !$('#name-field').hidden, '공통 정보가 없으면 이름 입력칸 보임');
+        ok($('#player-name').textContent === '플레이어', '비워 두면 기본 이름');
+        typeName('<b>x</b>');
+        ok(!$('#player-name b') && $('#player-name').textContent === '<b>x</b>', '이름은 글자로만 표시');
+        typeName('  가나다라마바사아자차카  ');
+        ok($('#player-name').textContent === '가나다라마바사아자차', '앞뒤 공백 제거·10자까지: ' + $('#player-name').textContent);
+        typeName('지우');
+        ok($('#player-name').textContent === '지우', '입력한 이름 표시');
+        ok(ls('ethicity.player') === null, '공통 플레이어 키는 만들지 않음');
+        ok(JSON.parse(ls(SK) || '{}').nickname === '지우', '이 게임 설정에만 저장');
+        typeName('   ');
+        ok($('#player-name').textContent === '플레이어', '공백만 지우면 기본 이름으로');
+        typeName('지우');
+        sessionStorage.setItem('probe-phase', '1'); carry(); location.reload(); return;
+      }
+      ok($('#name-input').value === '지우' && $('#player-name').textContent === '지우', '새로고침해도 이름 유지');
+      $('#btn-new').click();
+      await play(R.A, { upto: 0 });
+      ok(/지우, 너는 뭐 맡을래/.test($('#g-log').textContent), '대사 {name}에 입력한 이름');
+      ok(ls('ethicity.player') === null, '플레이 뒤에도 공통 키 그대로(없음)');
+      sessionStorage.removeItem('probe-phase'); sessionStorage.removeItem('probe-carry');
+    }
+
     else if (s === 'title') {
       ok(view() === 'v-start', '시작 화면');
+      ok(!!$('#name-field') && $('#name-field').hidden, '공통 플레이어 정보가 있으면 이름 입력칸 숨김');
       ok(!$('.start-phone'), '메신저 푸시 알림 장식 없음');
       ok(/단톡방 28명, 스토리 조회 312회, 캡처 1장/.test($('#v-start').textContent), '훅 문장 유지');
       var imgs = $$('#look-pick .hero-card img');
@@ -930,6 +958,7 @@
     }
 
     else if (s.indexOf('shot-') === 0) { // 스크린샷용: 특정 지점까지 진행 후 멈춤(결과 출력 없음)
+      if (s === 'shot-start-noname') { await wait(300); return; } // 공통 정보 없는 시작 화면(이름 입력칸)
       if (/^shot-nf-/.test(s)) { // 렌즈 안에 갇힌 밤: 대치(선택지) · 촬영(REC) · 교실 반응(선택지)
         var nr = nfRoute(R, NF_FIGHT);
         $('#btn-new').click();

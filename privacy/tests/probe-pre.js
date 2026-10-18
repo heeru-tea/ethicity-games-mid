@@ -24,6 +24,8 @@
   Object.keys(OTHER).forEach(function (k) { localStorage.setItem(k, OTHER[k]); });
   var instant = '{"speed":"instant","reduceMotion":true,"look":"f"}';
   switch (scenario) {
+    case 'shot-start-noname':
+    case 'name-input': localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'no-player': localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'damaged-player': window.__probe.PLAYER = '{"character":"char_03","nick'; localStorage.setItem('ethicity.player', window.__probe.PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'wrong-player': window.__probe.PLAYER = '{"character":42,"nickname":["x"]}'; localStorage.setItem('ethicity.player', window.__probe.PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;

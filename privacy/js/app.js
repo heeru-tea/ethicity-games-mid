@@ -21,7 +21,10 @@
   /* ── 상태 ───────────────────────── */
   var player = S.readPlayer(CFG.defaultNickname);
   var progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };
-  var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false };
+  var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false, nickname: '' };
+  var NAME_MAX = 10;
+  // 이 게임에서만 쓰는 이름(공통 플레이어 정보가 없을 때). 제어 문자·앞뒤 공백을 빼고 10자까지
+  function cleanName(v) { return typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, NAME_MAX) : ''; }
   var revealTimer = null, revealQueue = [], revealDone = null;
   var pathBack = 'v-start', reflectBack = 'v-start';
   var noticeMsgs = [];
@@ -60,9 +63,12 @@
       settings.reduceMotion = !!st.reduceMotion;
       settings.sound = st.sound === true;
       if (st.look === 'm' || st.look === 'f') settings.look = st.look;
+      settings.nickname = cleanName(st.nickname);
     } else if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       settings.reduceMotion = true;
     }
+    // 공통 플레이어 정보(ethicity.player)가 있으면 그 별명이 우선. 없을 때만 이 게임에서 적은 이름을 쓴다(공통 키에는 쓰지 않음)
+    if (player.source !== 'stored' && settings.nickname) player.nickname = settings.nickname;
     if (!S.status.available) noticeMsgs.push('이 브라우저에서는 저장할 수 없어요. 플레이는 되지만, 창을 닫으면 진행이 사라져요.');
   }
   function saveProgress() {
@@ -154,6 +160,9 @@
     var img = $('player-avatar');
     img.src = playerAvatarSrc();
     img.alt = isOfficialAvatar() ? '내 캐릭터' : '임시 아바타';
+    var nameField = $('name-field');
+    nameField.hidden = player.source === 'stored';
+    if (!nameField.hidden && document.activeElement !== $('name-input')) $('name-input').value = settings.nickname;
     var note = $('player-note');
     if (player.source === 'damaged') { note.hidden = false; note.textContent = '공통 캐릭터 정보를 읽지 못해 기본 아바타와 ‘' + CFG.defaultNickname + '’로 시작해요.'; }
     else if (player.source === 'default') { note.hidden = false; note.textContent = '공통 캐릭터 정보가 없어 기본 아바타로 시작해요.'; }
@@ -887,6 +896,13 @@
       } else startNew();
     });
     $('btn-continue').addEventListener('click', function () { if (needLook()) return; routeRun(false); });
+    $('name-input').addEventListener('input', function () {
+      settings.nickname = cleanName($('name-input').value);
+      player.nickname = settings.nickname || CFG.defaultNickname;
+      $('player-name').textContent = player.nickname;
+      $('player-name').title = player.nickname;
+      saveSettings();
+    });
     $('btn-start-path').addEventListener('click', function () { renderPath('v-start'); });
     $('btn-start-reflect').addEventListener('click', function () { renderReflect('v-start'); });
     $('btn-chapter-go').addEventListener('click', function () { setRun(E.advance(story, progress.run)); routeRun(true); });
