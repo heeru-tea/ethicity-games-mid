@@ -508,7 +508,6 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .cg.shake .cg-img { animation: cg-shake .36s ease-out 1; }
 @keyframes cg-shake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-7px, 2px); } 45% { transform: translate(6px, -2px); } 70% { transform: translate(-3px, 1px); } }
 @media (max-width: 720px) { .cg { padding-bottom: clamp(132px, 30%, 176px); } .cg-rec { inset: 6% 4%; padding: 6px 10px; font-size: .7rem; } }
-.content-note { max-width: 34rem; margin: 12px 0 0; line-height: 1.6; word-break: keep-all; }
 .name-field { display: grid; gap: 4px; max-width: 16rem; margin: 4px 0 16px; }
 .name-field[hidden] { display: none; }
 .name-label { font-size: .85rem; font-weight: 700; }
@@ -531,3 +530,13 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .cg-on .talk-name { font-size: .95rem; }
 .cg-on #v-game .choice-text { font-size: 1.08rem; }
 @media (max-width: 720px) { .cg-on .talk-text { font-size: 1.15rem; line-height: 1.7; } .cg-on #v-game .choice-text { font-size: 1rem; } }
+/* 시작 직후 주의 화면(암전) */
+.warning { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 24px 16px; background: #060708; color: #E9ECEB; animation: warning-in .7s ease-out; }
+.warning[hidden] { display: none; }
+.warning-inner { max-width: 40rem; display: grid; gap: 14px; text-align: center; word-break: keep-all; line-height: 1.75; }
+.warning-title { margin: 0 0 6px; font-family: var(--pixel); font-size: clamp(1.8rem, 6vw, 2.6rem); letter-spacing: .32em; color: #F2A33A; }
+.warning-lead { margin: 0; font-size: 1.15rem; font-weight: 700; }
+.warning-text, .warning-help { margin: 0; color: #B9C1BE; }
+.warning-help strong { color: #fff; }
+.warning-ok { justify-self: center; margin-top: 12px; min-width: 10rem; }
+@keyframes warning-in { from { opacity: 0; } to { opacity: 1; } }

@@ -1,6 +1,11 @@
 // 프로브(앱 뒤에 실행): 실제 화면 버튼을 눌러 플레이하고 결과를 <pre id="probe-out">에 남긴다.
 (function () {
   var P = window.__probe;
+  // 시작 직후 주의 화면은 'warning' 시나리오만 직접 확인하고, 나머지 시나리오에선 바로 '확인'을 누른다
+  if (!/warning/.test(P.scenario)) new MutationObserver(function () {
+    var w = document.getElementById('warning');
+    if (w && !w.hidden) { var b = document.getElementById('btn-warning-ok'); if (b) b.click(); }
+  }).observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['hidden'] });
   var carried = JSON.parse(sessionStorage.getItem('probe-carry') || '{"pass":[],"fail":[]}');
   var pass = carried.pass, fail = carried.fail;
   function carry() { sessionStorage.setItem('probe-carry', JSON.stringify({ pass: pass, fail: fail })); }
@@ -144,8 +149,8 @@
     ok(!/야차룰|승리|콤보|체력바/.test(text), '이야기에 싸움을 경기처럼 보이게 하는 말 없음');
     if (s === 'nf-flow') { // 여 주인공 · 한 번에+움직임 줄이기(기본 프로브 설정) → 줄 단위 보려고 보통 속도
       ok(!!$('#cg') && $('#cg').hidden, 'CG 레이어는 처음엔 숨김');
-      var note = ($('#content-note') || {}).textContent || '';
-      ok(/지어낸 이야기/.test(note) && /1388/.test(note) && /117/.test(note) && /118/.test(note), '시작 화면 콘텐츠 안내·도움 연락처: ' + note.slice(0, 40));
+      var note = ($('#warning') || {}).textContent || '';
+      ok(/가상/.test(note) && /1388/.test(note) && /117/.test(note) && /118/.test(note), '주의 화면 안내·도움 연락처: ' + note.slice(0, 40));
       var log = nfWatch();
       $('#btn-new').click();
       await play(route, { upto: 13 });
@@ -428,6 +433,29 @@
       ok(pr.top > sr.top + 60, '폰 위로 맵이 보임');
       var rme = PrivacyMap.debug.me(), rpt = PrivacyMap.debug.tileToClient(rme.x, rme.y);
       ok(rpt.y < pr.top && rpt.x > sr.left && rpt.x < sr.right, '좁아진 뒤에도 주인공이 폰 위에 보임 ' + JSON.stringify([Math.round(rpt.x), Math.round(rpt.y), Math.round(pr.top)]));
+    }
+
+    else if (s === 'warning') { // 시작하자마자 어두운 화면의 주의 안내(가상 상황 고지·다루는 장면·도움 연락처)
+      if (P.phase === 0) {
+        ok(!$('#content-note'), '시작 화면 아래 작은 안내는 주의 화면으로 옮김');
+        $('#btn-new').click(); await wait(50);
+        var w = $('#warning');
+        ok(!!w && !w.hidden, '시작하기 → 주의 화면');
+        ok(!!w && getComputedStyle(w).position === 'fixed' && /rgb\(\s*[0-2]?\d,\s*[0-2]?\d,\s*[0-2]?\d/.test(getComputedStyle(w).backgroundColor), '화면 전체를 덮는 어두운 배경: ' + (w && getComputedStyle(w).backgroundColor));
+        var wt = w ? w.textContent : '';
+        ok(/WARNING/.test(wt) && /가상/.test(wt) && /실제와 관계없/.test(wt), '가상 상황 고지: ' + wt.slice(0, 60));
+        ok(/1388/.test(wt) && /117/.test(wt) && /118/.test(wt), '도움 연락처');
+        ok(document.activeElement === $('#btn-warning-ok'), '확인 버튼에 포커스(키보드 Enter로 진행)');
+        await wait(3000);
+        ok(!w.hidden && view() === 'v-start', '읽기 전엔 저절로 넘어가지 않음');
+        $('#btn-warning-ok').click(); await wait(50);
+        ok(w.hidden && view() === 'v-map', '확인하면 게임 시작(등교 맵)');
+        sessionStorage.setItem('probe-phase', '1'); carry(); location.reload(); return;
+      }
+      ok(!$('#btn-continue').hidden, '진행 저장됨');
+      $('#btn-continue').click(); await wait(50);
+      ok($('#warning').hidden && view() !== 'v-start', '이어 하기는 주의 화면 없이 바로');
+      sessionStorage.removeItem('probe-phase'); sessionStorage.removeItem('probe-carry');
     }
 
     else if (s === 'chat-face') { // 단톡·개인 대화 프로필에 친구 얼굴 그림(이니셜 대신)
@@ -1010,6 +1038,7 @@
     }
 
     else if (s.indexOf('shot-') === 0) { // 스크린샷용: 특정 지점까지 진행 후 멈춤(결과 출력 없음)
+      if (s === 'shot-warning') { $('#btn-new').click(); await wait(1200); return; } // 시작 직후 주의 화면
       if (s === 'shot-photo') { $('#btn-new').click(); await play(R.A, { upto: 4 }); await wait(600); return; } // 도현 DM의 흐린 사진
       if (s === 'shot-start-noname') { await wait(300); return; } // 공통 정보 없는 시작 화면(이름 입력칸)
       if (/^shot-nf-/.test(s)) { // 렌즈 안에 갇힌 밤: 대치(선택지) · 촬영(REC) · 교실 반응(선택지)
