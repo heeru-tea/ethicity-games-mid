@@ -273,6 +273,8 @@ body[data-view="v-chapter"] .hud { display: none; }
   background: rgba(22, 32, 31, .82); color: #fff; font-size: .9rem; text-align: center;
 }
 .m-say:empty { display: none; }
+.m-say { transition: opacity .5s ease; }
+.m-say.fade-out { opacity: 0; }
 .daycard {
   position: absolute; inset: 0; z-index: 6; margin: 0; display: grid; place-items: center;
   background: rgba(22, 32, 31, .78); color: #fff; font-family: var(--pixel); font-size: 1.4rem;

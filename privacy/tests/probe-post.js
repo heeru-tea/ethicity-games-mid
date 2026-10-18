@@ -318,8 +318,14 @@
       ok(/내 방/.test($('#m-area').textContent), '내 방에서 시작: ' + $('#m-area').textContent);
       ok(/방향키/.test($('#m-say').textContent), '첫 걸음 안내: ' + $('#m-say').textContent);
       ok(/교실/.test($('#m-mission').textContent), '지금 할 일: ' + $('#m-mission').textContent);
-      var ow = { walk: true, areas: [] };
+      var ow = { walk: true, areas: [] }, tOut = null, tGone = null;
+      new MutationObserver(function () {
+        var tx = $('#m-say').textContent, now = performance.now();
+        if (tOut == null && /밖으로 나왔다/.test(tx)) tOut = now;
+        else if (tOut != null && tGone == null && !/밖으로 나왔다/.test(tx)) tGone = now;
+      }).observe($('#m-say'), { childList: true, characterData: true, subtree: true });
       await walkToTarget(ow);
+      ok(tOut != null && tGone != null && tGone - tOut <= 2600, '“밖으로 나왔다”는 잠깐 뜨고 사라짐: ' + (tGone != null && tOut != null ? Math.round(tGone - tOut) + 'ms' : '안 사라짐'));
       var oseq = ow.areas.join('>');
       ok(/우리 집 앞.*마을 길.*교문.*복도.*2학년 3반 교실/.test(oseq), '집→마을 길→교문→복도→교실: ' + oseq);
       ok($('#m-say').textContent.indexOf('방향키') < 0, '걷기 시작하면 첫 안내가 사라짐');

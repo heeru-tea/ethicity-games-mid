@@ -234,7 +234,7 @@
   function finishStep() {
     me.moving = false;
     me.x = me.to.x; me.y = me.to.y;
-    if (me.door) { me.x = me.door.to[0]; me.y = me.door.to[1]; me.dir = me.door.dir; say(me.door.label === '집 안으로' ? '우리 집에 들어왔다.' : '밖으로 나왔다.'); }
+    if (me.door) { me.x = me.door.to[0]; me.y = me.door.to[1]; me.dir = me.door.dir; flashSay(me.door.label === '집 안으로' ? '우리 집에 들어왔다.' : '밖으로 나왔다.'); }
     me.fx = me.x; me.fy = me.y;
     me.frame = (me.frame + 1) % 4;
     me.walked = (me.walked || 0) + 1; // 걸은 칸 수: 걷기 동작을 칸이 바뀌어도 이어 가게
@@ -326,9 +326,21 @@
     } });
   }
   // 짧은 안내(문 드나들기·길 안내)는 대화창 대신 무대 위 한 줄로
+  var sayTimer = null;
   function say(text, speaker) {
+    clearTimeout(sayTimer);
+    $('m-say').classList.remove('fade-out');
     if (text && speaker) setBubble(speaker, text);
     rich($('m-say'), text || '');
+  }
+  // 잠깐 알리는 말(문 드나들기 등): 1.3초 보인 뒤 0.5초에 걸쳐 사라진다(움직임 줄이기면 바로)
+  function flashSay(text) {
+    say(text);
+    var n = $('m-say');
+    sayTimer = setTimeout(function () {
+      n.classList.add('fade-out');
+      sayTimer = setTimeout(function () { if (n.textContent === text) say(''); else n.classList.remove('fade-out'); }, o.reduceMotion() ? 0 : 500);
+    }, 1300);
   }
   function updateHint() {
     var near = nearTarget();
