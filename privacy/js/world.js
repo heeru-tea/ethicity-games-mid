@@ -205,6 +205,7 @@
       cast: [{ who: 'dohyun', x: 18, y: 19, dir: 'down' }, { who: 'teacher', x: 11, y: 12, dir: 'down' }],
       castLines: { teacher: '고생 많았어. 이제 집에 가서 푹 쉬렴.' } }, // 축제가 끝난 저녁
     c3_e9_a: { time: '축제 다음 날 · 오전', mission: '교실에서 하윤이에게 말 걸기', target: { npc: 'hayun' }, spawn: 'gate', tint: 'day',
+      skipIf: 'e8_confrontation=fight', // 싸움 경로는 이미 다음 날 교실·상담실 장면을 거쳤다 → 걷기 생략
       cast: schoolDay() },
     ep_1: { time: '다음 주 월요일', mission: '교실에서 담임 선생님께 가기', target: { npc: 'teacher' }, spawn: 'gate', tint: 'day',
       cast: [{ who: 'teacher', x: 6, y: 1, dir: 'down' }].concat(schoolDay()) }
@@ -272,6 +273,14 @@
       bubbles: [{ on: '좀 무서워', who: 'minjun', text: '😰' }] },
     c3_e8_a: { place: 'room', tint: 'evening', me: ATDESK, pcOn: true, device: 'monitor', cast: [] },
     c3_e8_b: { place: 'room', tint: 'night', cast: [] },
+    // 사건 8 현장 「렌즈 안에 갇힌 밤」: CG가 무대를 덮는다(장소는 CG 뒤 배경·컷 카드용)
+    c3_e8_c: { place: 'gate', tint: 'night', card: '저녁 9:00 · 학교 정문 앞', cast: [] },
+    c3_e8_d: { place: 'gate', tint: 'night', cast: [] },
+    c3_e8_e: { place: 'room', tint: 'night', card: '그날 밤 · 내 방', cast: [] },
+    c3_e8_f: { place: 'classroom', tint: 'day', card: '축제 다음 날 · 아침', cast: classmates },
+    c3_e8_g: { place: 'classroom', tint: 'day', cast: classmates },
+    c3_e8_i: { place: 'classroom', tint: 'day', cast: classmates },
+    c3_e8_h: { place: 'hall', tint: 'day', card: '상담실 앞', cast: [] },
     c3_e9_a: { place: 'classroom', tint: 'day', cast: classmates,
       bubbles: [{ on: '다들 퍼 가 주세요', who: 'seoa', text: '…!' }, { on: '당하고만 있으면 안 돼', who: 'hayun', text: '😤' }] },
     c3_e9_b: { place: 'classroom', tint: 'day', card: '점심시간 · 교실', cast: only(classmates, ['hayun', 'seoa']),

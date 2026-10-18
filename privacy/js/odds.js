@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  var ODDS = { A: 1.5, B: 64.9, C: 3.8, D: 29.9 };
+  var ODDS = { A: 1.5, B: 69.8, C: 4.2, D: 24.5 };
   root.PRIVACY_ODDS = ODDS;
   if (typeof module !== 'undefined' && module.exports) module.exports = ODDS;
 })(typeof window !== 'undefined' ? window : globalThis);
