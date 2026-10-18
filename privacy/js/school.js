@@ -3,6 +3,9 @@
   'use strict';
   var assets = {}, wood = null;
   var names = ['exterior', 'desk', 'teacher-desk', 'bookcase', 'locker', 'board', 'window', 'pc', 'wood'];
+  var doors = [{x:8,y:7,kind:'classroom',open:false,w:0.96,h:1.72},
+    {x:15,y:7,kind:'library',open:false,w:1.15,h:1.63}];
+  doors.forEach(function (d) { ['closed','open'].forEach(function (s) { names.push('door-' + d.kind + '-' + s); }); });
   function contains(x, y) { return x >= 0 && x < 22 && y >= 0 && y < 11; }
   names.forEach(function (name) {
     var im = new Image();
@@ -30,7 +33,9 @@
       } catch (_) { /* Full-image fallback for file:// pixel restrictions. */ }
       assets[name] = { image: im, box: b };
     };
-    window.PrivacyImg.load(im, 'assets/school/' + name + '.png');
+    if (name.indexOf('door-') === 0) im.src = 'assets/school-entry/' + name + '.png';
+    else if (name === 'desk') im.src = 'assets/school/desk-rear.png';
+    else window.PrivacyImg.load(im, 'assets/school/' + name + '.png');
   });
   function sprite(ctx, name, x, y, w, h, tile, cam) {
     var a = assets[name]; if (!a) return false;
@@ -68,6 +73,12 @@
       ctx.fillStyle = '#a58a65'; ctx.fillRect(0, h - tile * 0.09, w, tile * 0.07);
       ctx.fillStyle = '#697f71'; ctx.fillRect(0, h - 2, w, 2);
     } else if (ch === 'd') {
+      var entry = doors.find(function (d) { return d.x === x && d.y === y; });
+      if (entry && assets['door-' + entry.kind + '-closed'] && assets['door-' + entry.kind + '-open']) {
+        // The open doorway exposes the floor, never the old painted door.
+        ctx.fillStyle = '#e4e7df'; ctx.fillRect(0, 0, w, h);
+        ctx.restore(); return true;
+      }
       ctx.fillStyle = '#c0a681'; ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = '#f1f0e6'; ctx.fillRect(w * 0.08, h * 0.06, w * 0.84, h * 0.84);
       ctx.fillStyle = '#9bbbc0'; ctx.fillRect(w * 0.17, h * 0.15, w * 0.66, h * 0.43);
@@ -77,20 +88,15 @@
     } else { ctx.restore(); return false; }
     ctx.restore(); return true;
   }
-  // 학생 책상: 원본은 의자가 책상 뒤(교탁과 같은 방향)라, 책상과 의자 등받이를 잘라 의자를 앞(아래)에 놓는다
-  // → 학생이 칠판·교탁을 보고 앉은 모습. 원본 PNG는 그대로.
+  // 칠판을 보는 방향으로 그린 책상·의자 전체를 한 번에 표시한다.
+  // 등받이만 잘라 이동하면 좌판·다리와 원근이 분리되므로 분할하지 않는다.
   function studentDesk(ctx, x, bottom, tile, cam) {
     var a = assets.desk; if (!a) return false;
-    var im = a.image, W = im.naturalWidth, H = im.naturalHeight, b = a.box;
-    var kx = 1 / b[2], ky = 1.15 / b[3];            // 예전과 같은 크기 비율(폭 1칸·높이 1.15칸)
-    var dy0 = Math.round(H * 0.26);                    // 책상 부분: 의자 등받이 아래부터
-    var dh = (b[1] + b[3] - dy0) * ky;
-    ctx.drawImage(im, b[0], dy0, b[2], b[1] + b[3] - dy0,
-      Math.round(x * tile - cam.x), Math.round((bottom - dh) * tile - cam.y), Math.round(tile), Math.round(dh * tile));
-    var cx0 = Math.round(W * 0.3), cw = Math.round(W * 0.4), cy0 = b[1], ch = Math.round(H * 0.235) - b[1];
-    var w = cw * kx, h = ch * ky;                      // 의자 등받이(뒤에서 본 모습)를 책상 앞쪽에 겹쳐
-    ctx.drawImage(im, cx0, cy0, cw, ch,
-      Math.round((x + (1 - w) / 2) * tile - cam.x), Math.round((bottom + 0.08 - h) * tile - cam.y), Math.round(w * tile), Math.round(h * tile));
+    var b = a.box, w = Math.min(1, 1.15 * b[2] / b[3]), h = w * b[3] / b[2];
+    var smooth = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = true;
+    sprite(ctx, 'desk', x + (1 - w) / 2, bottom - h, w, h, tile, cam);
+    ctx.imageSmoothingEnabled = smooth;
     return true;
   }
   function object(ctx, ob, tile, cam, pcOn) {
@@ -147,6 +153,22 @@
     ctx.fillStyle = '#e9e7dc'; ctx.fillRect(-cam.x, 8 * tile - cam.y, 22 * tile, 3 * tile);
     ctx.fillStyle = '#759da3'; ctx.fillRect(10 * tile - cam.x, 9 * tile - cam.y, 2 * tile, 2 * tile);
   }
+  function collectDoors(list, ctx, tile, cam, player) {
+    doors.forEach(function (d) {
+      var closed = assets['door-' + d.kind + '-closed'], opened = assets['door-' + d.kind + '-open'];
+      if (!closed || !opened) return;
+      var distance = Math.hypot(player.fx - d.x, player.fy - d.y);
+      if (distance <= 1.6) d.open = true;
+      else if (distance >= 2.1) d.open = false;
+      var name = 'door-' + d.kind + (d.open ? '-open' : '-closed');
+      list.push({y:d.y, fn:function () {
+        ctx.save(); ctx.imageSmoothingEnabled = true;
+        sprite(ctx, name, d.x + (1-d.w)/2, d.y+1-d.h, d.w, d.h, tile, cam);
+        ctx.restore();
+      }});
+    });
+  }
   window.PrivacySchool = { contains: contains, cell: cell, sprite: sprite, object: object, details: details, exterior: exterior,
+    collectDoors: collectDoors,
     ready: function () { return names.every(function (n) { return !!assets[n]; }); } };
 }());

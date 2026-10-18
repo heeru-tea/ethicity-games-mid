@@ -24,6 +24,8 @@
   Object.keys(OTHER).forEach(function (k) { localStorage.setItem(k, OTHER[k]); });
   var instant = '{"speed":"instant","reduceMotion":true,"look":"f"}';
   switch (scenario) {
+    case 'shot-start-noname':
+    case 'name-input': localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'no-player': localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'damaged-player': window.__probe.PLAYER = '{"character":"char_03","nick'; localStorage.setItem('ethicity.player', window.__probe.PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'wrong-player': window.__probe.PLAYER = '{"character":42,"nickname":["x"]}'; localStorage.setItem('ethicity.player', window.__probe.PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
@@ -51,10 +53,16 @@
     case 'no-sprites': // 캐릭터 시트를 못 불러오는 환경 흉내
       var srcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
       Object.defineProperty(HTMLImageElement.prototype, 'src', { configurable: true, get: function () { return srcDesc.get.call(this); },
-        set: function (v) { srcDesc.set.call(this, /char_|minjun_sleep/.test(String(v)) ? 'assets/__missing__.png' : v); } });
+        set: function (v) { srcDesc.set.call(this, /char_|minjun_sleep|characters-v3\//.test(String(v)) ? 'assets/__missing__.png' : v); } });
+      localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
+    case 'nf-resume': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"look":"m"}'); break;
+    case 'nf-noimg': // 나이트폭스 CG를 못 불러오는 환경
+      var nDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+      Object.defineProperty(HTMLImageElement.prototype, 'src', { configurable: true, get: function () { return nDesc.get.call(this); },
+        set: function (v) { nDesc.set.call(this, /nightfox-event/.test(String(v)) ? 'assets/__missing__.png' : v); } });
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'normal-speed': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"look":"m"}'); break;
-    case 'shot-map': case 'shot-road': case 'shot-start': case 'shot-game': case 'shot-react': case 'shot-ending': case 'shot-path': case 'shot-chapter': case 'shot-hood': case 'shot-gate': case 'shot-south': case 'shot-edge': case 'shot-opening': case 'shot-portrait': case 'shot-talk': case 'shot-front':
+    case 'shot-map': case 'shot-road': case 'shot-start': case 'shot-game': case 'shot-react': case 'shot-ending': case 'shot-path': case 'shot-chapter': case 'shot-hood': case 'shot-gate': case 'shot-south': case 'shot-edge': case 'shot-opening': case 'shot-portrait': case 'shot-talk': case 'shot-front': case 'shot-photo': case 'shot-nf-confront': case 'shot-nf-rec': case 'shot-nf-class':
       window.__probe.PLAYER = JSON.stringify({ character: 'char_03', nickname: '반짝이는 고래와 은하수 너머의 친구들' });
       localStorage.setItem('ethicity.player', window.__probe.PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     default: localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant);

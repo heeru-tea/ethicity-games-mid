@@ -10,8 +10,12 @@
  *   { who:'hayun', text:'…', if:'e1=public' }   → 조건이 맞을 때만 표시
  *   { who:'anon', kind:'post', text:'…', meta:'좋아요 41' }  → SNS 게시물 카드
  *   { kind:'image', text:'…' }                   → 이미지 자리(실제 이미지는 보여 주지 않음)
+ *   { kind:'image', text, photo, placeholder, alt } → 흐리게 올라오는 사진(눌러서 보기). photo가 webp 목록에 없으면 placeholder
  *   { kind:'setting', text:'대화 기록 저장', meta:'켜짐' } → 설정 화면 한 줄
  *   {name} 은 플레이어 별명으로 바뀐다(텍스트로만 표시).
+ *   CG(전체 화면 그림, 장소 장면만): view.cg = 장면 첫 그림, 줄에 cg:'clash' → 그 줄부터 그림 교체
+ *     키 arrival|confrontation|clash|recorded 는 주인공(남/여)에 맞춰 boy-/girl- 파일, 그 밖은 그대로 파일명
+ *     rec:true = 촬영 테두리(● REC, 다음 cg 줄에서 꺼짐) · fx:'shake' = 짧은 흔들림(움직임 줄이기면 없음) · fx:'dim' = 화면이 어두워짐
  *
  * ▸ 선택지(choices)
  *   { id, text, say?, react?, set?, add?, next, if? }
@@ -53,6 +57,9 @@
       friend:   { name: '옆 반 친구', initial: '옆' },
       lumi:     { name: '루미 (가상 AI)', initial: 'AI' },
       stranger: { name: '@nightfox', initial: '?' },
+      bystander: { name: '구경꾼', initial: '?' },
+      uploader: { name: '@ssul_zip', initial: '?' },
+      commenter: { name: '익명 댓글', initial: '?' },
       anon:     { name: '@byeolbyeol_', initial: '?' }
     },
     trustable: ['hayun', 'dohyun', 'seoa', 'minjun'],
@@ -142,7 +149,17 @@
         { if: 'e8=crew', text: '친구들을 모아 만나러 가자고 했다.' },
         { if: 'e8=block', text: '위치를 밝히지 않고 대화를 끊었다.' },
         { if: 'e8=tell', text: '대화를 캡처해 두고 보호자에게 알렸다.' },
-        { if: 'alone_meet', text: '약속 장소에 나갔다가 보호자에게 전화해 빠져나왔다.' },
+        { if: 'e8_confrontation=leave || alone_meet&&!e8_confrontation', text: '약속 장소에 나갔다가 보호자에게 전화해 빠져나왔다.' },
+        { if: 'e8_confrontation=withdraw', text: '현장에서 촬영을 멈춰 달라고 말하고 돌아섰다. 촬영은 멈추지 않았지만, 안전한 곳으로 빠져나왔다.' },
+        { if: 'e8_confrontation=fight', text: '현장에서 맞서 싸웠다. 찍지 말라고 했지만 촬영은 계속됐다.' },
+        { if: 'e8_video_spread', text: '편집된 영상이 내 계정 태그와 함께 다른 단톡방까지 퍼졌다.' },
+        { if: 'e8_response=support', text: '싸움에 참여한 것을 인정하고, 영상 재전송 중단과 도움을 요청했다.' },
+        { if: 'e8_response=expose', text: '해명하려고 상대 계정과 대화 캡처를 공개했다.' },
+        { if: 'e8_fix=tidy', text: '공개 글을 정리하고, 필요한 자료만 선생님께 전했다.' },
+        { if: 'e8_fix=keep', text: '해명글을 그대로 두었고, 상대를 찾는 댓글이 늘었다.' },
+        { if: 'e8_response=silence', text: '아무에게도 말하지 않고 알림을 껐다.' },
+        { if: 'e8_reach=accept', text: '먼저 연락해 온 민준이와 함께 선생님께 갔다.' },
+        { if: 'e8_reach=fine', text: '도움을 사양했고, 영상은 그 뒤에도 돌았다.' },
         { if: 'e8b=help', text: '약속 장소에 가지 않고 보호자·선생님과 함께 대응했다.' },
         { if: 'school_visible&&e8!=tell', text: '예전에 올린 스토리의 학교 태그가 상대에게 단서가 됐다.' }
       ] },
@@ -160,7 +177,7 @@
 
     /* 엔딩: 위에서부터 차례로 검사해 처음 맞는 것 하나. 마지막은 조건 없음(기본). */
     endings: [
-      { code: 'D', title: '혼자서는 풀리지 않는 일', if: 'alone_meet || serious>=3',
+      { code: 'D', title: '혼자서는 풀리지 않는 일', if: 'e8_unresolved_threat || serious>=3',
         summary: '문제가 개인이 감당할 크기를 넘어섰다. 보호자와 선생님, 상담 같은 주변의 보호와 지원을 연결해야 하는 일이 됐다.',
         body: [
           '정보 한 조각이 낯선 사람의 손에 닿으면, 그 뒤의 일은 화면 안에서 끝나지 않는다.',
@@ -194,14 +211,16 @@
         '사진을 “찍어도 돼?”와 “올려도 돼?”는 왜 따로 물어야 할까?',
         '친구가 털어놓은 고민을 돕고 싶을 때, 친구의 비밀을 지키면서 도울 방법은 무엇일까?',
         '공용 컴퓨터에 친구 계정이 열려 있었다. “볼 수 있다”와 “봐도 된다”는 무엇이 다를까?',
-        '온라인에서 “직접 보자”는 말을 들었을 때, 용기 있는 행동은 무엇일까?'
+        '온라인에서 “직접 보자”는 말을 들었을 때, 용기 있는 행동은 무엇일까?',
+        '내가 잘못한 행동이 있다면, 다른 사람이 내 정보를 마음대로 퍼뜨려도 되는 걸까?'
       ],
       deep: [
         '공개 계정에 올린 사진을 다른 사람이 합성했다. 공개한 사람에게도 책임이 있다는 말에 어떻게 답할 수 있을까?',
         'AI 도우미에 정보를 넣는 일은 친구에게 말하는 일과 어떤 점이 같고 어떤 점이 다를까? 그 정보의 주인은 누구일까?',
         '잘못된 글을 쓴 사람을 비판하는 것과 그 사람의 신상을 퍼뜨리는 것은 어디서 갈라질까?',
         '“아무 말도 하지 않은 것”도 선택일까? 방관이 확산에 어떤 영향을 줬는지 이 게임의 장면으로 이야기해 보자.',
-        '지운 게시물, 사과, 신고로 되돌릴 수 있는 것과 없는 것은 각각 무엇이었을까?'
+        '지운 게시물, 사과, 신고로 되돌릴 수 있는 것과 없는 것은 각각 무엇이었을까?',
+        '누군가를 돕기 위해 남기는 기록과, 구경거리로 공유하는 영상은 무엇이 다를까?'
       ]
     },
 
@@ -314,7 +333,7 @@
         view: { type: 'dm', title: '도현' },
         lines: [
           'sys: D-3 · 저녁 9:03',
-          { kind: 'image', text: '민준이가 엎드려 자는 사진 (게임에서는 이미지를 보여 주지 않아요)' },
+          { kind: 'image', text: '민준이가 엎드려 자는 사진', alt: '교실 책상에 엎드려 자는 민준', photo: 'assets/photos/minjun-sleep.png', placeholder: 'assets/sprites/minjun_sleep.png' },
           'dohyun: 이거 스토리 올려도 되지? 아님 반톡?',
           { who: 'dohyun', text: '부스 홍보 계정에 올려도 웃기겠다 ㅋㅋ', if: 'role=sns' },
           { who: 'narr', text: '민준이는 분명 “올리진 마”라고 했다.', if: 'e2shot=asked' }
@@ -781,16 +800,165 @@
         choices: [
           { id: 'go', text: '그래도 약속했으니 혼자라도 나간다.',
             set: { alone_meet: true }, add: { serious: 1 },
-            react: ['narr: 9시, 학교 정문. 처음 보는 사람 셋이 서성인다. 휴대폰에 “어디야?” 메시지가 뜬다.',
-              'narr: 다리가 굳었다. 근처 편의점으로 들어가 보호자에게 전화를 걸었다.',
-              'narr: 보호자가 왔고, 그 사람들은 사라졌다. 아무 일도 일어나지 않았지만, 아무 일도 아니었던 건 아니다.'],
-            next: 'c3_e9_a' },
+            react: ['narr: 휴대폰을 주머니에 넣고 집을 나섰다.'],
+            next: 'c3_e8_c' },
           { id: 'help', text: '나가지 않고, 캡처를 모아 보호자와 선생님께 알린다.',
             set: { e8b: 'help' }, add: { help: 1 },
             react: ['guardian: 말해 줘서 다행이야. 그 대화 지우지 말고 둬. 내일 학교랑 같이 신고하자.',
               'narr: 약속 장소에 나가지 않았다. 지는 것 같았지만, 그건 지는 게 아니었다.'],
             next: 'c3_e9_a' }
         ]
+      },
+
+      /* ───────── 3장 · 사건8 현장 「렌즈 안에 갇힌 밤」 ─────────
+       * 싸움은 승패가 아니라 카메라에 초점. 촬영·확산 피해와 싸움을 택한 행동은 따로 다룬다. */
+      c3_e8_c: {
+        chapter: 3, event: 'e8', label: '렌즈 안에 갇힌 밤',
+        view: { type: 'place', title: '렌즈 안에 갇힌 밤 · 학교 정문 앞', cg: 'arrival' },
+        lines: [
+          'narr: 9시, 학교 정문 앞. 가로등 아래 처음 보는 사람 셋이 서 있다. 얼굴은 어둠에 가려 잘 보이지 않는다.',
+          { who: 'stranger', text: '진짜 왔네? 댓글에서는 할 말 많더니.', cg: 'confrontation' },
+          'me: 너도 사람들 앞에서는 말 잘하네.',
+          'bystander: 잠깐, 찍고 있어.',
+          'narr: 한 사람이 휴대폰을 들었다. 화면 속에 내가 보인다.',
+          'narr: 등 뒤로 돌아가는 큰길은 아직 열려 있다.'
+        ],
+        prompt: '어떻게 할까?',
+        choices: [
+          { id: 'leave', text: '사람이 있는 곳으로 이동해 보호자에게 연락한다.',
+            set: { e8_confrontation: 'leave' }, add: { help: 1 },
+            react: ['narr: 대답하지 않고 돌아섰다. 불이 켜진 편의점으로 들어가 보호자에게 전화를 걸었다.',
+              'guardian: 거기 있어. 금방 갈게. 아무도 따라가지 마.',
+              'narr: 보호자가 왔고, 그 사람들은 사라졌다. 아무 일도 일어나지 않았지만, 아무 일도 아니었던 건 아니다.'],
+            next: 'c3_e9_a' },
+          { id: 'withdraw', text: '거리를 둔 채 촬영을 멈춰 달라고 말하고 돌아선다.',
+            say: '찍지 말아 줘. 나 갈게.',
+            set: { e8_confrontation: 'withdraw', e8_recorded: true }, add: { help: 1 },
+            react: ['bystander: 왜? 아직 아무것도 안 했는데 ㅋㅋ',
+              'narr: 휴대폰은 내려가지 않았다. 말 한마디로 멈추게 할 수는 없었다.',
+              'narr: 더 대꾸하지 않고 사람이 많은 큰길 쪽으로 걸어 나왔다. 편의점 앞에서 보호자에게 전화를 걸었다.',
+              'guardian: 잘했어. 거기서 기다려. 찍힌 영상이 올라오면 지우지 말고 바로 알려 줘.'],
+            next: 'c3_e9_a' },
+          { id: 'fight', text: '물러서면 지는 것 같아, 맞서 싸운다.',
+            set: { e8_confrontation: 'fight', e8_recorded: true, e8_video_spread: true },
+            add: { 'trust.hayun': -1, 'trust.minjun': -1, 'trust.dohyun': -1, spread: 1 },
+            react: ['narr: 한 걸음 앞으로 나갔다. 돌아가는 길이 등 뒤로 멀어졌다.'],
+            next: 'c3_e8_d' }
+        ]
+      },
+      c3_e8_d: {
+        chapter: 3, event: 'e8', label: '몸이 부딪친 순간',
+        view: { type: 'place', title: '렌즈 안에 갇힌 밤 · 학교 정문 앞', cg: 'clash' },
+        lines: [
+          { who: 'narr', text: '거리가 순식간에 줄었다. 서로 옷을 붙잡고 밀쳤다.', fx: 'shake' },
+          { who: 'narr', text: '주변 사람들이 휴대폰을 들어 우리 쪽을 향했다.', cg: 'recorded', rec: true },
+          'me: 찍지 마!',
+          'bystander: 밖에서 하는 건데 왜?',
+          'narr: 찍지 말라고 말했다. 촬영은 멈추지 않았다.',
+          'narr: 누가 먼저 무슨 말을 했는지는 화면 밖에 있었다. 몸이 부딪친 순간만 화면 안에 남았다.',
+          { who: 'narr', text: '누군가 소리쳤고, 사람들이 흩어졌다. 바닥에 떨어진 휴대폰 화면만 밝게 빛났다.', fx: 'dim' }
+        ],
+        next: 'c3_e8_e'
+      },
+      c3_e8_e: {
+        chapter: 3, event: 'e8', label: '내 손을 떠난 영상',
+        view: { type: 'sns', title: '스냅로그', meta: '알림' },
+        lines: [
+          'sys: 그날 밤 · 11:48',
+          'sys: 회원님이 언급된 게시물이 있습니다',
+          { who: 'uploader', kind: 'post', text: '솔빛축제 공략 올린 애 실물ㅋㅋ', meta: '영상 0:14 · 회원님 태그됨' },
+          'narr: 영상은 상대가 도발한 뒤부터 시작했다. 내가 앞으로 나가는 장면이 반복된다.',
+          'narr: 얼굴은 흐리게 가려져 있었다. 그래도 가방과 학교 담장, 태그된 내 계정 이름은 그대로였다.',
+          'narr: “실물”이라는 제목은 그날 일을 설명하지 않았다. 올린 사람이 붙인 구경거리 이름이었다.',
+          'sys: 이 게시물이 다른 단톡방에도 전달됐습니다'
+        ],
+        next: 'c3_e8_f'
+      },
+      c3_e8_f: {
+        chapter: 3, event: 'e8', label: '“너 이런 애였어?”',
+        view: { type: 'place', title: '2학년 3반 교실 · 다음 날 아침', cg: 'classroom-reaction' },
+        lines: [
+          'narr: 다음 날 아침. 교실 문을 열자 몇 명이 휴대폰 화면을 내렸다.',
+          'dohyun: 야… 너 이런 애였어? 영상 보고 놀랐어.',
+          { who: 'hayun', text: '다친 데는 없어? 그런데 어제 거기까지 간 건 걱정돼.', if: 'trust.hayun>=0' },
+          { who: 'hayun', text: '…진짜 거기까지 간 거야? 다친 데는 없고?', if: 'trust.hayun<0' },
+          'seoa: 그 영상만 보고 다 안다는 듯이 말하지는 말자.',
+          { who: 'minjun', text: '괜찮아? 밤새 걱정했어…. 나가지 말라고 했잖아. 연락이라도 해 주지.', if: 'trust.minjun>=0' },
+          { who: 'minjun', text: '나가지 말라고 했잖아…. 연락이라도 해 주지.', if: 'trust.minjun<0' },
+          'seoa: 싸운 건 따로 이야기해야겠지만, 그걸 계속 돌려 보는 것도 다른 문제잖아.'
+        ],
+        prompt: '영상은 아직 돌고 있다. 어떻게 할까?',
+        choices: [
+          { id: 'support', text: '싸움에 참여한 건 인정하고, 영상 재전송을 멈춰 달라고 하고 도움을 청한다.',
+            say: '내가 싸움에 참여한 건 잘못했어. 그런데 그 영상을 계속 돌리는 건 멈춰 줬으면 해. 선생님께도 이야기할게.',
+            set: { e8_response: 'support' }, add: { repair: 1, help: 1, 'trust.hayun': 1, 'trust.minjun': 1 },
+            react: ['hayun: 알겠어. 어디에 올라왔는지부터 같이 정리하자.',
+              'dohyun: …나도 받은 거 안 돌릴게. 아까 그렇게 말한 건 미안.',
+              'narr: 몇 명이 전송을 멈췄다. 이미 저장된 영상과 어긋난 사이가 한 번에 사라지지는 않았다.'],
+            next: 'c3_e8_h' },
+          { id: 'expose', text: '상대가 먼저 도발했다는 걸 보여 주려고 계정과 대화 캡처를 공개한다.',
+            set: { e8_response: 'expose' }, add: { spread: 1 },
+            react: ['narr: 상대의 계정 이름과 댓글 캡처를 내 스토리에 올렸다. “먼저 시비 건 건 저쪽”이라고 적었다.'],
+            next: 'c3_e8_g' },
+          { id: 'silence', text: '아무에게도 말하지 않고 관련 알림을 끈다.',
+            set: { e8_response: 'silence' },
+            react: ['narr: 게시물 알림을 껐다. 화면은 조용해졌다. 다른 단톡방의 대화까지 멈춘 것은 아니었다.'],
+            next: 'c3_e8_i' }
+        ]
+      },
+      c3_e8_g: {
+        chapter: 3, event: 'e8', label: '해명글 아래',
+        view: { type: 'sns', title: '스냅로그', meta: '내 스토리' },
+        lines: [
+          'sys: 오전 9:30',
+          { who: 'commenter', kind: 'post', text: '@nightfox 이 사람 어디 학교임? 찾아가자 ㅋㅋ', meta: '내 해명글에 달린 댓글' },
+          'narr: 해명을 위해 올린 글에 상대 계정을 찾는 댓글이 붙었다. 싸움 영상과 내 해명글이 함께 퍼졌다.',
+          'narr: 억울한 걸 말할 권리는 있다. 그런데 지금 이 글은 누구에게, 어디까지 보이고 있을까?'
+        ],
+        prompt: '해명글을 어떻게 할까?',
+        choices: [
+          { id: 'tidy', text: '상대 계정을 가리고 공개 글을 정리한 뒤, 필요한 캡처만 선생님께 전한다.',
+            set: { e8_fix: 'tidy' }, add: { repair: 1, help: 1 },
+            react: ['sys: 스토리가 삭제되었습니다', 'narr: 캡처는 지우지 않고 따로 모아, 선생님께만 보냈다.'],
+            next: 'c3_e8_h' },
+          { id: 'keep', text: '내 억울함부터 알려야 하니 그대로 둔다.',
+            set: { e8_fix: 'keep', e8_unresolved_threat: true },
+            react: ['narr: 댓글은 계속 늘었다. 상대 쪽에서도 내 학교를 찾는 글이 올라오기 시작했다.'],
+            next: 'c3_e9_a' }
+        ]
+      },
+      c3_e8_i: {
+        chapter: 3, event: 'e8', label: '먼저 온 연락',
+        view: { type: 'dm', title: '민준' },
+        lines: [
+          'sys: 1교시 쉬는 시간 · 9:50',
+          'minjun: 영상 얘기 들었어. 아침엔 서운해서 말이 세게 나갔어.',
+          'minjun: 혼자 있지 말고, 선생님께 같이 가 줄까?'
+        ],
+        prompt: '민준이에게 뭐라고 할까?',
+        choices: [
+          { id: 'accept', text: '“같이 가 줘”라고 답하고 선생님께 간다.',
+            set: { e8_reach: 'accept' }, add: { help: 1, 'trust.minjun': 1 },
+            react: ['me: 응… 같이 가 줘.', 'minjun: 교무실 앞에서 기다릴게.'],
+            next: 'c3_e8_h' },
+          { id: 'fine', text: '“괜찮아, 알아서 할게”라고 답한다.',
+            set: { e8_reach: 'fine', e8_unresolved_threat: true },
+            react: ['me: 괜찮아. 알아서 할게.', 'minjun: …알았어. 필요하면 말해.',
+              'narr: 그날 오후에도 영상은 몇 개의 단톡방을 더 돌았다.'],
+            next: 'c3_e9_a' }
+        ]
+      },
+      c3_e8_h: {
+        chapter: 3, event: 'e8', label: '선생님과 나눈 이야기',
+        view: { type: 'place', title: '상담실 · 축제 다음 날', cg: 'teacher-support' },
+        lines: [
+          'teacher: 먼저 다친 곳은 없는지 확인하자.',
+          'teacher: 싸움에 참여한 행동은 함께 돌아봐야 해. 그렇다고 누군가 네 영상을 퍼뜨리고 조롱해도 되는 건 아니야.',
+          'teacher: 밖에서 있었던 일이라고 해서, 누구나 찍고 올리고 놀려도 되는 건 아니란다.',
+          'teacher: 안전하게 지낼 방법과 영상이 더 퍼지지 않게 할 방법을 나눠서 생각해 보자.',
+          'narr: 영상이 올라온 곳을 선생님과 함께 정리하고 신고했다. 이미 저장해 간 사람이 몇인지는 알 수 없었다.'
+        ],
+        next: 'c3_e9_a'
       },
 
       /* ───────── 3장 · 사건9 신상 확산 ───────── */
@@ -802,6 +970,7 @@
           'narr: 어젯밤, 다른 학교 학생으로 보이는 계정이 우리 부스 후기를 올렸다.',
           { who: 'anon', kind: 'post', text: '솔빛 2-3 사진관 개노잼. 꾸민 거 다 싸구려ㅋ 꾸민 애 서아라던데 센스 실화냐', meta: '좋아요 87 · 댓글 23' },
           { who: 'hayun', kind: 'post', text: '이 계정 주인 찾았음. 이름 ○○○ / △△학교 2학년 / □□동 거주 / 얼굴 사진 첨부. 다들 퍼 가 주세요', meta: '하윤의 스토리 · 조회 156' },
+          { who: 'me', text: '(나도 몇 초짜리 영상으로 판단받았는데…. 지금 이 사람에게 똑같이 하고 있는 건 아닐까?)', if: 'e8_video_spread' },
           'hayun: (개인톡) 이번엔 우리가 당하고만 있으면 안 돼. 나도 저번에 합성 사진 당했잖아. 너도 공유해 줘.',
           { who: 'hayun', text: '그때 신고했는데 결국 누가 만든 건지도 못 찾았잖아.', if: 'e4b=ask|report' },
           'narr: 서아를 비웃은 글은 분명 잘못됐다. 그런데 하윤이의 스토리에는 그 사람이 한 말이 아니라, 그 사람의 이름·학교·동네·얼굴이 있다.'
@@ -867,7 +1036,8 @@
         view: { type: 'place', title: '2학년 3반 교실 · 다음 주 월요일' },
         lines: [
           'teacher: 축제 준비하면서 있었던 일들, 오늘은 다 같이 이야기해 볼까 해. 누구를 혼내려는 게 아니야.',
-          { who: 'teacher', text: '그날 밤 일은 혼자 감당할 일이 아니었어. 보호자분과 상담 선생님까지 함께 이어 둘게.', if: 'alone_meet' },
+          { who: 'teacher', text: '그날 밤 일과 그 영상은 혼자 감당할 일이 아니었어. 보호자분과 상담 선생님까지 함께 이어 둘게.', if: 'e8_unresolved_threat' },
+          { who: 'teacher', text: '영상 일로 힘들었을 텐데, 숨기지 않고 도움을 청해 줘서 고마워.', if: 'e8_response=support || e8_fix=tidy || e8_reach=accept' },
           { who: 'teacher', text: '도움을 청한 건 잘한 일이야. 그 덕분에 더 커지기 전에 멈출 수 있었어.', if: 'help>=2' },
           { who: 'minjun', text: '(쉬는 시간) 그때 사진 지워 줘서 고마웠어.', if: 'e2fix=sorry|all' },
           { who: 'narr', text: '민준이는 아직 나와 눈을 잘 마주치지 않는다.', if: 'trust.minjun<0' },

@@ -4,6 +4,7 @@
 
 - exterior.png: 중앙 현관과 지붕을 포함한 학교 전체 외관.
 - desk.png, teacher-desk.png, locker.png, bookcase.png, pc.png: 교실·도서관 가구.
+- 학생 책상은 `desk-rear.png`로 교체(2026-10-18). 칠판 방향을 바라보는 의자의 뒤쪽과 책상 전체를 하나로 그린다. `school.js`의 등받이 분할·재배치 코드를 제거하고 원본 종횡비를 유지한다. 구 desk.png/webp는 보존하며 새 파일은 PNG를 직접 로드해 구 WebP가 대신 표시되지 않게 한다.
 - board.png, window.png: 벽 부착물.
 - wood.png: 연속해서 사용하는 참나무 바닥.
 - `js/school.js`: 소재 로드, 투명 여백 제외, 벽·문·복도와 안내판 그리기. 원본 PNG/기존 atlas 보존, 색상 보정 중복 적용 없음.

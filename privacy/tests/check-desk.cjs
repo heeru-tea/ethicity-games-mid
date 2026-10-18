@@ -1,0 +1,15 @@
+const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
+const assert=require('node:assert/strict');
+const path=require('node:path');
+(async()=>{const {startServer}=await import('./serve.mjs');const server=await startServer(0);const browser=await chromium.launch({channel:'msedge',headless:true});
+try{const page=await browser.newPage({viewport:{width:1200,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.goto('http://127.0.0.1:'+server.address().port+'/privacy/?probe=shot-map');
+await page.waitForFunction(()=>PrivacySchool.ready()&&PrivacyMap.debug.me().area==='교실',{},{timeout:30000}).catch(async()=>{await page.waitForFunction(()=>PrivacySchool.ready());});
+const result=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=300;c.height=350;const ctx=c.getContext('2d');const calls=[];const draw=ctx.drawImage.bind(ctx);ctx.drawImage=function(im,...args){calls.push({src:im.src,args});draw(im,...args);};PrivacySchool.object(ctx,{id:'desk1',x:0,y:0,w:1,h:1},200,{x:0,y:-80});c.id='desk-check';c.style.background='#dfcfb1';document.body.append(c);return calls;});
+assert.equal(result.length,1,'one complete sprite, no separate backrest');assert(result[0].src.endsWith('desk-rear.png'));
+const a=result[0].args;assert(Math.abs(a[6]/a[7]-a[2]/a[3])<0.02,'preserve aspect ratio');
+await page.locator('#desk-check').screenshot({path:path.join(__dirname,'_shot-desk-detail.png')});
+await page.screenshot({path:path.join(__dirname,'_shot-desk-classroom.png')});
+await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);await page.screenshot({path:path.join(__dirname,'_shot-desk-mobile.png')});
+assert.deepEqual(errors,[]);console.log('PASS: whole desk/chair single draw, aspect ratio, classroom desktop/mobile; no page errors');
+}finally{await browser.close();await new Promise(r=>server.close(r));}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -21,7 +21,10 @@
   /* ── 상태 ───────────────────────── */
   var player = S.readPlayer(CFG.defaultNickname);
   var progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };
-  var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false };
+  var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false, nickname: '' };
+  var NAME_MAX = 10;
+  // 이 게임에서만 쓰는 이름(공통 플레이어 정보가 없을 때). 제어 문자·앞뒤 공백을 빼고 10자까지
+  function cleanName(v) { return typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, NAME_MAX) : ''; }
   var revealTimer = null, revealQueue = [], revealDone = null;
   var pathBack = 'v-start', reflectBack = 'v-start';
   var noticeMsgs = [];
@@ -60,9 +63,12 @@
       settings.reduceMotion = !!st.reduceMotion;
       settings.sound = st.sound === true;
       if (st.look === 'm' || st.look === 'f') settings.look = st.look;
+      settings.nickname = cleanName(st.nickname);
     } else if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       settings.reduceMotion = true;
     }
+    // 공통 플레이어 정보(ethicity.player)가 있으면 그 별명이 우선. 없을 때만 이 게임에서 적은 이름을 쓴다(공통 키에는 쓰지 않음)
+    if (player.source !== 'stored' && settings.nickname) player.nickname = settings.nickname;
     if (!S.status.available) noticeMsgs.push('이 브라우저에서는 저장할 수 없어요. 플레이는 되지만, 창을 닫으면 진행이 사라져요.');
   }
   function saveProgress() {
@@ -101,6 +107,7 @@
     stopReveal();
     if (STAGE_VIEWS.indexOf(id) < 0) { window.PrivacyMap.hide(); stagedScene = null; stageToken++; }
     if (id !== 'v-map') window.PrivacyTalk.close();
+    if (id !== 'v-game') cgShow(null);
     if (id !== 'v-ending' && $('finale')) { clearTimeout(finaleTimer); finaleState = null; $('finale').hidden = true; }
     $('stage').hidden = STAGE_VIEWS.indexOf(id) < 0;
     VIEWS.forEach(function (v) { $(v).hidden = v !== id; });
@@ -153,6 +160,9 @@
     var img = $('player-avatar');
     img.src = playerAvatarSrc();
     img.alt = isOfficialAvatar() ? '내 캐릭터' : '임시 아바타';
+    var nameField = $('name-field');
+    nameField.hidden = player.source === 'stored';
+    if (!nameField.hidden && document.activeElement !== $('name-input')) $('name-input').value = settings.nickname;
     var note = $('player-note');
     if (player.source === 'damaged') { note.hidden = false; note.textContent = '공통 캐릭터 정보를 읽지 못해 기본 아바타와 ‘' + CFG.defaultNickname + '’로 시작해요.'; }
     else if (player.source === 'default') { note.hidden = false; note.textContent = '공통 캐릭터 정보가 없어 기본 아바타로 시작해요.'; }
@@ -192,6 +202,7 @@
   function lineNode(line) {
     var who = line.who || 'narr';
     var li;
+    if (line.kind === 'image' && line.photo) { li = el('li', 'ln media'); li.appendChild(photoNode(line)); return li; }
     if (line.kind === 'image') {
       li = el('li', 'ln media');
       var box = el('div', 'media-box');
@@ -227,6 +238,24 @@
     body.appendChild(bubble);
     li.appendChild(body);
     return li;
+  }
+
+  /* 대화방에 올라온 사진: 흐리게 가려 두고, 플레이어가 눌러야 보인다(무엇을 볼지 스스로 고르게).
+   * line.photo = 납품 사진 경로. tools/to-webp.mjs로 webp 목록에 오르기 전엔 line.placeholder(맵 그림)를 쓴다 → 없는 파일 요청 없음 */
+  function photoNode(line) {
+    var real = !!(window.PRIVACY_WEBP || {})[line.photo];
+    var fig = el('figure', 'photo blurred' + (real ? '' : ' pixel'));
+    var im = document.createElement('img');
+    im.alt = line.alt || fill(line.text);
+    im.decoding = 'async';
+    window.PrivacyImg.load(im, real ? line.photo : line.placeholder);
+    fig.appendChild(im);
+    var btn = el('button', 'photo-reveal', '눌러서 보기');
+    btn.type = 'button';
+    btn.addEventListener('click', function () { fig.classList.remove('blurred'); btn.remove(); });
+    fig.appendChild(btn);
+    fig.appendChild(el('figcaption', null, fill(line.text)));
+    return fig;
   }
 
   function stopReveal() {
@@ -332,6 +361,48 @@
     }
     (st.bubbles || []).forEach(function (b) { if (text.indexOf(b.on) >= 0) window.PrivacyMap.bubble(b.who, b.text); });
   }
+  /* ── 사건 CG(전체 화면 그림): 장면 view.cg로 시작, 대사 줄의 cg·rec·fx로 바뀐다(story.js 작성법) ── */
+  var CG_DIR = 'assets/nightfox-event/';
+  var CG_LOOK = { arrival: 1, confrontation: 1, clash: 1, recorded: 1 }; // 주인공 남/여 그림이 따로 있는 키
+  var CG_ALT = { arrival: '밤의 학교 정문 앞에 도착한 나', confrontation: '@nightfox와 마주 선 나', clash: '서로 옷을 붙잡고 밀치는 두 사람',
+    recorded: '휴대폰을 들어 두 사람을 찍는 구경꾼들', 'classroom-reaction': '영상을 본 반 친구들', 'teacher-support': '이야기를 들어 주는 담임 선생님' };
+  function cgFile(key) { return CG_DIR + (CG_LOOK[key] ? (playerLook() === 'f' ? 'girl-' : 'boy-') : '') + key + '.png'; }
+  function cgShow(key) {
+    var box = $('cg'), im = box.querySelector('.cg-img');
+    box.classList.remove('shake', 'dim');
+    box.querySelector('.cg-rec').hidden = true;
+    if (!key) { box.hidden = true; box.removeAttribute('data-cg'); return; }
+    var file = cgFile(key);
+    box.setAttribute('data-cg', key);
+    im.alt = CG_ALT[key] || '';
+    if (im.getAttribute('data-file') !== file) {
+      im.setAttribute('data-file', file);
+      im.removeAttribute('data-failed');
+      im.setAttribute('data-loading', ''); // 새 그림이 다 올 때까지 앞 그림(잔상)을 감춘다
+      window.PrivacyImg.load(im, file);
+    }
+    box.hidden = im.hasAttribute('data-failed'); // 그림을 못 불러오면 빈 레이어 대신 무대가 보이게
+  }
+  function cgLine(line, quiet) {
+    if (!line) return;
+    if (line.cg) cgShow(line.cg);
+    var box = $('cg');
+    if (box.hidden && !box.hasAttribute('data-cg')) return;
+    if (line.rec) box.querySelector('.cg-rec').hidden = false;
+    if (line.fx === 'dim') { box.classList.add('dim'); box.querySelector('.cg-rec').hidden = true; }
+    if (line.fx === 'shake' && !quiet && !settings.reduceMotion) {
+      box.classList.remove('shake');
+      void box.offsetWidth; // 같은 클래스로 다시 흔들리게
+      box.classList.add('shake');
+    }
+  }
+  function cgSetup() {
+    var box = $('cg'), im = box.querySelector('.cg-img');
+    // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 숨긴다
+    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; } };
+    im.onload = function () { im.removeAttribute('data-loading'); };
+    box.addEventListener('animationend', function () { box.classList.remove('shake'); });
+  }
   // 그 자리 대화(장소 장면)는 포켓몬식 대화창으로 한 줄씩
   function talkLines(list) {
     var items = list.filter(function (l) { return l.who !== 'sys' && !l.kind; }).map(function (l) {
@@ -340,7 +411,7 @@
       var ch = story.characters[who] || { name: who };
       return { who: who, name: who === 'me' ? player.nickname + ' (나)' : ch.name, text: fill(l.text), line: l };
     });
-    return window.PrivacyTalk.open(items, { instant: settings.speed === 'instant', onLine: function (it) { stageBubble(Object.assign({ talk: true }, it.line)); } });
+    return window.PrivacyTalk.open(items, { instant: settings.speed === 'instant', onLine: function (it) { cgLine(it.line); stageBubble(Object.assign({ talk: true }, it.line)); } });
   }
   function reactionLines(run, scene) {
     var c = (scene.choices || []).filter(function (x) { return x.id === run.reaction; })[0];
@@ -377,11 +448,13 @@
     $('g-log').textContent = '';
     $('g-dock').textContent = '';
     if (current !== 'v-game') show('v-game', $('g-chap'));
+    if (!v.cg) cgShow(null);
     // 무대: 장면이 바뀌면 그 장소로(처음 들어갈 때만 컷 카드)
     var token = ++stageToken;
     var st = WD.STAGES[run.scene] || { place: 'classroom', tint: 'day', cast: [] };
     var ready = Promise.resolve();
     if (stagedScene !== run.scene) {
+      if (animate && st.card) cgShow(null); // 컷 카드 뒤로 앞 장면 그림이 비치지 않게
       stagedScene = run.scene;
       cutPending = true;
       ready = window.PrivacyMap.stage(st, { card: animate && st.card ? st.card : null, focus: function () { return stageFocus(device); } });
@@ -391,6 +464,10 @@
       if (token !== stageToken) return;
       var pre = preChoiceState(run);
       var lines = E.visibleLines(story, scene.lines, pre);
+      if (v.cg) {
+        cgShow(v.cg);
+        if (run.reaction) lines.forEach(function (l) { cgLine(l, true); }); // 반응 중 복원: 장면 대사가 바꿔 둔 그림까지
+      }
       if (device === 'none') {
         talkLines(run.reaction ? reactionLines(run, scene) : lines).then(function () { if (token === stageToken) renderDock(); });
         return;
@@ -838,6 +915,13 @@
       } else startNew();
     });
     $('btn-continue').addEventListener('click', function () { if (needLook()) return; routeRun(false); });
+    $('name-input').addEventListener('input', function () {
+      settings.nickname = cleanName($('name-input').value);
+      player.nickname = settings.nickname || CFG.defaultNickname;
+      $('player-name').textContent = player.nickname;
+      $('player-name').title = player.nickname;
+      saveSettings();
+    });
     $('btn-start-path').addEventListener('click', function () { renderPath('v-start'); });
     $('btn-start-reflect').addEventListener('click', function () { renderReflect('v-start'); });
     $('btn-chapter-go').addEventListener('click', function () { setRun(E.advance(story, progress.run)); routeRun(true); });
@@ -911,6 +995,7 @@
   }
 
   /* ── 시작 ─────────────────────────── */
+  cgSetup();
   loadAll();
   applySettings();
   bind();

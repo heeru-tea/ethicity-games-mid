@@ -122,7 +122,7 @@ function countPaths(s, depth) {
 }
 const totalPaths = countPaths(E.createState(story), 0);
 // 무대·맵 개편은 이야기 분기를 바꾸지 않는다
-if (totalPaths !== 294840000) err('완주 경로 수가 바뀜: ' + totalPaths);
+if (totalPaths !== 884520000) err('완주 경로 수가 바뀜: ' + totalPaths);
 
 // ── 4. 무작위 완주 표본(실제 상태 그대로) ──────
 const seenScene = new Set(), seenChoice = new Set(), seenLine = new Set(), seenOutcome = new Set();
@@ -182,6 +182,55 @@ for (const [code, route] of Object.entries(ROUTES)) {
   else if (i !== route.length) err(`대표 경로 ${code}: 선택 ${route.length - i}개가 남은 채 끝남`);
   else if (r.s.ending !== code) err(`대표 경로 ${code}가 엔딩 ${r.s.ending}에 도착함`);
   routeResult[code] = r;
+}
+
+// ── 5b. 엔진: 트리거 skipIf(조건이 맞으면 걷기 생략) ──
+{
+  const mini = { start: 'a', trustable: [], characters: {},
+    scenes: { a: { choices: [{ id: 'x', set: { f: true }, next: 'b' }, { id: 'y', next: 'b' }] }, b: { next: '@ending' } },
+    endings: [{ code: 'C' }], triggers: { b: { skipIf: 'f' } } };
+  const go = (id) => E.advance(mini, E.choose(mini, E.createState(mini), id));
+  const sx = go('x'), sy = go('y');
+  if (sx.screen !== 'scene' || sx.scene !== 'b') err('skipIf 참인데 걷기를 건너뛰지 않음: ' + sx.screen);
+  if (sy.screen !== 'map' || sy.mapTarget !== 'b') err('skipIf 거짓인데 걷기가 없음: ' + sy.screen);
+  if (E.isValidState(mini, Object.assign(E.clone(sy), { flags: { f: true } }))) err('skipIf 참인 map 상태가 유효로 판정됨');
+}
+
+// ── 5c. 사건 8 확장(렌즈 안에 갇힌 밤): 현장 방문만으로 D가 아님, 수습하면 회복 ──
+function runRoute(route) {
+  let s = E.createState(story), i = 0, mapBefore9 = false, prev = null;
+  for (let step = 0; s.screen !== 'ending' && step < 600; step++) {
+    if (s.screen === 'map' && s.mapTarget === 'c3_e9_a') mapBefore9 = true;
+    if (s.screen === 'scene' && E.needsChoice(story, s)) {
+      const [sc, id] = (route[i] || '').split('#');
+      if (sc !== s.scene) return { fail: `${s.scene}에서 ${route[i] || '없음'} 예정` };
+      prev = s; s = E.choose(story, s, id); s.history = []; i++;
+    }
+    s = E.advance(story, s);
+  }
+  return { s, mapBefore9 };
+}
+{
+  const swap = (list) => ROUTES.A.flatMap((x) => (x === 'c3_e8_a#tell' ? list : [x]));
+  const base = runRoute(ROUTES.A).s;
+  const leave = runRoute(swap(['c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#leave']));
+  if (leave.fail) err('e8 leave 경로: ' + leave.fail);
+  else {
+    if (leave.s.ending === 'D') err('현장에 갔다가 돌아왔을 뿐인데 엔딩 D');
+    if (leave.s.flags.alone_meet !== true) err('leave 경로에 alone_meet 이력이 없음');
+    if (!leave.mapBefore9) err('leave 경로가 사건 9 걷기를 거치지 않음');
+  }
+  const sup = runRoute(swap(['c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#support']));
+  if (sup.fail) err('e8 fight→support 경로: ' + sup.fail);
+  else {
+    if (sup.s.ending === 'D') err('싸운 뒤 지원을 요청해 수습했는데 엔딩 D');
+    if (sup.s.trust.dohyun !== base.trust.dohyun - 1) err(`영상 확산 감점: 도현 신뢰 ${base.trust.dohyun}→${sup.s.trust.dohyun} (−1 기대)`);
+    if (sup.s.stats.spread !== base.stats.spread + 1) err(`영상 확산 spread ${base.stats.spread}→${sup.s.stats.spread} (+1 기대)`);
+    if (sup.mapBefore9) err('싸움 경로인데 사건 9 전에 교문에서 다시 걷게 됨');
+  }
+  const fine = runRoute(swap(['c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#fine']));
+  if (fine.fail) err('e8 fight→silence→fine 경로: ' + fine.fail);
+  else if (fine.s.ending !== 'D') err('위험이 해소되지 않았는데 엔딩 ' + fine.s.ending + ' (D 기대)');
 }
 
 // ── 6. 커버리지 ──────────────────────────

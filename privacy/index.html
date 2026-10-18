@@ -41,10 +41,15 @@
         <p id="look-msg" class="small look-msg" role="alert" hidden>먼저 주인공을 골라 주세요.</p>
       </fieldset>
 
+      <label id="name-field" class="name-field" hidden>
+        <span class="name-label">내 이름(별명)</span>
+        <input id="name-input" type="text" maxlength="10" autocomplete="off" spellcheck="false" placeholder="플레이어">
+      </label>
       <div class="start-actions">
         <button id="btn-continue" class="btn primary" type="button" hidden>이어 하기</button>
         <button id="btn-new" class="btn primary" type="button">시작하기</button>
       </div>
+      <p id="content-note" class="small mute content-note">이 게임의 인물·학교·사건은 모두 지어낸 이야기로, 실제와 관계없습니다. 친구 사진 유포, 신상 공개, 합성 이미지, 몸싸움과 촬영 같은 장면이 나옵니다. 비슷한 일로 힘들다면 선생님이나 보호자에게, 또는 청소년상담 <strong>1388</strong> · 학교폭력 <strong>117</strong> · 개인정보 침해 <strong>118</strong>에 도움을 청할 수 있어요.</p>
 
       <div class="title-foot">
         <div class="player-chip" id="player-chip">
@@ -89,6 +94,8 @@
       </header>
       <p id="m-say" class="m-say" aria-live="polite"></p>
       <p id="cut" class="daycard" hidden></p>
+      <!-- 사건 CG: 장소 장면에서 무대를 덮는 전체 그림(글자는 아래 대화창) -->
+      <figure id="cg" class="cg" hidden><div class="cg-pic"><img class="cg-img" alt=""><div class="cg-rec" hidden aria-hidden="true"><span class="cg-rec-dot">●</span> REC</div></div></figure>
 
       <!-- 2-1. 맵 이동 -->
       <section id="v-map" class="view layer" hidden aria-labelledby="m-mission">

@@ -15,7 +15,7 @@
     D: ['pro_1#sns', 'c1_e1_a#dm', 'c1_e1_b#fix', 'c1_e2_a#shoot', 'c1_e2_b#story', 'c1_e2_d#sorry',
         'c1_e3_b#capture', 'c1_e3_cap#part',
         'c2_e4_a#forward', 'c2_e4_b#confess', 'c2_e5_a#all', 'c2_e5_b#del', 'c2_e6_a#peek', 'c2_e6_b#stop',
-        'c3_e7_a#join', 'c3_e7_b#del', 'c3_e8_a#meet', 'c3_e8_b#go', 'c3_e9_a#share', 'c3_e9_b#del']
+        'c3_e7_a#join', 'c3_e7_b#del', 'c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#fine', 'c3_e9_a#share', 'c3_e9_b#del']
   };
   root.PRIVACY_ROUTES = ROUTES;
   if (typeof module !== 'undefined' && module.exports) module.exports = ROUTES;

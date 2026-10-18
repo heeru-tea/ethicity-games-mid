@@ -108,11 +108,131 @@
     ok($$('.path-opts li.other').length > 0, '고르지 않은 선택지도 표시');
     ok($$('.ending-chips li').length === 4, '엔딩 목록 4종');
     $('#btn-path-reflect').click(); await wait();
-    ok(view() === 'v-reflect' && $$('#r-basic li').length === 5 && $$('#r-deep li').length === 5, '성찰 질문 5+5');
+    ok(view() === 'v-reflect' && $$('#r-basic li').length === PRIVACY_STORY.reflection.basic.length && $$('#r-basic li').length === 6 && $$('#r-deep li').length === 6, '성찰 질문 6+6');
     $('#btn-reflect-back').click(); await wait();
     ok(view() === 'v-path', '성찰 → 경로로 돌아가기');
     $('#btn-path-back').click(); await wait();
     ok(view() === 'v-ending', '경로 → 엔딩으로 돌아가기');
+  }
+
+  // ── 사건 8 확장 「렌즈 안에 갇힌 밤」 CG 프로브 ──
+  // R.A 경로에서 사건 8만 바꿔 현장 → 싸움 → 지원 요청으로 간다(사건 8 첫 선택 = 13번째, 0부터 12)
+  function nfRoute(R, list) { return R.A.reduce(function (a, x) { return a.concat(x === 'c3_e8_a#tell' ? list : [x]); }, []); }
+  var NF_FIGHT = ['c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#support'];
+  function cgNow() {
+    var c = $('#cg');
+    if (!c || c.hidden) return null;
+    var im = c.querySelector('.cg-img'), rec = c.querySelector('.cg-rec');
+    return { k: c.getAttribute('data-cg'), src: im && !im.hidden ? im.getAttribute('src') || '' : '', rec: !!rec && !rec.hidden, shake: c.classList.contains('shake'), dim: c.classList.contains('dim'),
+      loading: !!im && im.hasAttribute('data-loading') };
+  }
+  // CG·화면 변화를 순서대로 적는다(같은 값 연속은 하나로)
+  function nfWatch() {
+    var log = [];
+    function push(e) { var last = log[log.length - 1]; if (!last || JSON.stringify(last) !== JSON.stringify(e)) log.push(e); }
+    function snap() { var c = cgNow(); push(c ? { cg: c.k, src: c.src, rec: c.rec, shake: c.shake, dim: c.dim, loading: c.loading } : { cg: null }); }
+    new MutationObserver(snap).observe($('#cg'), { attributes: true, subtree: true });
+    new MutationObserver(function () { if (!$('#cut').hidden) push({ cut: $('#cut').textContent, cgOn: !$('#cg').hidden }); }).observe($('#cut'), { attributes: true, childList: true, characterData: true, subtree: true });
+    new MutationObserver(function () { push({ view: view(), scene: (PrivacyApp.state() || {}).scene }); }).observe(document.body, { attributes: true, attributeFilter: ['data-view'] });
+    return log;
+  }
+  function seqHas(log, keys) { var i = 0; log.forEach(function (e) { if (i < keys.length && e.cg === keys[i]) i++; }); return i === keys.length; }
+
+  async function nightfox(s, R) {
+    var route = nfRoute(R, NF_FIGHT);
+    var text = JSON.stringify(window.PRIVACY_STORY);
+    ok(!/야차룰|승리|콤보|체력바/.test(text), '이야기에 싸움을 경기처럼 보이게 하는 말 없음');
+    if (s === 'nf-flow') { // 여 주인공 · 한 번에+움직임 줄이기(기본 프로브 설정) → 줄 단위 보려고 보통 속도
+      ok(!!$('#cg') && $('#cg').hidden, 'CG 레이어는 처음엔 숨김');
+      var note = ($('#content-note') || {}).textContent || '';
+      ok(/지어낸 이야기/.test(note) && /1388/.test(note) && /117/.test(note) && /118/.test(note), '시작 화면 콘텐츠 안내·도움 연락처: ' + note.slice(0, 40));
+      var log = nfWatch();
+      $('#btn-new').click();
+      await play(route, { upto: 13 });
+      PrivacyApp.setSpeed('normal');
+      await play(route, { from: 13, upto: 16 });
+      var st = PrivacyApp.state();
+      ok(st.scene === 'c3_e9_a', '수습 뒤 사건 9로 복귀: ' + st.scene);
+      ok(seqHas(log, ['arrival', 'confrontation', 'clash', 'recorded', 'classroom-reaction', 'teacher-support']), 'CG 순서 도착→대치→충돌→촬영→교실→담임: ' + log.filter(function (e) { return 'cg' in e && e.cg; }).map(function (e) { return e.cg; }).join('>'));
+      var arr = log.filter(function (e) { return e.cg === 'arrival'; })[0] || {};
+      ok(/girl-arrival\.(png|webp)/.test(arr.src || ''), '여 주인공 → girl- 그림: ' + arr.src);
+      var cls = log.filter(function (e) { return e.cg === 'classroom-reaction'; })[0] || {};
+      ok(/\/classroom-reaction\.(png|webp)/.test(cls.src || ''), '교실 반응은 공용 그림: ' + cls.src);
+      var rec = log.filter(function (e) { return e.cg === 'recorded'; });
+      ok(rec.length && rec.some(function (e) { return e.rec; }), '촬영 장면에 REC 테두리');
+      ok(!log.some(function (e) { return (e.cg === 'arrival' || e.cg === 'confrontation') && e.rec; }), '촬영 전엔 REC 없음');
+      ok(!log.some(function (e) { return e.shake; }), '움직임 줄이기면 흔들림 없음');
+      ok(log.some(function (e) { return e.cg === 'recorded' && e.dim; }), '끝 줄에서 화면이 어두워짐');
+      var iDark = log.findIndex(function (e) { return e.dim; }), iCls = log.findIndex(function (e) { return e.cg === 'classroom-reaction'; });
+      ok(log.slice(iDark, iCls).some(function (e) { return e.cg === null; }), '그날 밤 SNS(폰) 장면에선 CG 숨김');
+      var iT = log.findIndex(function (e) { return e.cg === 'teacher-support'; });
+      ok(iT > 0 && !log.slice(iT).some(function (e) { return e.view === 'v-map'; }), '싸움 경로는 사건 9 전에 다시 걷지 않음');
+      ok($('#cg').hidden, '사건 9 교실에선 CG 숨김');
+      var prevK = null, stale = [];
+      log.forEach(function (e) { if (!('cg' in e)) return; if (e.cg && e.cg !== prevK && !e.loading) stale.push(e.cg); prevK = e.cg; });
+      ok(!stale.length, '새 그림을 받는 동안 앞 그림을 보여 주지 않음(잔상 없음): ' + stale.join(','));
+      ok(log.some(function (e) { return /렌즈 안에 갇힌 밤/.test(e.cut || ''); }), '에피소드 제목이 화면(컷 카드)에 나옴');
+      var cutCounsel = log.filter(function (e) { return /상담실/.test(e.cut || ''); })[0];
+      ok(!!cutCounsel && !cutCounsel.cgOn, '컷 카드 뒤로 앞 장면 CG가 비치지 않음');
+      ok(st.flags.e8_confrontation === 'fight' && st.flags.e8_video_spread === true && st.flags.e8_response === 'support', '플래그 기록');
+      PrivacyApp.setSpeed('instant');
+      await play(route, { from: 16 });
+      ok(view() === 'v-ending', '엔딩까지 완주');
+      ok(PrivacyApp.state().ending !== 'D', '수습한 싸움 경로는 D 아님: ' + PrivacyApp.state().ending);
+      ok(/촬영은 계속됐다/.test(document.body.textContent), '사건 결과에 촬영 계속 기록');
+    }
+    else if (s === 'nf-resume') { // 남 주인공 · 보통 속도 · 움직임 허용
+      var PK = 'ethicity.privacy.progress.v1';
+      if (P.phase === 0) {
+        $('#btn-new').click();
+        PrivacyApp.setSpeed('instant');
+        await play(route, { upto: 14 });
+        PrivacyApp.setSpeed('normal');
+        $$('#g-dock .choice').filter(function (b) { return b.getAttribute('data-choice') === 'fight'; })[0].click();
+        await wait(50);
+        ok(PrivacyApp.state().reaction === 'fight', '싸움 선택 직후(반응 중)');
+        sessionStorage.setItem('probe-phase', '1'); carry(); location.reload(); return;
+      }
+      if (P.phase === 1) {
+        $('#btn-continue').click(); await wait(300);
+        var c1 = cgNow();
+        ok(!!c1 && c1.k === 'confrontation' && /boy-confrontation/.test(c1.src), '반응 중 복원 → 대치 CG(남): ' + JSON.stringify(c1));
+        await passTalk(); await wait(); $('#btn-next').click(); await wait(300);
+        var g = 0; while (PrivacyApp.staging() && g++ < 100) await wait(50);
+        var c2 = cgNow();
+        ok(PrivacyApp.state().scene === 'c3_e8_d' && !!c2 && c2.k === 'clash' && /boy-clash/.test(c2.src), '충돌 장면 첫 CG: ' + JSON.stringify(c2));
+        ok(!!c2 && c2.shake, '움직임 허용이면 충돌 순간 흔들림');
+        sessionStorage.setItem('probe-phase', '2'); carry(); location.reload(); return;
+      }
+      $('#btn-continue').click(); await wait(300);
+      var c3 = cgNow();
+      ok(PrivacyApp.state().scene === 'c3_e8_d' && !!c3 && c3.k === 'clash', '새로고침 → 장면 첫 CG부터 다시: ' + JSON.stringify(c3));
+      sessionStorage.removeItem('probe-phase'); sessionStorage.removeItem('probe-carry');
+    }
+    else if (s === 'nf-undo') {
+      $('#btn-new').click();
+      await play(route, { upto: 14 });
+      var before = PrivacyApp.state();
+      $$('#g-dock .choice').filter(function (b) { return b.getAttribute('data-choice') === 'fight'; })[0].click();
+      await wait(50); await passTalk();
+      ok(PrivacyApp.state().trust.dohyun === before.trust.dohyun - 1, '싸움·영상 확산 → 도현 −1');
+      $('#btn-undo').click(); await wait(); confirmYes(); await wait(100);
+      var af = PrivacyApp.state();
+      ok(af.scene === 'c3_e8_c' && !af.reaction && JSON.stringify(af.trust) === JSON.stringify(before.trust) && af.flags.e8_confrontation === undefined && JSON.stringify(af.stats) === JSON.stringify(before.stats), '되돌리면 신뢰·수치·플래그 원복');
+      await passTalk();
+      ok($$('#g-dock .choice').length === 3, '현장 선택지 3개 다시');
+      var cu = cgNow();
+      ok(!!cu && cu.k === 'confrontation', '되돌린 뒤 현장 CG: ' + JSON.stringify(cu));
+    }
+    else if (s === 'nf-noimg') { // 그림을 못 불러오는 환경 — 대사만으로 끝까지
+      $('#btn-new').click();
+      await play(route, { upto: 15 });
+      ok(PrivacyApp.state().scene === 'c3_e8_f' && $$('#g-dock .choice').length === 3, '그림 없이도 교실 반응 선택지');
+      await wait(200);
+      ok($('#cg').hidden, '그림을 못 불러오면 빈 CG 레이어를 남기지 않음');
+      await play(route, { from: 15 });
+      ok(view() === 'v-ending', '그림 없이 엔딩까지');
+    }
   }
 
   async function run() {
@@ -129,6 +249,8 @@
       await play(R[code], { keyboard: s === 'route-B-key' });
       await finishChecks(code, R[code].length);
     }
+
+    else if (/^nf-/.test(s)) { await nightfox(s, R); }
 
     else if (s === 'walk-A') {
       $('#btn-new').click();
@@ -296,8 +418,53 @@
       ok(rpt.y < pr.top && rpt.x > sr.left && rpt.x < sr.right, '좁아진 뒤에도 주인공이 폰 위에 보임 ' + JSON.stringify([Math.round(rpt.x), Math.round(rpt.y), Math.round(pr.top)]));
     }
 
+    else if (s === 'photo') { // 민준이 엎드려 자는 사진: 흐리게 올라오고, 눌러야 보인다
+      $('#btn-new').click();
+      await play(R.A, { upto: 4 });
+      ok(PrivacyApp.state().scene === 'c1_e2_b', '사진을 받은 도현 개인 대화');
+      var ph = $('#g-log .photo');
+      ok(!!ph && ph.classList.contains('blurred'), '사진은 흐리게 가려진 채 올라옴');
+      var pim = ph && ph.querySelector('img');
+      ok(!!pim && /minjun_sleep\.(png|webp)/.test(pim.getAttribute('src') || '') && !!pim.alt, '납품 전엔 맵 그림(엎드린 민준)으로 대신·대체 텍스트: ' + (pim && pim.getAttribute('src')));
+      ok(!/보여 주지 않아요/.test($('#g-log').textContent), '“보여 주지 않아요” 문구 없음');
+      var rv = ph && ph.querySelector('.photo-reveal');
+      ok(!!rv && /눌러서 보기/.test(rv.textContent), '눌러서 보기 버튼');
+      if (rv) rv.click();
+      await wait();
+      ok(!ph.classList.contains('blurred') && !ph.querySelector('.photo-reveal'), '누르면 선명해지고 버튼은 사라짐');
+      ok($$('#g-dock .choice').length > 0, '선택지는 그대로');
+    }
+
+    else if (s === 'name-input') { // 공통 플레이어 정보가 없을 때 이 게임에서만 이름 입력
+      var SK = 'ethicity.privacy.settings.v1';
+      function typeName(v) { var f = $('#name-input'); f.value = v; f.dispatchEvent(new Event('input', { bubbles: true })); }
+      if (P.phase === 0) {
+        ok(!!$('#name-field') && !$('#name-field').hidden, '공통 정보가 없으면 이름 입력칸 보임');
+        ok($('#player-name').textContent === '플레이어', '비워 두면 기본 이름');
+        typeName('<b>x</b>');
+        ok(!$('#player-name b') && $('#player-name').textContent === '<b>x</b>', '이름은 글자로만 표시');
+        typeName('  가나다라마바사아자차카  ');
+        ok($('#player-name').textContent === '가나다라마바사아자차', '앞뒤 공백 제거·10자까지: ' + $('#player-name').textContent);
+        typeName('지우');
+        ok($('#player-name').textContent === '지우', '입력한 이름 표시');
+        ok(ls('ethicity.player') === null, '공통 플레이어 키는 만들지 않음');
+        ok(JSON.parse(ls(SK) || '{}').nickname === '지우', '이 게임 설정에만 저장');
+        typeName('   ');
+        ok($('#player-name').textContent === '플레이어', '공백만 지우면 기본 이름으로');
+        typeName('지우');
+        sessionStorage.setItem('probe-phase', '1'); carry(); location.reload(); return;
+      }
+      ok($('#name-input').value === '지우' && $('#player-name').textContent === '지우', '새로고침해도 이름 유지');
+      $('#btn-new').click();
+      await play(R.A, { upto: 0 });
+      ok(/지우, 너는 뭐 맡을래/.test($('#g-log').textContent), '대사 {name}에 입력한 이름');
+      ok(ls('ethicity.player') === null, '플레이 뒤에도 공통 키 그대로(없음)');
+      sessionStorage.removeItem('probe-phase'); sessionStorage.removeItem('probe-carry');
+    }
+
     else if (s === 'title') {
       ok(view() === 'v-start', '시작 화면');
+      ok(!!$('#name-field') && $('#name-field').hidden, '공통 플레이어 정보가 있으면 이름 입력칸 숨김');
       ok(!$('.start-phone'), '메신저 푸시 알림 장식 없음');
       ok(/단톡방 28명, 스토리 조회 312회, 캡처 1장/.test($('#v-start').textContent), '훅 문장 유지');
       var imgs = $$('#look-pick .hero-card img');
@@ -342,7 +509,7 @@
       ok(lis.every(function (li) { return !!li.querySelector('.trust-mark'); }), '가까워짐·그대로·멀어짐 표식');
       var mj = $('#c-summary .trust-list li[data-who="minjun"] .spr.face');
       var gl = 0; while (mj && !mj.classList.contains('loaded') && gl++ < 100) await wait(30);
-      ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /char_minjun\.png/.test(mj.style.backgroundImage), '민준 줄엔 민준 시트에서 자른 얼굴');
+      ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /minjun-portrait\.png/.test(mj.style.backgroundImage), '민준 줄엔 새 민준 초상화');
       ok(!!mj && mj.getBoundingClientRect().width >= 60 && mj.getBoundingClientRect().right <= $('#c-summary .trust-list').getBoundingClientRect().right + 1, '얼굴 2배 크기, 줄 안에 들어감');
       $('#btn-chapter-go').click();
       await play(R.A, { from: 6 });
@@ -808,6 +975,22 @@
     }
 
     else if (s.indexOf('shot-') === 0) { // 스크린샷용: 특정 지점까지 진행 후 멈춤(결과 출력 없음)
+      if (s === 'shot-photo') { $('#btn-new').click(); await play(R.A, { upto: 4 }); await wait(600); return; } // 도현 DM의 흐린 사진
+      if (s === 'shot-start-noname') { await wait(300); return; } // 공통 정보 없는 시작 화면(이름 입력칸)
+      if (/^shot-nf-/.test(s)) { // 렌즈 안에 갇힌 밤: 대치(선택지) · 촬영(REC) · 교실 반응(선택지)
+        var nr = nfRoute(R, NF_FIGHT);
+        $('#btn-new').click();
+        await play(nr, { upto: s === 'shot-nf-class' ? 15 : 14 });
+        if (s === 'shot-nf-rec') {
+          PrivacyApp.setSpeed('normal');
+          $$('#g-dock .choice').filter(function (b) { return b.getAttribute('data-choice') === 'fight'; })[0].click();
+          await wait(50); await passTalk(); $('#btn-next').click(); await wait(300);
+          var gs = 0; while (PrivacyApp.staging() && gs++ < 100) await wait(50);
+          $('#btn-talk-next').click();
+        }
+        await wait(1200);
+        return;
+      }
       if (s === 'shot-map' || s === 'shot-road') {
         $('#btn-new').click();
         await play(R.A, { upto: s === 'shot-map' ? 1 : 5, stopAtMap: true });

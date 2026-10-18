@@ -158,10 +158,16 @@
     return next;
   }
 
+  /* 걸어서 들어갈 장면인가 — 트리거가 있고, skipIf 조건이 참이 아니면(예: 이미 그 장소에 있음) */
+  function walkTrigger(story, target, state) {
+    var tr = story.triggers && story.triggers[target];
+    return !!tr && !(tr.skipIf && evalCond(tr.skipIf, state));
+  }
+
   /* 맵 트리거가 있는 장면은 먼저 맵(이동) 화면을 거친다 */
   function enterScene(story, next, target) {
     if (!story.scenes[target]) throw new Error('없는 장면: ' + target);
-    if (story.triggers && story.triggers[target]) {
+    if (walkTrigger(story, target, next)) {
       next.screen = 'map';
       next.mapTarget = target;
       return;
@@ -219,7 +225,7 @@
     if (!s || s.v !== 1 || typeof s !== 'object') return false;
     if (!s.stats || !s.trust || !s.flags || !Array.isArray(s.history) || !Array.isArray(s.visited)) return false;
     if (['scene', 'map', 'chapter', 'ending'].indexOf(s.screen) < 0) return false;
-    if (s.screen === 'map' && !(story.scenes[s.mapTarget] && story.triggers && story.triggers[s.mapTarget])) return false;
+    if (s.screen === 'map' && !(story.scenes[s.mapTarget] && walkTrigger(story, s.mapTarget, s))) return false;
     if (!story.scenes[s.scene]) return false;
     if (s.screen === 'chapter' && !story.chapters[s.nextChapter]) return false;
     if (s.reaction) {
