@@ -244,7 +244,7 @@
 
   var STAGES = {
     pro_1: { place: 'classroom', tint: 'day', card: '방과 후 · 오후 5:30 — 축제 준비 중', me: { x: 5, y: 5, dir: 'up' }, cast: classmates,
-      bubbles: [{ on: '다 올려야지', who: 'seoa', text: '…' }, { on: '너는 뭐 맡을래', who: 'hayun', text: '👀' }] },
+      bubbles: [{ on: '다 올린다', who: 'seoa', text: '…' }, { on: '넌 뭐 할래', who: 'hayun', text: '👀' }] },
     c1_e1_a: { place: 'room', tint: 'evening', cast: [] },
     c1_e1_b: { place: 'room', tint: 'evening', cast: [] },
     c1_e2_a: { place: 'classroom', tint: 'day', me: { x: 8, y: 6, dir: 'left' },

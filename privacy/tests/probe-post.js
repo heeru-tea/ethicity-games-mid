@@ -393,7 +393,7 @@
       ok($('#g-phone').getBoundingClientRect().width <= $('#stage').clientWidth * 0.45, '데스크톱에서 폰은 무대 폭의 45% 이하 ' + Math.round($('#g-phone').getBoundingClientRect().width) + '/' + $('#stage').clientWidth);
       ok(d.bubbles.indexOf('dohyun') >= 0 && d.bubbles.indexOf('minjun') >= 0, '메시지 보낸 친구 머리 위 말풍선: ' + d.bubbles);
       ok(d.bubbleTexts.indexOf('…') >= 0 && d.bubbleTexts.indexOf('👀') >= 0, '손으로 쓴 반응(서아 …, 하윤 👀): ' + d.bubbleTexts);
-      ok(d.bubbleTexts.every(function (t) { return t.indexOf('올려야지') < 0; }), '폰 메시지 원문은 머리 위에 안 뜸');
+      ok(d.bubbleTexts.every(function (t) { return t.indexOf('올린다') < 0; }), '폰 메시지 원문은 머리 위에 안 뜸');
       var mp = PrivacyMap.debug.me(), mpt = PrivacyMap.debug.tileToClient(mp.x, mp.y), phr = $('#g-phone').getBoundingClientRect(), dkr = $('#g-dock').getBoundingClientRect();
       ok(phr.right < dkr.left, '시선 순서: 폰(카톡)은 왼쪽, 선택 상자는 오른쪽 ' + [Math.round(phr.right), Math.round(dkr.left)]);
       ok(mpt.x > phr.right && mpt.y < dkr.top, '주인공이 폰·선택 상자에 가리지 않음 ' + JSON.stringify([Math.round(mpt.x), Math.round(mpt.y), Math.round(phr.left), Math.round(dkr.top)]));
@@ -530,7 +530,7 @@
       ok($('#name-input').value === '지우' && $('#player-name').textContent === '지우', '새로고침해도 이름 유지');
       $('#btn-new').click();
       await play(R.A, { upto: 0 });
-      ok(/지우, 너는 뭐 맡을래/.test($('#g-log').textContent), '대사 {name}에 입력한 이름');
+      ok(/지우 넌 뭐 할래/.test($('#g-log').textContent), '대사 {name}에 입력한 이름');
       ok(ls('ethicity.player') === null, '플레이 뒤에도 공통 키 그대로(없음)');
       sessionStorage.removeItem('probe-phase'); sessionStorage.removeItem('probe-carry');
     }
@@ -1047,9 +1047,9 @@
       var shown = $$('#g-log li').length;
       await wait(1700);
       ok(tLines.length >= 2 && tLines[1] - tLines[0] >= 1300, '메시지가 하나씩 천천히(간격 ' + (tLines.length >= 2 ? Math.round(tLines[1] - tLines[0]) : '?') + 'ms ≥ 1.3초)');
-      ok(shown >= 1 && shown < 6 && !!$('.skip-btn'), '대사가 차례로 나옴(100ms 뒤 ' + shown + '줄)');
+      ok(shown >= 1 && shown < 8 && !!$('.skip-btn'), '대사가 차례로 나옴(100ms 뒤 ' + shown + '줄)');
       $('#g-log').click(); await wait();
-      ok($$('#g-log li').length === 6 && $$('#g-dock .choice').length === 3, '화면 누르면 모두 보기 → 선택지');
+      ok($$('#g-log li').length === 8 && $$('#g-dock .choice').length === 3, '화면 누르면 모두 보기 → 선택지');
       $$('#g-dock .choice')[0].click();
       var gn = 0; while (!$('#btn-next') && gn++ < 160) await wait(50); // 반응 줄도 1.5초 간격으로 하나씩
       ok(!!$('#btn-next'), '반응 표시 뒤 계속 버튼');
