@@ -509,7 +509,7 @@
       ok(lis.every(function (li) { return !!li.querySelector('.trust-mark'); }), '가까워짐·그대로·멀어짐 표식');
       var mj = $('#c-summary .trust-list li[data-who="minjun"] .spr.face');
       var gl = 0; while (mj && !mj.classList.contains('loaded') && gl++ < 100) await wait(30);
-      ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /char_minjun\.png/.test(mj.style.backgroundImage), '민준 줄엔 민준 시트에서 자른 얼굴');
+      ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /minjun-portrait\.png/.test(mj.style.backgroundImage), '민준 줄엔 새 민준 초상화');
       ok(!!mj && mj.getBoundingClientRect().width >= 60 && mj.getBoundingClientRect().right <= $('#c-summary .trust-list').getBoundingClientRect().right + 1, '얼굴 2배 크기, 줄 안에 들어감');
       $('#btn-chapter-go').click();
       await play(R.A, { from: 6 });

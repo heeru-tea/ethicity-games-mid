@@ -53,7 +53,7 @@
     case 'no-sprites': // 캐릭터 시트를 못 불러오는 환경 흉내
       var srcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
       Object.defineProperty(HTMLImageElement.prototype, 'src', { configurable: true, get: function () { return srcDesc.get.call(this); },
-        set: function (v) { srcDesc.set.call(this, /char_|minjun_sleep/.test(String(v)) ? 'assets/__missing__.png' : v); } });
+        set: function (v) { srcDesc.set.call(this, /char_|minjun_sleep|characters-v3\//.test(String(v)) ? 'assets/__missing__.png' : v); } });
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'nf-resume': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"look":"m"}'); break;
     case 'nf-noimg': // 나이트폭스 CG를 못 불러오는 환경

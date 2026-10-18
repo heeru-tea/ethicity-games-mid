@@ -1,7 +1,7 @@
 /*
  * 맵 화면 — 타일맵을 걸어 다니다 ❗ 대상에게 말을 걸면 사건 장면이 열린다.
- * 그림: assets/sprites/char_<인물>.png(32×48 칸, 가로 4프레임 × 세로 아래·왼·오·위)가 있으면 쓰고,
- *       없으면 임시 도형(원+머리글자+이름표)으로 그린다. 타일·가구도 지금은 임시 색 블록.
+ * 그림: characters-v3 걷기 시트(4프레임 × 아래·왼·오·위)를 48px 월드 단위로 표시한다.
+ *       로드 실패 시 기존 sprites 시트, 이어 임시 도형으로 복구한다.
  * 조작: 방향키/WASD 이동, Space/Enter 말 걸기·조사, 화면 탭 = 그 칸까지 걸어가기(인물·사물을 탭하면 가서 말 걸기)
  */
 (function () {
@@ -34,7 +34,12 @@
   var held = [], path = null, actOnArrive = false, busy = false;
   var bubbles = [], T = 40, viewW = 0, viewH = 0, cam = { x: 0, y: 0 }, dpr = 1;
   var sprites = {}, lastArea = '', lastLook = null;
-  var srcTile = 48; // 스프라이트 원본 한 칸(px). 시트를 읽으면 자동으로 바뀐다
+  var srcTile = 48; // 월드 표시 단위. 고해상도 시트의 원본 셀 크기와 분리한다.
+  var WALK_FILES = {
+    'char_player_m.png': 'boy', 'char_player_f.png': 'girl',
+    'char_hayun.png': 'hayun', 'char_seoa.png': 'seoa',
+    'char_dohyun.png': 'dohyun', 'char_minjun.png': 'minjun', 'char_teacher.png': 'teacher'
+  };
   // 건물은 반복 벽 타일 대신 하나의 외관을 사용한다. 충돌/문 좌표는 world.js 소유.
   var houseExterior = null;
   var houseImage = new Image();
@@ -94,17 +99,25 @@
   function loadSprite(key, file) {
     if (sprites[key] !== undefined) return;
     sprites[key] = null;
-    var im = new Image();
-    im.onload = function () {
-      sprites[key] = window.PrivacyPalette.image(im, true);
-      // 시트 크기에서 원본 칸 크기를 알아낸다(가로 4프레임): 32×48이든 48×72든 그대로 맞춤
-      if (key !== 'minjun_sleep' && im.naturalWidth % 4 === 0) {
-        var w = im.naturalWidth / 4;
-        if (w !== srcTile) { srcTile = w; resize(); }
-      }
-    };
-    im.onerror = function () { sprites[key] = false; };
-    im.src = SPRITE_DIR + file;
+    var character = WALK_FILES[file];
+    // A late response from a previous player selection must not replace the new one.
+    var token = {};
+    sprites[key] = token;
+    function load(modern) {
+      var im = new Image();
+      im.onload = function () {
+        if (sprites[key] !== token) return;
+        if (modern && (im.naturalWidth % 4 || im.naturalHeight % 4 || im.naturalWidth * 3 !== im.naturalHeight * 2)) { load(false); return; }
+        im.privacyModern = modern;
+        sprites[key] = modern ? im : window.PrivacyPalette.image(im, true);
+      };
+      im.onerror = function () {
+        if (sprites[key] !== token) return;
+        if (modern) load(false); else sprites[key] = false;
+      };
+      im.src = modern ? 'assets/characters-v3/walk-' + character + '.png' : SPRITE_DIR + file;
+    }
+    load(!!character);
   }
 
   /* ── 대상 ─────────────────────── */
@@ -511,7 +524,10 @@
     if (inside && room) room.details(ctx, T, cam);
     if (!inside && school) {
       if (schoolCovered) list.push({ y: 10, fn: function () { school.exterior(ctx, T, cam); } });
-      else school.details(ctx, T, cam);
+      else {
+        school.details(ctx, T, cam);
+        if (school.collectDoors) school.collectDoors(list, ctx, T, cam, me);
+      }
     }
     if (!inside && houseExterior) {
       list.push({ y: 16, fn: function () {
@@ -594,11 +610,16 @@
     var sx = fx * T - cam.x, sy = fy * T - cam.y;
     if (sx < -T * 2 || sy < -T * 2 || sx > viewW + T || sy > viewH + T) return;
     var sheet = pose === 'sleep' ? sprites.minjun_sleep : sprites[who];
-    if (sheet) {
+    if (sheet && sheet.naturalWidth) {
       // 칸 = 가로 1타일 × 세로 1.5타일, 발밑이 타일 아래쪽에 오도록
       var fw = sheet.naturalWidth / (pose === 'sleep' ? 1 : 4), fh = sheet.naturalHeight / (pose === 'sleep' ? 1 : 4);
       if (pose === 'sleep') ctx.drawImage(sheet, 0, 0, fw, fh, sx, sy - T * 1.5, T, T * 1.5); // 바로 위 책상 칸에 겹쳐 그림(납품 규칙: 책상 y - 0.5칸)
-      else ctx.drawImage(sheet, frame * fw, ROW[dir] * fh, fw, fh, sx, sy + T - T * 1.5, T, T * 1.5);
+      else {
+        var smoothing = ctx.imageSmoothingEnabled;
+        if (sheet.privacyModern) ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(sheet, frame * fw, ROW[dir] * fh, fw, fh, sx, sy + T - T * 1.5, T, T * 1.5);
+        ctx.imageSmoothingEnabled = smoothing;
+      }
     } else {
       var col = CHAR_COLOR[who] || '#777';
       var bob = frame % 2 ? -T * 0.04 : 0;

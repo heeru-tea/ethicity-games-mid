@@ -59,13 +59,32 @@ const hashes=()=>Object.fromEntries(ids.map(id=>{const file=path.join(__dirname,
       edgeSummary:Object.fromEntries([1,16,128].map(alpha=>[alpha,{cells:cells.filter(c=>c.thresholds[alpha].edgeClipping).length,pixels:boundaryAlphaHistogram.slice(alpha).reduce((a,b)=>a+b,0)}])),
       materialWarnings:assets.flatMap(a=>(a.cells||[]).filter(c=>c.thresholds[16].edgeClipping).map(c=>({id:a.id,row:c.row,col:c.col,direction:c.direction,alpha16:c.thresholds[16].edgeBounds,alpha128:c.thresholds[128].edgeBounds})))
     });
+    // Technical validity is separate from the material-edge gate and game readiness.
+    metadata.technicalStatus=failures.length?'fail':'pass';
+    metadata.materialWarningCount=metadata.materialWarnings.length;
+    metadata.materialEdgePixelCount=metadata.edgeSummary[16].pixels;
+    metadata.hardEdgePixelCount=metadata.edgeSummary[128].pixels;
+    metadata.hardEdgeCellCount=metadata.edgeSummary[128].cells;
+    metadata.softEdgePixelCount=boundaryAlphaHistogram.slice(16,128).reduce((a,b)=>a+b,0);
+    metadata.softEdgeWarnings=assets.flatMap(a=>(a.cells||[]).map(c=>({id:a.id,row:c.row,col:c.col,direction:c.direction,pixels:c.boundaryAlphaHistogram.slice(16,128).reduce((sum,n)=>sum+n,0)})).filter(c=>c.pixels>0));
+    metadata.softEdgeWarningCount=metadata.softEdgeWarnings.length;
+    metadata.materialStatus=metadata.hardEdgePixelCount>0?'fail':metadata.softEdgePixelCount>0?'review':'pass';
+    metadata.status=metadata.technicalStatus==='fail'||metadata.materialStatus==='fail'?'fail':metadata.materialStatus==='review'?'review':'pass';
+    metadata.productionReady=false;
+    metadata.productionReadinessReasons=[
+      'These are high-resolution review candidates, not exact 192×288 production sheets.',
+      'Game integration has not been implemented or verified by this checker.'
+    ];
+    metadata.edgePolicy='Preserve all alpha>0 diagnostics and alpha>=16 material warnings. Any alpha>=128 boundary pixel is a hard failure. Alpha 16–127 boundary pixels require review but are not automatically clipping and do not cause a nonzero exit. Alpha 1–15 residue alone does not fail. Technical failures also cause exit 1. Passing does not establish production readiness.';
     fs.writeFileSync(path.join(__dirname,'walk-metadata.json'),JSON.stringify(metadata,null,2)+'\n');
     await page.screenshot({path:path.join(__dirname,'walk-preview.png'),fullPage:true});
-    console.log(`${metadata.status.toUpperCase()}: ${assets.filter(a=>!a.error).length}/7 loaded; ${failures.length} failures; ${warnings.length} review flags. Metadata and preview saved.`);
+    console.log(`${metadata.status.toUpperCase()}: technical=${metadata.technicalStatus}; material=${metadata.materialStatus}; productionReady=false. ${assets.filter(a=>!a.error).length}/7 loaded; ${failures.length} technical failures; ${warnings.length} original review flags; ${metadata.materialWarningCount} material-warning cells (${metadata.materialEdgePixelCount} alpha>=16 boundary pixels). Metadata and preview saved.`);
     for(const failure of failures)console.error(failure);
     for(const warning of warnings)console.warn(warning);
     console.log('Edge summary:',JSON.stringify(metadata.edgeSummary));
-    if(failures.length)process.exitCode=1;
+    console.log(`Hard edges (alpha>=128): ${metadata.hardEdgeCellCount} cells / ${metadata.hardEdgePixelCount} pixels. Soft edges (alpha 16–127): ${metadata.softEdgeWarningCount} cells / ${metadata.softEdgePixelCount} pixels; review required when present.`);
+    if(metadata.materialStatus==='fail')console.error('Hard edge gate failed: alpha>=128 boundary contact remains; see materialWarnings for original cell/edge bounds.');
+    if(metadata.status==='fail')process.exitCode=1;
   }finally{
     try{if(browser)await browser.close();}finally{await new Promise(resolve=>server.close(resolve));}
   }

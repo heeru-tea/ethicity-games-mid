@@ -47,7 +47,7 @@
           var offset = 12 + i * 8 + ((xx * 7 + yy * 3 + i) % 5);
           var bx = xx * size + (side === 1 ? size : side === 3 ? 0 : offset);
           var by = yy * size + (side === 0 ? 0 : side === 2 ? size : offset);
-          c.strokeStyle = i % 2 ? '#7eaa4e' : '#91b757'; c.lineWidth = 1.5;
+          c.strokeStyle = i % 2 ? '#829568' : '#95a67b'; c.lineWidth = 1.5;
           c.beginPath(); c.moveTo(bx, by); c.lineTo(bx - d[0] * 3 + 1, by - d[1] * 3 - 2); c.stroke();
         }
       });
@@ -55,7 +55,7 @@
   }
   ['grass', 'path'].forEach(function (name) {
     var im = new Image(); im.onload = function () { images[name] = im; build(); };
-    window.PrivacyImg.load(im, 'assets/terrain/' + name + '.png');
+    window.PrivacyImg.load(im, 'assets/terrain/' + name + '-soft.png');
   });
   window.PrivacyTerrain = {
     drawCell: function (ctx, ch, x, y, tile, cam) {
