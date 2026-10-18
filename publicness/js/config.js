@@ -10,7 +10,7 @@
   function allStop(nodes) { return { nodes: nodes, stops: nodes.map(function () { return T; }) }; }
 
   var config = {
-    SCENARIO_VERSION: 'pb-1.0.0',
+    SCENARIO_VERSION: 'pb-1.1.0',
 
     // 생활권과 정류장 (PRD §4). x,y = 고정 카메라 배치용 평면 좌표
     nodes: [

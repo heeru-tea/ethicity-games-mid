@@ -22,26 +22,25 @@
       t += m;
     }
 
-    var n = route.nodes.length, run = 0, idx = 0, dir = 1;
-    if (t <= W) tl.visits.push({ t: t, node: route.nodes[0], kind: 'stop', runIn: -1, runOut: 0 });
+    // visits = 120분까지의 방문(승하차 처리). tail = 120분에 달리던 run이 끝점에 닿을 때까지의 이후 방문 —
+    // 120분 전에 탄 사람이 그 버스로 목적지 쪽에 가는지 판단하는 데만 쓴다(PRD §7: 도착이 120분 뒤면 ‘탑승 중’)
+    tl.tail = [];
+    var n = route.nodes.length, run = 0, idx = 0, dir = 1, lastEnd = true;
+    (t <= W ? tl.visits : tl.tail).push({ t: t, node: route.nodes[0], kind: 'stop', runIn: -1, runOut: 0 });
     t += dwell;
-    while (t < W) {
+    while (!(t >= W && lastEnd)) {
       var next = idx + dir;
       var mm = g.time(route.nodes[idx], route.nodes[next]);
-      tl.segments.push({ from: route.nodes[idx], to: route.nodes[next], t0: t, t1: t + mm, deadhead: false });
+      if (t < W) tl.segments.push({ from: route.nodes[idx], to: route.nodes[next], t0: t, t1: t + mm, deadhead: false });
       t += mm;
       idx = next;
-      if (t > W) break;
-      var isEnd = idx === 0 || idx === n - 1;
-      if (isEnd) {
-        tl.visits.push({ t: t, node: route.nodes[idx], kind: 'stop', runIn: run, runOut: run + 1 });
-        run++; dir = -dir; t += dwell;
-      } else if (route.stops[idx]) {
-        tl.visits.push({ t: t, node: route.nodes[idx], kind: 'stop', runIn: run, runOut: run });
-        t += dwell;
-      } else {
-        tl.visits.push({ t: t, node: route.nodes[idx], kind: 'pass', runIn: run, runOut: run });
-      }
+      var isEnd = idx === 0 || idx === n - 1, v;
+      if (isEnd) v = { t: t, node: route.nodes[idx], kind: 'stop', runIn: run, runOut: run + 1 };
+      else v = { t: t, node: route.nodes[idx], kind: route.stops[idx] ? 'stop' : 'pass', runIn: run, runOut: run };
+      (t <= W ? tl.visits : tl.tail).push(v);
+      if (isEnd) { run++; dir = -dir; }
+      if (v.kind === 'stop') t += dwell;
+      lastEnd = isEnd;
     }
 
     tl.moveMinutes = tl.segments.reduce(function (s, x) { return s + Math.max(0, Math.min(x.t1, W) - Math.max(x.t0, 0)); }, 0);

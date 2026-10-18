@@ -171,3 +171,32 @@ test('ending summary has zone subtitles, finance and goal history', () => {
   assert.equal(e.residents.haneul.length, 5);
   assert.equal(e.residents.sol.filter(Boolean).length, 3);
 });
+
+test('AI after introducing the fourth bus recommends a startable plan (final review I1)', () => {
+  const s = S.create(cfg, { mode: 'default' });
+  playPhase(s); playPhase(s);
+  S.beginPlan(s);
+  S.introduceFourth(s);
+  for (const goal of ['profit', 'time', 'reach']) {
+    S.chooseGoal(s, goal);
+    const rec = A.recommendSync(S.revealed(s), goal);
+    assert.equal(rec.plan.buses.length, 4);
+    S.applyRecommendation(s, rec);
+    assert.deepEqual(S.validate(s), [], goal);
+  }
+});
+
+test('fourth-bus button changes only bus 4 (final review I2)', () => {
+  const s = S.create(cfg, { mode: 'default' });
+  playPhase(s); playPhase(s);
+  S.beginPlan(s);
+  S.chooseGoal(s, 'reach');
+  const rec = A.recommendSync(S.revealed(s), 'reach');
+  S.markGoalAction(s, 'reject');
+  const before = JSON.stringify(s.draft.buses.slice(0, 3));
+  assert.equal(S.applyFourth(s, rec), true);
+  assert.equal(JSON.stringify(s.draft.buses.slice(0, 3)), before, '1~3호차 그대로');
+  const b4 = s.draft.buses.find((b) => b.id === 4);
+  assert.equal(G.routeId(S.routeByNum(s, b4.routeNum)), G.routeId(rec.fourth.plan.buses.find((b) => b.id === 4).route));
+  assert.equal(s.goalHistory.at(-1).action, 'reject');
+});

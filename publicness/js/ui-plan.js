@@ -125,6 +125,21 @@
       });
       c.appendChild(ul);
     } else c.appendChild(el('p', null, '지금 계획을 그대로 두는 것이 이 목표에는 가장 나았어요.'));
+    // 목표 지표 — AI가 실제로 비교한 값(점수의 첫 항목)을 지금 계획과 추천 계획으로
+    var A = PB.Advisor;
+    var s0 = A.score(rec.goal, rec.baseline, rec._baseSim, rec.targets)[0], s1 = A.score(rec.goal, rec.expected, rec._sim, rec.targets)[0];
+    var fmt = rec.goal === 'time'
+      ? function (v, m) { return '합 ' + Math.round(-v).toLocaleString('ko-KR') + '분 (1건당 ' + Math.round(-v / m.N) + '분)'; }
+      : rec.goal === 'profit' ? function (v) { return app().won(v); } : function (v) { return M.fmtRate(v); };
+    var gl = { profit: '이번 단계 손익', time: '이동 시간 합', reach: '대상 지역 평균 도착률' }[rec.goal];
+    var goalBox = el('dl', { 'class': 'kv goal-metric' });
+    goalBox.appendChild(el('dt', null, '목표 지표: ' + gl));
+    goalBox.appendChild(el('dd', null, fmt(s0, rec.baseline) + ' → ' + fmt(s1, rec.expected)));
+    c.appendChild(goalBox);
+    if (rec.goal === 'time') c.appendChild(el('p', { 'class': 'note' }, '최적화용 계산이라 못 탄 사람은 120분으로 셌어요(실제 관측 대기와 달라요).'));
+    c.appendChild(el('p', null, '추천 이유: ' + (rec.changes.length
+      ? '버스 ' + rec.changes.length + '대의 배정을 바꾸면 ' + gl + '이 좋아져요(' + fmt(s0, rec.baseline) + ' → ' + fmt(s1, rec.expected) + ').'
+      : '바꿔 본 계획 중 지금보다 ' + gl + '이 나아지는 것이 없었어요.')));
     c.appendChild(metricRows(rec.baseline, rec.expected, rec.goal === 'reach' ? rec.targets : null));
     c.appendChild(el('p', { 'class': 'note' }, '추가 사건 없는 기본 수요 기준 · 후보 ' + rec.candidates + '개 노선으로 계획 ' + rec.evaluated + '개를 비교했어요. 가장 좋은 답을 보장하지 않아요.'));
     var acts = el('div', { 'class': 'row-actions' });
@@ -138,7 +153,7 @@
       f.appendChild(el('h4', null, '별도 제안: 4호차를 들이면'));
       f.appendChild(el('p', null, '4호차를 새 노선 ' + app().describeRoute(b4.route) + '에 출차 ' + b4.offset + '분으로 배정하면:'));
       f.appendChild(metricRows(rec.expected, rec.fourth.expected, null, ['추천(3대)', '4호차 추가']));
-      f.appendChild(el('p', { 'class': 'note' }, '4호차는 자동으로 들이지 않아요. 보유비와 운행비가 늘어요.'));
+      f.appendChild(el('p', { 'class': 'note' }, '추천 3대 계획을 기준으로 고른 노선이에요. 아래 버튼은 4호차만 배정하고 1~3호차는 지금 초안 그대로 둬요. 4호차는 자동으로 들이지 않아요. 보유비와 운행비가 늘어요.'));
       f.appendChild(el('button', { type: 'button', 'class': 'btn', id: 'btn-fourth', onclick: function () { S.applyFourth(s, rec); P.msg = '4호차를 들여 새 노선에 배정했어요.'; rerender('.bus-card[data-bus="4"] select'); } }, '4호차 들이고 이 노선에 배정'));
       c.appendChild(f);
     }

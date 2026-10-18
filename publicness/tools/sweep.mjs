@@ -32,7 +32,9 @@ function play(name, strategy, fourth) {
     strategy(s, p);
     if (fourth && p === 3) {
       const rec = A.recommendSync(S.revealed(s), 'reach');
-      if (!S.applyFourth(s, rec)) { S.introduceFourth(s); const r = S.addRoute(s, R('I-G-A-D')); S.assign(s, 4, r.num); }
+      if (!S.applyFourth(s, rec)) S.introduceFourth(s);
+      // 4호차 카드 노선이 지금 초안과 겹치면(학생 화면에선 오류 문구) 다른 새 노선으로
+      for (const alt of ['I-G-A-D', 'I-E-D', 'I-G-H', 'I-E-G-A']) { if (!S.validate(s).length) break; const r = S.addRoute(s, R(alt)); S.assign(s, 4, r.num); }
     }
     if (!S.startRun(s)) throw new Error(`${name} ${p}단계 출발 실패: ${S.validate(s).join(' / ')}`);
     S.finishRun(s); S.nextPhase(s);

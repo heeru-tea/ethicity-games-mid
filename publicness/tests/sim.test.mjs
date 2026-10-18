@@ -170,3 +170,13 @@ test('full bus logs how many were left behind', () => {
   assert.equal(full.length, 1);
   assert.deepEqual([full[0].t, full[0].node, full[0].bus, full[0].data.left], [0, 'A', 1, 1]);
 });
+
+test('a delayed rider may board before 120 and end riding (PRD §7, AC16)', () => {
+  const rs = Array.from({ length: 13 }, () => req('B', 'C', 110));
+  const res = run(plan(['A-B-C', 0], ['A-B-C', 8]), rs);
+  const late = P(res, rs[12].id);
+  assert.equal(late.fail, null, '계획상 여정은 있음(1호차 111분 → 114분)');
+  assert.equal(late.firstBoardT, 119, '같은 구간 다음 버스(2호차 119분)에 탐');
+  assert.equal(late.status, 'riding', '도착 예정 122분 → 탑승 중으로 끝남');
+  assert.equal(res.costs.paidUnfinished, 1);
+});

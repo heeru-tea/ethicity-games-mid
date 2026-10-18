@@ -49,11 +49,11 @@
   function indexBus(tl) {
     var stops = [];
     tl.visits.forEach(function (v, k) { if (v.kind === 'stop') stops.push(k); });
-    var ahead = {};
+    var ahead = {}, all = tl.visits.concat(tl.tail || []);
     stops.forEach(function (k) {
       var v = tl.visits[k], map = {};
-      for (var m = k + 1; m < tl.visits.length; m++) {
-        var w = tl.visits[m];
+      for (var m = k + 1; m < all.length; m++) {
+        var w = all[m];
         if (w.runIn !== v.runOut) break;
         if (w.kind === 'stop' && map[w.node] == null) map[w.node] = w.t;
         if (w.runOut !== w.runIn) break; // 끝점에서 run이 끝난다
@@ -76,7 +76,7 @@
         var boards = [], arrs = [], ks = b.byNode[x] || [];
         for (var i = 0; i < ks.length; i++) {
           var v = b.tl.visits[ks[i]], arr = b.ahead[ks[i]][d];
-          if (arr != null && v.t < window) { boards.push(v.t); arrs.push(arr); }
+          if (arr != null && v.t < window && arr <= window) { boards.push(v.t); arrs.push(arr); } // 계획은 120분 안 도착만
         }
         if (boards.length) list.push({ routeId: b.tl.routeId, boards: boards, arrs: arrs });
       });

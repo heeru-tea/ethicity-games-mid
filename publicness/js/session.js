@@ -158,7 +158,8 @@
   function applyFourth(s, rec) {
     if (!rec || !rec.fourth) return false;
     if (s.owned < s.config.bus.maxBuses && !introduceFourth(s)) return false;
-    applyPlanBuses(s, rec.fourth.plan.buses);
+    // 4호차만 배정한다(1~3호차는 학생의 현재 초안 그대로)
+    applyPlanBuses(s, rec.fourth.plan.buses.filter(function (b) { return b.id === 4; }));
     return true;
   }
 
@@ -166,7 +167,7 @@
     var h = s.history[s.history.length - 1];
     return Advisor.makeRevealed({
       phase: s.phase, g: graph(s), requests: Demand.base(s.config, s.phase, s.seed), owned: s.owned,
-      fourthAllowed: s.phase >= s.config.fourthFromPhase, prevMetrics: h ? h.metrics : null,
+      fourthAllowed: s.phase >= s.config.fourthFromPhase, fourthMustBeNew: s.fourthPhase === s.phase, prevMetrics: h ? h.metrics : null,
       prevRouteIds: prevRouteIds(s), plan: toPlan(s), config: s.config
     });
   }

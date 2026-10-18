@@ -396,6 +396,8 @@
     ok(!!rc, 'AI 제안 카드');
     ok(/모의 AI: 알려진 수요로 후보를 비교하는 규칙 기반 추천/.test(rc.textContent), '모의 AI 라벨');
     ok(/추가 사건 없는 기본 수요 기준/.test(rc.textContent), '예상 라벨');
+    ok(/목표 지표: 이동 시간 합/.test(rc.textContent) && /못 탄 사람은 120분/.test(rc.textContent), '이동 시간 목표 지표 행');
+    ok(/추천 이유/.test(rc.textContent), '추천 이유 문장');
     press('#rec-accept');
     await wait(0);
     ok(PB.App.state().goalHistory[0].action === 'accept', '수락 기록');

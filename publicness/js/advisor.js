@@ -13,7 +13,7 @@
   var Sim = NODE ? require('./sim.js') : root.PB.Sim;
   var Metrics = NODE ? require('./metrics.js') : root.PB.Metrics;
 
-  var KEYS = ['phase', 'g', 'requests', 'owned', 'fourthAllowed', 'prevMetrics', 'prevRouteIds', 'plan', 'config'];
+  var KEYS = ['phase', 'g', 'requests', 'owned', 'fourthAllowed', 'fourthMustBeNew', 'prevMetrics', 'prevRouteIds', 'plan', 'config'];
 
   function makeRevealed(src) {
     var out = {};
@@ -114,11 +114,22 @@
   function createSearch(rev, goal) {
     var tg = targets(rev), cands = candidates(rev, goal), offsets = rev.config.bus.offsets;
     var evaluated = 0;
+    var prevIds = rev.prevRouteIds || [];
+    // 4호차(마지막 버스)가 직전 단계·다른 버스와 다른 새 노선에 배정됐는지
+    function fourthOk(p) {
+      var b4 = p.buses[p.buses.length - 1];
+      if (!b4.route) return false;
+      var id = Graph.routeId(b4.route);
+      if (prevIds.indexOf(id) >= 0) return false;
+      return p.buses.slice(0, -1).every(function (b) { return !b.route || Graph.routeId(b.route) !== id; });
+    }
+    var mustNew = !!rev.fourthMustBeNew;
     function evaluate(plan) {
       evaluated++;
       var sim = Sim.run({ g: rev.g, config: rev.config, phase: rev.phase, plan: plan, requests: rev.requests });
       var m = Metrics.summarize(sim, rev.g, plan, rev.config);
-      return { plan: plan, sim: sim, metrics: m, score: score(goal, m, sim, tg) };
+      var sc = mustNew && !fourthOk(plan) ? [-Infinity, -Infinity] : score(goal, m, sim, tg);
+      return { plan: plan, sim: sim, metrics: m, score: sc };
     }
     function neighbors(cur, allow) {
       var out = [];
@@ -138,18 +149,10 @@
     var base = evaluate(sanitize(rev, rev.plan));
     var state = { cur: base, iter: 0, queue: null, best: null, stage: 0, three: null };
     var fourthOn = rev.fourthAllowed && rev.owned === 3;
-    var prevIds = rev.prevRouteIds || [];
-    function fourthOk(p) {
-      var b4 = p.buses[p.buses.length - 1];
-      if (!b4.route) return false;
-      var id = Graph.routeId(b4.route);
-      if (prevIds.indexOf(id) >= 0) return false;
-      return p.buses.slice(0, -1).every(function (b) { return !b.route || Graph.routeId(b.route) !== id; });
-    }
     var maxIter = rev.config.ai.maxIterations;
 
     function nextQueue() {
-      if (state.stage === 0) return state.iter < maxIter ? neighbors(state.cur, null) : null;
+      if (state.stage === 0) return state.iter < maxIter ? neighbors(state.cur, mustNew ? fourthOk : null) : null;
       // 4호차: 추천된 3대 계획은 그대로 두고 버스 4의 (새 노선 × 출차)만 한 번 비교
       if (state.iter === 0) return neighbors(state.cur, fourthOk).filter(function (p) {
         return p.buses.slice(0, -1).every(function (b, i) { return b === state.cur.plan.buses[i]; });
