@@ -66,26 +66,38 @@
   }
 
   function makePlanner(buses, window) {
-    var memo = {};
+    var memo = new Map(), pairs = {};
+    // 버스별 (x→d) 승차 시각·도착 시각 표(승차 시각 오름차순). 처음 필요할 때 만든다
+    function pairTable(x, d) {
+      var key = x + d;
+      if (pairs[key]) return pairs[key];
+      var list = [];
+      buses.forEach(function (b) {
+        var boards = [], arrs = [], ks = b.byNode[x] || [];
+        for (var i = 0; i < ks.length; i++) {
+          var v = b.tl.visits[ks[i]], arr = b.ahead[ks[i]][d];
+          if (arr != null && v.t < window) { boards.push(v.t); arrs.push(arr); }
+        }
+        if (boards.length) list.push({ routeId: b.tl.routeId, boards: boards, arrs: arrs });
+      });
+      return (pairs[key] = list);
+    }
     // x에서 ready 이후 타서 d에 가장 일찍 내리는 시각(노선 excl 제외). 없으면 null
     function direct(x, d, ready, excl) {
-      var key = x + d + ready + '|' + excl;
-      if (key in memo) return memo[key];
-      var best = null;
-      buses.forEach(function (b) {
-        if (b.tl.routeId === excl) return;
-        var ks = b.byNode[x] || [];
-        for (var i = 0; i < ks.length; i++) {
-          var v = b.tl.visits[ks[i]];
-          if (v.t < ready || v.t >= window) continue;
-          var arr = b.ahead[ks[i]][d];
-          if (arr != null) {
-            if (!best || arr < best.arr || (arr === best.arr && b.tl.routeId < best.routeId)) best = { arr: arr, routeId: b.tl.routeId };
-            break;
-          }
-        }
-      });
-      memo[key] = best;
+      var key = x + d + '|' + ready + '|' + excl;
+      var hit = memo.get(key);
+      if (hit !== undefined) return hit;
+      var best = null, list = pairTable(x, d);
+      for (var j = 0; j < list.length; j++) {
+        var e = list[j];
+        if (e.routeId === excl) continue;
+        var lo = 0, hi = e.boards.length;
+        while (lo < hi) { var mid = (lo + hi) >> 1; if (e.boards[mid] < ready) lo = mid + 1; else hi = mid; }
+        if (lo === e.boards.length) continue;
+        var arr = e.arrs[lo];
+        if (!best || arr < best.arr || (arr === best.arr && e.routeId < best.routeId)) best = { arr: arr, routeId: e.routeId };
+      }
+      memo.set(key, best);
       return best;
     }
     function better(a, b) {
@@ -100,13 +112,15 @@
       var dir = direct(o, d, ready, null);
       if (dir) best = { arr: dir.arr, legs: [{ routeId: dir.routeId, from: o, to: d }] };
       buses.forEach(function (b) {
-        var ks = b.byNode[o] || [];
+        var ks = b.byNode[o] || [], tried = {};
         for (var i = 0; i < ks.length; i++) {
           var v = b.tl.visits[ks[i]];
           if (v.t < ready || v.t >= window) continue;
           var ah = b.ahead[ks[i]];
           for (var x in ah) {
-            if (x === d) continue;
+            // 같은 버스에서 x까지는 먼저 탈수록 먼저 도착하므로 첫 승차만 보면 된다
+            if (x === d || tried[x]) continue;
+            tried[x] = true;
             var second = direct(x, d, ah[x] + transferMin, b.tl.routeId);
             if (!second) continue;
             var cand = { arr: second.arr, legs: [{ routeId: b.tl.routeId, from: o, to: x }, { routeId: second.routeId, from: x, to: d }] };
@@ -141,7 +155,7 @@
     });
     Object.keys(visitAt).forEach(function (t) { visitAt[t].sort(function (a, c) { return a.b.tl.busId - c.b.tl.busId; }); });
 
-    var log = [], petition = null;
+    var log = [], petition = null, linkMemo = {};
 
     for (var t = 0; t <= W; t++) {
       // ① 요청 생성
@@ -150,7 +164,11 @@
         p.status = 'waiting';
         p._waitStart = t;
         if (j) { p.journey = j.legs; queue.push(p); }
-        else p.fail = structural(g, plan, p.o, p.d) ? 'NO_TRIP_IN_WINDOW' : 'NO_LINK';
+        else {
+          var lk = p.o + p.d;
+          if (!(lk in linkMemo)) linkMemo[lk] = structural(g, plan, p.o, p.d);
+          p.fail = linkMemo[lk] ? 'NO_TRIP_IN_WINDOW' : 'NO_LINK';
+        }
         log.push({ t: t, type: 'request', pid: p.id, node: p.o });
       });
       if (event && event.t === t && event.type !== 'none') {
