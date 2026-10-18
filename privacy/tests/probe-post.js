@@ -597,16 +597,24 @@
       var r0 = SM.routeTo(30, 16) || [];
       for (var k = 0; k < r0.length; k++) { key(ARROW[r0[k]]); key(ARROW[r0[k]], 'keyup'); var g = 0; await wait(16); while (SM.me().moving && g++ < 100) await wait(16); }
       $('#opt-motion').checked = true; $('#opt-motion').click(); await wait(400);
+      // 데드존 카메라: 화면 가운데 상자 안에서는 배경이 움직이지 않고, 벗어날 때만 지연 없이 따라간다(어지러움 줄이기)
+      async function step(k) { key(k); key(k, 'keyup'); var gg = 0; await wait(16); while (SM.me().moving && gg++ < 100) await wait(16); }
       var c0 = SM.cam();
-      ok(Math.abs(c0.x - c0.tx) < 1, '멈춰 있으면 카메라가 주인공에 맞춰짐');
-      key('ArrowRight'); SM.tick(50); // 기다리지 않고 50ms만 진행
+      await step('ArrowLeft'); await step('ArrowRight'); await step('ArrowUp'); await step('ArrowDown');
       var c1 = SM.cam();
-      ok(c1.tx - c1.x > 1, '걷기 시작하면 카메라가 살짝 늦게 따라옴 ' + JSON.stringify(c1));
-      ok(c1.x === Math.round(c1.x), '카메라 좌표는 정수 픽셀(흔들림 방지)');
+      ok(c1.x === c0.x && c1.y === c0.y, '가운데 상자 안에서 한 칸씩 움직이면 배경 고정 ' + JSON.stringify([c0, c1]));
+      key('ArrowRight'); SM.tick(50); // 걷는 도중에도
+      var cm = SM.cam();
+      ok(Math.abs(cm.x - cm.tx) < 1 && Math.abs(cm.y - cm.ty) < 1, '카메라가 늦게 미끄러지지 않음(지연 없음) ' + JSON.stringify(cm));
+      ok(cm.x === Math.round(cm.x), '카메라 좌표는 정수 픽셀(흔들림 방지)');
       key('ArrowRight', 'keyup');
-      await wait(900);
+      var gw = 0; while (SM.me().moving && gw++ < 100) await wait(16);
+      for (var kk = 0; kk < 8; kk++) await step('ArrowRight');
       var c2 = SM.cam();
-      ok(Math.abs(c2.x - c2.tx) < 1, '멈추면 곧 따라잡음 ' + JSON.stringify(c2));
+      ok(c2.x > c0.x, '상자 밖으로 계속 걸으면 카메라가 따라감 ' + JSON.stringify([c0, c2]));
+      await wait(300);
+      var c3 = SM.cam();
+      ok(c3.x === c2.x && c3.y === c2.y, '멈추면 배경도 바로 멈춤(뒤늦게 흐르지 않음)');
       // 걷기 동작: 반 칸마다 한 프레임(한 칸에 약 2번 바뀜, 칸이 바뀌어도 이어짐). 시간 대신 걸은 칸 수로 잰다
       var r1 = SM.routeTo(40, 20) || [];
       for (var k1 = 0; k1 < r1.length; k1++) { key(ARROW[r1[k1]]); key(ARROW[r1[k1]], 'keyup'); var g1 = 0; await wait(16); while (SM.me().moving && g1++ < 100) await wait(16); }
