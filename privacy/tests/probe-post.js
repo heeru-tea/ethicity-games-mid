@@ -435,6 +435,21 @@
       ok(rpt.y < pr.top && rpt.x > sr.left && rpt.x < sr.right, '좁아진 뒤에도 주인공이 폰 위에 보임 ' + JSON.stringify([Math.round(rpt.x), Math.round(rpt.y), Math.round(pr.top)]));
     }
 
+    else if (s === 'yard') { // 운동장 형태: 가로로 긴 트랙 안에 경기장, 골대는 골라인 가운데, 맵은 필요한 만큼만
+      var WDy = window.PRIVACY_WORLD, L = (window.PrivacySchoolyard || {}).layout;
+      ok(WDy.H === 40 && WDy.W === 64, '맵 64×40(빈 모래땅·나무 줄 정리): ' + WDy.W + '×' + WDy.H);
+      ok(!!L && L.track[2] / L.track[3] >= 1.3, '트랙이 가로로 긴 타원: ' + (L && L.track.join(',')));
+      var tr = L && L.track, pi = L && L.pitch;
+      ok(!!L && pi[0] > tr[0] && pi[1] > tr[1] && pi[0] + pi[2] < tr[0] + tr[2] && pi[1] + pi[3] < tr[1] + tr[3], '경기장이 트랙 안쪽에');
+      var gl = WDy.OBJECTS.filter(function (o) { return o.id === 'yardGoalLeft'; })[0], gr = WDy.OBJECTS.filter(function (o) { return o.id === 'yardGoalRight'; })[0];
+      var cy = pi ? pi[1] + pi[3] / 2 : -1;
+      ok(!!gl && !!gr && gl.y < cy && gl.y + gl.h > cy && gr.y < cy && gr.y + gr.h > cy, '골대가 경기장 세로 가운데');
+      ok(!!gl && !!gr && gl.x + gl.w === pi[0] && gr.x === pi[0] + pi[2], '골대가 양쪽 골라인 바로 바깥');
+      ok(!!gl && !WDy.walkable(gl.x, gl.y + 1) && !WDy.walkable(gr.x, gr.y + 1), '골대 칸은 지나갈 수 없음');
+      ok(WDy.walkable(11, 29) && WDy.walkable(11, 36) && WDy.walkable(2, 24), '경기장·트랙·가장자리는 걸을 수 있음');
+      ok(!WDy.walkable(5, WDy.H - 2), '운동장 아래 담장');
+    }
+
     else if (s === 'warning') { // 시작하자마자 어두운 화면의 주의 안내(가상 상황 고지·다루는 장면·도움 연락처)
       if (P.phase === 0) {
         ok(!$('#content-note'), '시작 화면 아래 작은 안내는 주의 화면으로 옮김');
@@ -1038,6 +1053,16 @@
     }
 
     else if (s.indexOf('shot-') === 0) { // 스크린샷용: 특정 지점까지 진행 후 멈춤(결과 출력 없음)
+      if (s === 'shot-yard-overview') { // 학교 부지 전체를 게임 렌더러로 축소해 그림(플레이 화면 아님)
+        var gw = 0; while (!(window.PrivacySchoolyard && PrivacySchoolyard.ready()) && gw++ < 100) await wait(50);
+        var WDo = window.PRIVACY_WORLD, t = 26, cv = document.createElement('canvas');
+        cv.width = 23 * t; cv.height = WDo.H * t;
+        cv.style.cssText = 'position:fixed;left:0;top:0;z-index:99;background:#eee;height:100vh;width:auto';
+        var g2 = cv.getContext('2d'), cam0 = { x: 0, y: 0 };
+        for (var yy = 11; yy < WDo.H; yy++) for (var xx = 1; xx < 22; xx++) PrivacySchoolyard.drawCell(g2, WDo.grid[yy][xx], xx, yy, t, cam0);
+        WDo.OBJECTS.filter(function (o) { return ['store', 'tent1', 'tent2', 'yardGoalLeft', 'yardGoalRight'].indexOf(o.id) >= 0; }).forEach(function (o) { PrivacySchoolyard.object(g2, o, t, cam0); });
+        document.body.appendChild(cv); await wait(300); return;
+      }
       if (s === 'shot-warning') { $('#btn-new').click(); await wait(1200); return; } // 시작 직후 주의 화면
       if (s === 'shot-photo') { $('#btn-new').click(); await play(R.A, { upto: 4 }); await wait(600); return; } // 도현 DM의 흐린 사진
       if (s === 'shot-start-noname') { await wait(300); return; } // 공통 정보 없는 시작 화면(이름 입력칸)
@@ -1068,9 +1093,9 @@
       if (s === 'shot-portrait') { $('#btn-new').click(); await wait(30); PrivacyApp.setSpeed('normal'); $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(400); return; }
       if (s === 'shot-opening') { $('#btn-new').click(); await wait(500); return; }
       if (s === 'shot-talk') { $('#btn-new').click(); await play(R.A, { upto: 1, stopAtMap: true }); var pd = PrivacyMap.debug.tileToClient(8, 2); $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true })); await wait(1500); return; }
-      if (s === 'shot-hood' || s === 'shot-gate' || s === 'shot-south' || s === 'shot-edge' || s === 'shot-front' || s === 'shot-house') { // 주택가·교문 화면 확인용: 그 자리까지 걸어감
+      if (s === 'shot-hood' || s === 'shot-gate' || s === 'shot-south' || s === 'shot-edge' || s === 'shot-front' || s === 'shot-house' || s === 'shot-yard') { // 주택가·교문 화면 확인용: 그 자리까지 걸어감
         $('#btn-new').click(); await play(R.A, { upto: 1, stopAtMap: true });
-        var dest = { 'shot-hood': [46, 20], 'shot-gate': [24, 16], 'shot-south': [44, 27], 'shot-edge': [58, 30], 'shot-front': [12, 14], 'shot-house': [42, 19] }[s];
+        var dest = { 'shot-hood': [46, 20], 'shot-gate': [24, 16], 'shot-south': [44, 27], 'shot-edge': [58, 30], 'shot-front': [12, 14], 'shot-house': [42, 19], 'shot-yard': [11, 30] }[s];
         var rr = PrivacyMap.debug.routeTo(dest[0], dest[1]) || [];
         for (var q = 0; q < rr.length; q++) { key(ARROW[rr[q]]); key(ARROW[rr[q]], 'keyup'); await wait(16); while (PrivacyMap.debug.me().moving) await wait(16); }
         await wait(500); return;
