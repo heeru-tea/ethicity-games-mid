@@ -2,10 +2,10 @@
  * 승객 엔진 (PRD §7·§9) — 결정적 순수 함수.
  * 같은 계획·요청이면 재생 속도와 무관하게 승객별로 같은 결과를 낸다.
  *
- * 한 분(t) 안의 처리 순서:
+ * 한 초(t) 안의 처리 순서:
  *   ① 요청 생성(여정 1회 탐색) → 사건 기록·청원 판정
- *   ② 환승 준비 완료(하차 1분 뒤) → 대기열
- *   ③ 버스 ID순 도착 처리: 하차(목적지 도착 / 환승지 하차) → 빈 좌석에 대기열 순서대로 승차(120분엔 승차 없음)
+ *   ② 환승 준비 완료(하차 1초 뒤) → 대기열
+ *   ③ 버스 ID순 도착 처리: 하차(목적지 도착 / 환승지 하차) → 빈 좌석에 대기열 순서대로 승차(120초엔 승차 없음)
  * 여정은 정원을 무시한 최단 도착(직행 또는 다른 노선으로 1회 환승)으로 정하고 구간(노선·승하차 정류장)을 고정한다.
  * 만차·연결을 놓치면 같은 구간의 다음 버스를 기다린다(재탐색 없음).
  */
@@ -54,6 +54,7 @@
       var v = tl.visits[k], map = {};
       for (var m = k + 1; m < all.length; m++) {
         var w = all[m];
+        if (tl.loop && w.node === v.node) break;
         if (w.runIn !== v.runOut) break;
         if (w.kind === 'stop' && map[w.node] == null) map[w.node] = w.t;
         if (w.runOut !== w.runIn) break; // 끝점에서 run이 끝난다
@@ -76,7 +77,7 @@
         var boards = [], arrs = [], ks = b.byNode[x] || [];
         for (var i = 0; i < ks.length; i++) {
           var v = b.tl.visits[ks[i]], arr = b.ahead[ks[i]][d];
-          if (arr != null && v.t < window && arr <= window) { boards.push(v.t); arrs.push(arr); } // 계획은 120분 안 도착만
+          if (arr != null && v.t < window && arr <= window) { boards.push(v.t); arrs.push(arr); } // 계획은 120초 안 도착만
         }
         if (boards.length) list.push({ routeId: b.tl.routeId, boards: boards, arrs: arrs });
       });
@@ -135,14 +136,18 @@
   function run(input) {
     var g = input.g, config = input.config, plan = input.plan, event = input.event || null;
     var W = config.bus.window, cap = config.bus.capacity, tMin = config.bus.transferMin, F = config.finance;
+    plan = Schedule.spacePlan(g, config, plan);
     var timelines = plan.buses.map(function (b) { return Schedule.timeline(g, config, b.id, b.route, b.offset); });
     var indexed = timelines.filter(function (tl) { return tl.route; }).map(indexBus);
     var planner = makePlanner(indexed, W);
 
-    var passengers = input.requests.map(function (r) {
+    function passenger(r) {
       return { id: r.id, key: r.key, o: r.o, d: r.d, t: r.t, kind: r.kind, journey: null, fail: null, status: 'pending',
+        residentId:r.residentId||null,leg:r.leg||null,returnTrip:r.returnTrip||null,
+        familyId:r.familyId||null,familySize:r.familySize||0,
         firstBoardT: null, arriveT: null, waitTotal: 0, boardings: 0, legIndex: 0, _waitStart: null, _ready: null, _bus: null };
-    });
+    }
+    var passengers = input.requests.map(passenger);
     var byT = {};
     passengers.forEach(function (p) { (byT[p.t] = byT[p.t] || []).push(p); });
     var queue = [];       // 정류장에서 기다리는 사람(최초·환승)
@@ -193,6 +198,13 @@
           if (p.legIndex === p.journey.length - 1) {
             p.status = 'arrived'; p.arriveT = t; p._bus = null;
             log.push({ t: t, type: 'arrive', pid: p.id, bus: busId, node: e.v.node });
+            if(p.returnTrip){
+              p.returnReadyT=Math.max(t+Math.max(1,p.returnTrip.stay),p.returnTrip.earliest);
+              if(p.returnReadyT<W){
+                var back=passenger({id:p.id+50000,key:p.key+'-return',o:p.d,d:p.returnTrip.destination||p.o,t:p.returnReadyT,kind:'base',residentId:p.residentId,familyId:p.familyId,familySize:p.familySize,leg:'return'});
+                passengers.push(back);(byT[back.t]||(byT[back.t]=[])).push(back);
+              }
+            }
           } else {
             p.status = 'transfer'; p.legIndex++; p._ready = t + tMin; p._bus = null;
             walking.push(p);
@@ -206,7 +218,8 @@
           var leg = p.journey[p.legIndex];
           return leg.from === e.v.node && leg.routeId === e.b.tl.routeId && ah[leg.to] != null;
         }).sort(function (a, c) { return a._waitStart - c._waitStart || a.id - c.id; });
-        var free = cap - onBus[busId].length;
+        var free = Schedule.vehicle(config,Number(busId)).capacity - onBus[busId].length;
+        eligible.slice(Math.max(0, free)).forEach(function(p){p.deniedBoardings=(p.deniedBoardings||0)+1;});
         if (eligible.length > free) log.push({ t: t, type: 'full', bus: busId, node: e.v.node, data: { left: eligible.length - Math.max(0, free) } });
         eligible.slice(0, Math.max(0, free)).forEach(function (p) {
           p.waitTotal += t - p._waitStart;
@@ -222,7 +235,7 @@
       });
     }
 
-    // 종료: 아직 기다리는 사람의 대기를 120분까지 더한다
+    // 종료: 아직 기다리는 사람의 대기를 120초까지 더한다
     passengers.forEach(function (p) {
       if (p._waitStart != null && p.status !== 'arrived') p.waitTotal += W - p._waitStart;
       if (p.status === 'transfer' || p.status === 'riding' || p.status === 'arrived') return;
@@ -270,7 +283,23 @@
     return h.toString(16);
   }
 
-  var api = { run: run, operatingRoutes: operatingRoutes, structural: structural, hash: hash };
+  function occupancyAt(result, t) {
+    var counts = {};
+    result.timelines.forEach(function (tl) { counts[tl.busId] = 0; });
+    result.log.forEach(function (e) {
+      if (e.t > t || e.bus == null) return;
+      if (e.type === 'board') counts[e.bus]++;
+      if (e.type === 'alight' || e.type === 'arrive') counts[e.bus]--;
+    });
+    return counts;
+  }
+  function unfinishedReasons(result){
+    var out={};result.passengers.forEach(function(p){if(p.status==='arrived')return;
+      var g=out[p.o]||(out[p.o]={noLink:0,full:0,time:0});
+      g[p.fail==='NO_LINK'?'noLink':p.deniedBoardings>0?'full':'time']++;
+    });return out;
+  }
+  var api = { run: run, unfinishedReasons:unfinishedReasons, occupancyAt: occupancyAt, operatingRoutes: operatingRoutes, structural: structural, hash: hash };
   root.PB = root.PB || {};
   root.PB.Sim = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

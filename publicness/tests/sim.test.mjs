@@ -3,7 +3,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const cfg = require('../js/config.js');
+// Controlled timing fixture: hand-calculated capacity/transfer boundary cases, independent of map tuning.
+const cfg = structuredClone(require('./planned-fixture.cjs'));
+delete cfg.map;
+cfg.bus.offsets = [0,4,8,12];
 const G = require('../js/graph.js');
 const D = require('../js/demand.js');
 const Sim = require('../js/sim.js');

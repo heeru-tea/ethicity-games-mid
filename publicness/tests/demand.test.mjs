@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const cfg = require('../js/config.js');
+const cfg = require('./planned-fixture.cjs');
 const D = require('../js/demand.js');
 const Rng = require('../js/rng.js');
 
@@ -31,7 +31,8 @@ test('directional expansion order', () => {
 });
 
 test('request time formula and ids', () => {
-  const reqs = D.base(cfg, 1, 42);
+  const legacy = structuredClone(cfg); delete legacy.rush;
+  const reqs = D.base(legacy, 1, 42);
   const ba0 = reqs.find((r) => r.row === 0 && r.i === 0);
   const ab0 = reqs.find((r) => r.row === 1 && r.i === 0);
   assert.equal(ba0.t, 49);
@@ -44,6 +45,19 @@ test('request time formula and ids', () => {
   for (let k = 1; k < reqs.length; k++) {
     const a = reqs[k - 1], b = reqs[k];
     assert.ok(a.t < b.t || (a.t === b.t && a.id < b.id), '시각→id 정렬');
+  }
+});
+
+test('rush waves preserve population but concentrate arrivals by direction', () => {
+  for (const seed of [0, 7, 42, 999]) {
+    const reqs = D.base(cfg, 1, seed);
+    assert.equal(reqs.length, 148);
+    assert.deepEqual(reqs, D.base(cfg, 1, seed));
+    for (const row of D.directional(cfg, 1)) {
+      const times = reqs.filter(r => r.row === row.r).map(r => r.t);
+      const start = row.r % 2 === 0 ? 8 : 50;
+      assert.ok(times.filter(t => t >= start && t < start + 14).length >= Math.ceil(row.n * .75));
+    }
   }
 });
 

@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const cfg = require('../js/config.js');
+const cfg = require('./planned-fixture.cjs');
 const G = require('../js/graph.js');
 const Rng = require('../js/rng.js');
 
@@ -15,32 +15,32 @@ test('phase 1 graph hides I', () => {
   assert.equal(g1.has('I'), false);
   assert.equal(g1.time('G', 'I'), null);
   assert.equal(g3.has('I'), true);
-  assert.equal(g3.time('G', 'I'), 3);
-  assert.equal(g3.time('E', 'I'), 4);
+  assert.equal(g3.time('G', 'I'), 5);
+  assert.equal(g3.time('E', 'I'), 5);
 });
 
-test('roads are two-way with PRD times', () => {
-  assert.equal(g1.time('A', 'B'), 2);
-  assert.equal(g1.time('B', 'A'), 2);
-  assert.equal(g1.time('H', 'G'), 3);
-  assert.equal(g1.time('B', 'F'), 4);
-  assert.equal(g1.time('A', 'C'), null);
+test('links are two-way with distance-derived seconds', () => {
+  assert.equal(g1.time('A', 'B'), 5);
+  assert.equal(g1.time('B', 'A'), 5);
+  assert.equal(g1.time('H', 'G'), 5);
+  assert.equal(g1.time('B', 'F'), 5);
+  assert.equal(g1.time('A', 'C'), 10);
 });
 
 test('neighbors sorted', () => {
-  assert.deepEqual(G.neighbors(g1, 'A'), ['B', 'D', 'G', 'H']);
-  assert.deepEqual(G.neighbors(g3, 'G'), ['A', 'E', 'H', 'I']);
+  assert.deepEqual(G.neighbors(g1, 'A'), ['B', 'C', 'D', 'E', 'F', 'G', 'H']);
+  assert.deepEqual(G.neighbors(g3, 'G'), ['A', 'B', 'C', 'D', 'E', 'F', 'H', 'I']);
 });
 
-test('cycle A-B-C is 12, with B passed 10 (AC5)', () => {
-  assert.equal(G.cycleMinutes(g1, { nodes: ['A', 'B', 'C'], stops: [T, T, T] }), 12);
-  assert.equal(G.cycleMinutes(g1, { nodes: ['A', 'B', 'C'], stops: [T, F, T] }), 10);
-  assert.equal(G.oneWayMinutes(g1, { nodes: ['A', 'B', 'C'], stops: [T, T, T] }), 4);
+test('cycle A-B-C is 24 seconds, with B passed 22', () => {
+  assert.equal(G.cycleMinutes(g1, { nodes: ['A', 'B', 'C'], stops: [T, T, T] }), 24);
+  assert.equal(G.cycleMinutes(g1, { nodes: ['A', 'B', 'C'], stops: [T, F, T] }), 22);
+  assert.equal(G.oneWayMinutes(g1, { nodes: ['A', 'B', 'C'], stops: [T, T, T] }), 10);
 });
 
 test('validateRoute rejects bad routes (AC5)', () => {
   assert.deepEqual(G.validateRoute(g1, { nodes: ['B', 'A', 'G', 'E'], stops: [T, T, T, T] }), []);
-  assert.ok(G.validateRoute(g1, { nodes: ['A', 'C'], stops: [T, T] }).length > 0, '비인접');
+  assert.deepEqual(G.validateRoute(g1, { nodes: ['A', 'C'], stops: [T, T] }), [], '자유 연결');
   assert.ok(G.validateRoute(g1, { nodes: ['A', 'B', 'A'], stops: [T, T, T] }).length > 0, '중복');
   assert.ok(G.validateRoute(g1, { nodes: ['A'], stops: [T] }).length > 0, '1노드');
   assert.ok(G.validateRoute(g1, { nodes: ['A', 'B', 'C'], stops: [F, T, T] }).length > 0, '끝점 통과');
@@ -57,7 +57,8 @@ test('routeId is canonical over direction', () => {
   assert.notEqual(G.routeId({ nodes: ['B', 'A', 'G', 'E'], stops: [T, T, T, T] }), a);
 });
 
-test('shortestPath ties by node id', () => {
+test('shortestPath ties by node id on a controlled graph', () => {
+  const g1 = G.build({nodes:cfg.nodes, roads:[{a:'A',b:'B',min:2},{a:'B',b:'C',min:2},{a:'A',b:'D',min:2},{a:'D',b:'C',min:2},{a:'B',b:'F',min:4}]},1);
   const p = G.shortestPath(g1, 'A', 'C');
   assert.equal(p.minutes, 4);
   assert.deepEqual(p.nodes, ['A', 'B', 'C']);
@@ -81,7 +82,7 @@ test('rng xorshift32 follows PRD order', () => {
 test('config carries PRD values', () => {
   assert.equal(cfg.bus.capacity, 12);
   assert.equal(cfg.bus.window, 120);
-  assert.deepEqual(cfg.bus.offsets, [0, 4, 8, 12]);
+  assert.deepEqual(cfg.bus.offsets, [0]);
   assert.equal(cfg.finance.subsidy, 150000);
   assert.equal(cfg.defaultSeed, 42);
   assert.equal(cfg.nodes.length, 9);

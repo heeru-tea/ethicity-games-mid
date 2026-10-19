@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const cfg = require('../js/config.js');
+const cfg = require('./planned-fixture.cjs');
 const stories = require('../js/stories.js');
 const N = require('../js/narrative.js');
 const S = require('../js/session.js');
@@ -55,7 +55,7 @@ test('closing announcement completes the title', () => {
   const not = N.residentStory([rec('arrived', 10), rec('waiting', 100)], 'narae', cfg);
   assert.equal(not.closing, '나래는 아직 이 정류장에 닿지 못했습니다.');
   const jun = N.residentStory([rec('arrived', 3)], 'jun', cfg);
-  assert.equal(jun.closing, '이번 정류장은 중앙역입니다. 준이 내렸습니다.');
+  assert.equal(jun.closing, '이번 정류장은 기차역입니다. 준이 내렸습니다.');
 });
 
 test('josa follows final consonant', () => {

@@ -3,7 +3,7 @@
  * 입력은 RevealedPhase(공개된 기본 수요·현재 도로·보유 차량·이전 결과)뿐이다.
  * 사건 실현값·seed·미래 단계 정보는 받지 않는다(makeRevealed가 키를 걸러 낸다).
  *
- * 탐색: 후보 노선 최대 30개 → 버스 한 대의 (노선 또는 미배정) × 출차 시점을 바꾼 이웃 계획을 전부 평가,
+ * 탐색: 후보 노선 최대 30개 → 버스 한 대의 노선 또는 미배정을 바꾼 이웃 계획을 전부 평가,
  * 목표 점수가 가장 좋아지는 하나를 채택. 개선이 없거나 3회면 멈춘다.
  */
 (function (root) {
@@ -12,6 +12,7 @@
   var Graph = NODE ? require('./graph.js') : root.PB.Graph;
   var Sim = NODE ? require('./sim.js') : root.PB.Sim;
   var Metrics = NODE ? require('./metrics.js') : root.PB.Metrics;
+  var Schedule = NODE ? require('./schedule.js') : root.PB.Schedule;
 
   var KEYS = ['phase', 'g', 'requests', 'owned', 'fourthAllowed', 'fourthMustBeNew', 'prevMetrics', 'prevRouteIds', 'plan', 'config'];
 
@@ -51,6 +52,9 @@
     var current = rev.plan.buses.map(function (b) { return b.route; }).filter(function (r) { return validRoute(g, r); });
     current.forEach(function (r) { add(must, r); });
     rev.config.exampleRoutes.forEach(function (r) { add(must, r); });
+    if(rev.config.challengeApplied&&g.has('N'))g.nodes.filter(function(id){return id!=='N';}).forEach(function(id){add(must,allStop([id,'N']));});
+    var required = must.slice();
+    must = [];
     current.forEach(function (r) {
       [0, r.nodes.length - 1].forEach(function (end) {
         Graph.neighbors(g, r.nodes[end]).forEach(function (nb) {
@@ -58,10 +62,7 @@
           add(must, end === 0 ? { nodes: [nb].concat(r.nodes), stops: [true].concat(r.stops) } : { nodes: r.nodes.concat(nb), stops: r.stops.concat(true) });
         });
       });
-      for (var i = 1; i < r.nodes.length - 1; i++) {
-        var s = r.stops.slice(); s[i] = !s[i];
-        add(must, { nodes: r.nodes, stops: s });
-      }
+      if (!Graph.isLoop(r) && r.nodes.length >= 3) add(must, allStop(r.nodes.concat(r.nodes[0])));
     });
     var pairs = {};
     rev.requests.forEach(function (q) {
@@ -78,7 +79,7 @@
       if (p) add(fill, allStop(p.nodes));
     });
     var byId = function (a, b) { var x = Graph.routeId(a), y = Graph.routeId(b); return x < y ? -1 : x > y ? 1 : 0; };
-    return must.sort(byId).concat(fill.sort(byId)).slice(0, max);
+    return required.concat(fill.sort(byId),must.sort(byId)).slice(0, max);
   }
 
   // 사전식 비교 점수(클수록 좋음)
@@ -88,6 +89,9 @@
       var cost = 0, arrived = 0;
       sim.passengers.forEach(function (p) {
         if (p.status === 'arrived') { cost += p.arriveT - p.t; arrived++; } else cost += 120;
+        // A resident's planned return remains an unmet need even if outbound failure
+        // prevents it from spawning. Otherwise removing service improves this score.
+        if(p.returnTrip&&!sim.passengers.some(function(q){return q.residentId===p.residentId&&q.leg==='return';}))cost+=120;
       });
       return [-cost, arrived];
     }
@@ -101,7 +105,7 @@
   }
 
   function sanitize(rev, plan) {
-    return { buses: plan.buses.map(function (b) { return { id: b.id, route: validRoute(rev.g, b.route) ? b.route : null, offset: b.offset }; }) };
+    return { buses: plan.buses.map(function (b) { return { id: b.id, route: validRoute(rev.g, b.route) && (!rev.config.challengeApplied || (b.id===9 ? b.route.nodes.length===2&&b.route.nodes.indexOf('N')>=0 : b.route.nodes.indexOf('N')<0&&(b.id!==7||new Set(b.route.nodes).size<=3))) ? b.route : null, offset: rev.config.map ? 0 : b.offset }; }) };
   }
   function samePlan(a, b) {
     return a.buses.every(function (x, i) {
@@ -125,6 +129,7 @@
     }
     var mustNew = !!rev.fourthMustBeNew;
     function evaluate(plan) {
+      plan = Schedule.spacePlan(rev.g, rev.config, plan);
       evaluated++;
       var sim = Sim.run({ g: rev.g, config: rev.config, phase: rev.phase, plan: plan, requests: rev.requests });
       var m = Metrics.summarize(sim, rev.g, plan, rev.config);
@@ -135,9 +140,13 @@
       var out = [];
       cur.plan.buses.forEach(function (b, bi) {
         cands.concat([null]).forEach(function (r) {
+          if(rev.config.challengeApplied&&r){if(b.id===9&&(r.nodes.length!==2||r.nodes.indexOf('N')<0))return;if(b.id!==9&&r.nodes.indexOf('N')>=0)return;if(b.id===7&&new Set(r.nodes).size>3)return;}
           offsets.forEach(function (off) {
             var buses = cur.plan.buses.map(function (x, xi) { return xi === bi ? { id: x.id, route: r, offset: off } : x; });
             var p = { buses: buses };
+            if (rev.config.progression && new Set(buses.filter(function(b){return b.route;}).map(function(b){return JSON.stringify(b.route);})).size > rev.config.progression.routes[rev.phase - 1]) return;
+            if(rev.config.challengeApplied&&new Set(buses.filter(function(b){return b.id!==9&&b.route;}).map(function(b){return JSON.stringify(b.route);})).size>5)return;
+            if (rev.config.challengeApplied && new Set(buses.filter(function(b){return b.route&&new Set(b.route.nodes).size>3;}).map(function(b){return JSON.stringify(b.route);})).size>4) return;
             if (samePlan(p, cur.plan) || (allow && !allow(p))) return;
             out.push(p);
           });
@@ -153,7 +162,7 @@
 
     function nextQueue() {
       if (state.stage === 0) return state.iter < maxIter ? neighbors(state.cur, mustNew ? fourthOk : null) : null;
-      // 4호차: 추천된 3대 계획은 그대로 두고 버스 4의 (새 노선 × 출차)만 한 번 비교
+      // 4호차: 추천된 3대 계획은 그대로 두고 버스 4의 새 노선만 한 번 비교
       if (state.iter === 0) return neighbors(state.cur, fourthOk).filter(function (p) {
         return p.buses.slice(0, -1).every(function (b, i) { return b === state.cur.plan.buses[i]; });
       });

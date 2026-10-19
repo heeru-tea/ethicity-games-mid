@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const cfg = require('../js/config.js');
+const cfg = require('./planned-fixture.cjs');
 const G = require('../js/graph.js');
 const Sim = require('../js/sim.js');
 const M = require('../js/metrics.js');
@@ -72,7 +72,7 @@ test('overall rate is sum-based, not zone average', () => {
 
 test('travel averages kept separate; max wait includes open waits', () => {
   const m = sum(plan(['A-B', 0]), [req('A', 'B', 0), req('F', 'E', 20)]);
-  assert.equal(m.travel.doneAvg, 3);
+  assert.equal(m.travel.doneAvg, 6);
   assert.equal(m.travel.openAvg, 100);
   assert.equal(m.maxWait, 100);
   assert.equal(m.zones.F.waitOver, 1);

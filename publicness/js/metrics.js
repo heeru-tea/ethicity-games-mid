@@ -66,6 +66,7 @@
         arriveRate: ratio(ess.filter(function (p) { return p.status === 'arrived'; }).length, ess.length)
       },
       zones: zones,
+      families: familyReport(result),
       costs: result.costs
     };
   }
@@ -86,8 +87,20 @@
   }
 
   function fmtRate(r) { return r == null ? '요청 없음' : Math.round(r * 100) + '%'; }
+  function familyReport(result){
+    var groups={};result.passengers.forEach(function(p){if(p.familyId)(groups[p.familyId]||(groups[p.familyId]=[])).push(p);});
+    var ids=Object.keys(groups),complete=ids.filter(function(id){var ps=groups[id],n=ps[0].familySize;return ps.filter(function(p){return p.leg==='outbound'&&p.status==='arrived';}).length===n&&ps.filter(function(p){return p.leg==='return'&&p.status==='arrived';}).length===n;}).length;
+    return {total:ids.length,complete:complete};
+  }
+  function routeReport(result,routes,buses){
+    var byNum={},byBus={};
+    var rows=routes.map(function(route){var row={num:route.num,buses:0,boardings:0,arrived:0,fulls:0,perBus:null};byNum[route.num]=row;return row;});
+    buses.forEach(function(b){var row=byNum[b.routeNum];if(row){row.buses++;byBus[b.id]=row;}});
+    result.log.forEach(function(e){var row=byBus[e.bus];if(!row)return;if(e.type==='board')row.boardings++;if(e.type==='arrive')row.arrived++;if(e.type==='full')row.fulls++;});
+    rows.forEach(function(row){row.perBus=row.buses?r1(row.boardings/row.buses):null;});return rows;
+  }
 
-  var api = { summarize: summarize, discontent: discontent, nextTrust: nextTrust, subtitle: subtitle, fmtRate: fmtRate };
+  var api = { familyReport:familyReport,routeReport:routeReport, summarize: summarize, discontent: discontent, nextTrust: nextTrust, subtitle: subtitle, fmtRate: fmtRate };
   root.PB = root.PB || {};
   root.PB.Metrics = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

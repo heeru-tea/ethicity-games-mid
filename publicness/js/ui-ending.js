@@ -20,12 +20,13 @@
     var face = el('div', { 'class': 'face', 'aria-hidden': 'true' });
     var img = el('img', { src: 'assets/art/portrait-' + story.residentId + '-calm.png', alt: '' });
     img.addEventListener('error', function () { face.textContent = story.name; img.remove(); });
-    face.appendChild(img);
+    if(story.residentId==='yuna'||story.residentId==='daeun')face.textContent=story.name;else face.appendChild(img);
     head.appendChild(face);
     var rd = cfg.residents.filter(function (r) { return r.id === story.residentId; })[0];
     var t = el('div');
     t.appendChild(el('h3', { id: 'res-' + story.residentId }, story.role + ' ' + story.name));
-    t.appendChild(el('p', { 'class': 'note' }, App.nodeName(rd.o) + ' → ' + App.nodeName(rd.d)));
+    var lastRecord=story.evidence[story.evidence.length-1];
+    t.appendChild(el('p', { 'class': 'note' }, rd.itineraries?App.nodeName(lastRecord.o)+' → '+App.nodeName(lastRecord.d)+' → '+App.nodeName(lastRecord.finalDestination):App.nodeName(rd.o) + ' → ' + App.nodeName(rd.d)));
     head.appendChild(t);
     c.appendChild(head);
     c.appendChild(el('p', null, story.text));
@@ -33,10 +34,10 @@
     var d = el('details');
     d.appendChild(el('summary', null, story.name + '의 운행 기록'));
     var rows = story.evidence.map(function (e) {
-      return [e.phase + '단계', STATUS[e.status], e.waitTotal + '분', e.arriveT != null ? e.arriveT + '분' : '-', e.transfer ? '한 번' : '-'];
+      return [e.phase + '단계', e.dayStatus?(e.multiStop?{complete:'일정 완료',returnIncomplete:'마지막 이동 미완료',outboundIncomplete:'첫 목적지 미도착'}:{complete:'왕복 완료',returnIncomplete:'귀가 미완료',outboundIncomplete:'외출 미완료'})[e.dayStatus]:STATUS[e.status], App.duration(e.waitTotal), e.arriveT != null ? App.clock(e.arriveT)+(e.homeT!=null?' / 최종 '+App.clock(e.homeT):'') : '-', e.transfer ? '한 번' : '-'];
     });
     d.appendChild(UI.table(['단계', '상태', '기다린 시간', '도착 시각', '환승'], rows));
-    if (story.drop != null) d.appendChild(el('p', { 'class': 'note' }, '처음 ' + story.evidence[0].waitTotal + '분 → 마지막 ' + story.evidence[story.evidence.length - 1].waitTotal + '분, ' + story.drop + '분 줄었어요.'));
+    if (story.drop != null) d.appendChild(el('p', { 'class': 'note' }, '처음 ' + story.evidence[0].waitTotal + '초 → 마지막 ' + story.evidence[story.evidence.length - 1].waitTotal + '초, ' + story.drop + '초 줄었어요.'));
     c.appendChild(d);
     return c;
   }
@@ -52,12 +53,12 @@
       var obs = zs.history.filter(function (h) { return h.N > 0; });
       var detail = sub.firstPhase == null ? ' — 요청 없음' :
         ' — ' + sub.firstPhase + '~' + sub.lastPhase + '단계 관측 · 도착률 ' + M.fmtRate(sub.first) + ' → ' + M.fmtRate(sub.last) +
-        ' · 마지막 최장 대기 ' + obs[obs.length - 1].maxWait + '분';
+        ' · 마지막 최장 대기 ' + App.duration(obs[obs.length - 1].maxWait);
       li.appendChild(document.createTextNode(detail));
       ul.appendChild(li);
     });
     sec.appendChild(ul);
-    sec.appendChild(el('p', { 'class': 'note' }, '소제목 기준(게임 조정값): 마지막 두 관측 단계 모두 도착률 80% 이상·최장 대기 20분 이하면 “비교적 안정적”, 첫 관측보다 15%p 이상 오르면 “개선이 이어지는 중”.'));
+    sec.appendChild(el('p', { 'class': 'note' }, '소제목 기준(게임 조정값): 마지막 두 관측 단계 모두 도착률 80% 이상·최장 대기 180분 이하면 “비교적 안정적”, 첫 관측보다 15%p 이상 오르면 “개선이 이어지는 중”.'));
 
     var heads = ['생활권'].concat(cfg.phases.map(function (p, i) { return (i + 1) + '단계'; })).concat(['마지막 신뢰']);
     var rows = Object.keys(sum.zones).map(function (z) {
@@ -70,7 +71,7 @@
     sec.appendChild(el('h4', null, '재정'));
     var fr = sum.finance.perPhase.map(function (k, i) { return [(i + 1) + '단계', App.won(k.fare), App.won(-(k.holding + k.op + k.move)), App.won(k.total)]; });
     sec.appendChild(UI.table(['단계', '운임', '비용', '손익(지원금 포함)'], fr, ['누적 잔액', '', '', App.won(sum.finance.balance)]));
-    sec.appendChild(el('p', { 'class': 'note' }, '다섯 대표 운행 창의 합계예요. 한 학기 전체 결산이 아니에요.'));
+    sec.appendChild(el('p', { 'class': 'note' }, cfg.phases.length+'개 대표 운행 창의 합계예요. 한 학기 전체 결산이 아니에요.'));
 
     sec.appendChild(el('h4', null, 'AI 목표 선택 이력'));
     var gl = el('ul', { id: 'goal-history' });
@@ -87,6 +88,9 @@
 
   UI.ending = function (App, panel) {
     var s = App.s, sum = S.endingSummary(s);
+    cfg=s.config;
+    var reactions=N.endingReactions(s.config,s.history),conclusion=N.endingConclusion(reactions,s.history);
+    function showReactions(){PB.Cutscene.play('ending',function(){$('#btn-records').focus();},reactions.concat(conclusion));}
     if (App._resultFor !== s) {
       App._resultFor = s;
       var counts = { stable: 0, improving: 0, remaining: 0 };
@@ -100,9 +104,14 @@
       who.textContent = App.player.nickname + ' 운영자님의 기록';
       panel.appendChild(who);
     }
-    panel.appendChild(el('p', null, '네 주민의 이동부터 돌아봐요. 이야기는 실제 운행 기록에서만 만들어졌어요.'));
+    panel.appendChild(el('p', {id:'ending-verdict','class':'outcome-lead'}, conclusion.verdict));
+    panel.appendChild(el('p', {id:'ending-profit'}, '총 수익 '+App.won(conclusion.profit)+' · 지원금 포함 누적 손익'));
+    var families=s.history.reduce(function(a,h){var f=h.metrics.families;if(f){a.total+=f.total;a.complete+=f.complete;}return a;},{total:0,complete:0});
+    if(families.total)panel.appendChild(el('p',{id:'ending-families'},'호수공원 가족 일정 '+families.total+'팀 중 '+families.complete+'팀 전원 방문·귀가 완료'));
+    panel.appendChild(el('button',{type:'button',id:'btn-ending-replay','class':'btn',onclick:showReactions},'인물 반응 다시 보기'));
+    panel.appendChild(el('p', null, '주요 인물의 이동부터 돌아봐요. 이야기는 실제 운행 기록에서만 만들어졌어요.'));
     cfg.residents.forEach(function (rd) {
-      var story = N.residentStory(sum.residents[rd.id], rd.id, cfg);
+      var story = N.residentStory(sum.residents[rd.id], rd.id, s.config);
       if (story) panel.appendChild(residentCard(App, story));
     });
     var btn = el('button', { type: 'button', 'class': 'btn', id: 'btn-records', 'aria-expanded': 'false', 'aria-controls': 'records', onclick: function () {
@@ -123,6 +132,7 @@
     panel.appendChild(rf);
     panel.appendChild(el('p', { id: 'end-seed', 'class': 'note' }, '사건 세팅: ' + (s.mode === 'random' ? '랜덤' : s.mode === 'fixed' ? '지정' : '기본') + ' ' + s.seed + ' · 시나리오 ' + cfg.SCENARIO_VERSION));
     panel.appendChild(el('button', { type: 'button', 'class': 'btn', id: 'btn-restart', onclick: function () { $('#confirm-restart').showModal(); } }, '처음부터 다시'));
+    if(!s.endingReactionsShown){s.endingReactionsShown=true;showReactions();}
     return {};
   };
 })(window);

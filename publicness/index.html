@@ -19,9 +19,9 @@
     <p class="hook" id="hook-1"></p>
     <p class="hook hook-strong" id="hook-2"></p>
     <fieldset class="setting">
-      <legend>사건 세팅</legend>
-      <label class="radio"><input type="radio" name="setting" value="default" checked> <span><b>기본 세팅</b> — 반 친구들과 같은 사건을 겪어요</span></label>
-      <label class="radio"><input type="radio" name="setting" value="random"> <span><b>랜덤 세팅</b> — 매번 다른 사건이 일어나요</span></label>
+      <legend>마을 세팅</legend>
+      <label class="radio"><input type="radio" name="setting" value="default" checked> <span><b>기본 · 교육용 5단계</b> — 같은 지도와 사건으로 시작해요</span></label>
+      <label class="radio"><input type="radio" name="setting" value="random"> <span><b>랜덤 · 도전용 8단계</b> — 위치·사건 변화, 직행과 광역 노선까지</span></label>
       <p class="note" id="seed-note" aria-live="polite"></p>
     </fieldset>
     <button type="button" class="btn btn-primary btn-lg" id="btn-start">첫 운행 계획하기</button>
@@ -39,7 +39,6 @@
 <header id="topbar" class="topbar">
   <span class="brand">이번 정류장은…</span>
   <ol id="top-phase" class="phase-steps" aria-label="단계"></ol>
-  <span id="top-clock" class="clock" aria-label="운행 시각">계획 중</span>
   <span id="top-balance" class="balance"></span>
   <span class="top-actions">
     <button type="button" class="btn btn-ghost" id="btn-view-toggle" hidden>지도·텍스트 보기</button>
@@ -51,25 +50,48 @@
 <main id="screen-game" class="game">
   <div class="stage-col">
     <div id="stage" class="stage" aria-label="마을 지도">
+      <div id="run-controls" role="group" aria-label="운행 시간 조작"></div>
       <svg id="stage-svg" class="stage-svg" role="img" aria-label="마을 도로와 버스 노선 지도"></svg>
       <div id="stage-3d" class="stage-3d" hidden></div>
       <div id="stage-overlay" class="stage-overlay" aria-hidden="true"></div>
+      <div id="map-clock" class="map-clock" aria-label="마을의 시간">
+        <div><span id="top-clock" class="clock">05:00</span><span id="clock-period">계획 중</span></div>
+        <svg class="day-track" viewBox="0 0 144 40" aria-hidden="true">
+          <path d="M12 32 Q72 -14 132 32" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="1.5"/>
+          <g id="clock-orb" transform="translate(12 32)">
+            <g id="clock-sun" hidden><circle r="5" fill="#d69b28"/><path d="M0 -11V-8 M0 8V11 M-11 0H-8 M8 0H11 M-8 -8L-6 -6 M6 6L8 8 M-8 8L-6 6 M6 -6L8 -8" stroke="#b77b0c" stroke-width="1.5"/></g>
+            <path id="clock-moon" d="M3 -8 A8 8 0 1 0 7 6 A7 7 0 0 1 3 -8" fill="#667eac"/>
+          </g>
+        </svg>
+        <div class="day-endpoints"><span>05:00</span><span>23:00</span></div>
+      </div>
     </div>
     <p id="no3d-note" class="note" hidden></p>
-    <section id="text-routes" class="text-routes" aria-labelledby="text-routes-h">
-      <h2 id="text-routes-h" class="h-small">노선·버스 목록 (글로 보기)</h2>
+    <details id="text-routes" class="text-routes">
+      <summary id="text-routes-h">노선·버스 목록 (글로 보기)</summary>
       <div id="text-routes-body"></div>
-    </section>
+    </details>
   </div>
   <aside id="panel" class="panel" tabindex="-1" aria-live="off"></aside>
 </main>
+
+<dialog id="goal-intro" class="story-dialog" aria-labelledby="goal-intro-h" aria-describedby="story-full" tabindex="-1">
+  <div id="story-stage" class="story-stage"><p id="story-stage-title" class="stage-title"></p><p id="story-stage-sub" class="stage-sub"></p></div>
+  <img id="story-image" class="story-image" alt="">
+  <div class="story-tools"><span id="story-count"></span><button type="button" class="btn" id="btn-goal-start">건너뛰고 시작</button></div>
+  <div class="story-dialogue">
+    <h2 id="goal-intro-h"></h2>
+    <p id="goal-intro-text"><span id="story-typed" aria-hidden="true"></span><span id="story-full" class="story-sr"></span></p>
+    <div class="story-controls"><span>클릭·터치로 문장 완성 / 다음 장면</span><button type="button" class="btn btn-primary" id="story-next">다음</button></div>
+  </div>
+</dialog>
 
 <dialog id="help" class="dialog" aria-labelledby="help-h">
   <h2 id="help-h">도움말</h2>
   <h3>어떻게 하나요?</h3>
   <ul>
-    <li>단계마다 <b>운영 목표</b>를 고르면 모의 AI가 계획을 제안해요. 받아들이거나, 고치거나, 거절할 수 있어요.</li>
-    <li>노선은 도로로 이어진 정류장을 차례로 골라 만들어요. 정류장마다 <b>정차</b>나 <b>통과</b>를 정할 수 있어요. 버스는 노선의 양 끝을 오가요.</li>
+    <li>먼저 노선을 만들고 버스를 배정해요. 같은 노선의 버스는 자동으로 간격을 두고 출발해요. AI 제안은 지도에서 미리 보고 적용할 수 있어요.</li>
+    <li>지도에서 정류장을 누르거나 드래그해서 자유롭게 연결해요. 선 중간을 정류장으로 당기면 경유지가 추가돼요. 시작점으로 연결하면 순환하고, 열린 노선은 왕복해요.</li>
     <li>두 노선이 <b>모두 정차하는</b> 정류장에서만 한 번 갈아탈 수 있어요. 지도에서 선이 겹치기만 하는 곳은 환승 정류장이 아니에요.</li>
     <li>출발하면 운행이 끝날 때까지 계획을 바꿀 수 없어요. 결과를 보고 다음 단계에서 고쳐요.</li>
   </ul>
@@ -119,6 +141,7 @@
 <script src="js/stories.js"></script>
 <script src="js/narrative.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/route-pointer.js"></script>
 <script src="js/map2d.js"></script>
 <script src="vendor/three.min.js"></script>
 <script src="js/view3d.js"></script>
@@ -126,6 +149,7 @@
 <script src="js/ui-run.js"></script>
 <script src="js/ui-result.js"></script>
 <script src="js/ui-ending.js"></script>
+<script src="js/cutscene.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

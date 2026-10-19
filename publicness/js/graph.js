@@ -9,14 +9,22 @@
     var nodes = config.nodes.filter(function (n) { return n.fromPhase <= phase; }).map(function (n) { return n.id; }).sort();
     var adj = {};
     nodes.forEach(function (id) { adj[id] = []; });
-    config.roads.forEach(function (r) {
+    var roads = config.roads;
+    if (config.map) {
+      roads = [];
+      var points = config.nodes.filter(function (n) { return n.fromPhase <= phase; });
+      points.forEach(function (a, i) { points.slice(i + 1).forEach(function (b) {
+        roads.push({ a: a.id, b: b.id, fromPhase: 1, min: Math.max(1, Math.round(Math.hypot(a.x - b.x, a.y - b.y) * config.map.pixelsPerUnit / config.map.pixelsPerSecond)) });
+      }); });
+    }
+    roads.forEach(function (r) {
       if (r.fromPhase > phase || !adj[r.a] || !adj[r.b]) return;
       adj[r.a].push({ to: r.b, min: r.min });
       adj[r.b].push({ to: r.a, min: r.min });
     });
     Object.keys(adj).forEach(function (id) { adj[id].sort(function (p, q) { return p.to < q.to ? -1 : 1; }); });
     return {
-      phase: phase,
+      phase: phase, dwell: config.bus ? config.bus.dwell : 1,
       nodes: nodes,
       adj: adj,
       has: function (id) { return !!adj[id]; },
@@ -40,7 +48,7 @@
     var seen = {};
     for (var i = 0; i < n.length; i++) {
       if (!g.has(n[i])) { errs.push('지금 지도에 없는 정류장이 들어 있어요.'); break; }
-      if (seen[n[i]]) { errs.push('한 방향 노선에서 같은 정류장을 두 번 지날 수 없어요.'); break; }
+      if (seen[n[i]] && !(i === n.length - 1 && n[i] === n[0] && n.length >= 4)) { errs.push('같은 정류장은 순환 노선의 마지막에서만 다시 연결할 수 있어요.'); break; }
       seen[n[i]] = true;
       if (i > 0 && g.time(n[i - 1], n[i]) == null) { errs.push('도로로 바로 이어지지 않은 정류장이 있어요.'); break; }
     }
@@ -52,6 +60,11 @@
     return nodes.map(function (id, i) { return stops[i] ? id : id.toLowerCase(); }).join('-');
   }
   function routeId(route) {
+    if (isLoop(route)) {
+      var ns = route.nodes.slice(0, -1), ss = route.stops.slice(0, -1), ids = [];
+      for (var i = 0; i < ns.length; i++) ids.push(idString(ns.slice(i).concat(ns.slice(0, i)), ss.slice(i).concat(ss.slice(0, i))));
+      return 'loop:' + ids.sort()[0];
+    }
     var fwd = idString(route.nodes, route.stops);
     var rev = idString(route.nodes.slice().reverse(), route.stops.slice().reverse());
     return fwd.toUpperCase() < rev.toUpperCase() || (fwd.toUpperCase() === rev.toUpperCase() && fwd <= rev) ? fwd : rev;
@@ -63,12 +76,16 @@
     return sum;
   }
 
-  // 편도 도로 합×2 + 끝점 정차 2분 + 내부 정차 지점 수×2분
+  // 편도 도로 합×2 + 끝점 정차 2초 + 내부 정차 지점 수×2초
   function cycleMinutes(g, route) {
+    var dwell = g.dwell == null ? 1 : g.dwell;
+    if (isLoop(route)) return oneWayMinutes(g, route) + route.stops.slice(0, -1).filter(Boolean).length * dwell;
     var inner = 0;
     for (var i = 1; i < route.nodes.length - 1; i++) if (route.stops[i]) inner++;
-    return oneWayMinutes(g, route) * 2 + 2 + inner * 2;
+    return oneWayMinutes(g, route) * 2 + (2 + inner * 2) * dwell;
   }
+
+  function isLoop(route) { return !!route && route.nodes.length >= 4 && route.nodes[0] === route.nodes[route.nodes.length - 1]; }
 
   function lessPath(p, q) {
     for (var i = 0; i < Math.min(p.length, q.length); i++) if (p[i] !== q[i]) return p[i] < q[i];
@@ -100,6 +117,7 @@
 
   var api = {
     build: build,
+    isLoop: isLoop,
     neighbors: neighbors,
     validateRoute: validateRoute,
     routeId: routeId,

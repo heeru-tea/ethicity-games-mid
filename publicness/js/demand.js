@@ -11,7 +11,7 @@
   function directional(config, phase) {
     var out = [];
     config.demandRows.forEach(function (row, k) {
-      if (row.fromPhase > phase) return;
+      if (row.fromPhase > phase || (row.toPhase != null && row.toPhase < phase)) return;
       out.push({ r: 2 * k, o: row.a, d: row.b, n: row.n });
       out.push({ r: 2 * k + 1, o: row.b, d: row.a, n: row.n });
     });
@@ -22,13 +22,52 @@
     return list.sort(function (a, b) { return a.t - b.t || a.id - b.id; });
   }
 
+  function residents(config,phase){return config.residents.filter(function(r){return r.fromPhase<=phase;}).map(function(r){return Object.assign({},r,r.itineraries&&r.itineraries[phase]||{});});}
   function base(config, phase, seed) {
     var W = config.bus.requestWindow, out = [];
+    var active = config.day ? residents(config,phase).filter(function(r){return !r.itineraries;}) : [];
     directional(config, phase).forEach(function (od) {
       for (var i = 0; i < od.n; i++) {
         var t = (Math.floor(W * i / od.n) + seed + 11 * od.r + 7 * phase) % W;
-        out.push({ id: phase * 100000 + od.r * 100 + i, key: 'P' + phase + '-R' + od.r + '-' + i, o: od.o, d: od.d, t: t, kind: 'base', row: od.r, i: i });
+        if (config.rush) {
+          var rush = config.rush, peak = Math.ceil(od.n * rush.share);
+          if (i < peak) t = (od.r % 2 === 0 ? rush.outbound : rush.inbound) + (seed + phase * 7 + od.r) % rush.jitter + Math.floor(rush.spread * i / peak);
+          t = Math.min(W - 1, t);
+        }
+        var rd = active.filter(function(r){return r.o===od.o&&r.d===od.d;})[0];
+        if(config.day){
+          // Independent trips follow destination roles; only named residents have a linked return.
+          var rng=Rng.create((seed ^ (phase*7919+od.r*131+i*104729))>>>0),home=['B','F','I'];
+          var lo=10,hi=108;
+          if(od.d==='D'||od.d==='E'){lo=34;hi=74;}
+          else if(home.indexOf(od.d)>=0){lo=74;hi=113;}
+          else if(od.d==='H'){lo=67;hi=101;}
+          else if(od.d==='A'||od.d==='C'||od.d==='G'){lo=7;hi=34;}
+          if((od.o==='G'||od.o==='C')&&(od.d==='A'||od.d==='J')){lo=74;hi=101;}
+          if((od.o==='D'||od.o==='E')&&home.indexOf(od.d)>=0){lo=48;hi=87;}
+          if(od.o==='H'){lo=90;hi=116;}
+          if(od.o==='J'&&od.d==='H'){lo=60;hi=80;}
+          if(od.o==='H'&&od.d==='J'){lo=100;hi=113;}
+          if(od.d==='K'){lo=34;hi=60;}
+          if(od.o==='K'){lo=60;hi=86;}
+          if(od.d==='M'){lo=46;hi=54;}
+          if(od.o==='M'){lo=90;hi=98;}
+          if(od.d==='N'){lo=8;hi=25;}
+          if(od.o==='N'){lo=80;hi=96;}
+          t=Math.floor(lo+(hi-lo)*((i+rng.next())/od.n));
+          if(i===0&&active.some(function(r){return r.d===od.o&&r.o===od.d;}))continue;
+        }
+        var q={ id: phase * 100000 + od.r * 100 + i, key: 'P' + phase + '-R' + od.r + '-' + i, o: od.o, d: od.d, t: t, kind: 'base', row: od.r, i: i };
+        if(rd&&i===0){q.t=rd.depart;q.residentId=rd.id;q.leg='outbound';q.returnTrip={earliest:rd.returnAt,stay:rd.stay};}
+        out.push(q);
       }
+    });
+    if(config.day)residents(config,phase).filter(function(r){return r.itineraries;}).forEach(function(r,i){
+      out.push({id:phase*100000+80000+i,key:'P'+phase+'-guest-'+r.id,o:r.o,d:r.d,t:r.depart,kind:'base',residentId:r.id,leg:'outbound',returnTrip:{earliest:r.returnAt,stay:r.stay,destination:r.returnTo}});
+    });
+    var family=config.familyTrips;
+    if(config.day&&family&&phase>=family.fromPhase)family.origins.forEach(function(origin,index){
+      for(var member=0;member<family.members;member++)out.push({id:phase*100000+70000+index*100+member,key:'P'+phase+'-family-'+index+'-'+member,o:origin,d:family.destination,t:family.depart+index*4+(seed%3),kind:'base',familyId:'P'+phase+'-family-'+index,familySize:family.members,leg:'outbound',returnTrip:{earliest:family.returnAt,stay:family.stay,destination:origin}});
     });
     return sortReqs(out);
   }
@@ -48,7 +87,7 @@
     return out;
   }
 
-  // 추가 수요: 사건 시각부터 0~5분 사이에 매 분 2명(총 12명)
+  // 추가 수요: 사건 시각부터 0~5초 사이에 매 초 2명(총 12명)
   function extra(config, phase, ev) {
     if (!ev || ev.type !== 'demand') return [];
     var od = directional(config, phase)[ev.odIndex], E = config.events, out = [], k = 0;
@@ -60,7 +99,10 @@
     return out;
   }
 
-  var api = { directional: directional, base: base, drawEvents: drawEvents, extra: extra, sortReqs: sortReqs };
+  function clock(config,t){if(!config.day)return Math.round(t)+'초';var m=Math.round(config.day.start+Math.max(0,Math.min(config.bus.window,t))*(config.day.end-config.day.start)/config.bus.window);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+  function duration(config,t){return config.day?Math.round(t*(config.day.end-config.day.start)/config.bus.window)+'분':Math.round(t)+'초';}
+  function period(config,t){var h=config.day?(config.day.start+t*(config.day.end-config.day.start)/config.bus.window)/60:0;return h<7?'이른 아침':h<10?'출근·등교':h<16?'낮 생활 이동':h<20?'퇴근·귀가':'늦은 귀가';}
+  var api = { residents:residents, clock:clock,duration:duration,period:period,directional: directional, base: base, drawEvents: drawEvents, extra: extra, sortReqs: sortReqs };
   root.PB = root.PB || {};
   root.PB.Demand = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

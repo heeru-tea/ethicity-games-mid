@@ -30,17 +30,12 @@ function play(name, strategy, fourth) {
   for (let p = 1; p <= 5; p++) {
     S.beginPlan(s);
     strategy(s, p);
-    if (fourth && p === 3) {
-      const rec = A.recommendSync(S.revealed(s), 'reach');
-      if (!S.applyFourth(s, rec)) S.introduceFourth(s);
-      // 4호차 카드 노선이 지금 초안과 겹치면(학생 화면에선 오류 문구) 다른 새 노선으로
-      for (const alt of ['I-G-A-D', 'I-E-D', 'I-G-H', 'I-E-G-A']) { if (!S.validate(s).length) break; const r = S.addRoute(s, R(alt)); S.assign(s, 4, r.num); }
-    }
+    if (fourth && p >= 4 && s.draft.routes.length) S.assign(s,s.owned,s.draft.routes[0].num);
     if (!S.startRun(s)) throw new Error(`${name} ${p}단계 출발 실패: ${S.validate(s).join(' / ')}`);
     S.finishRun(s); S.nextPhase(s);
   }
   const e = S.endingSummary(s);
-  return { name: name + (fourth ? ' +4호차' : ''), s, e, plans: s.history.map((h) => h.routeIds.join(' ')) };
+  return { name: name + (fourth ? ' +후반 증차 배정' : ''), s, e, plans: s.history.map((h) => h.routeIds.join(' ')) };
 }
 
 const aiGoal = (goal) => (s) => { S.chooseGoal(s, goal); S.applyRecommendation(s, A.recommendSync(S.revealed(s), goal)); };
@@ -64,19 +59,10 @@ function randomRoute(g) {
   }
   return null;
 }
-const randomStrategy = () => {
-  const memo = {};
-  return (s, p) => {
-    const g = S.graph(s);
-    memo[p] = memo[p] || [0, 1, 2].map(() => randomRoute(g));
-    const keep = s.draft.buses.find((b) => b.id === 4)?.routeNum;
-    s.draft.routes.filter((r) => r.num !== keep).forEach((r) => S.deleteRoute(s, r.num));
-    [1, 2, 3].forEach((id, i) => { const r = S.addRoute(s, memo[p][i]); S.assign(s, id, r.num); S.setOffset(s, id, cfg.bus.offsets[Math.floor(rnd() * 4)]); });
-  };
-};
+const randomStrategy = () => (s) => setPlan(s, Array.from({length:S.routeLimit(s)},()=>randomRoute(S.graph(s))), []);
 
 const runs = [];
-runs.push(play('기본 초안 유지', () => {}, false));
+runs.push(play('빈 시작·전 차량 쉬기', s=>s.draft.buses.forEach(b=>S.assign(s,b.id,null)), false));
 runs.push(play('예시: F-C-D-A·B-A-G-E·H-A-D-E', fixed(['F-C-D-A', 'B-A-G-E', 'H-A-D-E']), false));
 runs.push(play('예시: B-C-D-A·B-A-G-E·H-A-G', fixed(['B-C-D-A', 'B-A-G-E', 'H-A-G']), false));
 runs.push(play('예시: F-C-D-A·B-A-G-E·H-A-G', fixed(['F-C-D-A', 'B-A-G-E', 'H-A-G']), false));
@@ -99,19 +85,19 @@ const dominates = (a, b) => ZONES.every((id) => (a.rates[id] ?? 0) >= (b.rates[i
 const dominant = rows.filter((a) => rows.every((b) => a === b || dominates(a, b)));
 const aiRuns = ['profit', 'time', 'reach'].map((g) => runs.find((r) => r.name === `AI ${g} 매번 수락`));
 const sameAI = [0, 1, 2, 3, 4].every((p) => new Set(aiRuns.map((r) => r.plans[p])).size === 1);
-const base1 = runs[0].s.history[0].metrics.zones;
+const base1 = runs[1].s.history[0].metrics.zones;
 const noTension = Object.values(base1).filter((z) => z.N > 0).every((z) => z.rate >= 0.95);
 const broken = [
   ['① 늘 우월한 계획', dominant.length > 0, dominant.map((d) => d.name).join(', ') || '없음'],
   ['② 세 AI 목표가 모든 단계에서 같은 계획', sameAI, sameAI ? '같음' : '다름'],
-  ['③ 기본 계획 1단계 전 지역 도착 95% 이상', noTension, Object.entries(base1).map(([k, v]) => k + pct(v.rate)).join(' ')]
+  ['③ 첫 예시 계획 1단계 전 지역 도착 95% 이상', noTension, Object.entries(base1).map(([k, v]) => k + pct(v.rate)).join(' ')]
 ];
 
 const lines = [];
 lines.push(`# 균형 점검 ${cfg.SCENARIO_VERSION} (seed ${cfg.defaultSeed}, 계획 ${runs.length}종)`, '');
 lines.push('## 고장 판정 (참이면 사용자 보고 후 대기 — 값 자동 변경 없음)', '');
 broken.forEach(([k, v, d]) => lines.push(`- ${v ? '⚠️ 참' : '✓ 거짓'} ${k} — ${d}`));
-lines.push('', '## 계획별 요약 (생활권 평균 도착률% / 최장 대기분, 누적 잔액, 소제목 s=안정 i=개선 r=과제)', '');
+lines.push('', '## 계획별 요약 (생활권 평균 도착률% / 최장 대기초, 누적 잔액, 소제목 s=안정 i=개선 r=과제)', '');
 lines.push('| 계획 | ' + ZONES.join(' | ') + ' | 잔액 | 소제목 |');
 lines.push('|---|' + ZONES.map(() => '---').join('|') + '|---|---|');
 rows.forEach((r) => lines.push(`| ${r.name} | ` + ZONES.map((id) => `${pct(r.rates[id])}/${r.waits[id]}`).join(' | ') + ` | ${r.balance.toLocaleString()} | ${r.subtitles} |`));

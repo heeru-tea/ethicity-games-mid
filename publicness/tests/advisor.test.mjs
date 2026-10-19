@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const cfg = require('../js/config.js');
+const cfg = require('./planned-fixture.cjs');
 const G = require('../js/graph.js');
 const Dm = require('../js/demand.js');
 const Sim = require('../js/sim.js');
