@@ -289,7 +289,8 @@ body[data-screen="plan"] .stage-svg, body[data-screen="plan"] .stage-3d canvas {
 #btn-undo { margin-bottom: 12px; }
 #route-allocation .btn { margin: 4px 4px 0 0; font-size: .85rem; }
 .reason-location { text-align: left; width: 100%; }
-@media (min-width: 700px) and (max-width: 1000px) {
+/* 태블릿 세로 전용: 높이가 낮은 가로 휴대폰은 제외해야 계획 패널이 남는다 */
+@media (min-width: 700px) and (max-width: 1000px) and (min-height: 600px) {
   body:not([data-screen="title"]) { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
   .topbar { flex-shrink: 0; }
   .game { display: grid; grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); flex: 1; min-height: 0; overflow: hidden; }

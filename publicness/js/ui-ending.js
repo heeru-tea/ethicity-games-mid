@@ -18,9 +18,13 @@
     var c = el('article', { 'class': 'card resident-card', 'data-id': story.residentId, 'aria-labelledby': 'res-' + story.residentId });
     var head = el('div', { 'class': 'resident-head' });
     var face = el('div', { 'class': 'face', 'aria-hidden': 'true' });
-    var img = el('img', { src: 'assets/art/portrait-' + story.residentId + '-calm.webp', alt: '' });
-    img.addEventListener('error', function () { face.textContent = story.name; img.remove(); });
-    if(story.residentId==='yuna'||story.residentId==='daeun')face.textContent=story.name;else face.appendChild(img);
+    // 유나·다은은 초상화가 없어 이름만 쓴다(그림을 요청하지도 않음)
+    if(story.residentId==='yuna'||story.residentId==='daeun')face.textContent=story.name;
+    else{
+      var img = el('img', { src: 'assets/art/portrait-' + story.residentId + '-calm.webp', alt: '' });
+      img.addEventListener('error', function () { face.textContent = story.name; img.remove(); });
+      face.appendChild(img);
+    }
     head.appendChild(face);
     var rd = cfg.residents.filter(function (r) { return r.id === story.residentId; })[0];
     var t = el('div');
