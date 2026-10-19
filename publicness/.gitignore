@@ -1,3 +1,9 @@
 docs/
 CLAUDE.md
 tests/_shot-*.png
+# 원본 PNG·컨셉·납품 메모는 로컬에만 둔다 — 게임은 tools/to-webp.mjs가 만든 .webp만 쓴다
+assets/art/*
+!assets/art/*.webp
+# 검토 도구 실행 결과물
+tests/_*.json
+tests/_*.txt

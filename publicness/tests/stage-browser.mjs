@@ -42,13 +42,13 @@ try{
  await playPhase(page);await page.locator('#goal-intro[open]').waitFor();
  assert.equal(await page.locator('#goal-intro').getAttribute('data-scene'),'ending');assert.equal(await page.locator('#goal-intro').getAttribute('data-stage'),'false');
  assert.deepEqual(errors,[]);await page.close();
- // random challenge: 7 phases, reduced motion has no fade; phone width
+ // random challenge: 8 phases, reduced motion has no fade; phone width
  const r=await browser.newPage({viewport:{width:375,height:812}});
  await r.goto(url());await r.evaluate(()=>{PB.App.motion=true;});await r.locator('input[name=setting][value=random]').check();await r.locator('#btn-start').click();
- await card(r,'Stage 1','학기 초 · 1 / 7');assert.equal(await r.locator('#story-stage').evaluate(n=>getComputedStyle(n).animationName),'none');
+ await card(r,'Stage 1','학기 초 · 1 / 8');assert.equal(await r.locator('#story-stage').evaluate(n=>getComputedStyle(n).animationName),'none');
  const box=await r.locator('#story-stage-title').boundingBox();assert.ok(box.x>=0&&box.x+box.width<=375);
  await r.screenshot({path:'publicness/tests/_shot-stage-375.png'});await r.keyboard.press('Enter');assert.equal(await r.locator('#goal-intro-h').textContent(),'하늘');
  await r.close();
- const f=await browser.newPage({viewport:{width:1366,height:900}});await f.goto(url('&seed=9'));await f.locator('#btn-start').click();await card(f,'Stage 1','학기 초 · 1 / 7');await f.close();
- console.log('PASS stage card: phase 1-5 before intro/Sol/Yuna cuts, key/click/Escape/timer, no skip text, no card before ending, random/seed 7 phases, reduced motion, phone');
+ const f=await browser.newPage({viewport:{width:1366,height:900}});await f.goto(url('&seed=9'));await f.locator('#btn-start').click();await card(f,'Stage 1','학기 초 · 1 / 8');await f.close();
+ console.log('PASS stage card: phase 1-5 before intro/Sol/Yuna cuts, key/click/Escape/timer, no skip text, no card before ending, random/seed 8 phases, reduced motion, phone');
 }finally{if(browser)await browser.close();server.close();}

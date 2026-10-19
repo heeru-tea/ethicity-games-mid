@@ -33,7 +33,7 @@
     var data=PB.Narrative.residentResult(rd,r,App.s.current.result.passengers,App.s.config.bus.window);
     var li=el('li',{'data-resident':rd.id}),card=el('details',{'class':'resident-card'}),head=el('summary');
     var face=el('span',{'class':'resident-face '+rd.id,'aria-hidden':'true'});
-    face.appendChild(el('img',{src:'assets/art/'+(['yuna','daeun'].indexOf(rd.id)>=0?'interlude-cheer.png':'portrait-'+rd.id+'-calm.png'),alt:'',loading:'lazy'}));
+    face.appendChild(el('img',{src:'assets/art/'+(['yuna','daeun'].indexOf(rd.id)>=0?'interlude-cheer.webp':'portrait-'+rd.id+'-calm.webp'),alt:'',loading:'lazy'}));
     head.appendChild(face);var words=el('span',{'class':'resident-identity'});words.appendChild(el('strong',null,rd.name));
     words.appendChild(el('span',{'class':'resident-state '+(data.complete?'complete':'incomplete')},(data.complete?'✓ ':'○ ')+data.label));head.appendChild(words);
     head.appendChild(el('span',{'class':'resident-expand','aria-hidden':'true'},'＋'));card.appendChild(head);

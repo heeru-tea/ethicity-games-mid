@@ -169,7 +169,7 @@
   }
   function endingReactions(config,history){
     var thresholds=satisfactionTargets(config);
-    var images={haneul:'intro-haneul.png',narae:'intro-narae.png',jun:'intro-jun.png',sol:'interlude-sol.png',yuna:'interlude-cheer.png',daeun:'interlude-cheer.png'};
+    var images={haneul:'intro-haneul.webp',narae:'intro-narae.webp',jun:'intro-jun.webp',sol:'interlude-sol.webp',yuna:'interlude-cheer.webp',daeun:'interlude-cheer.webp'};
     var lines={
       haneul:['대학교에 갔다가 집으로 돌아오는 길까지 이어졌어요. 제 하루를 생각해 줘서 고마워요.','대학교에 가는 길도, 집으로 돌아오는 길도 필요해요. 다음에는 제 하루를 끝까지 이어 줄 수 있을까요?'],
       narae:['병원에 다녀와서 우리 마을로 돌아올 수 있었어요. 멀리 사는 사람도 잊지 않았네요. 고마워요.','우리 마을은 멀리 있지만, 여기에도 버스를 기다리는 사람이 있어요. 병원에 다녀오는 길을 조금 더 챙겨 줬으면 해요.'],
@@ -189,7 +189,7 @@
     var allSatisfied=reactions.length>0&&reactions.every(function(r){return r.satisfied;});
     var profit=history.reduce(function(total,h){return total+h.metrics.costs.total;},0);
     var verdict=allSatisfied?'다양한 사람들을 만족시켰다.':'도시 노선을 나름 잘 설계했다. 하지만 이게 최선이었을까?';
-    return {name:'솔잎마을의 한 학기',image:'intro-village.png',allSatisfied:allSatisfied,profit:profit,verdict:verdict,text:verdict+'\n총 수익 '+Math.round(profit).toLocaleString('ko-KR')+'원\n지원금·운임에서 운영 비용을 뺀 '+history.length+'단계 누적 금액'};
+    return {name:'솔잎마을의 한 학기',image:'intro-village.webp',allSatisfied:allSatisfied,profit:profit,verdict:verdict,text:verdict+'\n총 수익 '+Math.round(profit).toLocaleString('ko-KR')+'원\n지원금·운임에서 운영 비용을 뺀 '+history.length+'단계 누적 금액'};
   }
   function residentResult(rd,r,passengers,window){
     var complete=r.dayStatus==='complete',first=complete||r.dayStatus==='returnIncomplete';

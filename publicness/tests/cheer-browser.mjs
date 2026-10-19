@@ -6,7 +6,7 @@ try{
  await page.goto(`http://127.0.0.1:${server.address().port}/publicness/?no3d=1`);
  await page.evaluate(()=>{PB.App.motion=true;window.finished=0;PB.Cutscene.play('baseball',()=>window.finished++);});
  await page.locator('#story-image').evaluate(img=>img.decode());
- assert.match(await page.locator('#story-image').getAttribute('src'),/interlude-cheer.png$/);
+ assert.match(await page.locator('#story-image').getAttribute('src'),/interlude-cheer.webp$/);
  assert.match(await page.locator('#goal-intro-h').textContent(),/유나/);
  await page.screenshot({path:'publicness/tests/_shot-cheer-desktop.png'});
  await page.locator('#story-next').click();assert.match(await page.locator('#goal-intro-h').textContent(),/다은/);

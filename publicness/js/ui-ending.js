@@ -18,7 +18,7 @@
     var c = el('article', { 'class': 'card resident-card', 'data-id': story.residentId, 'aria-labelledby': 'res-' + story.residentId });
     var head = el('div', { 'class': 'resident-head' });
     var face = el('div', { 'class': 'face', 'aria-hidden': 'true' });
-    var img = el('img', { src: 'assets/art/portrait-' + story.residentId + '-calm.png', alt: '' });
+    var img = el('img', { src: 'assets/art/portrait-' + story.residentId + '-calm.webp', alt: '' });
     img.addEventListener('error', function () { face.textContent = story.name; img.remove(); });
     if(story.residentId==='yuna'||story.residentId==='daeun')face.textContent=story.name;else face.appendChild(img);
     head.appendChild(face);

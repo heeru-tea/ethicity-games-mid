@@ -2,15 +2,15 @@
   'use strict';
   var PB=root.PB,active=null,timer=null;
   var intro=[
-    {image:'intro-haneul.png',name:'하늘',text:'저는 하늘이에요. 대학교에 가야 하는데, 오늘은 얼마나 기다릴까요?'},
-    {image:'intro-narae.png',name:'나래',text:'저는 나래예요. 병원에 다녀와야 해요. 돌아오는 버스도 있겠죠?'},
-    {image:'intro-jun.png',name:'준',text:'저는 준이에요. 기차에서 내려 일터까지, 아직 한 번 더 가야 해요.'},
-    {image:'intro-village.png',name:'솔잎마을의 AI',text:'솔잎마을에는 서로 다른 하루를 살아가는 사람들이 있습니다. 내가 할 일은 효율적인 노선을 만들고, 누구도 이동에서 소외되지 않게 돕는 것. 모두가 볼일을 마치고 돌아올 수 있도록 첫 노선을 그려 봅시다.'}
+    {image:'intro-haneul.webp',name:'하늘',text:'저는 하늘이에요. 대학교에 가야 하는데, 오늘은 얼마나 기다릴까요?'},
+    {image:'intro-narae.webp',name:'나래',text:'저는 나래예요. 병원에 다녀와야 해요. 돌아오는 버스도 있겠죠?'},
+    {image:'intro-jun.webp',name:'준',text:'저는 준이에요. 기차에서 내려 일터까지, 아직 한 번 더 가야 해요.'},
+    {image:'intro-village.webp',name:'솔잎마을의 AI',text:'솔잎마을에는 서로 다른 하루를 살아가는 사람들이 있습니다. 내가 할 일은 효율적인 노선을 만들고, 누구도 이동에서 소외되지 않게 돕는 것. 모두가 볼일을 마치고 돌아올 수 있도록 첫 노선을 그려 봅시다.'}
   ];
-  var sol=[{image:'interlude-sol.png',name:'솔',text:'저는 솔이에요. 새로 이사 왔어요. 여기서도 기차역에 갈 수 있을까요? 저녁에 돌아오는 버스도 있으면 좋겠어요.'}];
+  var sol=[{image:'interlude-sol.webp',name:'솔',text:'저는 솔이에요. 새로 이사 왔어요. 여기서도 기차역에 갈 수 있을까요? 저녁에 돌아오는 버스도 있으면 좋겠어요.'}];
   var baseball=[
-    {image:'interlude-cheer.png',fallback:'intro-village.png',name:'유나 · 치어리더',text:'저는 유나예요. 오늘 오후에는 종합운동장에서 치어리더로 일해요. 경기가 끝나면 친구 집으로 집들이를 가기로 했어요.'},
-    {image:'interlude-cheer.png',fallback:'intro-village.png',name:'다은 · 야구 팬',text:'저는 다은이에요. 유나와 터미널에서 함께 왔어요. 오늘 밤에는 밀집 주거지의 친구 집에 가고, 다음 날에는 운동장에 들렀다가 밤에 터미널로 돌아갈 거예요.'}
+    {image:'interlude-cheer.webp',fallback:'intro-village.webp',name:'유나 · 치어리더',text:'저는 유나예요. 오늘 오후에는 종합운동장에서 치어리더로 일해요. 경기가 끝나면 친구 집으로 집들이를 가기로 했어요.'},
+    {image:'interlude-cheer.webp',fallback:'intro-village.webp',name:'다은 · 야구 팬',text:'저는 다은이에요. 유나와 터미널에서 함께 왔어요. 오늘 밤에는 밀집 주거지의 친구 집에 가고, 다음 날에는 운동장에 들렀다가 밤에 터미널로 돌아갈 거예요.'}
   ];
   var scenes={intro:intro,sol:sol,baseball:baseball};
   var STAGE_MS=1600,auto=null,IGNORE=['Tab','Shift','Control','Alt','Meta','CapsLock'];
