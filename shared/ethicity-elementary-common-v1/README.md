@@ -4,6 +4,26 @@
 
 초등 AI 윤리 게임을 제작하는 팀이 같은 캐릭터·배경·말풍선·버튼·아이콘·효과를 재사용할 수 있는 공통 팩입니다. 새봄이의 픽셀 캐릭터를 시각 기준으로 삼아 따뜻한 크림·세이지·목재 색상으로 구성했습니다. 인권보장 게임에 자동 반영된 버전이 아니라, 팀 전체가 도입할 수 있는 에셋과 연결 예제입니다.
 
+
+## 단일 패키지 원칙
+
+이 배포본은 **실행용 공통 에셋 + 스타일 문서 + 비주얼/완성게임 레퍼런스**를 한 폴더에 모은 팀 배포용 단일 패키지입니다. 팀원에게 별도의 `REF_*` 파일을 추가로 전달할 필요가 없습니다.
+
+레퍼런스는 모두 `references/` 안에 있습니다.
+
+| 파일 | 용도 |
+|---|---|
+| `references/REF_A_character_sheet.png` | 캐릭터/스프라이트 그림체 기준 |
+| `references/REF_B_world_concept.png` | 학교·마을·건물·자연·AI 로봇 세계관 기준 |
+| `references/REF_UI_game.html` | UI·학습 피드백·반응형·접근성 구현 참고 |
+| `references/REF_EXPLORE_game.html` | 탐험형 맵·HUD·NPC 대화·엔딩·성찰 구조 참고 |
+
+실제 게임 코드에서는 레퍼런스보다 `manifest.json`과 `runtime/` 및 실제 공통 자산을 우선 사용합니다.
+
+## 가장 먼저 확인
+
+팀원은 먼저 `START_HERE.md`를 읽으세요. LLM 프롬프트 가이드는 `docs/TEAM_LLM_PROMPT_GUIDE_v1.3.docx`에 있습니다.
+
 ## 먼저 열어 보기
 
 1. ZIP 전체를 압축 해제합니다.
@@ -23,6 +43,7 @@
 | runtime | 공통 로더·렌더러·스타일·메타데이터 |
 | preview | 실행 예제와 전체 미리보기 |
 | docs | 시각 규칙, 파일 목록, 제작 프롬프트와 팀 적용 안내 |
+| references | 공식 캐릭터·세계관 이미지와 UI/탐험형 완성 게임 레퍼런스 |
 | qa | 규격화 스크립트, 검사 결과, 실제 런타임 렌더링 결과 |
 | manifest.json | 파일 경로·프레임·기준점·장소 정보를 모은 기준 데이터 |
 
@@ -74,7 +95,7 @@
 (async () => {
   const assets = await EthicityAssets.load(
     ETHICITY_COMMON_MANIFEST,
-    'assets/ethicity-common'
+    '../shared/ethicity-elementary-common-v1'
   );
   const ctx = document.querySelector('canvas').getContext('2d');
   assets.drawBackground(ctx, 'classroom', 1280, 720);
