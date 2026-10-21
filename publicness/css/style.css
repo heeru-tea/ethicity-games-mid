@@ -189,6 +189,10 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 .goal-btn[aria-pressed="true"] .goal-desc { color: var(--accent-ink); }
 .route-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
 .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+#resident-chips { margin: 12px 0 16px; }
+#resident-chips h3 { margin-bottom: 6px; }
+.resident-chip { font-size: .9rem; text-align: left; }
+#depart-blocker p { margin: 0 0 6px; }
 .chip { min-height: 44px; min-width: 44px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); font-weight: 700; cursor: pointer; }
 .chip.stop { border-color: var(--text); }
 .chip.pass { color: var(--text-mute); border-style: dashed; }
