@@ -1,0 +1,15 @@
+{
+  "name": "ethicity-elementary-common-assets",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "verify": "node qa/verify.cjs",
+    "build:characters": "node qa/pack-characters.cjs",
+    "build:ui": "node qa/build-ui.cjs",
+    "build:manifest": "node qa/build-manifest.cjs"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "0.1.100",
+    "sharp": "0.35.5"
+  }
+}

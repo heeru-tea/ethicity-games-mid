@@ -1,0 +1,34 @@
+{
+  "image": "effects/feedback.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "fps": 10,
+  "loop": false,
+  "effects": {
+    "clue": {
+      "row": 0,
+      "frames": 8,
+      "durationMs": 800
+    },
+    "correct": {
+      "row": 1,
+      "frames": 8,
+      "durationMs": 800
+    },
+    "retry": {
+      "row": 2,
+      "frames": 8,
+      "durationMs": 800
+    },
+    "key": {
+      "row": 3,
+      "frames": 8,
+      "durationMs": 800
+    },
+    "unlock": {
+      "row": 4,
+      "frames": 8,
+      "durationMs": 800
+    }
+  }
+}

@@ -1,0 +1,17 @@
+(function(global){'use strict';
+class CommonAssets{
+ constructor(manifest,base='.'){this.manifest=manifest;this.base=base.replace(/\/$/,'');this.images=new Map();this.soundEnabled=false;this.audio=null;}
+ path(p){return this.base+'/'+p;}
+ async load(){const paths=new Set();for(const c of Object.values(this.manifest.characters)){paths.add(c.walk);paths.add(c.portraits);}for(const b of Object.values(this.manifest.backgrounds))paths.add(b.image);paths.add(this.manifest.icons.image);paths.add(this.manifest.effects.image);paths.add(this.manifest.props.image);const results=await Promise.allSettled([...paths].map(src=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{this.images.set(src,img);resolve(src)};img.onerror=()=>reject(Error(src));img.src=this.path(src)})));const failed=results.filter(x=>x.status==='rejected');if(failed.length)throw Error('이미지 파일을 확인해 주세요: '+failed.map(x=>x.reason.message).join(', '));return this;}
+ drawBackground(ctx,id,w=1280,h=720){const b=this.manifest.backgrounds[id];if(!b)throw Error('Unknown background '+id);ctx.imageSmoothingEnabled=false;ctx.drawImage(this.images.get(b.image),0,0,w,h);}
+ drawCharacter(ctx,id,x,y,direction='down',frame=1,scale=.8){const c=this.manifest.characters[id];if(!c)throw Error('Unknown character '+id);const row=c.directions.indexOf(direction);if(row<0)throw Error('Unknown direction '+direction);const f=((Math.floor(frame)%4)+4)%4;ctx.imageSmoothingEnabled=false;ctx.drawImage(this.images.get(c.walk),f*96,row*128,96,128,Math.round(x-48*scale),Math.round(y-120*scale),96*scale,128*scale);}
+ drawPortrait(ctx,id,expression='neutral',x=0,y=0,size=256){const c=this.manifest.characters[id],i=c.expressions.indexOf(expression);if(i<0)throw Error('Unknown expression '+expression);ctx.imageSmoothingEnabled=false;ctx.drawImage(this.images.get(c.portraits),i*256,0,256,256,x,y,size,size);}
+ drawIcon(ctx,id,x,y,size=32){const f=this.manifest.icons.icons[id];if(!f)throw Error('Unknown icon '+id);ctx.imageSmoothingEnabled=false;ctx.drawImage(this.images.get(this.manifest.icons.image),f.x,f.y,f.w,f.h,x,y,size,size);}
+ drawEffect(ctx,id,x,y,elapsedMs,size=80,reducedMotion=false){const e=this.manifest.effects.effects[id];if(!e)throw Error('Unknown effect '+id);if(elapsedMs<0||elapsedMs>=e.durationMs)return false;const frame=reducedMotion?3:Math.min(7,Math.floor(elapsedMs/100));ctx.imageSmoothingEnabled=false;ctx.drawImage(this.images.get(this.manifest.effects.image),frame*64,e.row*64,64,64,x-size/2,y-size/2,size,size);return true;}
+ drawProp(ctx,id,x,y,height=96){const p=this.manifest.props.frames[id];if(!p)throw Error('Unknown prop '+id);const w=height*p.w/p.h;ctx.imageSmoothingEnabled=false;ctx.drawImage(this.images.get(this.manifest.props.image),p.x,p.y,p.w,p.h,x-w/2,y-height,w,height);}
+ canWalk(id,x,y){const b=this.manifest.backgrounds[id];if(!b)return false;return b.walkAreas.some(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);}
+ setSound(on){this.soundEnabled=!!on;if(!on&&this.audio)this.audio.pause();}
+ async playSound(id){if(!this.soundEnabled)return false;const src=this.manifest.sounds[id];if(!src)return false;try{if(this.audio)this.audio.pause();this.audio=new Audio(this.path(src));this.audio.volume=.45;await this.audio.play();return true;}catch(e){return false;}}
+}
+global.EthicityAssets={CommonAssets,async load(manifest,base='.'){return new CommonAssets(manifest,base).load()}};
+})(typeof window!=='undefined'?window:globalThis);
