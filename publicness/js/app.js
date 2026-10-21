@@ -118,8 +118,10 @@
       // Decorative terrain only: route distance and accessibility remain unchanged.
       var river = [];
       if(s.mode === 'default')for(var y=-7;y<=7;y+=.15)river.push({x:-3.9+.45*Math.sin(y*.48),y:y});
-      v.setScene({ nodes: nodes, roads: roads, phase: s.phase, river: river, boundary: nodes.some(function(n){return n.id==='N';}) ? {x:Math.sign(nodes.filter(function(n){return n.id==='N';})[0].x)*6.4} : null }); App._sceneKey = key;
+      v.setScene({ nodes: nodes, roads: roads, phase: s.phase, river: river, load: PB.Demand.stopLoad(s.config, s.phase, s.seed), boundary: nodes.some(function(n){return n.id==='N';}) ? {x:Math.sign(nodes.filter(function(n){return n.id==='N';})[0].x)*6.4} : null }); App._sceneKey = key;
     }
+    // 붐비는 정류장의 장식용 대기 인물은 계획 전·계획 중에만. 운행·결과에서는 실제 대기 인원만 보인다
+    if (v.setCrowd) v.setCrowd(s.stage === 'reveal' || s.stage === 'plan');
     var routes = s.stage === 'run' || s.stage === 'result'
       ? (s.current ? s.current.plan.buses : []).filter(function (b) { return b.route; }).map(function (b) {
         var num = App.numForPlanRoute(b.route), st = routeStyle(num);
