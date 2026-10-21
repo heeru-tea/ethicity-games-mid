@@ -395,3 +395,6 @@ body[data-screen="run"] .topbar { position: sticky; top: 0; }
   #run-controls { top: 8px; right: 8px; gap: 4px; }
   #run-controls .btn { font-size: 13px; padding: 6px; }
 }
+/* 첫 노선 안내 */
+.tutorial-steps { padding-left: 22px; margin: 8px 0 12px; }
+.tutorial-steps li { margin-bottom: 6px; }

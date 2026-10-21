@@ -1,3 +1,4 @@
+import {beginPlan} from './browser-fixture.mjs';
 import {createRequire} from 'node:module';import assert from 'node:assert/strict';import {startServer} from './serve.mjs';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),server=await startServer(0);let browser;
 try{
@@ -5,7 +6,7 @@ try{
  for(const mode of ['2d','3d']){
   const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   const url=`http://127.0.0.1:${server.address().port}/publicness/?${mode==='2d'?'no3d=1&':''}`;
-  async function start(){await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();}
+  async function start(){await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);}
   await page.goto(url);await page.locator('input[value=random]').check();await start();
   const state=await page.evaluate(()=>({seed:PB.App.s.seed,nodes:PB.App.s.config.nodes,base:PB.config.nodes,xy:PB.App.nodeXY('A'),kind:PB.App.view.kind}));
   assert.notDeepEqual(state.nodes,state.base);assert.deepEqual(state.xy,(({x,y})=>({x,y}))(state.nodes.find(n=>n.id==='A')));assert.equal(state.kind,mode);

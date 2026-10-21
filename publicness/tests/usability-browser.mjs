@@ -1,4 +1,4 @@
-import {plannedTown} from './browser-fixture.mjs';
+import {plannedTown,beginPlan} from './browser-fixture.mjs';
 import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 import {startServer} from './serve.mjs';
@@ -9,7 +9,7 @@ try{
  for(const mode of ['2d','3d']){
   const page=await browser.newPage({viewport:{width:800,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/publicness/${mode==='2d'?'?no3d=1':''}`);
-  await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();await plannedTown(page);
+  await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);await plannedTown(page);
   const stage=await page.locator('#stage').boundingBox();const order=await page.locator('.stop-order').boundingBox();assert.ok(stage.y+stage.height<order.y&&order.y<1000,'map and order visible together');
   await page.screenshot({path:`publicness/tests/_shot-usability-tablet-${mode}.png`});
   await page.locator('#btn-new-route').click();for(const id of ['F','C','D']){await page.locator('#stop-picker').evaluate(n=>n.open=true);await page.locator('.next-stop[data-node="'+id+'"]').click();}

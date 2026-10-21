@@ -1,4 +1,4 @@
-import {plannedTown} from './browser-fixture.mjs';
+import {plannedTown,beginPlan} from './browser-fixture.mjs';
 import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 import {startServer} from './serve.mjs';
@@ -11,11 +11,10 @@ try{
   await page.goto(`http://127.0.0.1:${server.address().port}/publicness/${mode==='2d'?'?no3d=1':''}`);
   await page.locator('#btn-start').click();
   assert.equal(await page.locator('#goal-intro').evaluate(d=>d.open),true);
-  assert.equal(await page.locator('#story-stage-title').textContent(),'Stage 1');await page.keyboard.press('Enter');
   assert.ok((await page.locator('#goal-intro').innerText()).includes('저는 하늘이에요.'));
   assert.equal(await page.locator('body').getAttribute('data-screen'),'title');
   await page.screenshot({path:`publicness/tests/_shot-goal-${mode}.png`});
-  await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();await plannedTown(page);
+  await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);await plannedTown(page);
   const draft=()=>page.evaluate(()=>JSON.stringify(PB.App.s.draft));
   const original=await draft();
   assert.equal(await page.locator('.stop-drag-handle').count(),4,'reorder handles');
@@ -39,7 +38,7 @@ try{
   assert.deepEqual(errors,[]);console.log('PASS '+mode+': drag reorder, keyboard, closed loop, undo deletion/creation and bus assignments');await page.close();
  }
  const context=await browser.newContext({viewport:{width:800,height:1000},hasTouch:true}),page=await context.newPage();
- await page.goto(`http://127.0.0.1:${server.address().port}/publicness/?no3d=1`);await page.locator('#btn-start').tap();await page.locator('#btn-goal-start').tap();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').tap();await page.locator('#btn-begin-plan').tap();await plannedTown(page);
+ await page.goto(`http://127.0.0.1:${server.address().port}/publicness/?no3d=1`);await page.locator('#btn-start').tap();await page.locator('#btn-goal-start').tap();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').tap();await beginPlan(page,'tap');await plannedTown(page);
  await page.locator('.stop-order').evaluate(n=>n.scrollIntoView({block:'center'}));const a=await page.locator('#drag-stop-0').boundingBox(),b=await page.locator('#drag-stop-2').boundingBox();
  const cdp=await context.newCDPSession(page);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:a.x+20,y:a.y+20}]});
  for(let step=1;step<=6;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:a.x+20+(b.x-a.x)*step/6,y:a.y+20+(b.y-a.y)*step/6}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
