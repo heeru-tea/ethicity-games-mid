@@ -1,0 +1,191 @@
+/*
+ * SVG 지도 — 3D가 안 될 때의 대체 무대이자 조작 지도. 3D 무대(view3d.js)와 같은 StageView 인터페이스.
+ * 좌표는 config의 평면 좌표(x 오른쪽, y 아래)를 그대로 쓴다. 지도 클릭은 정보 보기·노선 편집용이며
+ * 키보드 사용자는 오른쪽 패널의 정류장 목록 버튼으로 같은 일을 한다.
+ */
+(function (root) {
+  'use strict';
+  var NS = 'http://www.w3.org/2000/svg';
+  var U = 110, PAD = 70, LANE = 7;
+
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  function create(svg, opts) {
+    opts = opts || {};
+    var nodes = {}, layers = {}, routeSegs = {}, reduced = false, currentRoutes = [];
+    ['terrain', 'roads', 'routes', 'stops', 'badges', 'buses'].forEach(function (k) { layers[k] = el('g', { 'class': 'layer-' + k }, svg); });
+
+    function px(n) { return { x: n.x * U, y: n.y * U }; }
+
+    // 지도 위에 겹쳐 놓인 시계(opts.reserved) 밑에 정류장·이름이 깔리면 위쪽 여백을 늘려 지도를 아래로 비킨다
+    var baseBox = null, extraTop = 0;
+    function applyBox() { svg.setAttribute('viewBox', [baseBox.x, baseBox.y - extraTop, baseBox.w, baseBox.h + extraTop].join(' ')); }
+    function underReserved(area) {
+      var r = svg.getBoundingClientRect();
+      return Object.keys(nodes).some(function (id) {
+        var p = project(nodes[id].x, nodes[id].y), x = r.left + p.left, y = r.top + p.top;
+        return x + 48 > area.left && x - 48 < area.right && y + 34 > area.top && y - 20 < area.bottom;
+      });
+    }
+    function fitReserved() {
+      if (!baseBox) return;
+      extraTop = 0; applyBox();
+      var area = opts.reserved && opts.reserved();
+      if (!area || !svg.getBoundingClientRect().width) return;
+      var areas=Array.isArray(area)?area:[area];
+      while (extraTop < 600 && areas.some(underReserved)) { extraTop += 20; applyBox(); }
+    }
+    if (root.ResizeObserver) new root.ResizeObserver(function () { fitReserved(); }).observe(svg);
+
+    function setScene(scene) {
+      nodes = {};
+      scene.nodes.forEach(function (n) { nodes[n.id] = n; });
+      var xs = scene.nodes.map(function (n) { return n.x * U; }), ys = scene.nodes.map(function (n) { return n.y * U; });
+      var minX = Math.min.apply(null, xs) - PAD, minY = Math.min.apply(null, ys) - PAD;
+      var w = Math.max.apply(null, xs) - minX + PAD, h = Math.max.apply(null, ys) - minY + PAD;
+      if(nodes.N){minX-=90;w+=180;}
+      baseBox = { x: minX, y: minY, w: w, h: h };
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      fitReserved();
+      layers.roads.innerHTML = ''; layers.stops.innerHTML = ''; layers.terrain.innerHTML = '';
+      if(scene.river && scene.river.length){
+        var points=scene.river.map(function(p){return p.x*U+','+p.y*U;}).join(' ');
+        [ ['#d3dfcd',56], ['#a8cbd4',40], ['#cce4e8',2] ].forEach(function(style){
+          el('polyline',{points:points,fill:'none',stroke:style[0],'stroke-width':style[1],'stroke-linejoin':'round','pointer-events':'none'},layers.terrain);
+        });
+      }
+      if(scene.boundary){
+        var city=nodes.N,cx=city.x*U,cy=city.y*U,bx=scene.boundary.x*U;
+        var town=el('g',{'class':'regional-city','pointer-events':'none'},layers.terrain);
+        [[-95,-80,40,110],[-43,-125,46,155],[12,-95,35,120],[57,-145,45,175],[110,-75,30,105]].forEach(function(b,i){
+          el('rect',{x:cx+b[0],y:cy+b[1]-65,width:b[2],height:b[3],fill:i%2?'#bdcdd4':'#d0d9db',stroke:'#7e929e','stroke-width':2},town);
+          for(var y=cy+b[1]-53;y<cy+b[1]-65+b[3]-8;y+=20)el('path',{d:'M'+(cx+b[0]+6)+' '+y+'h'+(b[2]-12),stroke:'#819caa','stroke-width':5},town);
+        });
+        el('line',{'class':'admin-boundary',x1:bx,y1:-3.5*U,x2:bx,y2:3.5*U,stroke:'#24292d','stroke-width':4,'stroke-dasharray':'12 10','pointer-events':'none'},layers.terrain);
+        el('text',{x:bx+12,y:3.5*U,fill:'#303940','font-size':20},layers.terrain).textContent='행정 경계';
+      }
+      scene.roads.forEach(function (r) {
+        var a = px(nodes[r.a]), b = px(nodes[r.b]);
+        el('line', { 'class': 'road', x1: a.x, y1: a.y, x2: b.x, y2: b.y }, layers.roads);
+      });
+      scene.nodes.forEach(function (n) {
+        var p = px(n);
+        var g = el('g', { 'class': 'stop-g', 'data-node': n.id }, layers.stops);
+        el('rect', { 'class': 'stop-dot', x: p.x - 17, y: p.y - 17, width: 34, height: 34, rx: 5 }, g);
+        var id = el('text', { x: p.x, y: p.y + 5, 'text-anchor': 'middle', 'class': 'stop-label' }, g);
+        id.textContent = n.id;
+        var label = el('text', { x: p.x, y: p.y + 38, 'text-anchor': 'middle', 'class': 'stop-label' }, g);
+        label.textContent = n.name;
+      });
+    }
+
+    function segKey(a, b) { return a < b ? a + b : b + a; }
+    function offsetFor(a, b, num) {
+      var list = routeSegs[segKey(a, b)] || [num], k = list.indexOf(num), n = list.length;
+      var A = px(nodes[a]), B = px(nodes[b]), dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx, dy) || 1;
+      var sign = a < b ? 1 : -1, off = (k - (n - 1) / 2) * LANE * sign;
+      return { x: -dy / len * off, y: dx / len * off };
+    }
+
+    function setRoutes(routes) {
+      currentRoutes = routes;
+      layers.routes.innerHTML = '';
+      routeSegs = {};
+      routes.forEach(function (r) {
+        for (var i = 1; i < r.route.nodes.length; i++) {
+          var k = segKey(r.route.nodes[i - 1], r.route.nodes[i]);
+          (routeSegs[k] = routeSegs[k] || []).push(r.num);
+        }
+      });
+      routes.forEach(function (r) {
+        var ns = r.route.nodes;
+        for (var i = 1; i < ns.length; i++) {
+          if (!nodes[ns[i - 1]] || !nodes[ns[i]]) continue;
+          var a = px(nodes[ns[i - 1]]), b = px(nodes[ns[i]]), o = offsetFor(ns[i - 1], ns[i], r.num);
+          el('line', { 'class': 'route-line' + (r.dim ? ' dim' : '') + (r.preview ? ' preview-route' : ''), x1: a.x + o.x, y1: a.y + o.y, x2: b.x + o.x, y2: b.y + o.y,
+            stroke: r.color, 'stroke-dasharray': r.dash || '', 'data-route': r.num }, layers.routes);
+        }
+        ns.forEach(function (id, i) {
+          if (r.route.stops[i] || !nodes[id]) return;
+          var nb = ns[i - 1], o = offsetFor(nb, id, r.num), p = px(nodes[id]);
+          el('circle', { 'class': 'pass-ring', cx: p.x + o.x, cy: p.y + o.y, r: 5, stroke: r.color }, layers.routes);
+        });
+      });
+    }
+
+    function classAll(cls, ids) {
+      Array.prototype.forEach.call(layers.stops.querySelectorAll('.stop-g'), function (g) {
+        g.classList.toggle(cls, ids.indexOf(g.getAttribute('data-node')) >= 0);
+      });
+    }
+    function setSelectable(ids) {
+      classAll('selectable', ids || []);
+      Array.prototype.forEach.call(layers.stops.querySelectorAll('.stop-g'), function (g) {
+        g.classList.toggle('dim', !!(ids && ids.length) && ids.indexOf(g.getAttribute('data-node')) < 0 && !g.classList.contains('selected'));
+      });
+    }
+    function setSelected(ids) { classAll('selected', ids || []); }
+
+    // buses: [{ id, x, y, num, color }] — x,y는 평면 좌표(구간 보간 결과), lane은 노선 차선
+    function setBuses(buses) {
+      layers.buses.innerHTML = '';
+      buses.forEach(function (b) {
+        var g = el('g', { 'class': 'bus-g', 'data-bus': b.id }, layers.buses);
+        var x = b.x * U + (b.dx || 0), y = b.y * U + (b.dy || 0);
+        el('rect', { x: x - 13, y: y - 9, width: 26, height: 18, rx: 4, fill: b.color }, g);
+        var t = el('text', { x: x, y: y + 4, 'text-anchor': 'middle' }, g);
+        t.textContent = b.regional?'광'+b.id:b.express?'직'+b.id:b.id;
+        g.setAttribute('aria-label',b.id+'호차'+(b.regional?' 광역 · 정원 24명':b.express?' 직행 · 정원 18명':'')+' · 탑승 '+(b.riders||0)+'명');
+        if(b.riders>0){
+          el('rect',{x:x-23,y:y-36,width:46,height:22,rx:5,fill:'#fff',stroke:'#1A1D24'},g);
+          var count=el('text',{x:x,y:y-20,'text-anchor':'middle','class':'rider-count','data-riders':b.riders},g);count.textContent=b.riders+'명';
+        }
+      });
+    }
+
+    function setWaiting(map) {
+      layers.badges.innerHTML = '';
+      Object.keys(map || {}).forEach(function (id) {
+        if (!map[id] || !nodes[id]) return;
+        var p = px(nodes[id]);
+        var g = el('g', { 'class': 'wait-badge', 'data-wait': id }, layers.badges);
+        var label = String(map[id]);
+        el('rect', { x: p.x + 12, y: p.y - 28, width: 12 + label.length * 7, height: 18, rx: 9 }, g);
+        var t = el('text', { x: p.x + 18 + label.length * 3.5, y: p.y - 15, 'text-anchor': 'middle' }, g);
+        t.textContent = label;
+      });
+    }
+
+    function flash(id) {
+      var g = layers.stops.querySelector('[data-node="' + id + '"]');
+      if (!g || reduced) return;
+      g.classList.remove('flash'); void g.getBBox; g.classList.add('flash');
+    }
+
+    // 무대 위 DOM 오버레이용 위치(백분율)
+    function project(x, y) {
+      var vb = svg.viewBox.baseVal, r = svg.getBoundingClientRect();
+      var s = Math.min(r.width / vb.width, r.height / vb.height);
+      var ox = (r.width - vb.width * s) / 2, oy = (r.height - vb.height * s) / 2;
+      return { left: ox + (x * U - vb.x) * s, top: oy + (y * U - vb.y) * s };
+    }
+    function laneOffset(a, b, num) { var o = offsetFor(a, b, num); return { dx: o.x, dy: o.y }; }
+
+    root.PB.RoutePointer.attach(svg,function(x,y){return root.PB.RoutePointer.pick(svg,project,nodes,currentRoutes,x,y,function(a,b,num){var o=offsetFor(a,b,num);return{x:o.x/U,y:o.y/U};});},opts);
+    return {
+      kind: '2d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
+      setBuses: setBuses, setWaiting: setWaiting, flash: flash, project: project, laneOffset: laneOffset,
+      setReducedMotion: function (v) { reduced = !!v; },
+      show: function (v) { svg.style.display = v ? '' : 'none'; if (v) fitReserved(); },
+      dispose: function () { svg.innerHTML = ''; }
+    };
+  }
+
+  root.PB = root.PB || {};
+  root.PB.Map2D = { create: create };
+})(typeof window !== 'undefined' ? window : globalThis);
