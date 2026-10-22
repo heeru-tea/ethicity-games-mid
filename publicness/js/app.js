@@ -281,23 +281,36 @@
     return { number: 1, total: cfg.phases.length + (challenge ? cfg.challenge.phases.length : 0), name: cfg.phases[0] };
   }
 
-  /* ── 효과음(기본 꺼짐, 파일 없이 합성) ─── */
+  /* ── 효과음(기본 켜짐, 파일 없이 합성). 끈 상태는 이 브라우저에 기억 ─── */
   var audio = null;
+  function tone(f, start, len, peak, type) {
+    audio = audio || new (root.AudioContext || root.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    var o = audio.createOscillator(), gn = audio.createGain(), t = audio.currentTime + start;
+    o.frequency.value = f; o.type = type || 'sine';
+    gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(peak, t + 0.015);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(gn); gn.connect(audio.destination);
+    o.start(t); o.stop(t + len + 0.02);
+  }
+  // 정류장 안내 차임: 사건·청원·주요 인물 도착
   App.chime = function () {
     if (!App.sound) return;
+    try { tone(659, 0, 0.3, 0.12); tone(523, 0.18, 0.3, 0.12); } catch (e) { /* 소리 없이 계속 */ }
+  };
+  // 승객이 정류장에 생길 때 짧고 작은 '톡', 주요 인물이 나타날 때는 조금 높고 또렷한 두 음
+  App.sfx = function (kind) {
+    if (!App.sound) return;
     try {
-      audio = audio || new (root.AudioContext || root.webkitAudioContext)();
-      var t = audio.currentTime;
-      [659, 523].forEach(function (f, i) {
-        var o = audio.createOscillator(), gn = audio.createGain();
-        o.frequency.value = f; o.type = 'sine';
-        gn.gain.setValueAtTime(0.0001, t + i * 0.18);
-        gn.gain.exponentialRampToValueAtTime(0.12, t + i * 0.18 + 0.02);
-        gn.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.18 + 0.3);
-        o.connect(gn); gn.connect(audio.destination);
-        o.start(t + i * 0.18); o.stop(t + i * 0.18 + 0.32);
-      });
+      if (kind === 'resident') { tone(784, 0, 0.16, 0.07, 'triangle'); tone(1047, 0.09, 0.2, 0.07, 'triangle'); }
+      else tone(1175, 0, 0.07, 0.035, 'triangle');
     } catch (e) { /* 소리 없이 계속 */ }
+  };
+  App.setSound = function (on) {
+    App.sound = !!on; PB.Storage.writeSound(App.sound);
+    var c = document.querySelector('#opt-sound'); if (c) c.checked = App.sound;
+    var b = document.querySelector('#run-sound'); if (b) { b.setAttribute('aria-pressed', String(App.sound)); b.querySelector('[aria-hidden]').textContent = (App.sound ? '🔊' : '🔇') + ' '; }
   };
   App.audioCreated = function () { return !!audio; };
 
@@ -332,7 +345,8 @@
     App.motion = !!root.__pbReduceMotion;
     $('#opt-motion').checked = App.reducedMotion();
     $('#opt-motion').addEventListener('change', function (e) { App.motion = e.target.checked; App.view.setReducedMotion(App.reducedMotion()); });
-    $('#opt-sound').addEventListener('change', function (e) { App.sound = e.target.checked; if (App.sound) App.chime(); });
+    App.sound = PB.Storage.readSound(); $('#opt-sound').checked = App.sound;
+    $('#opt-sound').addEventListener('change', function (e) { App.setSound(e.target.checked); if (App.sound) App.chime(); });
     // 캐릭터 소개 → 맵 화면 위 Stage 1 카드 → 교육 모달 → 단계 안내 순서. 세팅 라디오는 소개 전에 읽어 둔다
     $('#btn-start').addEventListener('click', function () { var stage = firstStage(); PB.Cutscene.play('intro', function () { App.startGame(stage); }); });
     $('#btn-help').addEventListener('click', function () { $('#btn-tutorial-replay').hidden = !App.s; $('#help').showModal(); });

@@ -49,7 +49,7 @@ try{
     check(await page.evaluate(()=>PB.App.s.draft.buses.every(b=>b.offset===0)),mode+' AI uniform departures');
     await page.locator('#panel').evaluate(n=>n.scrollTop=0);
     await page.screenshot({path:`publicness/tests/_shot-v2-plan-${mode}.png`});
-    await page.clock.pauseAt(new Date(Date.now()+1000));
+    await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now())+1000));
     await page.locator('#btn-depart').click();await page.locator('#confirm-yes').click();
     check(await page.locator('#speed-1').count()===1&&await page.locator('#speed-2').count()===1,mode+' speed controls available');
     const clock=()=>page.locator('#top-clock').innerText().then(t=>parseInt(t));
