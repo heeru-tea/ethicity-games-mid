@@ -180,6 +180,54 @@
 
     function wp(id) { return { x: nodes[id].x * K, z: nodes[id].y * K }; }
 
+    // 정류장 미니어처: 이번 단계 승차 요청 수(출발+도착) 등급에 따라 시설 규모만 달리한다.
+    // 색·강조는 모든 등급이 같다(이용객 수이지 중요도가 아님). 붐비는 곳의 대기 인물은 장식이라 계획 화면에서만 보인다.
+    var STOP_SIZE = { low: [3.0, 1.8], mid: [3.6, 2.0], high: [4.6, 2.4] }, PLAT = 0.35, STOP_SCALE = 1.6;
+    function seat(x, z, g) { box(1.1, 0.1, 0.38, 0xA58C70, x, z, g, PLAT + 0.42); box(1.1, 0.4, 0.08, 0xA58C70, x, z - 0.17, g, PLAT + 0.52); [-0.42, 0.42].forEach(function (dx) { box(0.08, 0.42, 0.32, 0x66746D, x + dx, z, g, PLAT); }); }
+    function buildStop(id, tier, p) {
+      // 정류장 하나를 원점 기준으로 만들고 묶음째 키워 지도 축척에서도 시설이 읽히게 한다
+      var g = new T.Group(), size = STOP_SIZE[tier], W = size[0], D = size[1], back = -D / 2 + 0.2;
+      g.name = 'stop-' + id; g.position.set(p.x, 0, p.z); g.scale.setScalar(STOP_SCALE); groups.world.add(g);
+      // 승강장: 어두운 연석 위 밝은 판, 앞쪽 노란 안전선
+      box(W + 0.24, PLAT - 0.05, D + 0.24, 0x7D8792, 0, 0, g);
+      var base = mesh(new T.BoxGeometry(W, PLAT, D), C.stop, 0, PLAT / 2 + 0.01, 0, g);
+      base.material = new T.MeshLambertMaterial({ color: C.stop, transparent: true });
+      box(W, 0.04, 0.14, 0xE2B93B, 0, D / 2 - 0.1, g, PLAT + 0.01);
+      // 표지판 기둥과 둥근 정류장 표지
+      var sx = W / 2 - 0.35, sz = D / 2 - 0.4;
+      box(0.14, 2.6, 0.14, 0x687782, sx, sz, g, PLAT);
+      var sign = mesh(new T.CylinderGeometry(0.42, 0.42, 0.1, 20), C.accent, sx, PLAT + 2.75, sz, g); sign.rotation.x = Math.PI / 2;
+      if (tier === 'low') seat(-0.5, back + 0.25, g);
+      else {
+        // 셸터: 기둥·뒷유리·지붕, 칸마다 의자
+        var bays = tier === 'high' ? 2 : 1, bw = 1.7, hw = bays * bw, cx = -0.35;
+        for (var i = 0; i <= bays; i++) box(0.1, 2.0, 0.1, 0x5B6670, cx - hw / 2 + i * bw, back, g, PLAT);
+        var glass = box(hw, 1.3, 0.05, 0x9CC3D5, cx, back, g, PLAT + 0.5); glass.material = mat(0x9CC3D5, { transparent: true, opacity: 0.55 });
+        box(hw + 0.4, 0.1, 1.2, 0x46525C, cx, back + 0.45, g, PLAT + 2.0);
+        for (var k = 0; k < bays; k++) seat(cx - hw / 2 + bw / 2 + k * bw, back + 0.35, g);
+      }
+      var crowd = null;
+      if (tier === 'high') {
+        // 도착 안내 전광판
+        box(0.12, 2.2, 0.12, 0x5B6670, -W / 2 + 0.3, D / 2 - 0.4, g, PLAT);
+        box(0.9, 0.42, 0.12, 0x1F2933, -W / 2 + 0.3, D / 2 - 0.4, g, PLAT + 2.1);
+        box(0.7, 0.08, 0.13, 0xF2A33A, -W / 2 + 0.3, D / 2 - 0.4, g, PLAT + 2.28);
+        crowd = new T.Group(); crowd.name = 'crowd-' + id;
+        [0x5A6B7B, 0x8C6E5D, 0x6E7F62, 0x7A6A8C].forEach(function (color, n) {
+          var px = -W / 2 + 1.0 + n * 0.62, pz = D / 2 - 0.55 - (n % 2) * 0.3;
+          mesh(new T.CylinderGeometry(0.17, 0.2, 0.72, 10), color, px, PLAT + 0.36, pz, crowd);
+          mesh(new T.SphereGeometry(0.16, 12, 8), 0xE8C9A8, px, PLAT + 0.88, pz, crowd);
+        });
+        crowd.visible = crowdVisible; g.add(crowd);
+      }
+      // 강조 테두리는 평소 숨김. 지도 깜빡임(flash) 때만 바닥에 잠깐 비친다
+      var halo = new T.Mesh(new T.RingGeometry(Math.max(W, D) * 0.6, Math.max(W, D) * 0.6 + 0.5, 40), new T.MeshBasicMaterial({ color: C.warn, transparent: true, opacity: 0.6, depthWrite: false }));
+      halo.rotation.x = -Math.PI / 2; halo.position.set(0, 0.04, 0); halo.visible = false; g.add(halo);
+      return { base: base, ring: halo, sign: sign, crowd: crowd, tier: tier, front: (D / 2 + 0.12) * STOP_SCALE };
+    }
+    var crowdVisible = true;
+    function setCrowd(v) { crowdVisible = !!v; Object.keys(stops).forEach(function (id) { if (stops[id].crowd) stops[id].crowd.visible = crowdVisible; }); dirty = true; }
+
     function clear(g) { while (g.children.length) { var c = g.children.pop(); if (c.geometry) c.geometry.dispose(); } }
 
     function setScene(sceneDef) {
@@ -219,18 +267,11 @@
         ZONES[id](g);
         groups.world.add(g);
         zoneGroups[id] = g;
-        var base = mesh(new T.CylinderGeometry(1.5, 1.5, 0.5, 24), C.stop, p.x, 0.25, p.z, groups.world);
-        base.material = new T.MeshLambertMaterial({ color: C.stop, transparent: true });
-        var ring = mesh(new T.TorusGeometry(1.6, 0.22, 8, 32), C.ring, p.x, 0.52, p.z, groups.world, false);
-        ring.rotation.x = Math.PI / 2;
-        ring.material = new T.MeshLambertMaterial({ color: C.ring });
-        box(0.25,2.8,0.25,0x687782,p.x+1.8,p.z-1.2,groups.world);
-        box(1.35,0.9,0.25,0xFFFFFF,p.x+1.8,p.z-1.2,groups.world,2.3);
-        box(0.8,0.35,0.30,0x2563EB,p.x+1.8,p.z-1.2,groups.world,2.55);
-        var hit = new T.Mesh(new T.CylinderGeometry(3.2, 3.2, 4, 12), new T.MeshBasicMaterial({ visible: false }));
+        var tier = (sceneDef.load && sceneDef.load[id] && sceneDef.load[id].tier) || 'low';
+        stops[id] = buildStop(id, tier, p);
+        var hit = new T.Mesh(new T.CylinderGeometry(4, 4, 4, 12), new T.MeshBasicMaterial({ visible: false }));
         hit.position.set(p.x, 1.5, p.z); hit.userData.node = id;
         groups.world.add(hit); hits.push(hit);
-        stops[id] = { base: base, ring: ring };
       });
       // 새로 생긴 생활권은 솟아오르며 등장(움직임 줄이기면 바로)
       if (prevIds) ids.forEach(function (id) {
@@ -239,7 +280,9 @@
       prevIds = ids.slice();
       labels.innerHTML = ''; labelEls = { stop: {}, wait: {}, bus: {} };
       ids.forEach(function (id) {
-        var l = document.createElement('div'); l.className = 'label-3d stop-name'; l.textContent = nodes[id].name; labels.appendChild(l); labelEls.stop[id] = l;
+        var l = document.createElement('div'), ld = sceneDef.load && sceneDef.load[id]; l.className = 'label-3d stop-name'; l.textContent = nodes[id].name; l.dataset.tier = ld ? ld.tier : 'low';
+        if (ld) { var c = document.createElement('span'); c.className = 'stop-load'; c.textContent = '요청 ' + ld.count + '건'; l.appendChild(c); }
+        labels.appendChild(l); labelEls.stop[id] = l;
       });
       fit(); dirty = true;
     }
@@ -298,10 +341,8 @@
     function paintStops() {
       Object.keys(stops).forEach(function (id) {
         var s = stops[id], isSel = selected.indexOf(id) >= 0, can = selectable.indexOf(id) >= 0;
-        s.ring.material.color.setHex(can ? C.accent : C.ring);
         s.base.material.color.setHex(isSel ? C.accent : C.stop);
         s.base.material.opacity = selectable.length && !can && !isSel ? 0.4 : 1;
-        s.ring.scale.setScalar(can ? 1.25 : 1);
       });
       dirty = true;
     }
@@ -406,7 +447,7 @@
     function placeLabels() {
       Object.keys(labelEls.stop).forEach(function (id) {
         if (!nodes[id]) return;
-        var p = wp(id), s = toScreen(p.x, 0, p.z + 2.6);
+        var p = wp(id), s = toScreen(p.x, 0, p.z + (stops[id] ? stops[id].front : 1.5) + 0.3);
         var l = labelEls.stop[id]; l.style.left = s.left + 'px'; l.style.top = s.top + 'px';
       });
       Object.keys(labelEls.wait).forEach(function (id) {
@@ -432,7 +473,7 @@
         var s = stops[id];
         if (s.flashT0 == null) return;
         var f = (now - s.flashT0) / 1200;
-        s.ring.material.color.setHex(f < 1 ? C.warn : (selectable.indexOf(id) >= 0 ? C.accent : C.ring));
+        s.ring.visible = f < 1; s.ring.material.opacity = 0.6 * (1 - f);
         if (f >= 1) s.flashT0 = null;
         dirty = true;
       });
@@ -451,7 +492,7 @@
 
     return {
       kind: '3d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
-      setBuses: setBuses, setWaiting: setWaiting, flash: flash, project: project, laneOffset: laneOffset,
+      setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },
       show: function (v) { container.hidden = !v; if (v) { fit(); dirty = true; frame(); } },
       dispose: function () { renderer.dispose(); },

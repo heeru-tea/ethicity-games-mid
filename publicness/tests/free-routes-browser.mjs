@@ -1,4 +1,4 @@
-import {plannedTown} from './browser-fixture.mjs';
+import {plannedTown,beginPlan} from './browser-fixture.mjs';
 // Run with PLAYWRIGHT_MODULE pointing to an installed Playwright package if not on module path.
 import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
@@ -15,7 +15,7 @@ try{
     page.on('pageerror',e=>errors.push(e.message));
     await page.clock.install();
     await page.goto(base+(mode==='2d'?'?no3d=1':''));
-    await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();await plannedTown(page);
+    await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);await plannedTown(page);
     check(await page.evaluate(()=>PB.App.view.kind)===mode,mode+' loaded');
     check(await page.locator('.offset-btn').count()===0,mode+' no departure controls');
     check(!(await page.locator('body').innerText()).includes('중앙역'),mode+' station renamed');
@@ -49,7 +49,7 @@ try{
     check(await page.evaluate(()=>PB.App.s.draft.buses.every(b=>b.offset===0)),mode+' AI uniform departures');
     await page.locator('#panel').evaluate(n=>n.scrollTop=0);
     await page.screenshot({path:`publicness/tests/_shot-v2-plan-${mode}.png`});
-    await page.clock.pauseAt(new Date(Date.now()+1000));
+    await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now())+1000));
     await page.locator('#btn-depart').click();await page.locator('#confirm-yes').click();
     check(await page.locator('#speed-1').count()===1&&await page.locator('#speed-2').count()===1,mode+' speed controls available');
     const clock=()=>page.locator('#top-clock').innerText().then(t=>parseInt(t));
@@ -78,7 +78,7 @@ try{
     check(await page.locator('#result-details').evaluate(n=>!n.open),mode+' statistics collapsed by default');
     await page.screenshot({path:`publicness/tests/_shot-v2-result-${mode}.png`});
     for(let phase=2;phase<=5;phase++){
-      if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
+      if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
       if(phase===3){
         check(await page.evaluate(()=>PB.Session.graph(PB.App.s).has('I')),mode+' new town appears in phase 3');
         await page.locator('#btn-fourth').click();await page.locator('#btn-new-route').click();
@@ -94,7 +94,7 @@ try{
     check(errors.length===0,mode+' no runtime errors: '+errors.join(','));await page.close();
   }
   const context=await browser.newContext({viewport:{width:800,height:1000},hasTouch:true});const touch=await context.newPage();
-  await touch.goto(base+'?no3d=1');await touch.locator('#btn-start').tap();await touch.locator('#btn-goal-start').tap();if(await touch.locator('#learning-dialog:modal').count())await touch.locator('#btn-learning-continue').tap();await touch.locator('#btn-begin-plan').tap();await plannedTown(touch);await touch.locator('#btn-new-route').tap();
+  await touch.goto(base+'?no3d=1');await touch.locator('#btn-start').tap();await touch.locator('#btn-goal-start').tap();if(await touch.locator('#learning-dialog:modal').count())await touch.locator('#btn-learning-continue').tap();await beginPlan(touch,'tap');await plannedTown(touch);await touch.locator('#btn-new-route').tap();
   for(const id of ['F','H','E']){await touch.locator('#stop-picker').evaluate(n=>n.open=true);await touch.locator('.next-stop[data-node="'+id+'"]').tap();}
   check(await touch.evaluate(()=>PB.App.s.draft.routes.at(-1).nodes.join('-')==='F-H-E'),'touch stop buttons free route');
   check(await touch.locator('#btn-new-route').isDisabled(),'four routes disables add');

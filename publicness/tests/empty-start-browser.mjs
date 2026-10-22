@@ -1,3 +1,4 @@
+import {beginPlan} from './browser-fixture.mjs';
 import {createRequire} from 'node:module';import assert from 'node:assert/strict';import {startServer} from './serve.mjs';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),server=await startServer(0);let browser;
 try{
@@ -6,7 +7,7 @@ try{
   const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   const url=`http://127.0.0.1:${server.address().port}/publicness/${mode==='2d'?'?no3d=1':''}`;
   await page.goto(url);assert.ok((await page.locator('#hook-1').innerText()).includes('버스 2대'));assert.ok((await page.locator('#hook-2').innerText()).includes('직접'));
-  await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
+  await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
   assert.equal(await page.locator('.route-tab').count(),2);assert.equal(await page.locator('.bus-assignment').count(),2);assert.ok(await page.locator('#btn-depart').isDisabled());
   assert.ok(await page.evaluate(()=>PB.App.s.draft.routes.every(r=>!r.nodes.length)));assert.equal(await page.locator('#plan-errors').innerText(),'');
   await page.screenshot({path:`publicness/tests/_shot-empty-start-${mode}.png`});
@@ -14,7 +15,7 @@ try{
   await fill(1,['F','C','D']);await fill(2,['B','A','G']);assert.ok(await page.locator('#btn-depart').isEnabled());
   await page.evaluate(()=>window.__pbFast=true);
   for(let phase=1;phase<=5;phase++){
-    if(phase>1){if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();}
+    if(phase>1){if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);}
     assert.equal(await page.locator('.bus-assignment').count(),phase+1);
     assert.equal(await page.locator('.route-tab').count(),Math.min(phase+1,4));
     assert.equal(await page.locator('.ethics-focus').getAttribute('data-phase'),String(phase));
@@ -32,7 +33,7 @@ try{
   }
   if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();await page.locator('#btn-restart').waitFor();
   assert.equal(await page.locator('#goal-intro').getAttribute('data-scene'),'ending');assert.match(await page.locator('#goal-intro-h').textContent(),/하늘/);await page.locator('#btn-goal-start').click();
-  await page.goto(url);await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
+  await page.goto(url);await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
   await page.locator('#ai-tools summary').click();await page.locator('#goal-reach').click();await page.locator('#rec-accept').click();assert.ok(await page.locator('#btn-depart').isEnabled());assert.equal(await page.locator('.bus-assignment').count(),2);
   assert.deepEqual(errors,[]);console.log('PASS '+mode+': real two-bus empty start, manual routes, 2→6 bus progression, five phases, AI from blank');await page.close();
  }

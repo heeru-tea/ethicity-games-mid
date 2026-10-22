@@ -1,3 +1,4 @@
+import {beginPlan} from './browser-fixture.mjs';
 import {createRequire} from 'node:module';import assert from 'node:assert/strict';import {startServer} from './serve.mjs';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),server=await startServer(0);let browser;
 try{
@@ -15,7 +16,7 @@ try{
     if(phase===7)assert.match(await page.locator('.learning-case').innerText(),/AI만의 사용량은 아니에요/);
     await page.locator('#btn-learning-continue').click();
    }
-   await page.locator('#btn-begin-plan').click();
+   await beginPlan(page);
    // Run the real engine synchronously; only playback is skipped in this UI probe.
    await page.evaluate(()=>{const s=PB.App.s,S=PB.Session;for(const r of s.draft.routes){const nodes=r.num===1?['F','D']:['B','C','A','G'];S.updateRoute(s,r.num,{nodes:r.num===5?['B','L']:nodes,stops:(r.num===5?['B','L']:nodes).map(()=>true)});}s.draft.buses.forEach(b=>{if(b.routeNum==null)S.assign(s,b.id,1);});S.startRun(s);S.finishRun(s);PB.App.go('result');});
    await page.locator('#btn-route-report-close').click();
@@ -29,7 +30,7 @@ try{
   assert.deepEqual(errors,[]);console.log('PASS '+mode+': stage/art/education order phases 1–7, six faces, hover, keyboard, detailed trips');await page.close();
  }
  const ctx=await browser.newContext({viewport:{width:375,height:812},hasTouch:true}),p=await ctx.newPage();await p.goto(`http://127.0.0.1:${server.address().port}/publicness/?no3d=1`);
- await p.evaluate(()=>PB.App.startGame());await p.locator('#btn-learning-continue').tap();await p.locator('#btn-begin-plan').tap();
+ await p.evaluate(()=>PB.App.startGame());await p.locator('#btn-learning-continue').tap();await beginPlan(p,'tap');
  await p.evaluate(()=>{const s=PB.App.s,S=PB.Session;s.draft.buses.forEach(b=>b.routeNum=null);S.startRun(s);S.finishRun(s);PB.App.go('result');});await p.locator('#btn-route-report-close').tap();
  const c=p.locator('[data-resident="haneul"] .resident-card');await c.locator(':scope > summary').tap();assert.ok(await c.evaluate(d=>d.open));assert.match(await c.innerText(),/아직 시작하지 못함/);await p.screenshot({path:'publicness/tests/_shot-resident-phone.png'});await c.locator(':scope > summary').tap();assert.ok(!await c.evaluate(d=>d.open));console.log('PASS touch: tap expands/collapses, no-link explanation, phone layout');await ctx.close();
 }finally{if(browser)await browser.close();server.close();}

@@ -1,3 +1,4 @@
+import {beginPlan} from './browser-fixture.mjs';
 import {createRequire} from 'node:module';import assert from 'node:assert/strict';import {startServer} from './serve.mjs';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),server=await startServer(0);let browser;
 try{
@@ -6,7 +7,7 @@ try{
   const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.clock.install({time:new Date('2026-10-19T00:00:00Z')});await page.clock.pauseAt(new Date('2026-10-19T00:00:01Z'));
   await page.goto(`http://127.0.0.1:${server.address().port}/publicness/?${mode==='2d'?'no3d=1':''}`);
-  await page.locator('#btn-start').click();await page.locator('#goal-intro[data-stage="true"]').waitFor();await page.keyboard.press('Enter');await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
+  await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();await page.locator('#goal-intro[data-stage="true"]').waitFor();await page.keyboard.press('Enter');if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
   await page.locator('#day-agenda').evaluate(n=>n.open=true);assert.match(await page.locator('#day-agenda').innerText(),/나래.*병원/);
   await page.evaluate(()=>{const s=PB.App.s,S=PB.Session;S.updateRoute(s,1,{nodes:['F','D'],stops:[true,true]});S.updateRoute(s,2,{nodes:['B','C','A','G'],stops:[true,true,true,true]});PB.App.render();});
   await page.locator('#btn-depart').click();await page.locator('#confirm-yes').click();await page.clock.runFor(1100);

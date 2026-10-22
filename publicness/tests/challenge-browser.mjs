@@ -1,3 +1,4 @@
+import {beginPlan} from './browser-fixture.mjs';
 import {createRequire} from 'node:module';import assert from 'node:assert/strict';import {startServer} from './serve.mjs';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),server=await startServer(0);let browser;
 try{
@@ -5,11 +6,11 @@ try{
  for(const mode of ['2d','3d']){
   const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/publicness/?seed=42${mode==='2d'?'&no3d=1':''}`);
-  await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();assert.equal(await page.locator('#top-phase li').count(),8);if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
+  await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();assert.equal(await page.locator('#top-phase li').count(),8);if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
   await page.evaluate(()=>window.__pbFast=true);
   assert.ok(!await page.evaluate(()=>PB.Session.visibleNodeIds(PB.App.s).includes('H')));
   for(let phase=1;phase<=8;phase++){
-   if(phase>1){await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();}
+   if(phase>1){await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);}
    assert.equal(await page.locator('.bus-assignment').count(),phase+1);assert.equal(await page.locator('.route-tab').count(),phase<3?phase+1:phase<6?4:phase<8?5:6);
    assert.equal(await page.evaluate(()=>PB.Session.visibleNodeIds(PB.App.s).includes('H')),phase>=2);
    assert.match(await page.locator('.ethics-focus').innerText(),new RegExp(phase===6?'호수공원':phase===7?'솔잎몰':phase===8?'경계':'이번 단계'));

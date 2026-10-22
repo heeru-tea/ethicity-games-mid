@@ -1,3 +1,4 @@
+import {beginPlan} from './browser-fixture.mjs';
 // 첫 계획 안내: 시작 안내 문구, 주요 인물 칩(지도 표시·누적), 출발 막힘 이유와 바로 고치기, 편집 팁 위치, 같은 AI 제안 알림.
 import {createRequire} from 'node:module';import assert from 'node:assert/strict';import {startServer} from './serve.mjs';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),server=await startServer(0);let browser;
@@ -8,7 +9,7 @@ try{
   await page.goto(`http://127.0.0.1:${server.address().port}/publicness/${mode==='2d'?'?no3d=1':''}`);
   await page.locator('#btn-start').click();
   while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}
-  if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
+  if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
   const msg=()=>page.locator('#plan-message').textContent();
   // 시작 안내와 인물 칩
   assert.match(await msg(),/정류장 두 곳을 차례로 누르면 1번 노선/);
@@ -58,12 +59,21 @@ try{
  await page.goto(`http://127.0.0.1:${server.address().port}/publicness/?no3d=1`);await page.locator('#btn-start').click();
  while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}
  if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
+ // 1단계 계획에 처음 들어오면 첫 노선 안내 모달
+ assert.ok(await page.locator('#tutorial-dialog').evaluate(d=>d.open&&d.matches(':modal')));
+ assert.match(await page.locator('#tutorial-title').textContent(),/정류장 두 곳을 이어 보세요/);assert.equal(await page.locator('.tutorial-steps li').count(),3);
+ assert.match(await page.locator('#tutorial-dialog').textContent(),/예: 나래 · 09:03 외곽 마을 → 병원·공공서비스. 누구의 길부터/);assert.match(await page.locator('#tutorial-dialog').textContent(),/버스 2대, 노선 2개까지/);
+ await page.screenshot({path:'publicness/tests/_shot-tutorial.png'});
+ await page.locator('#btn-tutorial-close').click();assert.equal(await page.locator('#tutorial-dialog').evaluate(d=>d.open),false);
+ // 도움말에서 다시 보기
+ await page.locator('#btn-help').click();await page.locator('#btn-tutorial-replay').click();assert.equal(await page.locator('#help').evaluate(d=>d.open),false);
+ assert.ok(await page.locator('#tutorial-dialog').evaluate(d=>d.open));await page.keyboard.press('Escape');assert.equal(await page.locator('#tutorial-dialog').evaluate(d=>d.open),false);
  await page.evaluate(()=>{PB.App.onNodeClick('F');PB.App.onNodeClick('D');});await page.locator('#blocker-rest-2').click();
  await page.evaluate(()=>window.__pbFast=true);await page.locator('#btn-depart').click();await page.locator('#confirm-yes').click();await page.locator('#resident-summary').waitFor({timeout:60000});
  await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();
  while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}
  if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
- assert.match(await page.locator('#depart-blocker').textContent(),/3번 노선을 정해 주세요\. 3호차/);
+ assert.match(await page.locator('#depart-blocker').textContent(),/3번 노선을 정해 주세요\. 3호차/); assert.equal(await page.locator('#tutorial-dialog').evaluate(d=>d.open),false,'tutorial only once in phase 1');
  assert.match(await page.locator('#resident-chip-narae').textContent(),/누적 1\/4회/);
- console.log('PASS phase 2: blocker for new empty route, narae tally 1/4 after a round trip');
+ console.log('PASS tutorial modal on first plan, help replay; phase 2: no tutorial, blocker for new empty route, narae tally 1/4');
 }finally{if(browser)await browser.close();server.close();}

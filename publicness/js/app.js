@@ -118,8 +118,10 @@
       // Decorative terrain only: route distance and accessibility remain unchanged.
       var river = [];
       if(s.mode === 'default')for(var y=-7;y<=7;y+=.15)river.push({x:-3.9+.45*Math.sin(y*.48),y:y});
-      v.setScene({ nodes: nodes, roads: roads, phase: s.phase, river: river, boundary: nodes.some(function(n){return n.id==='N';}) ? {x:Math.sign(nodes.filter(function(n){return n.id==='N';})[0].x)*6.4} : null }); App._sceneKey = key;
+      v.setScene({ nodes: nodes, roads: roads, phase: s.phase, river: river, load: PB.Demand.stopLoad(s.config, s.phase, s.seed), boundary: nodes.some(function(n){return n.id==='N';}) ? {x:Math.sign(nodes.filter(function(n){return n.id==='N';})[0].x)*6.4} : null }); App._sceneKey = key;
     }
+    // 붐비는 정류장의 장식용 대기 인물은 계획 전·계획 중에만. 운행·결과에서는 실제 대기 인원만 보인다
+    if (v.setCrowd) v.setCrowd(s.stage === 'reveal' || s.stage === 'plan');
     var routes = s.stage === 'run' || s.stage === 'result'
       ? (s.current ? s.current.plan.buses : []).filter(function (b) { return b.route; }).map(function (b) {
         var num = App.numForPlanRoute(b.route), st = routeStyle(num);
@@ -220,8 +222,28 @@
     if(p===1)body.push((cfg.challengeApplied?'랜덤 도전은 총 '+cfg.phases.length+'단계입니다. ':'')+'학기 말에 주요 인물마다 만족했는지 확인해요. 만족 기준은 '+PB.Narrative.satisfactionText(cfg)+'이에요. 진행 상황은 계획 화면의 일정과 결과 화면에서 볼 수 있어요.');
     if(s.config.day)body.push('05:00부터 23:00까지의 하루를 실제 120초 동안 운행해요. 출근·낮·귀가 시간에 따라 이동 수요가 달라져요. 주요 인물의 다음 이동 요청은 목적지 도착 후 체류 시간을 채워야 생겨요.');
     body.forEach(function (t) { panel.appendChild(el('p', null, t)); });
-    panel.appendChild(el('button', { type: 'button', 'class': 'btn btn-primary btn-lg', id: 'btn-begin-plan', onclick: function () { S.beginPlan(App.s); App.go('plan'); } }, '계획 시작'));
+    panel.appendChild(el('button', { type: 'button', 'class': 'btn btn-primary btn-lg', id: 'btn-begin-plan', onclick: function () { S.beginPlan(App.s); App.go('plan'); if (App.s.phase === 1 && !App.s.tutorialSeen) App.showTutorial(); } }, '계획 시작'));
   }
+
+  /* ── 첫 노선 안내(1단계 계획에 처음 들어올 때, 도움말에서 다시 보기) ── */
+  App.showTutorial = function () {
+    var s = App.s; if (!s) return; s.tutorialSeen = true;
+    var d = document.querySelector('#tutorial-dialog');
+    if (!d) { d = el('dialog', { id: 'tutorial-dialog', 'class': 'dialog', 'aria-labelledby': 'tutorial-title' }); document.body.appendChild(d); }
+    var list = PB.Demand.residents(s.config, s.phase), who = list.filter(function (r) { return r.id === 'narae'; })[0] || list[0];
+    d.textContent = '';
+    d.appendChild(el('p', { 'class': 'eyebrow' }, '첫 노선 만들기'));
+    d.appendChild(el('h2', { id: 'tutorial-title', tabindex: '-1' }, '정류장 두 곳을 이어 보세요'));
+    var ol = el('ol', { 'class': 'tutorial-steps' });
+    ['지도에서 출발할 정류장을 누르세요.', '이어서 갈 정류장을 누르면 노선이 생겨요. 정류장을 끌어서 이어도 돼요.', '버스가 배정됐는지 확인하고 ‘이 노선으로 출발’을 누르세요.'].forEach(function (t) { ol.appendChild(el('li', null, t)); });
+    d.appendChild(ol);
+    if (who) d.appendChild(el('p', null, '예: ' + who.name + ' · ' + App.clock(who.depart) + ' ' + App.nodeName(who.o) + ' → ' + App.nodeName(who.d) + '. 누구의 길부터 이을지는 직접 정하세요.'));
+    d.appendChild(el('p', { 'class': 'note' }, '이번 단계는 버스 ' + s.owned + '대, 노선 ' + S.routeLimit(s) + '개까지예요. 쓰지 않는 버스는 버스 배정에서 ‘쉬기’로 둘 수 있어요.'));
+    d.appendChild(el('button', { type: 'button', id: 'btn-tutorial-close', 'class': 'btn btn-primary', onclick: function () { d.close(); } }, '정류장 이어 보기'));
+    // 닫으면 누를 수 있는 정류장을 한 번 깜빡여 지도로 시선을 옮긴다
+    d.onclose = function () { if (App.s === s && s.stage === 'plan') { S.visibleNodeIds(s).forEach(function (id) { App.view.flash(id); }); var h = document.querySelector('#panel h2'); if (h) h.focus({ preventScroll: true }); } };
+    d.showModal(); d.querySelector('h2').focus();
+  };
 
   /* ── 시작 ───────────────────────── */
   App.showLearning = function () {
@@ -241,13 +263,15 @@
     d.onclose=function(){var b=document.querySelector('#btn-begin-plan');if(b)b.focus();};
     d.showModal();d.querySelector('h2').focus();
   };
-  App.startGame = function () {
+  // stage가 있으면 맵(단계 안내) 화면으로 넘어간 위에 Stage 카드를 먼저 띄운 뒤 교육 모달을 연다
+  App.startGame = function (stage) {
     var chosen = document.querySelector('input[name=setting]:checked');
     var opt = App.seedParam.mode === 'fixed' ? { mode: 'fixed', seed: App.seedParam.seed } : { mode: chosen ? chosen.value : 'default' };
     App.s = S.create(cfg, opt);
     App._sceneKey = null;
     App.go('reveal');
-    App.showLearning();
+    if (stage) PB.Cutscene.play('stage', App.showLearning, null, stage);
+    else App.showLearning();
   };
 
   // 세션을 만들기 전에 보여 줄 Stage 1 카드. 랜덤·지정 세팅은 Session.create처럼 도전 단계를 더한다
@@ -257,23 +281,36 @@
     return { number: 1, total: cfg.phases.length + (challenge ? cfg.challenge.phases.length : 0), name: cfg.phases[0] };
   }
 
-  /* ── 효과음(기본 꺼짐, 파일 없이 합성) ─── */
+  /* ── 효과음(기본 켜짐, 파일 없이 합성). 끈 상태는 이 브라우저에 기억 ─── */
   var audio = null;
+  function tone(f, start, len, peak, type) {
+    audio = audio || new (root.AudioContext || root.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    var o = audio.createOscillator(), gn = audio.createGain(), t = audio.currentTime + start;
+    o.frequency.value = f; o.type = type || 'sine';
+    gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(peak, t + 0.015);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(gn); gn.connect(audio.destination);
+    o.start(t); o.stop(t + len + 0.02);
+  }
+  // 정류장 안내 차임: 사건·청원·주요 인물 도착
   App.chime = function () {
     if (!App.sound) return;
+    try { tone(659, 0, 0.3, 0.12); tone(523, 0.18, 0.3, 0.12); } catch (e) { /* 소리 없이 계속 */ }
+  };
+  // 승객이 정류장에 생길 때 짧고 작은 '톡', 주요 인물이 나타날 때는 조금 높고 또렷한 두 음
+  App.sfx = function (kind) {
+    if (!App.sound) return;
     try {
-      audio = audio || new (root.AudioContext || root.webkitAudioContext)();
-      var t = audio.currentTime;
-      [659, 523].forEach(function (f, i) {
-        var o = audio.createOscillator(), gn = audio.createGain();
-        o.frequency.value = f; o.type = 'sine';
-        gn.gain.setValueAtTime(0.0001, t + i * 0.18);
-        gn.gain.exponentialRampToValueAtTime(0.12, t + i * 0.18 + 0.02);
-        gn.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.18 + 0.3);
-        o.connect(gn); gn.connect(audio.destination);
-        o.start(t + i * 0.18); o.stop(t + i * 0.18 + 0.32);
-      });
+      if (kind === 'resident') { tone(784, 0, 0.16, 0.07, 'triangle'); tone(1047, 0.09, 0.2, 0.07, 'triangle'); }
+      else tone(1175, 0, 0.07, 0.035, 'triangle');
     } catch (e) { /* 소리 없이 계속 */ }
+  };
+  App.setSound = function (on) {
+    App.sound = !!on; PB.Storage.writeSound(App.sound);
+    var c = document.querySelector('#opt-sound'); if (c) c.checked = App.sound;
+    var b = document.querySelector('#run-sound'); if (b) { b.setAttribute('aria-pressed', String(App.sound)); b.querySelector('[aria-hidden]').textContent = (App.sound ? '🔊' : '🔇') + ' '; }
   };
   App.audioCreated = function () { return !!audio; };
 
@@ -308,9 +345,12 @@
     App.motion = !!root.__pbReduceMotion;
     $('#opt-motion').checked = App.reducedMotion();
     $('#opt-motion').addEventListener('change', function (e) { App.motion = e.target.checked; App.view.setReducedMotion(App.reducedMotion()); });
-    $('#opt-sound').addEventListener('change', function (e) { App.sound = e.target.checked; if (App.sound) App.chime(); });
-    $('#btn-start').addEventListener('click', function () { PB.Cutscene.play('intro',App.startGame,null,firstStage()); });
-    $('#btn-help').addEventListener('click', function () { $('#help').showModal(); });
+    App.sound = PB.Storage.readSound(); $('#opt-sound').checked = App.sound;
+    $('#opt-sound').addEventListener('change', function (e) { App.setSound(e.target.checked); if (App.sound) App.chime(); });
+    // 캐릭터 소개 → 맵 화면 위 Stage 1 카드 → 교육 모달 → 단계 안내 순서. 세팅 라디오는 소개 전에 읽어 둔다
+    $('#btn-start').addEventListener('click', function () { var stage = firstStage(); PB.Cutscene.play('intro', function () { App.startGame(stage); }); });
+    $('#btn-help').addEventListener('click', function () { $('#btn-tutorial-replay').hidden = !App.s; $('#help').showModal(); });
+    $('#btn-tutorial-replay').addEventListener('click', function () { $('#help').close(); App.showTutorial(); });
     $('#btn-settings').addEventListener('click', function () { $('#settings').showModal(); });
     $('#restart-no').addEventListener('click', function () { $('#confirm-restart').close(); });
     $('#restart-yes').addEventListener('click', function () { $('#confirm-restart').close(); location.reload(); });

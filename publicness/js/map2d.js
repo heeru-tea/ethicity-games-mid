@@ -73,14 +73,17 @@
         var a = px(nodes[r.a]), b = px(nodes[r.b]);
         el('line', { 'class': 'road', x1: a.x, y1: a.y, x2: b.x, y2: b.y }, layers.roads);
       });
+      // 정류장 네모 크기는 이번 단계 승차 요청 등급(이용객 수)만 나타낸다. 색은 모든 등급이 같다
+      var SIZE = { low: 30, mid: 34, high: 42 };
       scene.nodes.forEach(function (n) {
-        var p = px(n);
-        var g = el('g', { 'class': 'stop-g', 'data-node': n.id }, layers.stops);
-        el('rect', { 'class': 'stop-dot', x: p.x - 17, y: p.y - 17, width: 34, height: 34, rx: 5 }, g);
+        var p = px(n), ld = scene.load && scene.load[n.id], h = SIZE[ld ? ld.tier : 'low'] / 2;
+        var g = el('g', { 'class': 'stop-g', 'data-node': n.id, 'data-tier': ld ? ld.tier : 'low' }, layers.stops);
+        el('rect', { 'class': 'stop-dot', x: p.x - h, y: p.y - h, width: h * 2, height: h * 2, rx: 5 }, g);
         var id = el('text', { x: p.x, y: p.y + 5, 'text-anchor': 'middle', 'class': 'stop-label' }, g);
         id.textContent = n.id;
-        var label = el('text', { x: p.x, y: p.y + 38, 'text-anchor': 'middle', 'class': 'stop-label' }, g);
+        var label = el('text', { x: p.x, y: p.y + h + 21, 'text-anchor': 'middle', 'class': 'stop-label' }, g);
         label.textContent = n.name;
+        if (ld) { var c = el('text', { x: p.x, y: p.y + h + 36, 'text-anchor': 'middle', 'class': 'stop-load' }, g); c.textContent = '요청 ' + ld.count + '건'; }
       });
     }
 

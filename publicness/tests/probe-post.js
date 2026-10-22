@@ -203,11 +203,12 @@
     ok(screen() === 'result', '움직임 줄이기로 완주');
   };
 
-  SC['sound-off-default'] = async function () {
-    ok(!$('#opt-sound').checked, '효과음 기본 꺼짐');
+  SC['sound-off-default'] = async function () { // 이름은 유지(목록 호환). 2026-10-22부터 기본 켜짐
+    ok($('#opt-sound').checked, '효과음 기본 켜짐');
+    $('#opt-sound').click();
     await toPlan();
     await runToResult();
-    ok(!PB.App.audioCreated(), '꺼져 있으면 오디오를 만들지 않음');
+    ok(!PB.App.audioCreated(), '끄면 오디오를 만들지 않음');
     $('#opt-sound').click();
     ok(PB.App.audioCreated(), '켜면 오디오 생성');
   };

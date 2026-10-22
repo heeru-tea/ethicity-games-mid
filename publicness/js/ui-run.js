@@ -78,6 +78,10 @@
       if (e.type === 'event' || e.type === 'petition') R.chimeAt[e.t] = true;
     });
     R.bubbles.forEach(function (b) { if (b.residentId && b.kind === 'arrive') R.chimeAt[b.t] = true; });
+    // 정류장에 승객이 생기는 시각(분 단위): 인원 수와 주요 인물 여부
+    var who = {}; R.res.passengers.forEach(function (p) { who[p.id] = p.residentId; });
+    R.reqAt = {}; R.lastPop = 0;
+    R.res.log.forEach(function (e) { if (e.type !== 'request') return; var k = Math.floor(e.t), q = R.reqAt[k] = R.reqAt[k] || { n: 0, resident: false }; q.n++; if (who[e.pid]) q.resident = true; });
     R.timer = root.setInterval(tick, 50);
     (function loop() { if (!R || R.done) return; tick(); R.raf = root.requestAnimationFrame(loop); })();
   }
@@ -101,7 +105,12 @@
     var m = Math.floor(tf);
     drawBuses(App, App.reducedMotion() ? m : tf);
     if (m !== R.minute) {
-      for (var k = R.minute + 1; k <= m; k++) if (R.chimeAt[k]) { App.chime(); break; }
+      // 차임 > 주요 인물 등장 > 일반 승객 '톡'(0.45초에 한 번까지) 순으로 한 번만 울린다
+      var chimed = false, people = 0, resident = false;
+      for (var k = R.minute + 1; k <= m; k++) { if (R.chimeAt[k]) chimed = true; var q = R.reqAt[k]; if (q) { people += q.n; resident = resident || q.resident; } }
+      if (chimed) App.chime();
+      else if (resident) App.sfx('resident');
+      else if (people && now - R.lastPop > 450) { R.lastPop = now; App.sfx('person'); }
       R.minute = m;
       onMinute(App, m);
     }
@@ -175,16 +184,19 @@
     panel.appendChild(el('p',{'class':'note'},'일반 버스 정원은 '+cfg.bus.capacity+'명이에요.'+(s.config.challengeApplied&&s.phase>=6?' 7호차 직행버스는 정원 18명·주행 속도 1.5배예요.':'')+(s.config.challengeApplied&&s.phase>=8?' 9호차 광역버스는 정원 24명이에요.':'')+' 출근·귀가처럼 승객이 몰리는 시간이 있어요. 만차면 남은 사람은 다음 버스를 기다려요.'));
     var speeds=$('#run-controls');speeds.textContent='';
     var paused=R&&R.s===s&&R.phase===s.phase&&!R.done&&R.paused;
-    speeds.appendChild(el('button',{type:'button',id:'run-pause','class':'btn','aria-pressed':String(!!paused),onclick:function(){
+    // 좁은 화면에서는 아이콘만 보이도록 글자를 따로 감싼다(이름은 aria-label로 유지)
+    function iconLabel(b,icon,text){b.textContent='';b.appendChild(el('span',{'aria-hidden':'true'},icon+' '));b.appendChild(el('span',{'class':'btn-text'},text));b.setAttribute('aria-label',text);return b;}
+    speeds.appendChild(iconLabel(el('button',{type:'button',id:'run-pause','class':'btn','aria-pressed':String(!!paused),onclick:function(){
       tick();if(!R||R.done||R.finishing)return;R.paused=!R.paused;R.last=root.performance.now();
-      this.textContent=R.paused?'▶ 재개':'⏸ 일시정지';this.setAttribute('aria-pressed',String(R.paused));
+      iconLabel(this,R.paused?'▶':'⏸',R.paused?'재개':'일시정지');this.setAttribute('aria-pressed',String(R.paused));
       $('#run-status').textContent=R.paused?'일시정지 중 · 재개하면 '+R.speed+'배속으로 이어져요.':'운행 중';
-    }},paused?'▶ 재개':'⏸ 일시정지'));
+    }}),paused?'▶':'⏸',paused?'재개':'일시정지'));
     [1,2].forEach(function(speed){var b=el('button',{type:'button',id:'speed-'+speed,'class':'btn','aria-pressed':String((R&&R.s===s&&R.phase===s.phase?R.speed:1)===speed),onclick:function(){
       tick();if(!R||R.done)return;R.speed=speed;
       [1,2].forEach(function(n){$('#speed-'+n).setAttribute('aria-pressed',String(n===speed));});
       if(R.paused)$('#run-status').textContent='일시정지 중 · 재개하면 '+R.speed+'배속으로 이어져요.';
     }},speed+'×');speeds.appendChild(b);});
+    speeds.appendChild(iconLabel(el('button',{type:'button',id:'run-sound','class':'btn','aria-pressed':String(App.sound),title:'효과음 켜기/끄기',onclick:function(){App.setSound(!App.sound);if(App.sound)App.sfx('person');}}),App.sound?'🔊':'🔇','소리'));
     panel.appendChild(el('p', { 'class': 'note' }, '운행 중에는 노선과 배차를 바꿀 수 없어요. 결과를 보고 다음 단계에서 고쳐요. 지도의 정류장을 누르면 지금 기다리는 사람 수를 볼 수 있어요.'));
     panel.appendChild(el('p', { id: 'run-status', 'class': 'h-small', role: 'status' }, '운행 시작'));
     panel.appendChild(el('p', { id: 'node-info', 'class': 'note', 'aria-live': 'polite' }));
