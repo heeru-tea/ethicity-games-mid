@@ -407,3 +407,13 @@ body[data-screen="plan"] svg .stop-load, body[data-screen="reveal"] svg .stop-lo
 .label-3d.stop-name { transform: translate(-50%, 2px); }
 /* 폰 폭: 운행 조작 버튼은 아이콘만(시계 HUD를 덮지 않게) */
 @media (max-width: 480px) { #run-controls .btn-text { display: none; } }
+/* 단계 안내 변화 카드 */
+.phase-changes { gap: 10px 16px; margin: 12px 0 20px; font-size: 1rem; }
+.phase-changes dt { color: var(--text-mute); font-weight: 600; white-space: nowrap; }
+.phase-changes dd { margin: 0; }
+details.ethics-focus summary { cursor: pointer; }
+details.ethics-focus p { margin: 8px 0 0; }
+details.ethics-focus summary { list-style: none; }
+details.ethics-focus summary::-webkit-details-marker { display: none; }
+details.ethics-focus summary::after { content: ' ▾'; color: var(--text-mute); }
+details.ethics-focus[open] summary::after { content: ' ▴'; }

@@ -75,7 +75,13 @@
       { a: 'B', b: 'K', n: 3, fromPhase: 5 },
       { a: 'A', b: 'C', n: 3, fromPhase: 1, toPhase: 3 },
       { a: 'A', b: 'C', n: 2, fromPhase: 4 },
-      { a: 'J', b: 'C', n: 1, fromPhase: 4 }
+      { a: 'J', b: 'C', n: 1, fromPhase: 4 },
+      // 신도시 성장(2026-10-22 결정): 4단계 일터·대학교, 5단계 시장·기차역 이동이 더해져 5단계에 밀집 주거지 수준이 된다.
+      // 기존 행의 시각 배치(r 번호)가 바뀌지 않게 맨 뒤에 붙인다
+      { a: 'I', b: 'G', n: 5, fromPhase: 4 },
+      { a: 'I', b: 'C', n: 4, fromPhase: 4 },
+      { a: 'I', b: 'E', n: 6, fromPhase: 5 },
+      { a: 'I', b: 'A', n: 5, fromPhase: 5 }
     ],
 
     bus: { capacity: 12, window: 120, requestWindow: 90, offsets: [0], initialBuses: 2, maxBuses: 6, autoSpacing: true, depot: 'A', dwell: 1, transferMin: 1 },
