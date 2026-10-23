@@ -136,7 +136,7 @@ body[data-screen="run"] .stage[data-daylight="night"]::before { background: rgba
 .wait-badge rect { fill: var(--warn); }
 .wait-badge text { fill: #fff; font-size: 11px; font-weight: 700; }
 .bus-g rect { stroke: #fff; stroke-width: 2; }
-.bus-g text { fill: #fff; font-size: 11px; font-weight: 800; }
+.bus-g text { fill: #fff; font-size: 11px; font-weight: 800; paint-order: stroke; stroke: rgba(0,0,0,.45); stroke-width: 2px; }
 .pass-ring { fill: var(--bg); stroke-width: 3; }
 .flash .stop-dot { animation: flash 1.2s ease-out; }
 @keyframes flash { from { stroke: #9A3412; stroke-width: 8px; } to { stroke: #1A1D24; stroke-width: 2px; } }
@@ -237,7 +237,7 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
 .label-3d { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font-size: 12px; font-weight: 700; }
 .stop-name { background: rgba(255,255,255,.85); padding: 0 6px; border-radius: 4px; color: var(--text); }
 .wait-num { background: var(--warn); color: #fff; padding: 0 6px; border-radius: 9px; font-size: 11px; }
-.bus-num { color: #fff; padding: 0 5px; border-radius: 4px; font-size: 11px; border: 1px solid #fff; }
+.bus-num { width: 0; height: 0; } /* 3D 버스 위 탑승 인원 말풍선의 기준점(이름표 없음) */
 
 .panel { min-width: 0; }
 /* A village canvas with one editable route, not a wall of operating statistics. */

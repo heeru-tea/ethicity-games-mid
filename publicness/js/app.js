@@ -7,10 +7,9 @@
   var PB = root.PB, cfg = PB.config, S = PB.Session;
   var $ = function (s) { return document.querySelector(s); };
 
-  var COLORS = ['#D97706', '#059669', '#DC2626', '#7C3AED', '#0891B2', '#DB2777'];
-  var COLOR_NAMES = ['주황', '초록', '빨강', '보라', '청록', '분홍'];
-  var DASHES = ['', '14 5', '4 5', '14 4 3 4', '8 8', '2 4'];
-  var DASH_NAMES = ['실선', '긴 점선', '짧은 점선', '점과 선', '중간 점선', '촘촘한 점선'];
+  // 노선 색 = 서울 지하철 노선색(1번만 빨강 — 신분당선 색). 연결된 노선은 모두 실선이고, 점선은 AI 제안 미리보기만 쓴다
+  var COLORS = ['#D4003B', '#00A84D', '#EF7C1C', '#00A5DE', '#996CAC', '#CD7C2F'];
+  var COLOR_NAMES = ['빨강', '초록', '주황', '하늘', '보라', '갈색'];
 
   var App = {
     s: null, view: null, map2d: null, seedParam: null, player: null,
@@ -18,8 +17,8 @@
   };
 
   function routeStyle(num) {
-    var i = (num - 1) % COLORS.length, j = Math.floor((num - 1) / COLORS.length) % DASHES.length;
-    return { color: COLORS[i], colorName: COLOR_NAMES[i], dash: DASHES[(i + j) % DASHES.length], dashName: DASH_NAMES[(i + j) % DASHES.length] };
+    var i = (num - 1) % COLORS.length;
+    return { color: COLORS[i], colorName: COLOR_NAMES[i] };
   }
   App.routeStyle = routeStyle;
   App.state = function () { return App.s; };
@@ -106,7 +105,7 @@
     var g = S.graph(s);
     return s.draft.routes.filter(function (r) { return r.nodes.length >= 2 && r.nodes.every(function (n) { return g.has(n); }); }).map(function (r) {
       var st = routeStyle(r.num);
-      return { num: r.num, route: r, color: st.color, dash: st.dash, dim: !used[r.num] };
+      return { num: r.num, route: r, color: st.color, dim: !used[r.num] };
     });
   };
   App.syncStage = function (opts) {
@@ -127,7 +126,7 @@
     var routes = s.stage === 'run' || s.stage === 'result'
       ? (s.current ? s.current.plan.buses : []).filter(function (b) { return b.route; }).map(function (b) {
         var num = App.numForPlanRoute(b.route), st = routeStyle(num);
-        return { num: num, route: b.route, color: st.color, dash: st.dash, dim: false };
+        return { num: num, route: b.route, color: st.color, dim: false };
       }).filter(function (r, i, arr) { return arr.findIndex(function (x) { return x.num === r.num; }) === i; })
       : App.stageRoutes();
     if(opts.preview){
@@ -183,7 +182,7 @@
     S.routesInOrder(s).forEach(function (r) {
       var st = routeStyle(r.num), buses = s.draft.buses.filter(function (b) { return b.routeNum === r.num; });
       var ok = PB.Graph.validateRoute(g, r).length === 0;
-      var li = el('li', null, r.num + '번 노선(' + st.colorName + ' ' + st.dashName + '): ' + App.describeRoute(r) +
+      var li = el('li', null, r.num + '번 노선(' + st.colorName + '): ' + App.describeRoute(r) +
         (ok ? ' · 한 바퀴 ' + App.duration(PB.Graph.cycleMinutes(g, r)) : ' · 아직 완성되지 않음') +
         ' · ' + (buses.length ? buses.map(function (b) { return b.id + '호차'; }).join(', ') : '배정된 버스 없음'));
       ul.appendChild(li);

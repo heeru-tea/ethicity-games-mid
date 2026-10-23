@@ -7,8 +7,9 @@
 (function (root) {
   'use strict';
   var K = 10;               // 지도 1칸 → 3D 10
+  var BUS_SCALE = 1.5;      // 버스 크기(정류장 미니어처 ×1.6과 비슷하게)
   var PX = 110;             // SVG 1칸 = 110px (버스 차선 오프셋 변환용)
-  var LANE = 1.0;           // 노선 띠 간격(3D)
+  var LANE = 2.4;           // 같은 길을 지나는 노선 사이 간격(3D) — 버스 폭(1.52×BUS_SCALE≈2.3)보다 넓게 해 버스가 겹치지 않게
   var CAMERA_ELEVATION = 55; // 지면 기준 고도각: 건물 옆면과 노선 가독성의 절충
   var C = {
     bg: 0xF5F5F4, ground: 0xEAE7E1, road: 0xA3A9B2, stop: 0xFFFFFF, ring: 0x1A1D24, accent: 0x2563EB, warn: 0x9A3412,
@@ -54,6 +55,33 @@
     var nodes = {}, stops = {}, hits = [], zoneGroups = {}, routeSegs = {}, busMesh = {}, lastBus = {};
     var labelEls = { stop: {}, wait: {}, bus: {} };
     var reduced = false, dirty = true, bounds = null, rising = null, prevIds = null, waitingNow = {}, currentRoutes = [];
+
+    // 3D 버스 모델(assets/models/bus.js, 없거나 실패하면 상자 버스). 노선 색마다 띠를 칠한 재질을 하나씩 만든다
+    var busGeo = null, busTex = null, busMats = {};
+    (function () {
+      var d = root.PB && root.PB.busModelData, BM = root.PB && root.PB.BusModel;
+      if (!d || !BM) return;
+      try {
+        var m = BM.decode(d), geo = new T.BufferGeometry();
+        geo.setAttribute('position', new T.BufferAttribute(m.position, 3));
+        geo.setAttribute('uv', new T.BufferAttribute(m.uv, 2));
+        geo.setIndex(new T.BufferAttribute(m.index, 1));
+        var img = new Image();
+        img.onload = function () {
+          var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+          var x = c.getContext('2d'); x.drawImage(img, 0, 0);
+          busTex = x.getImageData(0, 0, c.width, c.height); busGeo = geo; dirty = true;
+        };
+        img.src = d.texture;
+      } catch (e) { busGeo = null; }
+    })();
+    function busMat(color) {
+      if (busMats[color]) return busMats[color];
+      var c = document.createElement('canvas'); c.width = busTex.width; c.height = busTex.height;
+      c.getContext('2d').putImageData(new ImageData(root.PB.BusModel.recolor(busTex.data, color), c.width, c.height), 0, 0);
+      var t = new T.CanvasTexture(c); t.flipY = false; // glTF UV는 위가 0
+      return (busMats[color] = new T.MeshLambertMaterial({ map: t, flatShading: true }));
+    }
 
     var matCache = {};
     function mat(color, extra) {
@@ -313,7 +341,7 @@
           if (!nodes[ns[i - 1]] || !nodes[ns[i]]) continue;
           var a = wp(ns[i - 1]), b = wp(ns[i]), o = laneWorld(ns[i - 1], ns[i], r.num);
           var len = Math.hypot(b.x - a.x, b.z - a.z), ux = (b.x - a.x) / len, uz = (b.z - a.z) / len, ang = -Math.atan2(uz, ux);
-          var road=new T.Mesh(new T.BoxGeometry(len,0.10,2.6),mat(C.road));road.position.set((a.x+b.x)/2,0.08,(a.z+b.z)/2);road.rotation.y=ang;groups.routes.add(road);
+          var lanes=(routeSegs[segKey(ns[i-1],ns[i])]||[r.num]).length,road=new T.Mesh(new T.BoxGeometry(len,0.10,2.6+(lanes-1)*LANE),mat(C.road));road.position.set((a.x+b.x)/2,0.08,(a.z+b.z)/2);road.rotation.y=ang;groups.routes.add(road);
           var pieces = [];
           if (!dash.length) pieces.push([1.8, len - 1.8]);
           else { var pos = 1.8, di = 0; while (pos < len - 1.8) { var on = Math.min(dash[di % dash.length], len - 1.8 - pos); pieces.push([pos, pos + on]); pos += on + (dash[(di + 1) % dash.length] || 0); di += 2; } }
@@ -354,6 +382,13 @@
       list.forEach(function (b) {
         seen[b.id] = true;
         var g = busMesh[b.id];
+        if (g && g.userData.box && busGeo) { groups.buses.remove(g); g = null; } // 모델이 늦게 풀렸으면 상자 버스를 바꾼다
+        if (!g && busGeo) {
+          g = new T.Group();
+          var model = new T.Mesh(busGeo, busMat(b.color)); model.castShadow = true; g.add(model);
+          g.userData.model = model; g.userData.color = b.color;
+          groups.buses.add(g); busMesh[b.id] = g;
+        }
         if (!g) {
           g = new T.Group();
           var body = new T.Mesh(new T.BoxGeometry(3.2, 1.6, 1.7), new T.MeshLambertMaterial({ color: 0xffffff }));
@@ -362,22 +397,23 @@
           stripe.position.y = 0.95; g.add(stripe);
           var dome = new T.Mesh(new T.SphereGeometry(0.35, 10, 6), new T.MeshLambertMaterial({ color: 0x9AA1A9 }));
           dome.position.set(0.4, 2.0, 0); g.add(dome);
-          g.userData.stripe = stripe;
+          g.userData.stripe = stripe; g.userData.box = true;
           groups.buses.add(g); busMesh[b.id] = g;
         }
+        // 버스 위 이름표는 두지 않는다 — 탑승 인원(있을 때만)만 버스 위에 작게
         if (!labelEls.bus[b.id]) { var l = document.createElement('div'); l.className = 'label-3d bus-num'; labels.appendChild(l); labelEls.bus[b.id] = l; }
-        g.userData.stripe.material.color.set(b.color);
+        if (g.userData.stripe) g.userData.stripe.material.color.set(b.color);
+        else if (g.userData.color !== b.color) { g.userData.model.material = busMat(b.color); g.userData.color = b.color; }
         var x = b.x * K + (b.dx || 0) * K / PX, z = b.y * K + (b.dy || 0) * K / PX;
         var last = lastBus[b.id];
         if (last && Math.hypot(x - last.x, z - last.z) > 0.05) g.rotation.y = -Math.atan2(z - last.z, x - last.x);
         lastBus[b.id] = { x: x, z: z };
         g.position.set(x, 0, z);
         g.visible = true;
-        labelEls.bus[b.id].textContent = b.id+'호차'+(b.regional?' 광역':b.express?' 직행':'');
-        g.scale.x=b.regional?1.4:b.express?1.2:1;
+        labelEls.bus[b.id].textContent = '';
+        g.scale.set(BUS_SCALE*(b.regional?1.4:b.express?1.2:1), BUS_SCALE, BUS_SCALE);
         if(b.riders>0){var count=document.createElement('span');count.className='rider-count';count.dataset.riders=b.riders;count.textContent=b.riders+'명';labelEls.bus[b.id].appendChild(count);}
         labelEls.bus[b.id].setAttribute('aria-label',b.id+'호차'+(b.regional?' 광역 · 정원 24명':b.express?' 직행 · 정원 18명':'')+' · 탑승 '+(b.riders||0)+'명');
-        labelEls.bus[b.id].style.background = b.color;
       });
       Object.keys(busMesh).forEach(function (id) { if (!seen[id]) { busMesh[id].visible = false; if (labelEls.bus[id]) {labelEls.bus[id].remove();delete labelEls.bus[id];} } else if (labelEls.bus[id]) labelEls.bus[id].style.display = ''; });
       dirty = true;
@@ -456,7 +492,7 @@
       });
       Object.keys(labelEls.bus).forEach(function (id) {
         var g = busMesh[id]; if (!g || !g.visible) return;
-        var s = toScreen(g.position.x, 3.2, g.position.z);
+        var s = toScreen(g.position.x, 2.5 * BUS_SCALE, g.position.z);
         var l = labelEls.bus[id]; l.style.left = s.left + 'px'; l.style.top = s.top + 'px';
       });
     }
@@ -492,6 +528,7 @@
 
     return {
       kind: '3d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
+      busInfo: function () { return Object.keys(busMesh).filter(function (id) { return busMesh[id].visible; }).map(function (id) { var u = busMesh[id].userData; return { id: Number(id), model: !!u.model, color: u.color || null }; }); },
       setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },
       show: function (v) { container.hidden = !v; if (v) { fit(); dirty = true; frame(); } },
