@@ -1,7 +1,7 @@
 /*
- * 3D 버스 모델 — fal.ai Trellis로 만든 미니버스(assets/models/bus.js의 PB.busModelData)를 푼다.
- * decode: 압축(Uint16 양자화) 좌표·UV·삼각형 → Float32 배열. 모델은 도구에서 이미 앞=+x, 길이 3.2, 바닥 y=0으로 맞춰 둠.
- * recolor: 텍스처의 파란 띠를 노선 색으로(명암 유지), 생성 잡티인 청록 얼룩은 같은 밝기의 회색으로 바꾼다.
+ * 3D 모델 데이터 풀기 — fal.ai로 만든 버스(assets/models/bus.js의 PB.busModelData)·구역 건물(zone-<id>.js의 PB.zoneModelData).
+ * decode: 압축(Uint16 양자화) 좌표·UV·삼각형 → Float32 배열(tools/glb-pack.mjs가 만든 형식).
+ * recolor(버스 전용): 텍스처의 파란 띠를 노선 색으로(명암 유지), 생성 잡티인 청록 얼룩은 같은 밝기의 회색으로 바꾼다.
  */
 (function (root) {
   'use strict';
@@ -53,6 +53,6 @@
 
   var api = { decode: decode, recolor: recolor };
   root.PB = root.PB || {};
-  root.PB.BusModel = api;
+  root.PB.ModelData = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

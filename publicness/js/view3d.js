@@ -59,7 +59,7 @@
     // 3D 버스 모델(assets/models/bus.js, 없거나 실패하면 상자 버스). 노선 색마다 띠를 칠한 재질을 하나씩 만든다
     var busGeo = null, busTex = null, busMats = {};
     (function () {
-      var d = root.PB && root.PB.busModelData, BM = root.PB && root.PB.BusModel;
+      var d = root.PB && root.PB.busModelData, BM = root.PB && root.PB.ModelData;
       if (!d || !BM) return;
       try {
         var m = BM.decode(d), geo = new T.BufferGeometry();
@@ -78,7 +78,7 @@
     function busMat(color) {
       if (busMats[color]) return busMats[color];
       var c = document.createElement('canvas'); c.width = busTex.width; c.height = busTex.height;
-      c.getContext('2d').putImageData(new ImageData(root.PB.BusModel.recolor(busTex.data, color), c.width, c.height), 0, 0);
+      c.getContext('2d').putImageData(new ImageData(root.PB.ModelData.recolor(busTex.data, color), c.width, c.height), 0, 0);
       var t = new T.CanvasTexture(c); t.flipY = false; // glTF UV는 위가 0
       return (busMats[color] = new T.MeshLambertMaterial({ map: t, flatShading: true }));
     }
@@ -204,6 +204,52 @@
         [-3.5,0,3.5].forEach(function(x,i){box(2.2,1.5,5,[0x789DB6,0x86A48C,0xB9A17B][i],x,3,g);box(1.8,.5,.16,0xE3F0F4,x,.45,g,.8);});
       }
     };
+    // 구역 건물 모델(assets/models/zone-<id>.js, fal.ai nano-banana→Tripo, tools/zone-models.mjs). 목록(PB.zoneModelIds)에 있는 구역은
+    // 스크립트를 미리 불러 두고, 풀리면 그 구역의 기본 도형을 모델로 바꾼다. 모델은 기본 도형이 차지하던 자리(가로·세로) 안에 맞춘다.
+    // ZONE_KEEP: 모델과 함께 남겨 둘 기본 도형(기차역 선로). 모델이 없으면 지금까지의 기본 도형 그대로
+    var ZONE_KEEP = { A: ['station-rails'] }, zoneModels = {};
+    function zoneModel(id) {
+      if (zoneModels[id] !== undefined) return zoneModels[id];
+      var d = root.PB && root.PB.zoneModelData && root.PB.zoneModelData[id], MD = root.PB && root.PB.ModelData;
+      if (!d || !MD) return null;
+      try {
+        var m = MD.decode(d), geo = new T.BufferGeometry();
+        geo.setAttribute('position', new T.BufferAttribute(m.position, 3));
+        geo.setAttribute('uv', new T.BufferAttribute(m.uv, 2));
+        geo.setIndex(new T.BufferAttribute(m.index, 1));
+        // 텍스처에 밝기가 이미 들어 있어, 하늘빛+햇빛(합 1.3 이상)에 그대로 받으면 하얗게 날아간다 → 재질 색으로 한 단계 눌러 준다
+        var mat = new T.MeshLambertMaterial({ color: 0xcccccc, flatShading: true }), img = new Image();
+        img.onload = function () { var t = new T.Texture(img); t.flipY = false; t.needsUpdate = true; mat.map = t; mat.needsUpdate = true; dirty = true; };
+        img.src = d.texture;
+        return (zoneModels[id] = { geo: geo, mat: mat, w: d.posMax[0] - d.posMin[0], d: d.posMax[2] - d.posMin[2] });
+      } catch (e) { return (zoneModels[id] = false); }
+    }
+    function buildZone(id, g) {
+      var tmp = new T.Group(); ZONES[id](tmp);
+      var zm = zoneModel(id);
+      if (!zm) { while (tmp.children.length) g.add(tmp.children[0]); g.scale.copy(tmp.scale); g.userData.model = false; return; }
+      var keep = ZONE_KEEP[id] || [], kept = tmp.children.filter(function (c) { return keep.indexOf(c.name) >= 0; });
+      kept.forEach(function (c) { tmp.remove(c); });
+      tmp.updateMatrixWorld(true);
+      var box = new T.Box3().setFromObject(tmp), bw = box.max.x - box.min.x, bd = box.max.z - box.min.z;
+      var s = Math.min(Math.sqrt(bw * bd) * 1.1, Math.max(bw, bd)) / Math.max(zm.w, zm.d); // 기본 도형 자리의 넓이만큼(긴 변은 넘지 않게)
+      var mesh = new T.Mesh(zm.geo, zm.mat); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'zone-model';
+      mesh.scale.setScalar(s); mesh.position.set((box.min.x + box.max.x) / 2, 0, (box.min.z + box.max.z) / 2);
+      g.add(mesh); kept.forEach(function (c) { g.add(c); }); g.scale.set(1, g.scale.y, 1); g.userData.model = true;
+    }
+    (root.PB && root.PB.zoneModelIds || []).forEach(function (id) {
+      var loading = root.PB._zoneLoading = root.PB._zoneLoading || {};
+      if ((root.PB.zoneModelData && root.PB.zoneModelData[id]) || loading[id]) return;
+      loading[id] = true;
+      var sc = document.createElement('script'); sc.src = 'assets/models/zone-' + id + '.js'; sc.async = true;
+      sc.onload = function () {
+        var g = zoneGroups[id]; if (!g || g.userData.model) return;
+        while (g.children.length) g.remove(g.children[0]);
+        buildZone(id, g); dirty = true;
+      };
+      document.head.appendChild(sc);
+    });
+
     var OFFS = { A: [-7, -7], B: [-7, -7], C: [0, 8], D: [0, 8.5], E: [1, 8], F: [-4, 8], G: [7, 7], H: [0, -11], I: [4, -6], J: [0, 9], K: [-7, 0], L:[0,6], M:[0,8], N:[0,-5] };
 
     function wp(id) { return { x: nodes[id].x * K, z: nodes[id].y * K }; }
@@ -292,7 +338,7 @@
         var p = wp(id), g = new T.Group();
         g.position.set(p.x + OFFS[id][0], 0, p.z + OFFS[id][1]);
         g.name = 'zone-' + id;
-        ZONES[id](g);
+        buildZone(id, g);
         groups.world.add(g);
         zoneGroups[id] = g;
         var tier = (sceneDef.load && sceneDef.load[id] && sceneDef.load[id].tier) || 'low';
@@ -530,6 +576,7 @@
 
     return {
       kind: '3d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
+      zoneInfo: function () { return Object.keys(zoneGroups).map(function (id) { return { id: id, model: !!zoneGroups[id].userData.model }; }); },
       busInfo: function () { return Object.keys(busMesh).filter(function (id) { return busMesh[id].visible; }).map(function (id) { var u = busMesh[id].userData; return { id: Number(id), model: !!u.model, color: u.color || null }; }); },
       setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },

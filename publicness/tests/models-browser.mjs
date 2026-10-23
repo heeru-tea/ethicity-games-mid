@@ -22,6 +22,9 @@ try{
   await page.waitForTimeout(600);
   const kept=await page.evaluate(()=>({same:window.__waitEl.isConnected,placed:[...document.querySelectorAll('.wait-num')].every(l=>l.style.left&&l.style.top)}));
   assert.ok(kept.same,'대기 숫자표 요소 유지');assert.ok(kept.placed,'대기 숫자표 위치 지정됨');
+  // 구역 건물: 목록의 구역은 모두 fal.ai 모델로(스크립트가 늦게 풀려도 바뀐다)
+  await page.waitForFunction(()=>PB.App.view.zoneInfo().every(z=>z.model),{},{timeout:20000});
+  assert.ok((await page.evaluate(()=>PB.App.view.zoneInfo())).length>=5,'구역 모델');
   assert.deepEqual(errors,[]);
-  console.log('PASS 3d: bus model on every bus, route-color material, no name tag, waiting labels kept ('+info.buses.length+' buses)');
+  console.log('PASS 3d: bus model on every bus, route-color material, no name tag, waiting labels kept, zone models ('+info.buses.length+' buses)');
 }finally{await browser?.close();server.close();}

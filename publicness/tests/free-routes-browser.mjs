@@ -62,7 +62,8 @@ try{
     await page.locator('#speed-1').click();check(await clock()>=t2,mode+' switching back never rewinds');
     await page.locator('#speed-2').click();
     await page.clock.resume();
-    await page.waitForFunction(()=>document.querySelector('[data-riders]'),{},{timeout:15000});
+    // 3D 구역 모델(2026-10-23) 뒤로 swiftshader+가짜 시계(resume)에서 프레임이 느려 재생이 늦게 따라온다(실제 시계에선 2배속 정상, 승객 표시 3D 약 18초) — 기다림만 늘림
+    await page.waitForFunction(()=>document.querySelector('[data-riders]'),{},{timeout:45000});
     check(await page.locator('[data-riders]').count()>0,mode+' live riders visible');
     await page.screenshot({path:`publicness/tests/_shot-v2-run-${mode}.png`});
     // Validate all count transitions including zero through the same display interface.
