@@ -140,7 +140,7 @@ Playwright가 별도 폴더에 설치되어 있으면 `PLAYWRIGHT_MODULE` 환경
 
 - 3D: [three.js](https://threejs.org/) r149 — MIT License (`vendor/THREE_LICENSE`)
 - 3D 버스: 팀 2D 버스 그림(`sheet-bus.png`)을 [fal.ai](https://fal.ai/)의 TRELLIS(image-to-3D)로 변환한 모델(2026-10-23)
-- 3D 구역 건물: fal.ai의 nano-banana로 그린 미니어처 그림을 Tripo(image-to-3D)로 변환한 모델(2026-10-23)
+- 3D 구역 건물·정류장 시설: fal.ai의 nano-banana로 그린 미니어처 그림을 Tripo(image-to-3D)로 변환한 모델(2026-10-23)
 - 교육적 참고: 관계부처 합동 「사람이 중심이 되는 인공지능(AI) 윤리기준」(2020.12.23) — 공공성 요건을 토론하기 위한 수업용 해석이며 공식 평가척도가 아닙니다.
 
 ### 일러스트 도입
