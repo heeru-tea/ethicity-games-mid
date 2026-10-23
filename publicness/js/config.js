@@ -10,7 +10,7 @@
   function allStop(nodes) { return { nodes: nodes, stops: nodes.map(function () { return T; }) }; }
 
   var config = {
-    SCENARIO_VERSION: 'pb-2.9.0',
+    SCENARIO_VERSION: 'pb-3.0.0',
     day: { start: 300, end: 1380 },
     progression: { routes: [2, 3, 4, 4, 4], buses: [2, 3, 4, 5, 6] },
     challenge: {
@@ -75,7 +75,13 @@
       { a: 'B', b: 'K', n: 3, fromPhase: 5 },
       { a: 'A', b: 'C', n: 3, fromPhase: 1, toPhase: 3 },
       { a: 'A', b: 'C', n: 2, fromPhase: 4 },
-      { a: 'J', b: 'C', n: 1, fromPhase: 4 }
+      { a: 'J', b: 'C', n: 1, fromPhase: 4 },
+      // 신도시 성장(2026-10-22 결정): 4단계 일터·대학교, 5단계 시장·기차역 이동이 더해져 5단계에 밀집 주거지 수준이 된다.
+      // 기존 행의 시각 배치(r 번호)가 바뀌지 않게 맨 뒤에 붙인다
+      { a: 'I', b: 'G', n: 5, fromPhase: 4 },
+      { a: 'I', b: 'C', n: 4, fromPhase: 4 },
+      { a: 'I', b: 'E', n: 6, fromPhase: 5 },
+      { a: 'I', b: 'A', n: 5, fromPhase: 5 }
     ],
 
     bus: { capacity: 12, window: 120, requestWindow: 90, offsets: [0], initialBuses: 2, maxBuses: 6, autoSpacing: true, depot: 'A', dwell: 1, transferMin: 1 },
@@ -86,6 +92,10 @@
     discontent: { w: [0.5, 0.3, 0.2], waitOver: 15, tripOver: 30 },
     trust: { initial: 50, keep: 0.7 },
     ending: { stableRate: 0.8, stableMaxWait: 20, improvePts: 0.15 },
+    // 주요 인물 ‘해낸 하루’의 서비스 기준(2026-10-23): 각 이동에서 버스를 기다린 시간(환승 포함) 27단위(=243분, 약 4시간) 이하.
+    // 근거(tools 없이 비교한 대표 설계): 버스 2~3대로 외곽까지 잇는 접근성 설계의 최장 대기 3~4시간, 모든 정류장을 도는 긴 순환은 7~11시간.
+    // 3시간이면 성실한 접근성 설계도 6명 중 4명만 만족, 4시간이면 6명 모두·긴 순환은 3명 — 차이를 만들면서 초반 여유를 둔다
+    service: { maxWait: 27 },
     essential: ['C', 'D'],
     reachInitial: ['F', 'E'],
     newZone: 'I',
@@ -113,7 +123,8 @@
     ],
     initialDraft: {
       routes: [allStop([]), allStop([])],
-      buses: [{ id: 1, routeNum: 1, offset: 0 }, { id: 2, routeNum: 2, offset: 0 }]
+      // 새 버스는 모든 단계에서 ‘쉬기’(routeNum null)로 시작한다 — 노선을 만든 뒤 학생이 직접 배정
+      buses: [{ id: 1, routeNum: null, offset: 0 }, { id: 2, routeNum: null, offset: 0 }]
     },
 
     ai: { maxCandidates: 30, maxIterations: 3 },

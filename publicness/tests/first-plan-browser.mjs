@@ -33,8 +33,11 @@ try{
   await page.evaluate(()=>PB.App.onNodeClick('D'));await page.locator('#btn-undo').click();assert.match(await msg(),/방금 편집을 되돌렸어요/);
   await page.locator('#ai-tools summary').click();await page.locator('#goal-profit').click();await page.locator('#rec-card').waitFor({timeout:60000});assert.equal(await page.locator('#rec-same').count(),0,'editing clears comparison');await page.locator('#rec-reject').click();
   assert.equal(await page.evaluate(()=>PB.App.s.draft.routes[0].nodes.join('-')),'F');
-  // 두 곳 → 1번 완성, 2번이 비어 출발이 막힌 이유와 버튼
+  // 두 곳 → 1번 완성. 새 버스는 쉬기로 시작하므로 직접 배정하고, 2호차를 빈 2번에 배정하면 출발이 막힌 이유와 버튼
   await page.evaluate(()=>PB.App.onNodeClick('D'));
+  assert.deepEqual(await page.evaluate(()=>PB.App.s.draft.buses.map(b=>b.routeNum)),[null,null],'빈 노선에 자동 배정하지 않음');
+  assert.equal(await page.locator('#depart-blocker').count(),0);
+  await page.locator('#assign-route-1').click();await page.locator('#bus-sel-2').selectOption('2');
   assert.ok(await page.locator('#btn-depart').isDisabled());
   assert.match(await page.locator('#depart-blocker').textContent(),/2번 노선을 정해 주세요\. 2호차가 배정돼 있는데 정류장이 아직 없어요/);
   // 이어서 만들기: 2번 편집으로 전환
@@ -68,12 +71,14 @@ try{
  // 도움말에서 다시 보기
  await page.locator('#btn-help').click();await page.locator('#btn-tutorial-replay').click();assert.equal(await page.locator('#help').evaluate(d=>d.open),false);
  assert.ok(await page.locator('#tutorial-dialog').evaluate(d=>d.open));await page.keyboard.press('Escape');assert.equal(await page.locator('#tutorial-dialog').evaluate(d=>d.open),false);
- await page.evaluate(()=>{PB.App.onNodeClick('F');PB.App.onNodeClick('D');});await page.locator('#blocker-rest-2').click();
+ await page.evaluate(()=>{PB.App.onNodeClick('F');PB.App.onNodeClick('D');});await page.locator('#assign-route-1').click();
  await page.evaluate(()=>window.__pbFast=true);await page.locator('#btn-depart').click();await page.locator('#confirm-yes').click();await page.locator('#resident-summary').waitFor({timeout:60000});
- await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();
+ await page.locator('#btn-next-phase').click();
  while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}
  if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
- assert.match(await page.locator('#depart-blocker').textContent(),/3번 노선을 정해 주세요\. 3호차/); assert.equal(await page.locator('#tutorial-dialog').evaluate(d=>d.open),false,'tutorial only once in phase 1');
+ // 2단계 새 3호차도 쉬기로 시작(빈 3번 노선에 자동 배정하지 않음) — 막힘 없이 시작하고, 배정하면 막힌 이유가 보인다
+ assert.equal(await page.evaluate(()=>PB.App.s.draft.buses.find(b=>b.id===3).routeNum),null);assert.equal(await page.locator('#depart-blocker').count(),0);
+ await page.locator('#bus-sel-3').selectOption('3');assert.match(await page.locator('#depart-blocker').textContent(),/3번 노선을 정해 주세요\. 3호차/); assert.equal(await page.locator('#tutorial-dialog').evaluate(d=>d.open),false,'tutorial only once in phase 1');
  assert.match(await page.locator('#resident-chip-narae').textContent(),/누적 1\/4회/);
- console.log('PASS tutorial modal on first plan, help replay; phase 2: no tutorial, blocker for new empty route, narae tally 1/4');
+ console.log('PASS tutorial modal on first plan, help replay; phase 2: no tutorial, new bus rests, blocker once assigned to empty route, narae tally 1/4');
 }finally{if(browser)await browser.close();server.close();}

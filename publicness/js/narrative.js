@@ -17,6 +17,14 @@
     if (c < 0xac00 || c > 0xd7a3) return false;
     return (c - 0xac00) % 28 !== 0;
   }
+  // 동적 낱말 뒤 조사: josa('다은','은는') → '다은은', josa('고속버스터미널','이었') → '고속버스터미널이었'
+  var PAIRS = { '은는': ['은', '는'], '이가': ['이', '가'], '을를': ['을', '를'], '과와': ['과', '와'], '이었': ['이었', '였'], '으로': ['으로', '로'] };
+  function josa(word, kind) {
+    var w = String(word), p = PAIRS[kind], c = w.charCodeAt(w.length - 1);
+    if (!p) return w;
+    if (kind === '으로' && c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 === 8) return w + '로'; // ㄹ 받침은 ‘로’
+    return w + (batchim(w) ? p[0] : p[1]);
+  }
   // {이가}{은는}은 바로 앞에 채워진 낱말의 받침을 본다
   function fill(text, vars) {
     var out = '', re = /\{([^}]+)\}/g, last = 0, m, prev = '';
@@ -56,6 +64,7 @@
     }
     result.passengers.forEach(function (p) {
       if (p.fail === 'NO_LINK') push(p.t, p, p.o, 'noLink', fill(B.noLink.text, { stop: nodeName(config, p.d) }), 1);
+      if (p.fail === 'NO_LINK') return; // 노선이 없어 떠나지 못한 사람은 ‘기다린’ 것이 아니다(노선 없음 말풍선만)
       B.wait.forEach(function (w, k) {
         var t = p.t + w.minWait;
         if (t > config.bus.window) return;
@@ -99,7 +108,7 @@
       if(!who||!evidence.length)return null;
       var lastDay=evidence[evidence.length-1],complete=evidence.filter(function(r){return r.dayStatus==='complete';}).length;
       if(who.itineraries)return {residentId:residentId,name:who.name,role:who.role,conditionKey:'day.itinerary',evidence:evidence,drop:null,
-        text:who.name+'는 관측한 '+evidence.length+'일 중 '+complete+'일의 두 이동을 모두 마쳤어요. 마지막 일정은 '+nodeName(config,lastDay.o)+' → '+nodeName(config,lastDay.d)+' → '+nodeName(config,lastDay.finalDestination)+'였어요.',
+        text:josa(who.name,'은는')+' 관측한 '+evidence.length+'일 중 '+complete+'일의 두 이동을 모두 마쳤어요. 마지막 일정은 '+nodeName(config,lastDay.o)+' → '+nodeName(config,lastDay.d)+' → '+josa(nodeName(config,lastDay.finalDestination),'이었')+'어요.',
         closing:lastDay.dayStatus==='complete'?'마지막 목적지에 '+Demand.clock(config,lastDay.homeT)+' 도착했어요.':lastDay.dayStatus==='returnIncomplete'?'운동장에는 도착했지만 마지막 이동을 마치지 못했어요.':'운동장까지의 첫 이동을 마치지 못했어요.'};
       return {residentId:residentId,name:who.name,role:who.role,conditionKey:'day.roundTrip',evidence:evidence,drop:null,
         text:who.name+'의 '+nodeName(config,who.o)+' → '+nodeName(config,who.d)+' → '+nodeName(config,who.o)+' 일정은 '+evidence.length+'일 중 '+complete+'일 왕복을 마쳤어요.',
@@ -151,7 +160,14 @@
     return [fill(H.line1.text, { buses: session.owned, requests: reqs }), empty?'아직 정해진 길은 없습니다. 우리 마을의 첫 노선을 직접 연결해 보세요.':fill(throughF ? H.line2Served.text : H.line2.text, {})];
   }
 
-  function satisfactionTargets(config){return config.satisfactionTargets||{haneul:4,narae:4,jun:4,sol:2,yuna:2,daeun:2};}
+  // 학기 말 만족 기준(‘해낸 하루’ 횟수) = 등장 후 남은 운행 수 − 여유 횟수. 기본 5단계는 여유 1번(한 번 놓쳐도 만회 가능),
+  // 도전 8단계는 여유 2번. 늦게 등장한 유나·다은도 같은 규칙이라 기본에서는 2번 중 1번(2026-10-23 조정, 이전엔 2번 중 2번이라 한 번만 놓쳐도 회복 불가)
+  function satisfactionTargets(config){
+    if(config.satisfactionTargets)return config.satisfactionTargets;
+    var spare=config.challengeApplied?2:1,out={};
+    config.residents.forEach(function(r){out[r.id]=Math.max(1,config.phases.length-r.fromPhase+1-spare);});
+    return out;
+  }
   // "하늘·나래·준 왕복 4회, 솔(3단계부터) 왕복 2회, 유나·다은(4단계부터) 일정 2회 이상"
   function satisfactionText(config){
     var t=satisfactionTargets(config),groups=[];
@@ -159,7 +175,8 @@
       if(t[r.id]==null)return;var kind=r.itineraries?'일정':'왕복',key=kind+t[r.id]+'|'+r.fromPhase,last=groups[groups.length-1];
       if(last&&last.key===key)last.names.push(r.name);else groups.push({key:key,names:[r.name],kind:kind,n:t[r.id],from:r.fromPhase});
     });
-    return groups.map(function(g){return g.names.join('·')+(g.from>1?'('+g.from+'단계부터)':'')+' '+g.kind+' '+g.n+'회';}).join(', ')+' 이상';
+    var sv=config.service,rule=sv&&sv.maxWait!=null?' · 한 번 이동에 버스를 '+Demand.duration(config,sv.maxWait)+' 넘게 기다리면 그날은 세지 않아요':'';
+    return groups.map(function(g){return g.names.join('·')+(g.from>1?'('+g.from+'단계부터)':'')+' '+g.kind+' '+g.n+'회';}).join(', ')+' 이상'+rule;
   }
   // 인물별 누적 완료·기준·남은 기회(아직 기록되지 않은 단계 수)
   function residentTally(config,history){
@@ -179,10 +196,10 @@
       daeun:['운동장에 가는 길부터 친구 집, 마지막 터미널까지 두 날 모두 이어졌어요. 돌아갈 길까지 있는 노선이라 좋았어요!','운동장에 가는 버스만으로는 제 일정이 끝나지 않아요. 경기 뒤 친구 집과 터미널로 가는 길도 필요해요.']
     };
     return config.residents.filter(function(r){return thresholds[r.id]!=null;}).map(function(r){
-      var seen={},completed=0;history.forEach(function(h){if(seen[h.phase]||h.phase<r.fromPhase||h.phase>config.phases.length)return;seen[h.phase]=true;var rec=h.residents&&h.residents[r.id];if(rec&&rec.dayStatus==='complete')completed++;});
+      var seen={},completed=0;history.forEach(function(h){if(seen[h.phase]||h.phase<r.fromPhase||h.phase>config.phases.length)return;seen[h.phase]=true;var rec=h.residents&&h.residents[r.id];if(rec&&(rec.satisfied!=null?rec.satisfied:rec.dayStatus==='complete'))completed++;});
       var satisfied=completed>=thresholds[r.id];
       var line=lines[r.id][satisfied?0:1];if(config.challengeApplied&&r.itineraries&&satisfied)line='운동장에서의 일정 뒤에도 다음 목적지까지 갈 수 있었어요. 돌아가는 길까지 함께 챙겨 줘서 고마워요!';
-      return {id:r.id,name:r.name+' · '+(satisfied?'만족':'불만족'),satisfied:satisfied,completed:completed,threshold:thresholds[r.id],image:images[r.id],text:line+'\n'+(r.itineraries?'두 이동을 모두 마친 일정':'왕복 완료')+' '+completed+'회 · 만족 기준 '+thresholds[r.id]+'회 이상'};
+      return {id:r.id,name:r.name+' · '+(satisfied?'만족':'불만족'),satisfied:satisfied,completed:completed,threshold:thresholds[r.id],image:images[r.id],text:line+'\n'+'기준을 지켜 해낸 하루 '+completed+'회 · 만족 기준 '+thresholds[r.id]+'회 이상'};
     });
   }
   function endingConclusion(reactions,history){
@@ -191,8 +208,14 @@
     var verdict=allSatisfied?'다양한 사람들을 만족시켰다.':'도시 노선을 나름 잘 설계했다. 하지만 이게 최선이었을까?';
     return {name:'솔잎마을의 한 학기',image:'intro-village.webp',allSatisfied:allSatisfied,profit:profit,verdict:verdict,text:verdict+'\n총 수익 '+Math.round(profit).toLocaleString('ko-KR')+'원\n지원금·운임에서 운영 비용을 뺀 '+history.length+'단계 누적 금액'};
   }
+  // 결과 카드: 판정(Session.residentVerdict — 출발 경고와 같은 기준)과 구간별 상태
   function residentResult(rd,r,passengers,window){
     var complete=r.dayStatus==='complete',first=complete||r.dayStatus==='returnIncomplete';
+    if(r.satisfied!=null){
+      var legsV=[{o:r.o||rd.o,d:r.d||rd.d,state:first?'도착':'미도착'},{o:r.d||rd.d,d:r.finalDestination||rd.returnTo||rd.o,state:complete?'도착':first?'미도착':'아직 시작하지 못함'}];
+      var labelV=r.satisfied?(rd.itineraries?'일정 완료 · 기준 충족':'왕복 완료 · 기준 충족'):complete?'이동은 마쳤지만 기준 미충족':first?(rd.itineraries?'다음 목적지에 도착하지 못했어요':'집에 돌아오지 못했어요'):'첫 목적지에 도착하지 못했어요';
+      return {complete:!!r.satisfied,label:labelV,reason:(r.reasons||[]).map(function(x){return x.text;}).join(' '),legs:legsV};
+    }
     var p=passengers.filter(function(p){return p.residentId===rd.id&&p.leg===(first?'return':'outbound');})[0],reason='';
     if(!complete){
       if(first&&r.returnT!=null&&r.returnT>=window)reason='첫 목적지 도착 후 체류를 마치니 운행 시간이 끝나, 다음 이동을 시작하지 못했어요. 첫 목적지에 더 일찍 도착할 수 있는지 살펴보세요.';
@@ -205,7 +228,7 @@
     return {complete:complete,label:complete?(rd.itineraries?'일정 완료':'왕복 완료'):first?(rd.itineraries?'다음 목적지에 도착하지 못했어요':'집에 돌아오지 못했어요'):'첫 목적지에 도착하지 못했어요',reason:reason,
       legs:[{o:r.o||rd.o,d:r.d||rd.d,state:first?'도착':'미도착'},{o:r.d||rd.d,d:r.finalDestination||rd.returnTo||rd.o,state:complete?'도착':first?'미도착':'아직 시작하지 못함'}]};
   }
-  var api = { residentResult:residentResult,satisfactionTargets:satisfactionTargets,satisfactionText:satisfactionText,residentTally:residentTally,endingReactions:endingReactions,endingConclusion:endingConclusion, fill: fill, bubbles: bubbles, residentStory: residentStory, zoneSubtitleText: zoneSubtitleText, hookLines: hookLines, nodeName: nodeName };
+  var api = { josa:josa, residentResult:residentResult,satisfactionTargets:satisfactionTargets,satisfactionText:satisfactionText,residentTally:residentTally,endingReactions:endingReactions,endingConclusion:endingConclusion, fill: fill, bubbles: bubbles, residentStory: residentStory, zoneSubtitleText: zoneSubtitleText, hookLines: hookLines, nodeName: nodeName };
   root.PB = root.PB || {};
   root.PB.Narrative = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

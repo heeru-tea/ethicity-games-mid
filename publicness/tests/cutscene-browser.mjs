@@ -8,7 +8,7 @@ try{
   const page=await browser.newPage({viewport:{width,height}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/publicness/?no3d=1`);
   await page.locator('#btn-start').click();
-  assert.equal(await page.locator('#goal-intro').getAttribute('data-stage'),'false','intro comes before Stage 1');
+  assert.equal(await page.locator('#goal-intro').getAttribute('data-stage'),'false','intro comes first');
   for(const [index,name] of ['하늘','나래','준','솔잎마을의 AI'].entries()){
    assert.equal(await page.locator('#goal-intro-h').textContent(),name);
    await page.locator('#story-image').evaluate(img=>img.decode());
@@ -20,9 +20,8 @@ try{
    if(index===0||index===3)await page.screenshot({path:`publicness/tests/_shot-cutscene-${width}-${index}.png`});
    await page.keyboard.press('ArrowRight');
   }
-  // 소개가 끝나면 맵(단계 안내) 화면 위에 Stage 1 카드
-  await page.locator('#goal-intro[data-stage="true"]').waitFor();assert.equal(await page.locator('#story-stage-title').textContent(),'Stage 1');assert.equal(await page.locator('body').getAttribute('data-screen'),'reveal');assert.ok(!await page.locator('#btn-goal-start').isVisible());
-  await page.keyboard.press('Enter');await page.locator('#btn-begin-plan').waitFor();assert.equal(await page.locator('#goal-intro').evaluate(d=>d.open),false);
+  // 소개가 끝나면 Stage 카드 없이 바로 1단계 안내(생각해 보기 포함)
+  await page.locator('#btn-begin-plan').waitFor();assert.equal(await page.locator('body').getAttribute('data-screen'),'reveal');assert.ok(await page.locator('#learning').isVisible());assert.equal(await page.locator('#goal-intro').evaluate(d=>d.open),false);
   if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();
   await page.evaluate(()=>{PB.App.motion=true;window.sceneDone=0;PB.Cutscene.play('sol',()=>window.sceneDone++);});
   await page.locator('#story-image').evaluate(img=>img.decode());

@@ -6,6 +6,8 @@ cfg.nodes.find(n=>n.id==='H').fromPhase=1;cfg.demandRows.find(r=>r.a==='H'&&r.b=
 cfg.nodes=cfg.nodes.filter(n=>!['J','K'].includes(n.id));cfg.demandRows=cfg.demandRows.filter(r=>!['J','K'].includes(r.a)&&!['J','K'].includes(r.b));
 cfg.residents=cfg.residents.filter(r=>!r.itineraries);
 cfg.demandRows=cfg.demandRows.filter(r=>!(r.a==='A'&&r.b==='C'));
+// 2026-10-22 신도시 성장 행(4·5단계)은 레거시 시나리오에서 제외
+cfg.demandRows=cfg.demandRows.filter(r=>!(r.a==='I'&&r.fromPhase>=4));
 cfg.bus.initialBuses=3;
 cfg.progression=null;cfg.bus.maxBuses=4;cfg.bus.autoSpacing=false;
 cfg.initialDraft={routes:[['B','A','G','E'],['B','C','D','A'],['H','A','G']].map(nodes=>({nodes,stops:nodes.map(()=>true)})),buses:[1,2,3].map(id=>({id,routeNum:id,offset:0}))};

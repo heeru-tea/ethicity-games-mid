@@ -62,7 +62,8 @@ try{
     await page.locator('#speed-1').click();check(await clock()>=t2,mode+' switching back never rewinds');
     await page.locator('#speed-2').click();
     await page.clock.resume();
-    await page.waitForFunction(()=>document.querySelector('[data-riders]'),{},{timeout:15000});
+    // 3D 구역 모델(2026-10-23) 뒤로 swiftshader+가짜 시계(resume)에서 프레임이 느려 재생이 늦게 따라온다(실제 시계에선 2배속 정상, 승객 표시 3D 약 18초) — 기다림만 늘림
+    await page.waitForFunction(()=>document.querySelector('[data-riders]'),{},{timeout:45000});
     check(await page.locator('[data-riders]').count()>0,mode+' live riders visible');
     await page.screenshot({path:`publicness/tests/_shot-v2-run-${mode}.png`});
     // Validate all count transitions including zero through the same display interface.
@@ -78,7 +79,7 @@ try{
     check(await page.locator('#result-details').evaluate(n=>!n.open),mode+' statistics collapsed by default');
     await page.screenshot({path:`publicness/tests/_shot-v2-result-${mode}.png`});
     for(let phase=2;phase<=5;phase++){
-      if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
+      await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
       if(phase===3){
         check(await page.evaluate(()=>PB.Session.graph(PB.App.s).has('I')),mode+' new town appears in phase 3');
         await page.locator('#btn-fourth').click();await page.locator('#btn-new-route').click();
@@ -89,7 +90,7 @@ try{
       await page.locator('#btn-depart').press('Enter');await page.locator('#confirm-yes').press('Enter');
       await page.locator('#resident-summary').waitFor();
     }
-    if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();await page.locator('#btn-restart').waitFor();
+    await page.locator('#btn-next-phase').click();await page.locator('#btn-restart').waitFor();
     check(await page.evaluate(()=>JSON.parse(localStorage.getItem('ethicity.result.publicness')).completed===true),mode+' five phases finish and save completion');
     check(errors.length===0,mode+' no runtime errors: '+errors.join(','));await page.close();
   }

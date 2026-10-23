@@ -11,3 +11,9 @@ test('busy stops never exceed half the visible stops in any phase (default and r
   for(let p=1;p<=s.config.phases.length;p++){const load=D.stopLoad(s.config,p,s.seed),ids=Object.keys(load);
    assert.ok(ids.filter(id=>load[id].tier==='high').length*2<=ids.length,'phase '+p);}}
 });
+test('new town grows each phase and matches the dense housing area by phase 5',()=>{
+ const s=S.create(cfg),I=p=>D.stopLoad(s.config,p,s.seed).I.count,B=p=>D.stopLoad(s.config,p,s.seed).B.count;
+ assert.ok(I(3)<I(4)&&I(4)<I(5),`I ${I(3)}→${I(4)}→${I(5)}`);
+ assert.ok(I(5)>=B(5)*0.9,`phase 5 new town ${I(5)} vs dense ${B(5)}`);
+ assert.equal(D.stopLoad(s.config,5,s.seed).I.tier,'high');
+});

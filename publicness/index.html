@@ -24,8 +24,10 @@
       <label class="radio"><input type="radio" name="setting" value="random"> <span><b>랜덤 · 도전용 8단계</b> — 위치·사건 변화, 직행과 광역 노선까지</span></label>
       <p class="note" id="seed-note" aria-live="polite"></p>
     </fieldset>
+    <button type="button" class="btn btn-primary btn-lg" id="btn-continue" hidden>이어하기</button>
+    <p class="note" id="continue-note"></p>
     <button type="button" class="btn btn-primary btn-lg" id="btn-start">첫 운행 계획하기</button>
-    <p class="note">기록은 이 창에만 남아요. 새로고침하면 처음부터 다시 시작합니다.</p>
+    <p class="note">진행은 이 브라우저에 자동으로 저장돼요. 새로고침하거나 창을 닫았다가 열어도 ‘이어하기’로 계속할 수 있어요.</p>
   </div>
   <figure class="title-art" aria-hidden="true">
     <img id="title-img" src="assets/art/title-two-stops.webp" alt="" onerror="this.parentNode.classList.add('placeholder'); this.remove();">
@@ -115,14 +117,14 @@
   <div id="confirm-depart-body"></div>
   <p class="note">출발하면 운행이 끝날 때까지 노선과 배차를 바꿀 수 없어요.</p>
   <div class="row-actions">
-    <button type="button" class="btn" id="confirm-no">다시 볼게요</button>
-    <button type="button" class="btn btn-primary" id="confirm-yes">출발</button>
+    <button type="button" class="btn" id="confirm-no">노선 고치기</button>
+    <button type="button" class="btn btn-primary" id="confirm-yes">이대로 출발</button>
   </div>
 </dialog>
 
 <dialog id="confirm-restart" class="dialog" aria-labelledby="confirm-restart-h">
   <h2 id="confirm-restart-h">처음부터 다시 할까요?</h2>
-  <p>지금까지의 운행 기록이 사라져요.</p>
+  <p>저장된 진행과 지금까지의 운행 기록이 사라져요.</p>
   <div class="row-actions">
     <button type="button" class="btn" id="restart-no">아니요</button>
     <button type="button" class="btn btn-primary" id="restart-yes">처음부터</button>
@@ -144,6 +146,9 @@
 <script src="js/route-pointer.js"></script>
 <script src="js/map2d.js"></script>
 <script src="vendor/three.min.js"></script>
+<script src="js/model-data.js"></script>
+<script src="assets/models/bus.js"></script>
+<script src="assets/models/zones.js"></script>
 <script src="js/view3d.js"></script>
 <script src="js/ui-plan.js"></script>
 <script src="js/ui-run.js"></script>

@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url),cfg=require('../js/config.js'),S=require('../js/session.js'),D=require('../js/demand.js'),Sim=require('../js/sim.js');
 const route=nodes=>({nodes,stops:nodes.map(()=>true)});
-test('day clock and duration agree at 05:00, noon and 23:00',()=>{assert.equal(D.clock(cfg,0),'05:00');assert.equal(D.clock(cfg,120),'23:00');assert.equal(D.duration(cfg,10),'90분');});
+test('day clock and duration agree at 05:00, noon and 23:00',()=>{assert.equal(D.clock(cfg,0),'05:00');assert.equal(D.clock(cfg,120),'23:00');assert.equal(D.duration(cfg,10),'1시간 30분');assert.equal(D.duration(cfg,5),'45분');assert.equal(D.duration(cfg,20),'3시간');});
 test('default and 100 seeded layouts preserve diagonal towns and hospital proximity',()=>{
  for(const opts of [{},...Array.from({length:100},(_,seed)=>({mode:'fixed',seed}))]){
   const ns=S.create(cfg,opts).config.nodes,n=id=>ns.find(x=>x.id===id),dist=(a,b)=>Math.hypot(n(a).x-n(b).x,n(a).y-n(b).y);

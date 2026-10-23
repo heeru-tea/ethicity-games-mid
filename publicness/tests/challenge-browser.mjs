@@ -10,7 +10,7 @@ try{
   await page.evaluate(()=>window.__pbFast=true);
   assert.ok(!await page.evaluate(()=>PB.Session.visibleNodeIds(PB.App.s).includes('H')));
   for(let phase=1;phase<=8;phase++){
-   if(phase>1){await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);}
+   if(phase>1){await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);}
    assert.equal(await page.locator('.bus-assignment').count(),phase+1);assert.equal(await page.locator('.route-tab').count(),phase<3?phase+1:phase<6?4:phase<8?5:6);
    assert.equal(await page.evaluate(()=>PB.Session.visibleNodeIds(PB.App.s).includes('H')),phase>=2);
    assert.match(await page.locator('.ethics-focus').innerText(),new RegExp(phase===6?'호수공원':phase===7?'솔잎몰':phase===8?'경계':'이번 단계'));
@@ -19,13 +19,13 @@ try{
     assert.deepEqual(await page.locator('#bus-sel-7 option').evaluateAll(xs=>xs.map(x=>x.value)),['','5']);
     await page.locator('#route-5').click();assert.match(await page.locator('#express-rule').innerText(),/최대 3개/);
     if(phase===6){
-     await page.locator('#stop-picker summary').click();await page.locator('#next-A').click();
+     await page.locator('#stop-picker').evaluate(d=>d.open=true);await page.locator('#next-A').click();
      const before=await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,5).nodes);
-     await page.locator('#stop-picker summary').click();await page.locator('#next-C').click();assert.deepEqual(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,5).nodes),before);
+     await page.locator('#stop-picker').evaluate(d=>d.open=true);await page.locator('#next-C').click();assert.deepEqual(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,5).nodes),before);
      await page.evaluate(()=>PB.App.onLink({route:5,index:0},{node:'C'}));assert.deepEqual(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,5).nodes),before);
      await page.evaluate(()=>PB.App.onLink({node:'L'},{node:'C'}));assert.deepEqual(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,5).nodes),['B','C','A']);
      await page.locator('#btn-undo').click();assert.deepEqual(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,5).nodes),before);
-     await page.locator('#remove-stop-2').click();await page.locator('#stop-picker summary').click();await page.locator('#next-D').click();assert.deepEqual(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,5).nodes),['B','L','D']);
+     await page.locator('#remove-stop-2').click();await page.locator('#stop-picker').evaluate(d=>d.open=true);await page.locator('#next-D').click();assert.deepEqual(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,5).nodes),['B','L','D']);
     }
     assert.ok(await page.locator('#btn-new-route').isDisabled());assert.equal(await page.evaluate(()=>PB.App.nodeName('L')),'호수공원');await page.screenshot({path:`publicness/tests/_shot-challenge-${phase}-${mode}.png`});}
    if(phase===8){
@@ -44,7 +44,7 @@ try{
    await page.locator('#btn-depart').click();await page.locator('#confirm-yes').click();await page.locator('#resident-summary').waitFor();
    if(phase>=6)assert.match(await page.locator('#family-result').textContent(),/3팀/);
   }
-  await page.locator('#btn-route-report-close').click();assert.equal(await page.locator('#btn-next-phase').textContent(),'학기 마무리 보기');await page.locator('#btn-next-phase').click();
+  assert.equal(await page.locator('#btn-next-phase').textContent(),'학기 마무리 보기');await page.locator('#btn-next-phase').click();
   assert.equal(await page.locator('#goal-intro').getAttribute('data-scene'),'ending');assert.match(await page.locator('#story-full').textContent(),/만족 기준 6회 이상/);await page.locator('#btn-goal-start').click();
   assert.match(await page.locator('#ending-families').textContent(),/9팀/);await page.locator('#btn-records').click();assert.equal(await page.locator('#goal-history li').count(),8);
   assert.equal(await page.evaluate(()=>PB.App.s.history.length),8);assert.deepEqual(errors,[]);console.log('PASS '+mode+': eight phases, six routes, nine buses, park/mall, family results, eight-phase ending records');await page.close();

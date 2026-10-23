@@ -1,25 +1,38 @@
 /*
  * 앱 — 화면 전환·상단 바·무대(지도) 동기화·대화 상자. 화면별 패널은 ui-*.js가 PB.UI에 등록한다.
- * 상태는 PB.Session 객체 하나(브라우저 메모리)뿐이다.
+ * 상태는 PB.Session 객체 하나이고, 화면을 그릴 때마다 브라우저에 자동 저장한다(첫 화면 ‘이어하기’).
  */
 (function (root) {
   'use strict';
   var PB = root.PB, cfg = PB.config, S = PB.Session;
   var $ = function (s) { return document.querySelector(s); };
 
-  var COLORS = ['#D97706', '#059669', '#DC2626', '#7C3AED', '#0891B2', '#DB2777'];
-  var COLOR_NAMES = ['주황', '초록', '빨강', '보라', '청록', '분홍'];
-  var DASHES = ['', '14 5', '4 5', '14 4 3 4', '8 8', '2 4'];
-  var DASH_NAMES = ['실선', '긴 점선', '짧은 점선', '점과 선', '중간 점선', '촘촘한 점선'];
+  // 노선 색 = 서울 지하철 노선색 계열(1번만 빨강 — 신분당선)을 채도만 낮춘 차분한 톤(원색은 어른 눈에 쨍해서, 2026-10-23).
+  // 연결된 노선은 모두 실선이고, 점선은 AI 제안 미리보기만 쓴다
+  var COLORS = ['#C4505E', '#3F9B6B', '#D98A45', '#4A9CC2', '#8D77AA', '#A97C52'];
+  var COLOR_NAMES = ['빨강', '초록', '주황', '하늘', '보라', '갈색'];
 
   var App = {
     s: null, view: null, map2d: null, seedParam: null, player: null,
-    sound: false, motion: false, busy: false
+    sound: false, motion: false, busy: false, speed: 1
+  };
+  // 운행 재생 배속(1·2·4). 재생 속도만 바꾸며 이 브라우저에 기억한다
+  App.setSpeed = function (v) { if (PB.Storage.SPEEDS.indexOf(v) < 0) return; App.speed = v; PB.Storage.writeSpeed(v); };
+  // 자동 저장 — 화면을 그릴 때마다(계획 편집·출발·결과·다음 단계). 운행 결과는 저장하지 않고 다시 계산한다
+  App.save = function () {
+    if (!App.s || document.body.getAttribute('data-screen') === 'title') return;
+    PB.Storage.writeSave({ version: cfg.SCENARIO_VERSION, savedAt: Date.now(), session: S.serialize(App.s) });
+  };
+  App.resume = function (saved) {
+    App.s = S.restore(saved.session, cfg);
+    App._sceneKey = null;
+    var st = App.s.stage;
+    App.go(st === 'reveal' ? 'reveal' : st === 'result' ? 'result' : st === 'ending' ? 'ending' : 'plan');
   };
 
   function routeStyle(num) {
-    var i = (num - 1) % COLORS.length, j = Math.floor((num - 1) / COLORS.length) % DASHES.length;
-    return { color: COLORS[i], colorName: COLOR_NAMES[i], dash: DASHES[(i + j) % DASHES.length], dashName: DASH_NAMES[(i + j) % DASHES.length] };
+    var i = (num - 1) % COLORS.length;
+    return { color: COLORS[i], colorName: COLOR_NAMES[i] };
   }
   App.routeStyle = routeStyle;
   App.state = function () { return App.s; };
@@ -73,12 +86,15 @@
     var stageOpts = fn ? fn(App, panel) : null;
     var heading=panel.querySelector('h2'),focus=PB.stories.phaseEthics[App.s.phase-1];
     if(screen!=='ending'&&heading&&focus){
-      var ethics=el('aside',{'class':'callout ethics-focus','data-phase':App.s.phase,'aria-label':'이번 단계에서 살펴볼 것'});
-      ethics.appendChild(el('b',null,'이번 단계에서 살펴볼 것 · '+focus.title));
-      ethics.appendChild(el('p',null,focus.text));heading.insertAdjacentElement('afterend',ethics);
+      // 단계 질문은 한 줄. 단계 안내에서는 그대로, 다른 화면에서는 접어 두고 펼치면 전체 문장
+      var line=el('span'),ethics;line.appendChild(el('b',null,'이번 단계 질문 · '));line.appendChild(document.createTextNode(focus.short||focus.title));
+      if(screen==='reveal'){ethics=el('p',{'class':'callout ethics-focus','data-phase':App.s.phase});ethics.appendChild(line);}
+      else{ethics=el('details',{'class':'callout ethics-focus','data-phase':App.s.phase});var sm=el('summary');sm.appendChild(line);ethics.appendChild(sm);ethics.appendChild(el('p',null,focus.title+' — '+focus.text));}
+      heading.insertAdjacentElement('afterend',ethics);
     }
     App.syncStage(stageOpts || {});
     renderTextRoutes();
+    App.save();
     var h = panel.querySelector('h2');
     if (h && !App.keepFocus) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
     App.keepFocus = false;
@@ -104,7 +120,7 @@
     var g = S.graph(s);
     return s.draft.routes.filter(function (r) { return r.nodes.length >= 2 && r.nodes.every(function (n) { return g.has(n); }); }).map(function (r) {
       var st = routeStyle(r.num);
-      return { num: r.num, route: r, color: st.color, dash: st.dash, dim: !used[r.num] };
+      return { num: r.num, route: r, color: st.color, dim: !used[r.num] };
     });
   };
   App.syncStage = function (opts) {
@@ -118,14 +134,15 @@
       // Decorative terrain only: route distance and accessibility remain unchanged.
       var river = [];
       if(s.mode === 'default')for(var y=-7;y<=7;y+=.15)river.push({x:-3.9+.45*Math.sin(y*.48),y:y});
-      v.setScene({ nodes: nodes, roads: roads, phase: s.phase, river: river, load: PB.Demand.stopLoad(s.config, s.phase, s.seed), boundary: nodes.some(function(n){return n.id==='N';}) ? {x:Math.sign(nodes.filter(function(n){return n.id==='N';})[0].x)*6.4} : null }); App._sceneKey = key;
+      var frame = s.config.nodes.filter(function (n) { return n.id !== 'N' || g.has('N'); });
+      v.setScene({ nodes: nodes, frame: frame, roads: roads, phase: s.phase, river: river, load: PB.Demand.stopLoad(s.config, s.phase, s.seed), boundary: nodes.some(function(n){return n.id==='N';}) ? {x:Math.sign(nodes.filter(function(n){return n.id==='N';})[0].x)*6.4} : null }); App._sceneKey = key;
     }
     // 붐비는 정류장의 장식용 대기 인물은 계획 전·계획 중에만. 운행·결과에서는 실제 대기 인원만 보인다
     if (v.setCrowd) v.setCrowd(s.stage === 'reveal' || s.stage === 'plan');
     var routes = s.stage === 'run' || s.stage === 'result'
       ? (s.current ? s.current.plan.buses : []).filter(function (b) { return b.route; }).map(function (b) {
         var num = App.numForPlanRoute(b.route), st = routeStyle(num);
-        return { num: num, route: b.route, color: st.color, dash: st.dash, dim: false };
+        return { num: num, route: b.route, color: st.color, dim: false };
       }).filter(function (r, i, arr) { return arr.findIndex(function (x) { return x.num === r.num; }) === i; })
       : App.stageRoutes();
     if(opts.preview){
@@ -181,7 +198,7 @@
     S.routesInOrder(s).forEach(function (r) {
       var st = routeStyle(r.num), buses = s.draft.buses.filter(function (b) { return b.routeNum === r.num; });
       var ok = PB.Graph.validateRoute(g, r).length === 0;
-      var li = el('li', null, r.num + '번 노선(' + st.colorName + ' ' + st.dashName + '): ' + App.describeRoute(r) +
+      var li = el('li', null, r.num + '번 노선(' + st.colorName + '): ' + App.describeRoute(r) +
         (ok ? ' · 한 바퀴 ' + App.duration(PB.Graph.cycleMinutes(g, r)) : ' · 아직 완성되지 않음') +
         ' · ' + (buses.length ? buses.map(function (b) { return b.id + '호차'; }).join(', ') : '배정된 버스 없음'));
       ul.appendChild(li);
@@ -193,36 +210,67 @@
   }
 
   /* ── 단계 공개 화면 ───────────────── */
+  // 단계 안내 = 변화 카드: 줄마다 사실 하나, 지난 단계와 비교되는 값은 차이를 붙인다. 반복 설명은 넣지 않는다
+  var NEW_PLACE = { H: '경기·운동하러 오가는 사람들', I: '새 주거지 · 기차역·병원으로 오가는 주민', J: '기차역·시장을 오가는 이동과 운동장 왕복', K: '외곽 마을·밀집 주거지에서 낮 방문',
+    L: '가족 3팀(12명)이 함께 방문하고 귀가', M: '낮 방문 60명 · 저녁 귀가 60명', N: '아침 출발 36명 · 저녁 귀가 36명' };
+  function signed(n) { return n > 0 ? '+' + n : String(n); }
   function renderReveal(app, panel) {
-    var s = App.s, cfg=s.config, p = s.phase, reqs = PB.Demand.base(cfg, p, s.seed).length;
+    var s = App.s, cfg = s.config, p = s.phase, reqs = PB.Demand.base(cfg, p, s.seed).length, prog = cfg.progression;
     panel.appendChild(el('p', { 'class': 'eyebrow' }, p + '단계 · ' + cfg.phases[p - 1]));
-    panel.appendChild(el('h2', null, p === 1 ? '첫 운행을 준비해요' : p === cfg.newTownPhase ? '마을에 새 동네가 생겼어요' : '다음 운행을 준비해요'));
+    panel.appendChild(el('h2', null, p === 1 ? '첫 운행을 준비해요' : '이번 단계에서 달라진 것'));
     if (p === 1 && App.player) panel.appendChild(el('p', null, App.player.nickname + ' 운영자님, 반가워요.'));
-    var body = [];
-    if (p === 1) body.push('버스 ' + s.owned + '대와 빈 노선 2개가 준비되어 있어요. 정해진 경로는 없어요. 이번 운행에는 승차 요청 ' + reqs + '건이 들어올 예정이에요.',
-      '지도의 정류장을 이어 노선을 만드세요. 필요하면 AI 제안도 받아 볼 수 있어요.');
-    else if (p === cfg.newTownPhase) {
-      var nt = cfg.nodes.filter(function (n) { return n.id === cfg.newZone; })[0];
-      var newReqs = PB.Demand.base(cfg, p, s.seed).filter(function (q) { return q.o === cfg.newZone || q.d === cfg.newZone; }).length;
-      body.push(nt.name + '(' + nt.id + ')가 생겼어요. 어느 정류장과도 연결할 수 있어요.',
-        nt.name + ' 주민의 승차 요청 ' + newReqs + '건이 더해져 이번 운행 창의 요청은 ' + reqs + '건이에요.',
-        '빈 노선 하나와 버스 한 대가 추가됐어요. 노선 4개와 버스 4대로 새 동네까지 연결해 보세요.');
+    var rows = [], limit = S.routeLimit(s);
+    if (p === 1) {
+      rows.push(['버스·노선', '버스 ' + s.owned + '대 · 노선 최대 ' + limit + '개']);
+      rows.push(['오늘 이동 요청', requestText(cfg, p, s.seed)]);
+      rows.push(['할 일', '정류장을 이어 첫 노선을 만들어 보세요']);
+      rows.push(['학기 말 기준', (cfg.challengeApplied ? '총 ' + cfg.phases.length + '단계 · ' : '') + PB.Narrative.satisfactionText(cfg)]);
     } else {
-      var h = s.history[s.history.length - 1];
-      body.push('지난 운행에서는 요청 ' + h.metrics.N + '건 중 ' + h.metrics.arrived + '건이 목적지에 도착했어요.',
-        '이번 운행 창의 기본 요청은 ' + reqs + '건이에요. 결과를 보고 노선과 배차를 고칠 수 있어요.');
+      var h = s.history[s.history.length - 1], m = h.metrics;
+      rows.push(['지난 운행', m.N + '건 중 ' + m.arrived + '건 도착 (' + Math.round(m.arrived / Math.max(1, m.N) * 100) + '%)']);
+      var places = cfg.nodes.filter(function (n) { return n.fromPhase === p; });
+      if (places.length) rows.push(['새로 생김', places.map(function (n) { return n.name + (NEW_PLACE[n.id] ? ' — ' + NEW_PLACE[n.id] : ''); }).join(' · ')]);
+      var people = cfg.residents.filter(function (r) { return r.fromPhase === p; }).map(function (r) { var rd = PB.Demand.residents(cfg, p).filter(function (x) { return x.id === r.id; })[0] || r; return { name: r.name, o: rd.o, d: rd.d }; });
+      if (people.length) rows.push(['새 인물', people.map(function (r) { return r.name; }).join('·') + ' (' + App.nodeName(people[0].o) + ' → ' + App.nodeName(people[0].d) + ')']);
+      var dBus = prog ? s.owned - prog.buses[p - 2] : 0, dRoute = prog ? limit - prog.routes[p - 2] : 0;
+      var bus = '버스 ' + s.owned + '대' + (dBus ? ' (' + signed(dBus) + ')' : '') + ' · 노선 최대 ' + limit + '개' + (dRoute ? ' (' + signed(dRoute) + ')' : '');
+      var newest = s.draft.buses[s.draft.buses.length - 1];
+      if (cfg.challengeApplied && p === 6 && S.routeByNum(s, 5)) bus += ' · 7호차 직행(정원 18명·1.5배)은 5번 직행 전용, 정류장 3곳까지';
+      else if (cfg.challengeApplied && p === 8) bus += ' · 9호차 광역(정원 24명)은 6번 광역 전용';
+      else if (dBus && newest && newest.routeNum == null) bus += ' · 새 ' + newest.id + '호차는 직접 배정';
+      rows.push(['버스·노선', bus]);
+      var prev = PB.Demand.base(cfg, p - 1, s.seed).length;
+      rows.push(['오늘 이동 요청', requestText(cfg, p, s.seed) + ' · 예정 이동 ' + signed(reqs - prev) + '건']);
+      var now = PB.Demand.stopLoad(cfg, p, s.seed), before = PB.Demand.stopLoad(cfg, p - 1, s.seed);
+      var grew = Object.keys(now).filter(function (id) { return before[id] && now[id].count - before[id].count >= 5; })
+        .sort(function (x, y) { return (now[y].count - before[y].count) - (now[x].count - before[x].count); }).slice(0, 2);
+      if (grew.length) rows.push(['늘어난 곳', grew.map(function (id) { return App.nodeName(id) + ' ' + signed(now[id].count - before[id].count) + '건'; }).join(' · ')]);
     }
-    if (p === 2) body.push('솔잎마을 종합운동장이 완공되었습니다! 경기와 운동을 즐기려는 사람들이 찾아옵니다. 종합운동장으로 가는 노선을 연결해 주세요.','빈 노선 하나와 버스 한 대가 추가됐어요. 이제 노선 3개와 버스 3대로 연결을 넓혀 보세요.');
-    if (p === 4 && s.config.nodes.some(function(n){return n.id==='J';})) body.push('고속버스터미널(J)이 문을 열었어요. 기본 맵에서는 산업·일자리 아래에 있어요. 기차역·구도심 시장을 오가는 이동 요청 20건과 종합운동장 왕복 요청 8건이 추가됩니다. 기존 노선을 연장하거나 경유지를 바꿔 연결해 보세요.');
-    if (p === 5 && s.config.nodes.some(function(n){return n.id==='K';})) body.push('어린이·노인복지관(K)이 문을 열었어요. 외곽 마을과 밀집 주거지를 오가는 작은 이동 요청 12건이 더해져요. 낮에 방문하고 저녁 전에 돌아오는 길까지 연결해 보세요.');
-    if (p === 6) body.push('호수공원(L)이 열렸어요. 가족 3팀, 총 12명이 나들이를 계획하고 있어요. 가족 모두의 방문과 귀가를 연결해 보세요. 5번 직행 노선과 전용 직행버스 7호차가 함께 추가됩니다. 7호차는 정원 18명·주행 속도 1.5배이며, 5번 노선에만 배정할 수 있어요. 5번 노선은 최대 3개 정류장만 연결하며, 정류장은 언제든 바꿀 수 있어요.');
-    if (p === 7) body.push('솔잎몰(M)이 문을 열었어요. 낮 방문과 저녁 귀가 시간에 일반 승객 120명이 집중돼요. 새 8호차를 어디에 배정할지 결정하고, 기존 주민과 가족의 이동도 살펴보세요.');
-    if (p === 8) body.push('행정 경계 너머 대도시(N)로 출퇴근하는 주민이 생겼어요. 6번 광역 노선과 정원 24명의 전용 9호차를 지급합니다. 마을 정류장 한 곳과 대도시 한 곳만 연결하는 왕복 노선이에요. 시내버스와 갈아탈 곳을 고르고, 아침 출발 36명과 저녁 귀가 36명의 길을 이어 주세요.');
-    if (p >= 4) body.push('버스 한 대가 추가되어 총 ' + s.owned + '대예요. 노선은 최대 '+S.routeLimit(s)+'개이며, '+(p===8?'새 버스는 6번 광역 노선에 배정되어 있어요.':p===6&&S.routeByNum(s,5)?'새 버스는 5번 직행 노선에 배정되어 있어요.':'새 버스를 배정할 노선을 직접 선택하세요.')+' 같은 노선의 버스는 자동으로 간격을 두고 출발해요.');
-    if(p===1)body.push((cfg.challengeApplied?'랜덤 도전은 총 '+cfg.phases.length+'단계입니다. ':'')+'학기 말에 주요 인물마다 만족했는지 확인해요. 만족 기준은 '+PB.Narrative.satisfactionText(cfg)+'이에요. 진행 상황은 계획 화면의 일정과 결과 화면에서 볼 수 있어요.');
-    if(s.config.day)body.push('05:00부터 23:00까지의 하루를 실제 120초 동안 운행해요. 출근·낮·귀가 시간에 따라 이동 수요가 달라져요. 주요 인물의 다음 이동 요청은 목적지 도착 후 체류 시간을 채워야 생겨요.');
-    body.forEach(function (t) { panel.appendChild(el('p', null, t)); });
+    var dl = el('dl', { id: 'phase-changes', 'class': 'kv phase-changes' });
+    rows.forEach(function (r) { dl.appendChild(el('dt', null, r[0])); dl.appendChild(el('dd', null, r[1])); });
+    panel.appendChild(dl);
+    panel.appendChild(el('p', { 'class': 'note', id: 'request-terms' }, '이동 요청 1건 = 한 사람의 한 번 이동이에요. 지도의 정류장 숫자는 그 정류장에서 출발하거나 도착하는 요청이라, 모두 더하면 이동 요청의 두 배가 돼요. 실제 운행에는 돌발 수요가 더해질 수 있어요.'));
+    learning(panel, s.phase);
     panel.appendChild(el('button', { type: 'button', 'class': 'btn btn-primary btn-lg', id: 'btn-begin-plan', onclick: function () { S.beginPlan(App.s); App.go('plan'); if (App.s.phase === 1 && !App.s.tutorialSeen) App.showTutorial(); } }, '계획 시작'));
+  }
+
+  // 안내용 이동 요청: 예정 이동 + 목적지에 도착하면 생기는 다음 이동(주요 인물·가족). 예상·결과와 같은 이름을 쓴다
+  function requestText(c, phase, seed) {
+    var q = PB.Demand.requestPlan(c, phase, seed);
+    return '예정 ' + q.planned + '건' + (q.followUps ? ' + 도착하면 생기는 다음 이동 최대 ' + q.followUps + '건' : '');
+  }
+  App.requestText = requestText;
+  // ‘잠깐 생각해 보기’ — 별도 창 대신 단계 안내 안에서 읽는다(교육 내용은 그대로)
+  function learning(panel, phase) {
+    var item = PB.stories.learning[phase - 1]; if (!item) return;
+    var sec = el('section', { id: 'learning', 'class': 'learning', 'aria-labelledby': 'learning-title', 'data-phase': phase });
+    sec.appendChild(el('p', { 'class': 'eyebrow' }, '잠깐 생각해 보기'));
+    sec.appendChild(el('h3', { id: 'learning-title' }, item.title));
+    if (item.subtitle) sec.appendChild(el('p', { 'class': 'note learning-subtitle' }, item.subtitle));
+    sec.appendChild(el('p', { 'class': 'learning-case' }, item.text));
+    var q = el('p', { 'class': 'learning-question' }); q.appendChild(el('b', null, '생각 질문 · ')); q.appendChild(document.createTextNode(item.question)); sec.appendChild(q);
+    [{ label: item.source, url: item.url }].concat(item.extraSources || []).forEach(function (src) { sec.appendChild(el('a', { href: src.url, target: '_blank', rel: 'noopener noreferrer', 'class': 'learning-source' }, '출처: ' + src.label + ' (새 탭)')); });
+    panel.appendChild(sec);
   }
 
   /* ── 첫 노선 안내(1단계 계획에 처음 들어올 때, 도움말에서 다시 보기) ── */
@@ -235,10 +283,11 @@
     d.appendChild(el('p', { 'class': 'eyebrow' }, '첫 노선 만들기'));
     d.appendChild(el('h2', { id: 'tutorial-title', tabindex: '-1' }, '정류장 두 곳을 이어 보세요'));
     var ol = el('ol', { 'class': 'tutorial-steps' });
-    ['지도에서 출발할 정류장을 누르세요.', '이어서 갈 정류장을 누르면 노선이 생겨요. 정류장을 끌어서 이어도 돼요.', '버스가 배정됐는지 확인하고 ‘이 노선으로 출발’을 누르세요.'].forEach(function (t) { ol.appendChild(el('li', null, t)); });
+    ['지도에서 출발할 정류장을 누르세요(오른쪽 ‘정류장 목록에서 연결하기’로 골라도 돼요).', '이어서 갈 정류장을 누르면 노선이 생겨요. 정류장을 끌어서 이어도 돼요.', '새 버스는 처음에 ‘쉬기’예요. 노선 카드에서 버스를 배정하고 ‘이 노선으로 출발’을 누르세요.'].forEach(function (t) { ol.appendChild(el('li', null, t)); });
     d.appendChild(ol);
     if (who) d.appendChild(el('p', null, '예: ' + who.name + ' · ' + App.clock(who.depart) + ' ' + App.nodeName(who.o) + ' → ' + App.nodeName(who.d) + '. 누구의 길부터 이을지는 직접 정하세요.'));
     d.appendChild(el('p', { 'class': 'note' }, '이번 단계는 버스 ' + s.owned + '대, 노선 ' + S.routeLimit(s) + '개까지예요. 쓰지 않는 버스는 버스 배정에서 ‘쉬기’로 둘 수 있어요.'));
+    d.appendChild(el('p', { 'class': 'note' }, '출발하면 05:00~23:00 하루를 120초 동안 보여 줘요. 운행 중에는 노선을 바꿀 수 없고, 결과를 보고 다음 단계에서 고쳐요.'));
     d.appendChild(el('button', { type: 'button', id: 'btn-tutorial-close', 'class': 'btn btn-primary', onclick: function () { d.close(); } }, '정류장 이어 보기'));
     // 닫으면 누를 수 있는 정류장을 한 번 깜빡여 지도로 시선을 옮긴다
     d.onclose = function () { if (App.s === s && s.stage === 'plan') { S.visibleNodeIds(s).forEach(function (id) { App.view.flash(id); }); var h = document.querySelector('#panel h2'); if (h) h.focus({ preventScroll: true }); } };
@@ -246,40 +295,15 @@
   };
 
   /* ── 시작 ───────────────────────── */
-  App.showLearning = function () {
-    var item=PB.stories.learning[App.s.phase-1];if(!item)return;
-    var d=document.querySelector('#learning-dialog');
-    if(!d){d=el('dialog',{id:'learning-dialog','class':'dialog','aria-labelledby':'learning-title'});document.body.appendChild(d);}
-    d.textContent='';d.dataset.phase=App.s.phase;
-    d.appendChild(el('p',{'class':'eyebrow'},App.s.phase+'단계 · 잠깐 생각해 보기'));
-    d.appendChild(el('h2',{id:'learning-title',tabindex:'-1'},item.title));
-    if(item.subtitle)d.appendChild(el('p',{'class':'note learning-subtitle'},item.subtitle));
-    d.appendChild(el('p',{'class':'learning-case'},item.text));
-    var q=el('section',{'class':'learning-question'});q.appendChild(el('h3',null,'생각 질문'));q.appendChild(el('p',null,item.question));d.appendChild(q);
-    d.appendChild(el('a',{href:item.url,target:'_blank',rel:'noopener noreferrer','class':'learning-source'},'출처: '+item.source+' (새 탭)'));
-    (item.extraSources||[]).forEach(function(source){d.appendChild(el('a',{href:source.url,target:'_blank',rel:'noopener noreferrer','class':'learning-source'},'출처: '+source.label+' (새 탭)'));});
-    if(App.s.phase===4)d.appendChild(el('a',{href:'https://ai.hel.fi/en/the-rental-apartment-search-chatbot/',target:'_blank',rel:'noopener noreferrer','class':'learning-source'},'언어 지원 한계를 밝힌 챗봇 등록 기록 (새 탭)'));
-    d.appendChild(el('button',{id:'btn-learning-continue',type:'button','class':'btn btn-primary',onclick:function(){d.close();}},'생각하고 시작하기'));
-    d.onclose=function(){var b=document.querySelector('#btn-begin-plan');if(b)b.focus();};
-    d.showModal();d.querySelector('h2').focus();
-  };
-  // stage가 있으면 맵(단계 안내) 화면으로 넘어간 위에 Stage 카드를 먼저 띄운 뒤 교육 모달을 연다
-  App.startGame = function (stage) {
+  // 캐릭터 소개 뒤 바로 단계 안내(‘생각해 보기’ 포함). 별도 Stage 카드·교육 창은 두지 않는다
+  App.startGame = function () {
     var chosen = document.querySelector('input[name=setting]:checked');
     var opt = App.seedParam.mode === 'fixed' ? { mode: 'fixed', seed: App.seedParam.seed } : { mode: chosen ? chosen.value : 'default' };
+    PB.Storage.clearSave();
     App.s = S.create(cfg, opt);
     App._sceneKey = null;
     App.go('reveal');
-    if (stage) PB.Cutscene.play('stage', App.showLearning, null, stage);
-    else App.showLearning();
   };
-
-  // 세션을 만들기 전에 보여 줄 Stage 1 카드. 랜덤·지정 세팅은 Session.create처럼 도전 단계를 더한다
-  function firstStage() {
-    var chosen = document.querySelector('input[name=setting]:checked');
-    var challenge = cfg.challenge && (App.seedParam.mode === 'fixed' || (chosen && chosen.value === 'random'));
-    return { number: 1, total: cfg.phases.length + (challenge ? cfg.challenge.phases.length : 0), name: cfg.phases[0] };
-  }
 
   /* ── 효과음(기본 켜짐, 파일 없이 합성). 끈 상태는 이 브라우저에 기억 ─── */
   var audio = null;
@@ -346,14 +370,30 @@
     $('#opt-motion').checked = App.reducedMotion();
     $('#opt-motion').addEventListener('change', function (e) { App.motion = e.target.checked; App.view.setReducedMotion(App.reducedMotion()); });
     App.sound = PB.Storage.readSound(); $('#opt-sound').checked = App.sound;
+    App.speed = PB.Storage.readSpeed();
     $('#opt-sound').addEventListener('change', function (e) { App.setSound(e.target.checked); if (App.sound) App.chime(); });
     // 캐릭터 소개 → 맵 화면 위 Stage 1 카드 → 교육 모달 → 단계 안내 순서. 세팅 라디오는 소개 전에 읽어 둔다
-    $('#btn-start').addEventListener('click', function () { var stage = firstStage(); PB.Cutscene.play('intro', function () { App.startGame(stage); }); });
+    function newGame() { PB.Cutscene.play('intro', function () { App.startGame(); }); }
+    // 저장된 진행이 있으면 ‘이어하기’를 먼저 보여 주고, 새로 시작은 지워도 되는지 한 번 묻는다
+    var saved = PB.Storage.readSave(cfg.SCENARIO_VERSION), cont = $('#btn-continue');
+    if (saved && cont) {
+      var ss = saved.session, total = (ss.config ? ss.config.phases.length : cfg.phases.length);
+      cont.hidden = false;
+      $('#continue-note').textContent = (ss.mode === 'default' ? '기본' : '랜덤') + ' 세팅 · ' + (ss.stage === 'ending' ? '학기 마무리' : ss.phase + ' / ' + total + '단계 ' + ({ reveal: '안내', plan: '계획', run: '운행(출발 직전 계획으로 돌아가요)', result: '결과' }[ss.stage] || '')) + ' · ' + new Date(saved.savedAt).toLocaleString('ko-KR');
+      cont.addEventListener('click', function () { App.resume(PB.Storage.readSave(cfg.SCENARIO_VERSION) || saved); });
+      $('#btn-start').textContent = '새로 시작하기';
+      $('#btn-start').classList.remove('btn-primary');
+    }
+    $('#btn-start').addEventListener('click', function () {
+      if (PB.Storage.readSave(cfg.SCENARIO_VERSION)) { App.restartToNew = true; $('#confirm-restart').showModal(); return; }
+      newGame();
+    });
+    App.newGame = newGame;
     $('#btn-help').addEventListener('click', function () { $('#btn-tutorial-replay').hidden = !App.s; $('#help').showModal(); });
     $('#btn-tutorial-replay').addEventListener('click', function () { $('#help').close(); App.showTutorial(); });
     $('#btn-settings').addEventListener('click', function () { $('#settings').showModal(); });
     $('#restart-no').addEventListener('click', function () { $('#confirm-restart').close(); });
-    $('#restart-yes').addEventListener('click', function () { $('#confirm-restart').close(); location.reload(); });
+    $('#restart-yes').addEventListener('click', function () { $('#confirm-restart').close(); PB.Storage.clearSave(); if (App.restartToNew && !App.s) { App.restartToNew = false; newGame(); } else location.reload(); });
     if (App.afterInit) App.afterInit();
   }
 

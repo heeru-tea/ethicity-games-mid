@@ -100,7 +100,7 @@
   }
 
   function clock(config,t){if(!config.day)return Math.round(t)+'초';var m=Math.round(config.day.start+Math.max(0,Math.min(config.bus.window,t))*(config.day.end-config.day.start)/config.bus.window);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
-  function duration(config,t){return config.day?Math.round(t*(config.day.end-config.day.start)/config.bus.window)+'분':Math.round(t)+'초';}
+  function duration(config,t){if(!config.day)return Math.round(t)+'초';var m=Math.round(t*(config.day.end-config.day.start)/config.bus.window);return m<60?m+'분':Math.floor(m/60)+'시간'+(m%60?' '+m%60+'분':'');}
   function period(config,t){var h=config.day?(config.day.start+t*(config.day.end-config.day.start)/config.bus.window)/60:0;return h<7?'이른 아침':h<10?'출근·등교':h<16?'낮 생활 이동':h<20?'퇴근·귀가':'늦은 귀가';}
   // 정류장별 이번 단계 기본 승차 요청(출발+도착)과 이용 등급. 지도에서 시설 규모만 바꾸며 중요도를 뜻하지 않는다
   var LOAD_TIERS = { high: 55, mid: 30 };
@@ -110,7 +110,9 @@
     Object.keys(out).forEach(function (id) { var n = out[id]; out[id] = { count: n, tier: n >= LOAD_TIERS.high ? 'high' : n >= LOAD_TIERS.mid ? 'mid' : 'low' }; });
     return out;
   }
-  var api = { residents:residents, clock:clock,duration:duration,period:period,directional: directional, base: base, drawEvents: drawEvents, extra: extra, sortReqs: sortReqs, stopLoad: stopLoad, LOAD_TIERS: LOAD_TIERS };
+  // 안내에 쓰는 이번 단계 이동 요청 구성. planned = 미리 정해진 이동, followUps = 목적지에 도착하면 생기는 다음 이동(주요 인물·가족)의 최대 수
+  function requestPlan(config, phase, seed) { var b = base(config, phase, seed); return { planned: b.length, followUps: b.filter(function (q) { return q.returnTrip; }).length }; }
+  var api = { requestPlan:requestPlan, residents:residents, clock:clock,duration:duration,period:period,directional: directional, base: base, drawEvents: drawEvents, extra: extra, sortReqs: sortReqs, stopLoad: stopLoad, LOAD_TIERS: LOAD_TIERS };
   root.PB = root.PB || {};
   root.PB.Demand = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
