@@ -6,7 +6,7 @@ try{
  for(const mode of ['2d','3d']){
   const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   const url=`http://127.0.0.1:${server.address().port}/publicness/?${mode==='2d'?'no3d=1':''}`;
-  async function start(){await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);}
+  async function start(){await page.locator('#btn-start').click();if(await page.locator('#confirm-restart').evaluate(d=>d.open))await page.locator('#restart-yes').click();await page.locator('#btn-goal-start').click();if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);}
   await page.goto(url);await start();assert.equal(await page.evaluate(()=>PB.App.view.kind),mode);
   if(mode==='2d')assert.equal(await page.locator('.layer-terrain polyline').count(),3);
   for(const [t,time,light,sun] of [[0,'05:00','dawn',false],[60,'14:00','day',true],[100,'20:00','night',false],[120,'23:00','night',false]]){

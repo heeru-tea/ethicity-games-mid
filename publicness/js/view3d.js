@@ -208,6 +208,8 @@
     // 스크립트를 미리 불러 두고, 풀리면 그 구역의 기본 도형을 모델로 바꾼다. 모델은 기본 도형이 차지하던 자리(가로·세로) 안에 맞춘다.
     // ZONE_KEEP: 모델과 함께 남겨 둘 기본 도형(기차역 선로). 모델이 없으면 지금까지의 기본 도형 그대로
     var ZONE_KEEP = { A: ['station-rails'] }, zoneModels = {};
+    // 구역별 크기 비율(1 = 기본 도형 자리만큼). 종합운동장은 상징성은 살리되 화면을 덜 차지하게 줄인다(2026-10-23 사용자)
+    var ZONE_SCALE = { H: 0.8 };
     function zoneModel(id) {
       if (zoneModels[id] !== undefined) return zoneModels[id];
       var d = root.PB && root.PB.zoneModelData && root.PB.zoneModelData[id], MD = root.PB && root.PB.ModelData;
@@ -233,6 +235,7 @@
       tmp.updateMatrixWorld(true);
       var box = new T.Box3().setFromObject(tmp), bw = box.max.x - box.min.x, bd = box.max.z - box.min.z;
       var s = Math.min(Math.sqrt(bw * bd) * 1.1, Math.max(bw, bd)) / Math.max(zm.w, zm.d); // 기본 도형 자리의 넓이만큼(긴 변은 넘지 않게)
+      s *= ZONE_SCALE[id] || 1;
       var mesh = new T.Mesh(zm.geo, zm.mat); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'zone-model';
       mesh.scale.setScalar(s); mesh.position.set((box.min.x + box.max.x) / 2, 0, (box.min.z + box.max.z) / 2);
       g.add(mesh); kept.forEach(function (c) { g.add(c); }); g.scale.set(1, g.scale.y, 1); g.userData.model = true;
@@ -250,7 +253,20 @@
       document.head.appendChild(sc);
     });
 
-    var OFFS = { A: [-7, -7], B: [-7, -7], C: [0, 8], D: [0, 8.5], E: [1, 8], F: [-4, 8], G: [7, 7], H: [0, -11], I: [4, -6], J: [0, 9], K: [-7, 0], L:[0,6], M:[0,8], N:[0,-5] };
+    // H(종합운동장)는 기차역 이름표 뒤에 깔리지 않도록 오른쪽 위로 비켜 둔다(2026-10-23 플레이테스트)
+    // 큰 구역(H)은 후보 자리 중 다른 정류장과 그 이름표(정류장 앞쪽)에서 가장 먼 곳에 둔다 — 랜덤 배치에서도 이름표를 덮지 않게
+    var OFFS_CAND = { H: [[11, -9], [-11, -9], [0, -11], [13, 3], [-13, 3]] };
+    function zoneOffset(id, p, ids) {
+      var cands = OFFS_CAND[id]; if (!cands) return OFFS[id];
+      var best = null, bestScore = -1;
+      cands.forEach(function (c) {
+        var cx = p.x + c[0], cz = p.z + c[1], score = Infinity;
+        ids.forEach(function (o) { if (o === id) return; var q = wp(o); score = Math.min(score, Math.hypot(q.x - cx, q.z - cz), Math.hypot(q.x - cx, q.z + 4 - cz)); });
+        if (score > bestScore + 0.5) { bestScore = score; best = c; }
+      });
+      return best;
+    }
+    var OFFS = { A: [-7, -7], B: [-7, -7], C: [0, 8], D: [0, 8.5], E: [1, 8], F: [-4, 8], G: [7, 7], H: [11, -9], I: [4, -6], J: [0, 9], K: [-7, 0], L:[0,6], M:[0,8], N:[0,-5] };
 
     function wp(id) { return { x: nodes[id].x * K, z: nodes[id].y * K }; }
 
@@ -309,7 +325,9 @@
       clear(groups.world); hits = []; stops = {}; zoneGroups = {};
       nodes = {};
       sceneDef.nodes.forEach(function (n) { nodes[n.id] = n; });
-      var xs = ids.map(function (id) { return nodes[id].x * K; }), zs = ids.map(function (id) { return nodes[id].y * K; });
+      // 화면 틀은 이 세팅의 모든 정류장(sceneDef.frame)으로 정한다 — 새 정류장이 생겨도 기존 정류장 위치·배율이 흔들리지 않게
+      var frame = sceneDef.frame || sceneDef.nodes;
+      var xs = frame.map(function (n) { return n.x * K; }), zs = frame.map(function (n) { return n.y * K; });
       bounds = { minX: Math.min.apply(null, xs) - 20, maxX: Math.max.apply(null, xs) + 16, minZ: Math.min.apply(null, zs) - 18, maxZ: Math.max.apply(null, zs) + 18 };
       var gw = bounds.maxX - bounds.minX + 40, gd = bounds.maxZ - bounds.minZ + 40;
       var ground = mesh(new T.BoxGeometry(gw, 0.2, gd), C.ground, (bounds.minX + bounds.maxX) / 2, -0.1, (bounds.minZ + bounds.maxZ) / 2, groups.world);
@@ -336,7 +354,8 @@
       });
       ids.forEach(function (id) {
         var p = wp(id), g = new T.Group();
-        g.position.set(p.x + OFFS[id][0], 0, p.z + OFFS[id][1]);
+        var off = zoneOffset(id, p, ids);
+        g.position.set(p.x + off[0], 0, p.z + off[1]);
         g.name = 'zone-' + id;
         buildZone(id, g);
         groups.world.add(g);
@@ -355,7 +374,7 @@
       labels.innerHTML = ''; labelEls = { stop: {}, wait: {}, bus: {} };
       ids.forEach(function (id) {
         var l = document.createElement('div'), ld = sceneDef.load && sceneDef.load[id]; l.className = 'label-3d stop-name'; l.textContent = nodes[id].name; l.dataset.tier = ld ? ld.tier : 'low';
-        if (ld) { var c = document.createElement('span'); c.className = 'stop-load'; c.textContent = '요청 ' + ld.count + '건'; l.appendChild(c); }
+        if (ld) { var c = document.createElement('span'); c.className = 'stop-load'; c.textContent = '출발·도착 ' + ld.count + '건'; c.title = '이 정류장에서 출발하거나 도착하는 이동 요청'; l.appendChild(c); }
         labels.appendChild(l); labelEls.stop[id] = l;
       });
       fit(); dirty = true;
@@ -398,6 +417,12 @@
             seg.position.set(a.x + ux * c + o.x, 0.22 + ri * 0.01, a.z + uz * c + o.z);
             seg.rotation.y = ang;
             groups.routes.add(seg);
+          });
+          // 실제 정차 표시: 노선 선이 정차 정류장에서 끝나는 자리에 노선색 테두리의 흰 점(지나가기만 하는 정류장과 구분)
+          [[0, ns[i - 1], 1.8], [1, ns[i], len - 1.8]].forEach(function (e) {
+            var idx = e[0] ? i : i - 1; if (!r.route.stops[idx] || r.dim || len < 4) return;
+            var dot = new T.Mesh(new T.CylinderGeometry(0.62, 0.62, 0.22, 16), m); dot.position.set(a.x + ux * e[2] + o.x, 0.3, a.z + uz * e[2] + o.z); groups.routes.add(dot);
+            var hole = new T.Mesh(new T.CylinderGeometry(0.32, 0.32, 0.24, 16), mat(0xffffff)); hole.position.set(dot.position.x, 0.32, dot.position.z); groups.routes.add(hole);
           });
         }
         ns.forEach(function (id, i) {
@@ -458,7 +483,10 @@
         g.visible = true;
         labelEls.bus[b.id].textContent = '';
         g.scale.set(BUS_SCALE*(b.regional?1.4:b.express?1.2:1), BUS_SCALE, BUS_SCALE);
-        if(b.riders>0){var count=document.createElement('span');count.className='rider-count';count.dataset.riders=b.riders;count.textContent=b.riders+'명';labelEls.bus[b.id].appendChild(count);}
+        if(b.riders>0){var count=document.createElement('span');count.className='rider-count';count.dataset.riders=b.riders;
+          // 주요 인물(특수 캐릭터)이 타고 있으면 이름을 [하늘]처럼 먼저 보여 준다
+          (b.names||[]).forEach(function(n){var tag=document.createElement('b');tag.className='resident-tag';tag.textContent='['+n+']';count.appendChild(tag);count.appendChild(document.createTextNode(' '));});
+          count.appendChild(document.createTextNode(b.riders+'명'));labelEls.bus[b.id].appendChild(count);}
         labelEls.bus[b.id].setAttribute('aria-label',b.id+'호차'+(b.regional?' 광역 · 정원 24명':b.express?' 직행 · 정원 18명':'')+' · 탑승 '+(b.riders||0)+'명');
       });
       Object.keys(busMesh).forEach(function (id) { if (!seen[id]) { busMesh[id].visible = false; if (labelEls.bus[id]) {labelEls.bus[id].remove();delete labelEls.bus[id];} } else if (labelEls.bus[id]) labelEls.bus[id].style.display = ''; });

@@ -70,11 +70,14 @@ test('overall rate is sum-based, not zone average', () => {
   assert.equal(m.arrived + m.waiting + m.transfer + m.riding, m.N);
 });
 
-test('travel averages kept separate; max wait includes open waits', () => {
+test('travel averages kept separate; no-route requests are not counted as waiting', () => {
   const m = sum(plan(['A-B', 0]), [req('A', 'B', 0), req('F', 'E', 20)]);
   assert.equal(m.travel.doneAvg, 6);
   assert.equal(m.travel.openAvg, 100);
-  assert.equal(m.maxWait, 100);
-  assert.equal(m.zones.F.waitOver, 1);
+  assert.equal(m.maxWait, 0); // 탄 사람의 최장 대기만
+  assert.equal(m.noLink, 1); assert.equal(m.zones.F.noLink, 1);
+  assert.deepEqual(m.notBoarded, { count: 0, longest: 0 });
+  assert.deepEqual(m.requests, { planned: 2, followUps: 0, extra: 0 });
+  assert.equal(m.zones.F.waitOver, 0);
   assert.equal(m.zones.F.tripOver, 1);
 });

@@ -6,7 +6,7 @@ const route=nodes=>({nodes,stops:nodes.map(()=>true)});
 function eight(){const s=S.create(cfg,{mode:'fixed',seed:42});for(let i=1;i<8;i++){s.stage='result';S.nextPhase(s);}return s;}
 test('random eighth phase awards one dedicated regional bus and route; default remains five',()=>{
  const s=eight();assert.equal(s.config.phases.length,8);assert.equal(s.owned,9);assert.equal(S.routeLimit(s),6);
- assert.equal(s.draft.buses.find(b=>b.id===9).routeNum,6);assert.ok(S.visibleNodeIds(s).includes('N'));
+ assert.equal(s.draft.buses.find(b=>b.id===9).routeNum,null);assert.ok(S.routeByNum(s,6));assert.ok(S.visibleNodeIds(s).includes('N'));
  assert.equal(S.create(cfg).config.phases.length,5);assert.equal(cfg.nodes.some(n=>n.id==='N'),false);
  assert.equal(Q.vehicle(s.config,9).capacity,24);assert.equal(Q.vehicle(s.config,9).speed,1);
 });
@@ -14,8 +14,8 @@ test('regional route is one village stop to city, with exclusive vehicle assignm
  const s=eight();assert.ok(S.updateRoute(s,6,route(['A','N'])));
  for(const ns of [['A','B'],['A','N','B'],['N','A','N']])assert.equal(S.updateRoute(s,6,route(ns)),null);
  assert.equal(S.updateRoute(s,1,route(['A','N'])),null);
- S.assign(s,9,1);assert.equal(s.draft.buses.find(b=>b.id===9).routeNum,6);
- S.assign(s,1,6);assert.equal(s.draft.buses[0].routeNum,1);
+ S.assign(s,9,6);S.assign(s,9,1);assert.equal(s.draft.buses.find(b=>b.id===9).routeNum,6);
+ S.assign(s,1,6);assert.equal(s.draft.buses[0].routeNum,null); // 6번 광역에는 9호차만
  S.applyRecommendation(s,{plan:{buses:[{id:9,route:route(['B','N']),offset:0}]}});
  assert.deepEqual(S.routeByNum(s,6).nodes,['B','N']);assert.equal(s.draft.buses.find(b=>b.id===9).routeNum,6);
 });

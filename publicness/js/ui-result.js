@@ -51,19 +51,26 @@
     card.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();pinned=false;card.open=false;head.focus();}});
     li.appendChild(card);return li;
   }
-  function showRouteReport(App){
-    var s=App.s,dialog=document.querySelector('#route-report');
-    if(!dialog){dialog=el('dialog',{id:'route-report','aria-labelledby':'route-report-title'});document.body.appendChild(dialog);}
-    dialog.textContent='';
-    dialog.appendChild(el('p',{'class':'eyebrow'},s.phase+'단계 · 23:00 운행 종료'));
-    dialog.appendChild(el('h2',{id:'route-report-title'},'오늘 노선은 얼마나 쓰였을까요?'));
+  // 노선별 효율(실제 운행) — 결과 화면 안에서 바로 본다(예전의 자동 팝업 대신)
+  function routeReport(App){
+    var s=App.s,sec=el('section',{id:'route-report','aria-labelledby':'route-report-title'});
+    sec.appendChild(el('h3',{id:'route-report-title'},'오늘 노선은 얼마나 쓰였을까요?'));
     var rows=M.routeReport(s.current.result,S.routesInOrder(s),s.draft.buses);
-    dialog.appendChild(table(['노선','배정 차량','승차','최종 도착','대당 승차','만차 발생'],rows.map(function(r){return [r.num+'번',r.buses+'대',r.boardings+'회',r.arrived+'건',r.perBus==null?'미배정':r.perBus+'회',r.fulls+'회'];})));
-    dialog.appendChild(el('p',{'class':'note'},'승차는 환승을 포함한 횟수예요. 최종 도착은 목적지에서 내린 마지막 노선에만 기록해요. 만차 발생은 정류장에서 승객을 남긴 횟수이며, 같은 사람이 여러 번 기다릴 수 있어요.'));
-    dialog.appendChild(el('p',{'class':'callout'},'대당 승차가 적어도 누군가에게 꼭 필요한 노선일 수 있어요. 아래의 주민별 이동 결과도 함께 살펴보세요.'));
-    dialog.appendChild(el('button',{type:'button',id:'btn-route-report-close','class':'btn btn-primary',onclick:function(){dialog.close();}},'주민별 결과 살펴보기'));
-    if(!dialog.open)dialog.showModal();
+    sec.appendChild(table(['노선','배정 차량','승차','최종 도착','대당 승차','만차 발생'],rows.map(function(r){return [r.num+'번',r.buses+'대',r.boardings+'회',r.arrived+'건',r.perBus==null?'미배정':r.perBus+'회',r.fulls+'회'];})));
+    sec.appendChild(el('p',{'class':'note'},'승차는 환승을 포함한 횟수예요. 최종 도착은 목적지에서 내린 마지막 노선에만 기록해요. 만차 발생은 정류장에서 승객을 남긴 횟수예요. 대당 승차가 적어도 누군가에게 꼭 필요한 노선일 수 있어요.'));
+    return sec;
   }
+  // 이동 요청 구성: 예정 + 도착 뒤 생긴 다음 이동 + 돌발 수요(안내·예상·결과가 같은 말을 쓴다)
+  function requestParts(q){return '예정 '+q.planned+(q.followUps?' + 다음 이동 '+q.followUps:'')+(q.extra?' + 돌발 '+q.extra:'');}
+  UI.requestParts=requestParts;
+  // 대기 지표 한 줄: 탄 사람의 최장 대기 · 노선 없음 · 종료까지 못 탐
+  function waitLine(App,m){
+    var parts=['버스를 탄 사람의 최장 대기 '+App.duration(m.maxWait)];
+    if(m.noLink)parts.push('잇는 노선이 없어 떠나지 못한 요청 '+m.noLink+'건');
+    if(m.notBoarded&&m.notBoarded.count)parts.push('운행 종료까지 버스를 못 탄 요청 '+m.notBoarded.count+'건(가장 오래 '+App.duration(m.notBoarded.longest)+')');
+    return parts.join(' · ');
+  }
+  UI.waitLine=waitLine;
 
   UI.result = function (App, panel) {
     document.querySelector('#stage-overlay').textContent='';
@@ -71,12 +78,11 @@
     cfg=s.config;
     panel.appendChild(el('p', { 'class': 'eyebrow' }, h.phase + '단계 · ' + cfg.phases[h.phase - 1] + ' — 결과'));
     panel.appendChild(el('h2', null, '운행이 끝났어요'));
-    panel.appendChild(el('button',{type:'button','class':'btn',id:'btn-route-report',onclick:function(){showRouteReport(App);}},'노선별 효율 다시 보기'));
     if(m.families&&m.families.total)panel.appendChild(el('p',{id:'family-result','class':'callout'},'호수공원 가족 나들이 · '+m.families.total+'팀 중 '+m.families.complete+'팀이 전원 방문·귀가를 마쳤어요. 가족 중 한 명이라도 이동을 마치지 못하면 그 팀의 일정은 미완료예요.'));
     var summary=el('section',{id:'resident-summary'});
     summary.appendChild(el('p',{'class':'outcome-lead'},m.N+'명 중 '+m.arrived+'명이 목적지에 도착했어요.'));
     if(s.config.day){
-      summary.firstChild.textContent='발생한 이동 요청 '+m.N+'건 중 '+m.arrived+'건이 목적지에 도착했어요.';
+      summary.firstChild.textContent='발생한 이동 요청 '+m.N+'건('+requestParts(m.requests)+') 중 '+m.arrived+'건이 목적지에 도착했어요.';
       summary.appendChild(el('h3',null,'오늘, 주민들의 이동은'));
       summary.appendChild(el('p',{'class':'note'},'얼굴에 마우스를 올리거나 눌러 이동 코스를 확인하세요. 키보드로는 Enter로 열고 Esc로 닫을 수 있어요.'));
       var days=el('ul',{id:'resident-day-results','class':'resident-cards'}),tally=PB.Narrative.residentTally(s.config,s.history);
@@ -100,7 +106,12 @@
       li.appendChild(b);li.appendChild(el('p',{'class':'note'},parts.join(' · ')));outcomes.appendChild(li);
     });
     if(!outcomes.children.length)outcomes.appendChild(el('li',null,'모든 지역의 요청이 목적지에 도착했어요.'));
-    summary.appendChild(outcomes);summary.appendChild(el('p',{id:'reason-focus',role:'status','class':'note'},'지역을 누르면 출발 정류장을 지도에서 확인할 수 있어요. 만차 경험은 지연의 단서이며 유일한 원인이라는 뜻은 아니에요.'));summary.appendChild(el('p',{'class':'note'},'가장 긴 기다림 '+App.duration(m.maxWait)+' · 다음 운행에서 바꿀 노선을 떠올려 보세요.'));panel.appendChild(summary);
+    summary.appendChild(outcomes);summary.appendChild(el('p',{id:'reason-focus',role:'status','class':'note'},'지역을 누르면 출발 정류장을 지도에서 확인할 수 있어요. 만차 경험은 지연의 단서이며 유일한 원인이라는 뜻은 아니에요.'));summary.appendChild(el('p',{'class':'note',id:'result-waits'},waitLine(App,m)+'. 대기는 정류장에서 처음 버스를 탈 때까지와 갈아탈 때 기다린 시간이에요.'));panel.appendChild(summary);
+    panel.appendChild(routeReport(App));
+    // 운행 중 지나간 소식(사건·만차·주요 인물의 말)을 그대로 다시 본다
+    var log=el('details',{id:'run-log'});log.appendChild(el('summary',null,'운행 기록 다시 보기'));var lu=el('ul',{'class':'feed'});
+    (UI.runFeed?UI.runFeed(s):[]).forEach(function(it){lu.appendChild(el('li',{'class':'feed-'+it.cls},it.text));});
+    if(!lu.children.length)lu.appendChild(el('li',null,'기록된 소식이 없어요.'));log.appendChild(lu);panel.appendChild(log);
     var details=el('details',{id:'result-details'});details.appendChild(el('summary',null,'전체 통계와 재정 보기'));panel.appendChild(details);
 
     // 사건
@@ -115,14 +126,15 @@
     cmp.appendChild(el('h3', null, '예상과 실제'));
     var row = function (name, f) { return [name, f(e), f(m)]; };
     cmp.appendChild(table(['', '예상', '실제'], [
-      row('요청', function (x) { return x.N + '건'; }),
+      row('이동 요청', function (x) { return x.N + '건 (' + requestParts(x.requests) + ')'; }),
       row('도착', function (x) { return x.arrived + '명 (' + M.fmtRate(x.arrivalRate) + ')'; }),
-      row('최장 대기', function (x) { return App.duration(x.maxWait); }),
+      row('탄 사람 최장 대기', function (x) { return App.duration(x.maxWait); }),
+      row('노선 없음 / 종료까지 못 탐', function (x) { return x.noLink + '건 / ' + x.notBoarded.count + '건'; }),
       row('이번 단계 손익', function (x) { return App.won(x.costs.total); }),
       row('대학교·병원 도착률', function (x) { return M.fmtRate(x.essential.arriveRate); })
     ]));
     var notes = ['예상은 추가 사건 없는 기본 수요 기준이에요.'];
-    if (m.N !== e.N) notes.push('실제 요청 수는 예상과 '+Math.abs(m.N-e.N)+'건 달라요. 추가 사건과 실제 도착에 따른 귀가 요청이 반영돼요.');
+    if (m.N !== e.N) notes.push('실제 이동 요청은 예상과 '+Math.abs(m.N-e.N)+'건 달라요. 돌발 수요와, 실제로 도착한 사람에게만 생기는 다음 이동이 반영돼요.');
     notes.push('단계마다 수요와 사건이 달라서, 차이를 모두 노선 변경의 효과로 볼 수는 없어요.');
     cmp.appendChild(el('p', { 'class': 'note' }, notes.join(' ')));
     details.appendChild(cmp);
@@ -137,11 +149,11 @@
         M.fmtRate(z.rate), z.N ? App.duration(z.maxWait) : '-', z.D == null ? '-' : String(z.D),
         (h.trustBefore[id] != null ? h.trustBefore[id] : cfg.trust.initial) + '→' + h.trustAfter[id]];
     });
-    var tbl = table(['생활권', '요청', '도착', '미탑승', '환승 중', '탑승 중', '도착률', '최장 대기', '불만', '신뢰'], rows,
+    var tbl = table(['생활권', '출발 요청', '도착', '미탑승', '환승 중', '탑승 중', '도착률', '탄 사람 최장 대기', '불만', '신뢰'], rows,
       ['합계', String(m.N), String(m.arrived), String(m.waiting), String(m.transfer), String(m.riding), M.fmtRate(m.arrivalRate), App.duration(m.maxWait), '', '']);
     tbl.querySelector('table').id = 'zone-table';
     zs.appendChild(tbl);
-    zs.appendChild(el('p', { 'class': 'note' }, '전체 도착률은 인원 합으로 계산해요(생활권 비율의 평균이 아니에요). 불만·신뢰는 게임 반응을 위한 지수예요. 노선 연결률은 공식 공공성 지수가 아니에요.'));
+    zs.appendChild(el('p', { 'class': 'note' }, '출발 요청은 그 생활권에서 출발한 이동만 세요(합계 = 전체 이동 요청). 미탑승에는 잇는 노선이 없어 떠나지 못한 요청도 들어가요. 전체 도착률은 인원 합으로 계산해요(생활권 비율의 평균이 아니에요). 불만·신뢰는 게임 반응을 위한 지수예요.'));
     var extra = el('dl', { 'class': 'kv' });
     [['이용자(한 번 이상 탄 사람)', m.users + '명 / ' + m.N],
       ['승차 횟수(환승 포함)', m.boardings + '회'],
@@ -184,19 +196,21 @@
       ['위탁 지원금', App.won(k.subsidy)], ['운임 수입', App.won(k.fare)], ['차량 보유비', App.won(-k.holding)],
       ['원격 관제·운영비', App.won(-k.op)], ['에너지·정비(이동)', App.won(-k.move)]
     ], ['이번 단계 손익', App.won(k.total)]));
+    // 지원금이 손익 대부분을 덮어 노선 선택의 재정 차이가 안 보이므로, 운임과 운영비만의 차이를 따로 보여 준다
+    fs.appendChild(el('p', { id: 'operating-balance', 'class': 'note' }, '지원금을 뺀 운영 손익(운임 − 보유비·운영비·이동비): ' + App.won(k.total - k.subsidy) + '. 이용이 적은 곳까지 버스를 보내면 이 값이 줄어들 수 있고, 위탁 지원금은 그런 이동을 지키라고 주는 돈이에요.'));
     fs.appendChild(el('p', null, '누적 잔액: ' + App.won(bal)));
     if (bal < 0) fs.appendChild(el('p', { 'class': 'note' }, '잔액이 마이너스여도 운행과 다음 단계는 그대로 이어져요.'));
     details.appendChild(fs);
 
     var last = s.phase >= cfg.phases.length;
     panel.appendChild(el('button', { type: 'button', 'class': 'btn btn-primary btn-lg', id: 'btn-next-phase', onclick: function () {
-      function advance(){S.nextPhase(s); App.go(s.stage === 'ending' ? 'ending' : 'reveal');if(s.stage!=='ending')App.showLearning();}
+      function advance(){S.nextPhase(s); App.go(s.stage === 'ending' ? 'ending' : 'reveal');}
       if(last){advance();return;}
+      // 새 인물이 등장하는 단계만 짧은 Stage 카드와 소개 컷을 보여 준다. 나머지는 바로 단계 안내로
       var stage={number:s.phase+1,total:cfg.phases.length,name:cfg.phases[s.phase]};
-      var kind=s.phase===2?'sol':s.phase===3&&s.config.residents.some(function(r){return r.id==='yuna';})?'baseball':'stage';
-      PB.Cutscene.play(kind,advance,null,stage);
+      var kind=s.phase===2?'sol':s.phase===3&&s.config.residents.some(function(r){return r.id==='yuna';})?'baseball':null;
+      if(kind)PB.Cutscene.play(kind,advance,null,stage);else advance();
     } }, last ? '학기 마무리 보기' : (s.phase + 1) + '단계로'));
-    if(!s.current.routeReportShown){s.current.routeReportShown=true;showRouteReport(App);}
     return {};
   };
 })(window);

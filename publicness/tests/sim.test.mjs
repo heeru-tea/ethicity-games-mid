@@ -103,7 +103,8 @@ test('wait accumulates first + transfer wait, open waits run to 120 (AC15)', () 
   const lost = req('F', 'E', 10);
   const res = run(plan(['A-B', 0], ['B-C', 0]), [r, lost]);
   assert.equal(P(res, r.id).waitTotal, 4); // 처음 0분 + 환승 대기 4~8분(환승 이동 1분 제외)
-  assert.equal(P(res, lost.id).waitTotal, 110);
+  assert.equal(P(res, lost.id).fail, 'NO_LINK');
+  assert.equal(P(res, lost.id).waitTotal, 0); // 잇는 노선이 없으면 ‘기다림’이 아니라 경로 없음
 });
 
 test('120-minute boundary (AC16)', () => {

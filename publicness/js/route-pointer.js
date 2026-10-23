@@ -28,8 +28,13 @@
     });
   }
   function pick(surface,project,nodes,routes,x,y,offset){
-    var box=surface.getBoundingClientRect(),point={x:x-box.left,y:y-box.top},best=null,distance=25;
-    Object.keys(nodes).forEach(function(id){var n=nodes[id],p=project(n.x,n.y),d=Math.hypot(p.left-point.x,p.top-point.y);if(d<distance){distance=d;best={node:id};}});
+    // 정류장 선택 영역: 가장 가까운 정류장 하나만 고르고(겹침 없음), 반경은 이웃 정류장과의 화면 거리 절반까지 넓힌다(25~56px)
+    var box=surface.getBoundingClientRect(),point={x:x-box.left,y:y-box.top},best=null,ids=Object.keys(nodes);
+    var sp=ids.map(function(id){var n=nodes[id];return {id:id,p:project(n.x,n.y)};});
+    var cand=null,near=Infinity;sp.forEach(function(q){var d=Math.hypot(q.p.left-point.x,q.p.top-point.y);if(d<near){near=d;cand=q;}});
+    if(cand){var gap=Infinity;sp.forEach(function(q){if(q!==cand)gap=Math.min(gap,Math.hypot(q.p.left-cand.p.left,q.p.top-cand.p.top));});
+      if(near<Math.max(25,Math.min(56,gap/2)))best={node:cand.id};}
+    var distance;
     if(best)return best;distance=12;
     routes.forEach(function(r){if(r.preview)return;for(var i=0;i<r.route.nodes.length-1;i++){
       var a=nodes[r.route.nodes[i]],b=nodes[r.route.nodes[i+1]];if(!a||!b)continue;

@@ -10,7 +10,7 @@
   function allStop(nodes) { return { nodes: nodes, stops: nodes.map(function () { return T; }) }; }
 
   var config = {
-    SCENARIO_VERSION: 'pb-2.9.0',
+    SCENARIO_VERSION: 'pb-3.0.0',
     day: { start: 300, end: 1380 },
     progression: { routes: [2, 3, 4, 4, 4], buses: [2, 3, 4, 5, 6] },
     challenge: {
@@ -92,6 +92,10 @@
     discontent: { w: [0.5, 0.3, 0.2], waitOver: 15, tripOver: 30 },
     trust: { initial: 50, keep: 0.7 },
     ending: { stableRate: 0.8, stableMaxWait: 20, improvePts: 0.15 },
+    // 주요 인물 ‘해낸 하루’의 서비스 기준(2026-10-23): 각 이동에서 버스를 기다린 시간(환승 포함) 27단위(=243분, 약 4시간) 이하.
+    // 근거(tools 없이 비교한 대표 설계): 버스 2~3대로 외곽까지 잇는 접근성 설계의 최장 대기 3~4시간, 모든 정류장을 도는 긴 순환은 7~11시간.
+    // 3시간이면 성실한 접근성 설계도 6명 중 4명만 만족, 4시간이면 6명 모두·긴 순환은 3명 — 차이를 만들면서 초반 여유를 둔다
+    service: { maxWait: 27 },
     essential: ['C', 'D'],
     reachInitial: ['F', 'E'],
     newZone: 'I',
@@ -119,7 +123,8 @@
     ],
     initialDraft: {
       routes: [allStop([]), allStop([])],
-      buses: [{ id: 1, routeNum: 1, offset: 0 }, { id: 2, routeNum: 2, offset: 0 }]
+      // 새 버스는 모든 단계에서 ‘쉬기’(routeNum null)로 시작한다 — 노선을 만든 뒤 학생이 직접 배정
+      buses: [{ id: 1, routeNum: null, offset: 0 }, { id: 2, routeNum: null, offset: 0 }]
     },
 
     ai: { maxCandidates: 30, maxIterations: 3 },

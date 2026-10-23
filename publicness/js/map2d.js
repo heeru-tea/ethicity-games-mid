@@ -45,10 +45,11 @@
     function setScene(scene) {
       nodes = {};
       scene.nodes.forEach(function (n) { nodes[n.id] = n; });
-      var xs = scene.nodes.map(function (n) { return n.x * U; }), ys = scene.nodes.map(function (n) { return n.y * U; });
+      var frame = scene.frame || scene.nodes; // 이 세팅의 모든 정류장으로 틀을 고정(새 정류장이 생겨도 흔들리지 않게)
+      var xs = frame.map(function (n) { return n.x * U; }), ys = frame.map(function (n) { return n.y * U; });
       var minX = Math.min.apply(null, xs) - PAD, minY = Math.min.apply(null, ys) - PAD;
       var w = Math.max.apply(null, xs) - minX + PAD, h = Math.max.apply(null, ys) - minY + PAD;
-      if(nodes.N){minX-=90;w+=180;}
+      if(frame.some(function(n){return n.id==='N';})){minX-=90;w+=180;}
       baseBox = { x: minX, y: minY, w: w, h: h };
       svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
       fitReserved();
@@ -83,7 +84,7 @@
         id.textContent = n.id;
         var label = el('text', { x: p.x, y: p.y + h + 21, 'text-anchor': 'middle', 'class': 'stop-label' }, g);
         label.textContent = n.name;
-        if (ld) { var c = el('text', { x: p.x, y: p.y + h + 36, 'text-anchor': 'middle', 'class': 'stop-load' }, g); c.textContent = '요청 ' + ld.count + '건'; }
+        if (ld) { var c = el('text', { x: p.x, y: p.y + h + 36, 'text-anchor': 'middle', 'class': 'stop-load' }, g); c.textContent = '출발·도착 ' + ld.count + '건'; }
       });
     }
 
@@ -113,6 +114,12 @@
           el('line', { 'class': 'route-line' + (r.dim ? ' dim' : '') + (r.preview ? ' preview-route' : ''), x1: a.x + o.x, y1: a.y + o.y, x2: b.x + o.x, y2: b.y + o.y,
             stroke: r.color, 'stroke-dasharray': r.dash || '', 'data-route': r.num }, layers.routes);
         }
+        // 실제 정차 정류장에는 노선색 테두리의 흰 점 — 선이 지나가기만 하는 정류장과 구분
+        if (!r.dim) ns.forEach(function (id, i) {
+          if (!r.route.stops[i] || !nodes[id]) return;
+          var o = offsetFor(i ? ns[i - 1] : ns[1], id, r.num), p = px(nodes[id]);
+          el('circle', { 'class': 'stop-mark', cx: p.x + o.x, cy: p.y + o.y, r: 5, stroke: r.color, 'data-route': r.num, 'data-node': id }, layers.routes);
+        });
         ns.forEach(function (id, i) {
           if (r.route.stops[i] || !nodes[id]) return;
           var nb = ns[i - 1], o = offsetFor(nb, id, r.num), p = px(nodes[id]);
@@ -146,7 +153,7 @@
         g.setAttribute('aria-label',b.id+'호차'+(b.regional?' 광역 · 정원 24명':b.express?' 직행 · 정원 18명':'')+' · 탑승 '+(b.riders||0)+'명');
         if(b.riders>0){
           el('rect',{x:x-23,y:y-36,width:46,height:22,rx:5,fill:'#fff',stroke:'#1A1D24'},g);
-          var count=el('text',{x:x,y:y-20,'text-anchor':'middle','class':'rider-count','data-riders':b.riders},g);count.textContent=b.riders+'명';
+          var count=el('text',{x:x,y:y-20,'text-anchor':'middle','class':'rider-count','data-riders':b.riders},g);count.textContent=(b.names&&b.names.length?b.names.map(function(n){return '['+n+']';}).join(' ')+' ':'')+b.riders+'명';
         }
       });
     }

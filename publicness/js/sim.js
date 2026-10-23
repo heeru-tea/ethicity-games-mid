@@ -173,6 +173,8 @@
           var lk = p.o + p.d;
           if (!(lk in linkMemo)) linkMemo[lk] = structural(g, plan, p.o, p.d);
           p.fail = linkMemo[lk] ? 'NO_TRIP_IN_WINDOW' : 'NO_LINK';
+          // 잇는 노선 자체가 없으면 버스를 기다린 것이 아니다(‘경로 없음’). 시간 안에 탈 편이 없으면 종료까지 기다린 것으로 센다
+          if (p.fail === 'NO_LINK') p._waitStart = null;
         }
         log.push({ t: t, type: 'request', pid: p.id, node: p.o });
       });

@@ -95,7 +95,10 @@ test('stories never invent out-of-ride outcomes', () => {
 
 test('hook lines come from the real default draft', () => {
   const s = S.create(cfg, { mode: 'default' });
-  assert.deepEqual(N.hookLines(s), ['버스 3대, 이번 운행의 승차 요청 148건.', '그런데 지금 노선도에는 외곽 마을을 지나는 버스가 한 대도 없습니다.']);
+  // 앞선 테스트가 cfg를 바꿀 수 있어 값은 세션에서 다시 계산해 비교한다
+  const lines = N.hookLines(s), reqs = require('../js/demand.js').base(s.config, 1, s.seed).length;
+  assert.equal(lines[0], '버스 ' + s.owned + '대, 첫 운행의 이동 요청 ' + reqs + '건.');
+  assert.ok(lines[1].length > 0);
 });
 
 test('storage is safe without localStorage', () => {

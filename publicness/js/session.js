@@ -1,5 +1,7 @@
 /*
- * 세션 — 한 학기 다섯 단계의 흐름과 학생이 고치는 계획 초안을 담는다(브라우저 메모리에만).
+ * 세션 — 한 학기 다섯 단계의 흐름과 학생이 고치는 계획 초안을 담는다. serialize/restore로 브라우저에 자동 저장·이어하기(App).
+ * 저장에는 운행 결과(승객·로그)를 넣지 않는다 — 결정적 엔진이라 계획·사건으로 다시 계산한다. 운행 중 저장본은 출발 직전 계획으로,
+ * 결과 저장본은 이미 기록된 결과 그대로 되살리며 finishRun·nextPhase를 다시 부르지 않으므로 수입·비용·인물 횟수가 두 번 들어가지 않는다.
  * 단계 흐름: reveal(환경 공개) → plan(목표·AI·편집) → run(운행, 편집 불가) → result → 다음 단계 … → ending
  * 실제 운행은 공개 기본 수요 + 이 세션에서 미리 정해진 사건으로, 예상은 공개 기본 수요만으로 계산한다.
  */
@@ -240,22 +242,67 @@
     return { buses: plan.buses.map(function (b) { return { id: b.id, route: b.route && Graph.validateRoute(g, b.route).length === 0 ? b.route : null, offset: b.offset }; }) };
   }
 
-  function expected(s, plan) {
+  // 예상 = 추가 사건 없는 기본 수요로 같은 엔진을 돌린 결과(출발 경고·AI 예상이 같은 기준을 쓴다)
+  function expectedRun(s, plan) {
     var p = runnable(s, plan || toPlan(s)), g = graph(s);
     var res = Sim.run({ g: g, config: s.config, phase: s.phase, plan: p, requests: Demand.base(s.config, s.phase, s.seed) });
     var m = Metrics.summarize(res, g, p, s.config);
     m.residents = residentRecords(s, res);
-    return m;
+    return { result: res, metrics: m, plan: p };
   }
+  function expected(s, plan) { return expectedRun(s, plan).metrics; }
 
-  function startRun(s) {
-    if (s.stage !== 'plan' || validate(s).length) return null;
-    var g = graph(s), plan = clone(toPlan(s)), ev = s.events[s.phase - 1];
+  // 이번 단계 실제 운행(기본 수요 + 이 세션의 사건). 같은 계획이면 언제 다시 계산해도 같은 결과
+  function computeRun(s, plan) {
+    var g = graph(s), ev = s.events[s.phase - 1];
     var requests = Demand.sortReqs(Demand.base(s.config, s.phase, s.seed).concat(Demand.extra(s.config, s.phase, ev)));
     var result = Sim.run({ g: g, config: s.config, phase: s.phase, plan: plan, requests: requests, event: ev });
-    s.current = { plan: plan, result: result, metrics: Metrics.summarize(result, g, plan, s.config), expected: expected(s, plan), requestsN: result.passengers.length, event: ev };
-    s.stage = 'run';
-    return result;
+    return { plan: plan, result: result, metrics: Metrics.summarize(result, g, plan, s.config), expected: expected(s, plan), requestsN: result.passengers.length, event: ev };
+  }
+  function startRun(s) {
+    if (s.stage !== 'plan' || validate(s).length) return null;
+    s.current = computeRun(s, clone(toPlan(s)));
+    s.stage = 'run'; s.resumedFromRun = false;
+    return s.current.result;
+  }
+
+  // 주요 인물의 ‘해낸 하루’ 판정 — 출발 전 경고(예상), 결과 화면, 학기 말 누적이 모두 이 함수 하나를 쓴다.
+  // 기준: 첫 이동과 다음 이동을 운행 시간 안에 모두 마칠 것 + 서비스 기준(config.service, 없으면 생략).
+  // reasons는 학생에게 보여 줄 구체적 이유(목적지 미연결·다음 이동 경로 없음·대기 기준 초과 등)
+  function residentVerdict(config, rd, rec, passengers) {
+    if (!rec) return { ok: false, reasons: [] };
+    var reasons = [], legs = passengers.filter(function (p) { return p.residentId === rd.id; });
+    var out = legs.filter(function (p) { return p.leg === 'outbound'; })[0], back = legs.filter(function (p) { return p.leg === 'return'; })[0];
+    var name = function (id) { var n = config.nodes.filter(function (x) { return x.id === id; })[0]; return n ? n.name : id; };
+    function legReason(p, label) {
+      if (!p) return null;
+      if (p.fail === 'NO_LINK') return { code: 'noLink', text: label + '(' + name(p.o) + ' → ' + name(p.d) + ')을 잇는 운행 노선이 없어요.' };
+      if (p.fail === 'NO_TRIP_IN_WINDOW') return { code: 'noTrip', text: label + ' 준비가 된 뒤에는 운행 시간 안에 도착하는 버스편이 없어요.' };
+      if (p.status === 'riding') return { code: 'riding', text: label + ' 중 운행이 끝나 버스 안에 남아요.' };
+      if (p.status !== 'arrived' && p.deniedBoardings > 0) return { code: 'full', text: label + '에서 만차로 버스를 놓쳐 운행 시간 안에 도착하지 못해요.' };
+      if (p.status !== 'arrived') return { code: 'late', text: label + '을 운행 시간 안에 마치지 못해요.' };
+      return null;
+    }
+    if (rec.dayStatus === 'outboundIncomplete') reasons.push(legReason(out, '첫 이동') || { code: 'late', text: '첫 이동을 마치지 못해요.' });
+    else if (rec.dayStatus === 'returnIncomplete') {
+      if (!back) reasons.push({ code: 'tooLate', text: '첫 목적지 도착과 체류가 늦어 운행 시간 안에 다음 이동을 시작하지 못해요.' });
+      else reasons.push(legReason(back, '다음 이동') || { code: 'late', text: '다음 이동을 마치지 못해요.' });
+    }
+    var sv = config.service;
+    if (sv && rec.dayStatus === 'complete') [[out, '첫 이동'], [back, '다음 이동']].forEach(function (x) {
+      var p = x[0]; if (!p) return;
+      if (sv.maxWait != null && p.waitTotal > sv.maxWait) reasons.push({ code: 'longWait', text: x[1] + '에서 버스를 ' + Demand.duration(config, p.waitTotal) + ' 기다렸어요(기준 ' + Demand.duration(config, sv.maxWait) + ' 이하).' });
+      if (sv.maxTripFactor != null) {
+        var limit = tripLimit(config, p.o, p.d);
+        if (p.arriveT - p.t > limit) reasons.push({ code: 'slowTrip', text: x[1] + '에 ' + Demand.duration(config, p.arriveT - p.t) + ' 걸렸어요(기준 ' + Demand.duration(config, limit) + ' 이하).' });
+      }
+    });
+    return { ok: !reasons.length, reasons: reasons };
+  }
+  // 이동 시간 기준 = 두 정류장을 바로 잇는 도로 시간 × 배수(짧은 거리는 최소값)
+  function tripLimit(config, a, b) {
+    var sv = config.service, g = Graph.build(config, 99), t = g.time(a, b) || 1;
+    return Math.max(sv.minTrip || 0, Math.round(sv.maxTripFactor * t));
   }
 
   function residentRecords(s, result) {
@@ -267,6 +314,7 @@
         var back=result.passengers.filter(function(x){return x.residentId===rd.id&&x.leg==='return';})[0];
         out[rd.id]=p?{o:p.o,d:p.d,finalDestination:p.returnTrip&&p.returnTrip.destination||p.o,multiStop:!!rd.itineraries,t:p.t,status:p.status,waitTotal:p.waitTotal+(back?back.waitTotal:0),arriveT:p.arriveT,firstBoardT:p.firstBoardT,transfer:p.boardings>1||(back&&back.boardings>1),
           returnT:back?back.t:p.returnReadyT,homeT:back?back.arriveT:null,returnStatus:back?back.status:null,dayStatus:p.status!=='arrived'?'outboundIncomplete':back&&back.status==='arrived'?'complete':'returnIncomplete'}:null;
+        if(out[rd.id]){var v=residentVerdict(s.config,rd,out[rd.id],result.passengers);out[rd.id].satisfied=v.ok;out[rd.id].reasons=v.reasons;}
         return;
       }
       out[rd.id] = p ? { t: p.t, status: p.status, waitTotal: p.waitTotal, arriveT: p.arriveT, firstBoardT: p.firstBoardT, boardings: p.boardings,
@@ -277,6 +325,7 @@
 
   function finishRun(s) {
     if (s.stage !== 'run' || !s.current) return null;
+    if (s.history.some(function (h) { return h.phase === s.phase; })) { s.stage = 'result'; return null; } // 같은 단계를 두 번 정산하지 않는다
     var c = s.current, D = {}, before = clone(s.trust);
     Object.keys(c.metrics.zones).forEach(function (z) {
       D[z] = c.metrics.zones[z].D;
@@ -302,7 +351,7 @@
       var newRoute = s.config.progression.routes[s.phase-1]>s.config.progression.routes[s.phase-2] ? addRoute(s, {nodes:[], stops:[]}, express) : null;
       while (s.owned < s.config.progression.buses[s.phase - 1]) {
         s.owned++;
-        s.draft.buses.push({id:s.owned, routeNum:newRoute ? newRoute.num : null, offset:0});
+        s.draft.buses.push({id:s.owned, routeNum:null, offset:0}); // 새 버스는 모든 단계에서 ‘쉬기’로 시작(빈 노선에 자동 배정하지 않음)
       }
     }
     s.stage = 'reveal'; s.goal = null; s.lastRec = null; s.current = null;
@@ -329,7 +378,25 @@
     };
   }
 
+  // 자동 저장용 사본 — 운행 결과(승객·로그)와 계산 캐시는 빼고, 기본 세팅은 설정도 뺀다(불러올 때 현재 설정을 쓴다)
+  function serialize(s) {
+    var o = {};
+    Object.keys(s).forEach(function (k) { if (k !== '_g' && k !== 'current' && !(k === 'config' && s.mode === 'default')) o[k] = s[k]; });
+    if (s.current) o.current = { plan: s.current.plan, event: s.current.event, routeReportShown: !!s.current.routeReportShown };
+    return clone(o);
+  }
+  // 저장본 되살리기. 운행 중이었다면 출발 직전 계획(plan 단계)으로, 결과 화면이었다면 같은 결과를 다시 계산해 보여 준다
+  function restore(data, baseConfig) {
+    var s = clone(data);
+    if (!s.config) s.config = baseConfig;
+    if (s.stage === 'run') { s.stage = 'plan'; s.current = null; s.resumedFromRun = true; }
+    else if (s.stage === 'result' && s.current && s.current.plan) { var keep = s.current.routeReportShown; s.current = computeRun(s, s.current.plan); s.current.routeReportShown = keep; }
+    else s.current = null;
+    return s;
+  }
+
   var api = {
+    serialize: serialize, restore: restore, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
     assign: assign, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,

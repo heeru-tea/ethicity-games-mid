@@ -79,7 +79,7 @@ try{
     check(await page.locator('#result-details').evaluate(n=>!n.open),mode+' statistics collapsed by default');
     await page.screenshot({path:`publicness/tests/_shot-v2-result-${mode}.png`});
     for(let phase=2;phase<=5;phase++){
-      if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
+      await page.locator('#btn-next-phase').click();while(await page.locator('#goal-intro').evaluate(d=>d.open)){if(await page.locator('#goal-intro').getAttribute('data-stage')==='true')await page.keyboard.press('Enter');else await page.locator('#btn-goal-start').click();}if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await beginPlan(page);
       if(phase===3){
         check(await page.evaluate(()=>PB.Session.graph(PB.App.s).has('I')),mode+' new town appears in phase 3');
         await page.locator('#btn-fourth').click();await page.locator('#btn-new-route').click();
@@ -90,7 +90,7 @@ try{
       await page.locator('#btn-depart').press('Enter');await page.locator('#confirm-yes').press('Enter');
       await page.locator('#resident-summary').waitFor();
     }
-    if(await page.locator('#route-report').evaluateAll(ds=>ds.some(d=>d.open)))await page.locator('#btn-route-report-close').click();await page.locator('#btn-next-phase').click();await page.locator('#btn-restart').waitFor();
+    await page.locator('#btn-next-phase').click();await page.locator('#btn-restart').waitFor();
     check(await page.evaluate(()=>JSON.parse(localStorage.getItem('ethicity.result.publicness')).completed===true),mode+' five phases finish and save completion');
     check(errors.length===0,mode+' no runtime errors: '+errors.join(','));await page.close();
   }

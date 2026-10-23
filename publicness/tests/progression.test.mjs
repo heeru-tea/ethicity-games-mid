@@ -8,7 +8,7 @@ test('five phases automatically grant 2/3/4/5/6 buses and 2/3/4/4/4 route slots'
  for(let phase=1;phase<=5;phase++){
   assert.equal(s.owned,phase+1);assert.equal(S.routeLimit(s),Math.min(phase+1,4));
   assert.equal(s.draft.routes.length,Math.min(phase+1,4));assert.equal(S.addRoute(s,route([])),null);
-  if(phase<=3)assert.equal(s.draft.buses.at(-1).routeNum,phase+1);else assert.equal(s.draft.buses.at(-1).routeNum,null);
+  assert.equal(s.draft.buses.at(-1).routeNum,null); // 새 버스는 모든 단계에서 쉬기
   for(const r of s.draft.routes)if(!r.nodes.length)S.updateRoute(s,r.num,route(['A','B']));
   S.assign(s,s.owned,1);S.beginPlan(s);assert.deepEqual(S.validate(s),[]);assert.ok(S.startRun(s));S.finishRun(s);S.nextPhase(s);
  }
