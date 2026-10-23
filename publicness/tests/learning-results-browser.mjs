@@ -18,7 +18,7 @@ try{
    }
    await beginPlan(page);
    // Run the real engine synchronously; only playback is skipped in this UI probe.
-   await page.evaluate(()=>{const s=PB.App.s,S=PB.Session;for(const r of s.draft.routes){const nodes=r.num===1?['F','D']:['B','C','A','G'];S.updateRoute(s,r.num,{nodes:r.num===5?['B','L']:nodes,stops:(r.num===5?['B','L']:nodes).map(()=>true)});}s.draft.buses.forEach(b=>{if(b.routeNum==null)S.assign(s,b.id,1);});S.startRun(s);S.finishRun(s);PB.App.go('result');});
+   await page.evaluate(()=>{const s=PB.App.s,S=PB.Session;for(const r of s.draft.routes){const nodes=r.num===1?['F','D']:['B','C','A','G'];S.updateRoute(s,r.num,{nodes:r.num===5?['B','L']:nodes,stops:(r.num===5?['B','L']:nodes).map(()=>true)});}s.draft.buses.forEach(b=>{if(b.routeNum==null)S.assign(s,b.id,1);});S.startRun(s);s.current.metrics.costs.total=Math.max(0,s.current.metrics.costs.total);/* 이 설계는 5단계 적자 누적 계약 종료 — 재정은 finance-browser에서 */S.finishRun(s);PB.App.go('result');});
    const card=page.locator('[data-resident="narae"] .resident-card'),head=card.locator(':scope > summary');
    assert.ok(!/\d\d:\d\d/.test(await head.innerText()));
    await head.hover();assert.ok(await card.evaluate(d=>d.open));await page.mouse.move(5,5);assert.ok(!await card.evaluate(d=>d.open));

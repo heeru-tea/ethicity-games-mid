@@ -13,7 +13,7 @@ const EDGE = process.env.EDGE || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Appl
 const PB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // 게임 코드(index.html·cutscene·narrative·ui-result·ui-ending)가 불러오는 그림
 const USED = ['title-two-stops', 'intro-haneul', 'intro-narae', 'intro-jun', 'intro-village', 'interlude-sol', 'interlude-cheer',
-  'portrait-haneul-calm', 'portrait-narae-calm', 'portrait-jun-calm', 'portrait-sol-calm'].map((n) => 'assets/art/' + n + '.png');
+  'portrait-haneul-calm', 'portrait-narae-calm', 'portrait-jun-calm', 'portrait-sol-calm', 'interlude-influencer', 'portrait-jinho-calm'].map((n) => 'assets/art/' + n + '.png');
 const args = process.argv.slice(2);
 const qi = args.indexOf('--q');
 const Q = qi >= 0 ? Number(args.splice(qi, 2)[1]) : 0.82;

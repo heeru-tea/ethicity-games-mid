@@ -15,7 +15,9 @@
     progression: { routes: [2, 3, 4, 4, 4], buses: [2, 3, 4, 5, 6] },
     challenge: {
       phases: ['나들이의 계절','붐비는 도시','경계 너머의 하루'],
-      targets: {haneul:6,narae:6,jun:6,sol:4,yuna:3,daeun:3},
+      targets: {haneul:6,narae:6,jun:6,sol:4,yuna:3,daeun:3,jinho:1},
+      // 도전 모드에만 나오는 인물: 7단계 솔잎몰 개장 라이브 방송을 하러 가는 인플루언서(몰 방문 몰림 시각에 출발, 몰 귀가 시각에 돌아옴)
+      residents: [{ id: 'jinho', name: '진호', role: '인플루언서', o: 'I', d: 'M', fromPhase: 7, depart: 47, returnAt: 91, stay: 20 }],
       nodes: [{id:'L',name:'호수공원',x:-4.6,y:-2.3,fromPhase:6},{id:'M',name:'솔잎몰',x:2.7,y:.2,fromPhase:7},{id:'N',name:'대도시',x:8.7,y:0,fromPhase:8}],
       demandRows: [{a:'B',b:'M',n:18,fromPhase:7},{a:'I',b:'M',n:16,fromPhase:7},{a:'E',b:'M',n:10,fromPhase:7},{a:'A',b:'M',n:8,fromPhase:7},{a:'J',b:'M',n:8,fromPhase:7},{a:'B',b:'N',n:18,fromPhase:8},{a:'I',b:'N',n:12,fromPhase:8},{a:'F',b:'N',n:6,fromPhase:8}],
       families: {fromPhase:6,destination:'L',origins:['B','F','I'],members:4,depart:45,returnAt:85,stay:20}

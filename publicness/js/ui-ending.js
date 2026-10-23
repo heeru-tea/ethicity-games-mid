@@ -90,26 +90,77 @@
     return sec;
   }
 
+  // 운영 종료(파산·계약 종료) — 회차별 재정, 주요 비용·운영 문제, 사건과 선택의 영향, 기록 기반 제안, 다시 하기
+  function failureReport(App, s) {
+    var f = S.financeStatus(s), rv = N.financeReview(s.config, s.history), byCount = f.rule === 'deficit-count';
+    var sec = el('section', { id: 'failure-report', 'class': 'card', 'aria-labelledby': 'fail-h' });
+    sec.appendChild(el('h3', { id: 'fail-h' }, '재정 돌아보기'));
+    sec.appendChild(el('p', { id: 'failure-cause' }, (f.end.cause === 'contract'
+      ? f.end.phase + '단계까지 회차 수지가 0원 미만인 적자가 누적 ' + f.deficits + '번 생겨 운영 계약이 종료됐어요.' + (f.balance >= 0 ? ' 보유 잔액 ' + App.won(f.balance) + '이 남아 있어도 적자 횟수로 판정해요.' : ' 보유 잔액은 ' + App.won(f.balance) + '이에요.')
+      : '마지막 단계까지 운행했지만 학기 말 보유 잔액이 ' + App.won(f.balance) + '이에요. 기본 모드는 학기 말 잔액이 0원 미만이면 파산으로 끝나요.') + ' 재정 판정과 별개로, 주민이 해낸 이동은 아래 인물 결과에 그대로 남아 있어요.'));
+    var n = 0, rows = f.ledger.map(function (r) {
+      if (r.deficit) n++;
+      // 좁은 패널에서도 판정 열(회차 수지·적자·잔액)이 먼저 보이게 앞에 둔다
+      var row = [r.phase + '단계', App.won(r.total) + (!byCount && r.deficit ? ' (적자)' : '')].concat(byCount ? [r.deficit ? n + '회째' : '-'] : []);
+      return row.concat([App.won(r.balance), App.won(r.income), App.won(-r.cost)]);
+    });
+    var tbl = UI.table(['단계', '회차 수지'].concat(byCount ? ['적자'] : []).concat(['보유 잔액', '수입', '비용']), rows);
+    tbl.querySelector('table').id = 'failure-ledger';
+    sec.appendChild(tbl);
+    sec.appendChild(el('p', { 'class': 'note' }, '수입 = 위탁 지원금 + 운임, 비용 = 차량 보유비 + 원격 관제·운영비 + 에너지·정비. 0원 미만이면 적자예요.' + (byCount ? ' 적자 단계: ' + (f.deficitPhases.length ? f.deficitPhases.join('·') + '단계' : '없음') + ' (누적 ' + f.deficits + '/' + f.limit + '회).' : '')));
+    sec.appendChild(el('h4', null, '돈이 나간 곳'));
+    var spent = rv.costs.reduce(function (a, c) { return a + c[2]; }, 0), cu = el('ul', { id: 'failure-costs' });
+    rv.costs.forEach(function (c) { cu.appendChild(el('li', null, c[1] + ' ' + App.won(c[2]) + (spent ? ' (' + Math.round(c[2] / spent * 100) + '%)' : ''))); });
+    cu.appendChild(el('li', null, '수입: 위탁 지원금 ' + App.won(rv.totals.subsidy) + ' · 운임 ' + App.won(rv.totals.fare)));
+    sec.appendChild(cu);
+    sec.appendChild(el('h4', null, '운영 중 드러난 문제'));
+    var pu = el('ul', { id: 'failure-problems' });
+    pu.appendChild(el('li', null, '운행한 버스 단계별 합계 ' + rv.running + '대 · 쉬게 한 버스 ' + rv.resting + '대 · 운행 버스 한 대당 평균 승차 ' + (Math.round(rv.perBus * 10) / 10) + '회'));
+    if (rv.noLink) pu.appendChild(el('li', null, '잇는 노선이 없어 떠나지 못한 요청 ' + rv.noLink + '건'));
+    if (rv.notBoarded) pu.appendChild(el('li', null, '운행 종료까지 버스를 못 탄 요청 ' + rv.notBoarded + '건'));
+    sec.appendChild(pu);
+    sec.appendChild(el('h4', null, '사건과 선택'));
+    sec.appendChild(el('p', { id: 'failure-events' }, (!rv.event.phases.length ? '돌발 수요 사건은 없었어요.' : rv.event.fare ? '돌발 수요 사건(' + rv.event.phases.join('·') + '단계)으로 생긴 승객의 운임 ' + App.won(rv.event.fare) + '이 수입에 더해졌어요.' : rv.event.phases.join('·') + '단계에 돌발 수요 사건이 있었지만 그 승객이 버스를 타지 못해 운임 변화는 없었어요.') +
+      (rv.event.unknown ? ' 일부 단계는 사건 운임이 기록되지 않았어요.' : '') + ' 청원은 재정에 직접 영향이 없어요. 나머지 운임과 모든 비용은 노선과 버스 배치(선택)에서 나왔어요.'));
+    sec.appendChild(el('h4', null, '다음에 해 볼 것'));
+    var tl = el('ol', { id: 'failure-tips' });
+    rv.tips.forEach(function (t) { tl.appendChild(el('li', { 'data-tip': t.code }, t.text)); });
+    if (!rv.tips.length) tl.appendChild(el('li', null, '기록에서 두드러진 비용 문제를 찾지 못했어요. 단계별 표에서 적자가 난 단계의 노선과 버스 수를 비교해 보세요.'));
+    sec.appendChild(tl);
+    sec.appendChild(el('p', { 'class': 'note' }, rv.caution));
+    var act = el('div', { 'class': 'retry-actions' });
+    if (s.mode === 'default') act.appendChild(el('button', { type: 'button', 'class': 'btn btn-primary', id: 'btn-retry-same', onclick: function () { App.retry('same'); } }, '같은 시나리오로 다시 시작'));
+    else {
+      act.appendChild(el('button', { type: 'button', 'class': 'btn btn-primary', id: 'btn-retry-same', onclick: function () { App.retry('same'); } }, '같은 조건으로 재도전'));
+      act.appendChild(el('button', { type: 'button', 'class': 'btn', id: 'btn-retry-new', onclick: function () { App.retry('new'); } }, '새 랜덤 게임'));
+      act.appendChild(el('p', { 'class': 'note' }, '같은 조건 = 세팅 번호 ' + s.seed + '의 지도·수요·사건 그대로. 진행 기록은 처음부터 새로 시작해요.'));
+    }
+    sec.appendChild(act);
+    return sec;
+  }
+
   UI.ending = function (App, panel) {
     var s = App.s, sum = S.endingSummary(s);
     cfg=s.config;
-    var reactions=N.endingReactions(s.config,s.history),conclusion=N.endingConclusion(reactions,s.history);
+    var end=s.end||{cause:'complete'},failed=end.cause==='bankrupt'||end.cause==='contract';
+    var reactions=N.endingReactions(s.config,s.history),conclusion=N.endingConclusion(reactions,s.history,end);
     function showReactions(){PB.Cutscene.play('ending',function(){$('#btn-records').focus();},reactions.concat(conclusion));}
     if (App._resultFor !== s) {
       App._resultFor = s;
       var counts = { stable: 0, improving: 0, remaining: 0 };
       Object.keys(sum.zones).forEach(function (z) { if (sum.zones[z].subtitle.firstPhase != null) counts[sum.zones[z].subtitle.kind]++; });
-      PB.Storage.writeResult('이번 정류장은… · 생활권 안정 ' + counts.stable + ' · 개선 중 ' + counts.improving + ' · 과제 ' + counts.remaining);
+      PB.Storage.writeResult('이번 정류장은… · '+(failed?(end.cause==='bankrupt'?'파산':'적자 누적 계약 종료')+' · ':'')+'생활권 안정 ' + counts.stable + ' · 개선 중 ' + counts.improving + ' · 과제 ' + counts.remaining);
     }
-    panel.appendChild(el('p', { 'class': 'eyebrow' }, '학기 말 — 마무리'));
-    panel.appendChild(el('h2', null, '한 학기 운행이 끝났어요'));
+    panel.appendChild(el('p', { 'class': 'eyebrow' }, failed ? '운영 종료' : '학기 말 — 마무리'));
+    panel.appendChild(el('h2', { id: 'ending-title' }, end.cause === 'bankrupt' ? '파산 — 학기 말 잔액이 0원 미만이에요' : end.cause === 'contract' ? '적자 누적으로 운영 계약 종료' : '한 학기 운행이 끝났어요'));
     if (App.player) {
       var who = el('p', { id: 'end-player', 'class': 'player-name' });
       who.textContent = App.player.nickname + ' 운영자님의 기록';
       panel.appendChild(who);
     }
     panel.appendChild(el('p', {id:'ending-verdict','class':'outcome-lead'}, conclusion.verdict));
-    panel.appendChild(el('p', {id:'ending-profit'}, '총 수익 '+App.won(conclusion.profit)+' · 지원금 포함 누적 손익'));
+    panel.appendChild(el('p', {id:'ending-profit'}, (failed?'보유 잔액 ':'총 수익 ')+App.won(conclusion.profit)+' · 지원금 포함 누적 손익'));
+    if(failed)panel.appendChild(failureReport(App,s));
     var families=s.history.reduce(function(a,h){var f=h.metrics.families;if(f){a.total+=f.total;a.complete+=f.complete;}return a;},{total:0,complete:0});
     if(families.total)panel.appendChild(el('p',{id:'ending-families'},'호수공원 가족 일정 '+families.total+'팀 중 '+families.complete+'팀 전원 방문·귀가 완료'));
     panel.appendChild(el('button',{type:'button',id:'btn-ending-replay','class':'btn',onclick:showReactions},'인물 반응 다시 보기'));

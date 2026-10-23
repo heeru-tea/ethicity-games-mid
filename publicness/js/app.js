@@ -50,7 +50,8 @@
     $('#clock-moon').style.display=sun?'none':'';
   };
   App.duration = function(t){return PB.Demand.duration(App.s?App.s.config:cfg,t);};
-  App.won = function (n) { return (n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocaleString('ko-KR') + '원'; };
+  // 0원 근처의 음수를 ‘0원’으로 반올림해 적자 판정과 달라 보이지 않게 한다(−1원 미만)
+  App.won = function (n) { return PB.Narrative.won(n); };
   App.reducedMotion = function () {
     return App.motion || !!root.__pbReduceMotion || (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
   };
@@ -110,6 +111,11 @@
     });
     var bal = s.history.reduce(function (a, h) { return a + h.metrics.costs.total; }, 0);
     $('#top-balance').textContent = '누적 잔액 ' + App.won(bal);
+    // 랜덤(도전) 모드는 플레이 내내 누적 적자 횟수를 보여 준다
+    var fin = S.financeStatus(s), def = $('#top-deficit');
+    def.hidden = fin.rule !== 'deficit-count';
+    def.textContent = '누적 적자 ' + fin.deficits + '/' + fin.limit + '회';
+    def.classList.toggle('warn', fin.deficits >= fin.limit - 1);
     if (s.stage !== 'run') App.updateClock(s.stage==='result'||s.stage==='ending'?s.config.bus.window:0,s.stage==='ending'?'학기 끝':s.stage==='result'?'운행 끝':'계획 중');
   }
 
@@ -225,6 +231,7 @@
       rows.push(['오늘 이동 요청', requestText(cfg, p, s.seed)]);
       rows.push(['할 일', '정류장을 이어 첫 노선을 만들어 보세요']);
       rows.push(['학기 말 기준', (cfg.challengeApplied ? '총 ' + cfg.phases.length + '단계 · ' : '') + PB.Narrative.satisfactionText(cfg)]);
+      rows.push(['재정 규칙', App.financeRuleText(s)]);
     } else {
       var h = s.history[s.history.length - 1], m = h.metrics;
       rows.push(['지난 운행', m.N + '건 중 ' + m.arrived + '건 도착 (' + Math.round(m.arrived / Math.max(1, m.N) * 100) + '%)']);
@@ -296,6 +303,20 @@
 
   /* ── 시작 ───────────────────────── */
   // 캐릭터 소개 뒤 바로 단계 안내(‘생각해 보기’ 포함). 별도 Stage 카드·교육 창은 두지 않는다
+  // 모드별 재정 규칙(안내·결과·종료 화면이 같은 문장을 쓴다)
+  App.financeRuleText = function (s) {
+    return S.financeRule(s) === 'deficit-count'
+      ? '단계가 끝날 때마다 회차 수지(지원금·운임 − 운영 비용)를 정산해요. 0원 미만인 적자가 누적 ' + S.DEFICIT_LIMIT + '번이면 잔액이 남아 있어도 운영 계약이 종료돼요. 흑자가 나도 적자 횟수는 줄지 않아요.'
+      : '중간에 돈이 모자라도 운행은 계속돼요. 마지막 단계가 끝난 뒤 누적 잔액이 0원 미만이면 파산으로 끝나요.';
+  };
+  // 다시 하기: 기본은 같은 시나리오, 랜덤은 같은 조건(같은 세팅 번호 → 같은 지도·수요·사건) 또는 새 랜덤 게임. 진행 상태는 모두 새로 만든다
+  App.retry = function (kind) {
+    var s = App.s, opt = kind === 'new' ? { mode: 'random' } : s.mode === 'default' ? { mode: 'default' } : { mode: s.mode, seed: s.seed };
+    PB.Storage.clearSave();
+    App.s = S.create(cfg, opt);
+    App._sceneKey = null; App._resultFor = null;
+    App.go('reveal');
+  };
   App.startGame = function () {
     var chosen = document.querySelector('input[name=setting]:checked');
     var opt = App.seedParam.mode === 'fixed' ? { mode: 'fixed', seed: App.seedParam.seed } : { mode: chosen ? chosen.value : 'default' };
@@ -379,7 +400,7 @@
     if (saved && cont) {
       var ss = saved.session, total = (ss.config ? ss.config.phases.length : cfg.phases.length);
       cont.hidden = false;
-      $('#continue-note').textContent = (ss.mode === 'default' ? '기본' : '랜덤') + ' 세팅 · ' + (ss.stage === 'ending' ? '학기 마무리' : ss.phase + ' / ' + total + '단계 ' + ({ reveal: '안내', plan: '계획', run: '운행(출발 직전 계획으로 돌아가요)', result: '결과' }[ss.stage] || '')) + ' · ' + new Date(saved.savedAt).toLocaleString('ko-KR');
+      $('#continue-note').textContent = (ss.mode === 'default' ? '기본' : '랜덤') + ' 세팅 · ' + (ss.stage === 'ending' ? (ss.end && ss.end.cause === 'bankrupt' ? '파산으로 운영 종료' : ss.end && ss.end.cause === 'contract' ? '적자 누적으로 운영 계약 종료' : '학기 마무리') : ss.phase + ' / ' + total + '단계 ' + ({ reveal: '안내', plan: '계획', run: '운행(출발 직전 계획으로 돌아가요)', result: '결과' }[ss.stage] || '')) + ' · ' + new Date(saved.savedAt).toLocaleString('ko-KR');
       cont.addEventListener('click', function () { App.resume(PB.Storage.readSave(cfg.SCENARIO_VERSION) || saved); });
       $('#btn-start').textContent = '새로 시작하기';
       $('#btn-start').classList.remove('btn-primary');

@@ -20,8 +20,8 @@
     <p class="hook hook-strong" id="hook-2"></p>
     <fieldset class="setting">
       <legend>마을 세팅</legend>
-      <label class="radio"><input type="radio" name="setting" value="default" checked> <span><b>기본 · 교육용 5단계</b> — 같은 지도와 사건으로 시작해요</span></label>
-      <label class="radio"><input type="radio" name="setting" value="random"> <span><b>랜덤 · 도전용 8단계</b> — 위치·사건 변화, 직행과 광역 노선까지</span></label>
+      <label class="radio"><input type="radio" name="setting" value="default" checked> <span><b>기본 · 교육용 5단계</b> — 같은 지도와 사건으로 시작해요. 재정은 학기 말 잔액으로 평가해요</span></label>
+      <label class="radio"><input type="radio" name="setting" value="random"> <span><b>랜덤 · 도전용 8단계</b> — 위치·사건 변화, 직행과 광역 노선까지. 단계 적자가 누적 3번이면 운영 계약이 끝나요</span></label>
       <p class="note" id="seed-note" aria-live="polite"></p>
     </fieldset>
     <button type="button" class="btn btn-primary btn-lg" id="btn-continue" hidden>이어하기</button>
@@ -42,6 +42,7 @@
   <span class="brand">이번 정류장은…</span>
   <ol id="top-phase" class="phase-steps" aria-label="단계"></ol>
   <span id="top-balance" class="balance"></span>
+  <span id="top-deficit" class="deficit-count" hidden></span>
   <span class="top-actions">
     <button type="button" class="btn btn-ghost" id="btn-view-toggle" hidden>지도·텍스트 보기</button>
     <button type="button" class="btn btn-ghost" id="btn-settings" aria-haspopup="dialog">설정</button>

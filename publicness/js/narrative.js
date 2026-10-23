@@ -186,13 +186,14 @@
   }
   function endingReactions(config,history){
     var thresholds=satisfactionTargets(config);
-    var images={haneul:'intro-haneul.webp',narae:'intro-narae.webp',jun:'intro-jun.webp',sol:'interlude-sol.webp',yuna:'interlude-cheer.webp',daeun:'interlude-cheer.webp'};
+    var images={haneul:'intro-haneul.webp',narae:'intro-narae.webp',jun:'intro-jun.webp',sol:'interlude-sol.webp',yuna:'interlude-cheer.webp',daeun:'interlude-cheer.webp',jinho:'interlude-influencer.webp'};
     var lines={
       haneul:['대학교에 갔다가 집으로 돌아오는 길까지 이어졌어요. 제 하루를 생각해 줘서 고마워요.','대학교에 가는 길도, 집으로 돌아오는 길도 필요해요. 다음에는 제 하루를 끝까지 이어 줄 수 있을까요?'],
       narae:['병원에 다녀와서 우리 마을로 돌아올 수 있었어요. 멀리 사는 사람도 잊지 않았네요. 고마워요.','우리 마을은 멀리 있지만, 여기에도 버스를 기다리는 사람이 있어요. 병원에 다녀오는 길을 조금 더 챙겨 줬으면 해요.'],
       jun:['기차역에서 일터까지, 일을 마치고 다시 역까지. 오가는 길을 함께 챙겨 줘서 든든했어요.','기차역에 내렸다고 이동이 끝나는 건 아니에요. 일터에 가는 길과 돌아오는 길이 모두 필요해요.'],
       sol:['새로 온 동네에서도 기차역에 갔다 돌아올 수 있었어요. 이제 저도 이 마을의 주민이라는 느낌이 들어요.','집은 이곳에 생겼는데, 오가는 길은 아직 충분하지 않네요. 새로 이사 온 사람의 하루도 함께 생각해 주세요.'],
       yuna:['운동장에서 일을 마친 뒤 친구 집으로, 다음 날에는 터미널까지. 두 날의 일정을 모두 마칠 수 있었어요. 고마워요!','경기가 끝난 뒤에도 제 이동은 계속돼요. 친구 집과 터미널까지 이어지는 밤의 노선도 챙겨 줬으면 해요.'],
+      jinho:['신도시에서 솔잎몰까지, 방송 끝나고 집까지 버스로 이어졌어요! 채팅창에서도 이 마을 버스 좋다고 난리였어요. 줄 서 있던 다른 분들도 다 탔으면 좋겠네요.','몰 앞은 사람이 너무 많았어요. 화면에 안 잡히는 곳에서 기다리는 사람도 많겠죠? 저도 집에 갈 버스는 필요해요.'],
       daeun:['운동장에 가는 길부터 친구 집, 마지막 터미널까지 두 날 모두 이어졌어요. 돌아갈 길까지 있는 노선이라 좋았어요!','운동장에 가는 버스만으로는 제 일정이 끝나지 않아요. 경기 뒤 친구 집과 터미널로 가는 길도 필요해요.']
     };
     return config.residents.filter(function(r){return thresholds[r.id]!=null;}).map(function(r){
@@ -202,11 +203,15 @@
       return {id:r.id,name:r.name+' · '+(satisfied?'만족':'불만족'),satisfied:satisfied,completed:completed,threshold:thresholds[r.id],image:images[r.id],text:line+'\n'+'기준을 지켜 해낸 하루 '+completed+'회 · 만족 기준 '+thresholds[r.id]+'회 이상'};
     });
   }
-  function endingConclusion(reactions,history){
+  function won(n){var r=Math.round(n);return (n<0?'−':'')+(r===0&&n<0?'1':Math.abs(r).toLocaleString('ko-KR'))+'원'+(r===0&&n<0?' 미만':'');}
+  function endingConclusion(reactions,history,end){
     var allSatisfied=reactions.length>0&&reactions.every(function(r){return r.satisfied;});
     var profit=history.reduce(function(total,h){return total+h.metrics.costs.total;},0);
     var verdict=allSatisfied?'다양한 사람들을 만족시켰다.':'도시 노선을 나름 잘 설계했다. 하지만 이게 최선이었을까?';
-    return {name:'솔잎마을의 한 학기',image:'intro-village.webp',allSatisfied:allSatisfied,profit:profit,verdict:verdict,text:verdict+'\n총 수익 '+Math.round(profit).toLocaleString('ko-KR')+'원\n지원금·운임에서 운영 비용을 뺀 '+history.length+'단계 누적 금액'};
+    var happy=reactions.filter(function(r){return r.satisfied;}).length,who=reactions.length?'주요 인물 '+reactions.length+'명 중 '+happy+'명이 만족했지만, ':'';
+    if(end&&end.cause==='bankrupt')verdict=who+'학기 말 잔액이 '+won(profit)+'이라 파산했다. 주민의 이동은 지키면서 운영 비용을 다시 설계해 보자.';
+    else if(end&&end.cause==='contract')verdict='단계 적자가 누적 세 번 쌓여 운영 계약이 종료됐다. 그동안 주민이 해낸 이동은 기록에 남아 있다. 어디서 돈이 나갔는지부터 다시 보자.';
+    return {name:'솔잎마을의 한 학기',image:'intro-village.webp',allSatisfied:allSatisfied,profit:profit,verdict:verdict,text:verdict+'\n'+(end&&end.cause&&end.cause!=='complete'?'보유 잔액 ':'총 수익 ')+won(profit)+'\n지원금·운임에서 운영 비용을 뺀 '+history.length+'단계 누적 금액'};
   }
   // 결과 카드: 판정(Session.residentVerdict — 출발 경고와 같은 기준)과 구간별 상태
   function residentResult(rd,r,passengers,window){
@@ -228,7 +233,40 @@
     return {complete:complete,label:complete?(rd.itineraries?'일정 완료':'왕복 완료'):first?(rd.itineraries?'다음 목적지에 도착하지 못했어요':'집에 돌아오지 못했어요'):'첫 목적지에 도착하지 못했어요',reason:reason,
       legs:[{o:r.o||rd.o,d:r.d||rd.d,state:first?'도착':'미도착'},{o:r.d||rd.d,d:r.finalDestination||rd.returnTo||rd.o,state:complete?'도착':first?'미도착':'아직 시작하지 못함'}]};
   }
-  var api = { josa:josa, residentResult:residentResult,satisfactionTargets:satisfactionTargets,satisfactionText:satisfactionText,residentTally:residentTally,endingReactions:endingReactions,endingConclusion:endingConclusion, fill: fill, bubbles: bubbles, residentStory: residentStory, zoneSubtitleText: zoneSubtitleText, hookLines: hookLines, nodeName: nodeName };
+  // 운영 종료(파산·계약 종료) 화면의 재정 돌아보기 — 기록된 운행 수치만 쓴다(새 사건·추정 없음)
+  // 사건 영향 = 돌발 수요 승객이 낸 운임(청원은 재정에 직접 영향 없음), 나머지 비용·운임은 노선과 버스 배치(선택)에서 나온다
+  function financeReview(config,history){
+    var F=config.finance,sum={holding:0,op:0,move:0,fare:0,subsidy:0},noLink=0,notBoarded=0,resting=0,running=0,boardings=0,eventFare=0,eventPhases=[],eventUnknown=false;
+    history.forEach(function(h){
+      var k=h.metrics.costs,m=h.metrics;Object.keys(sum).forEach(function(x){sum[x]+=k[x];});
+      noLink+=m.noLink||0;notBoarded+=m.notBoarded?m.notBoarded.count:0;boardings+=m.boardings||0;
+      var buses=h.plan&&h.plan.buses||[];buses.forEach(function(b){if(b.route)running++;else resting++;});
+      if(h.event&&h.event.type==='demand'){if(h.eventFare==null)eventUnknown=true;else{eventFare+=h.eventFare;eventPhases.push(h.phase);}}
+    });
+    var costs=[['holding','차량 보유비',sum.holding],['op','원격 관제·운영비',sum.op],['move','에너지·정비(이동)',sum.move]].sort(function(a,b){return b[2]-a[2];});
+    // 한 노선에 몰아 넣은 버스 수(단계별 최댓값)
+    var crowd=0;history.forEach(function(h){var n={};(h.plan&&h.plan.buses||[]).forEach(function(b){if(!b.route)return;var id=b.route.nodes.join('-');n[id]=(n[id]||0)+1;crowd=Math.max(crowd,n[id]);});});
+    var perBus=running?boardings/running:0,need=F.holding/F.fare,tips=[];
+    if(resting)tips.push({code:'resting',text:'쉬는 버스도 대당 '+won(F.holding)+'씩 보유비가 나가요. 이번 운영에서 쉬게 한 버스가 단계별로 합쳐 '+resting+'대였어요.'+(notBoarded?' 운행 종료까지 버스를 못 탄 요청('+notBoarded+'건)이 남은 노선에 넣으면 운임으로 일부를 메울 수 있어요.':' 이동 요청이 있는 구간에 넣어 운임을 받을 수 있는지 살펴보세요.')});
+    if(noLink)tips.push({code:'noLink',text:'잇는 노선이 없어 떠나지 못한 요청이 '+noLink+'건이에요. 한 건을 이으면 운임 '+won(F.fare)+'이 생겨요. 정류장 연결부터 살펴보세요.'});
+    if(running&&perBus<need)tips.push({code:'perBus',text:'운행한 버스 한 대가 단계마다 평균 '+(Math.round(perBus*10)/10)+'회 태웠어요. 보유비를 운임만으로 메우려면 대당 '+need+'회가 필요해요.'+(crowd>=3?' 한 노선에 버스를 최대 '+crowd+'대까지 넣은 단계가 있었어요. 버스를 여러 노선에 나눠 요청이 있는 정류장을 더 지나게 하면 대당 승차가 늘 수 있어요.':' 노선별 이용표에서 승차가 적은 노선의 버스를 요청이 남은 노선으로 옮길 수 있는지 살펴보세요.')});
+    // 중복 구간: 서로 다른 노선 둘 이상이 같은 두 정류장 사이를 달린 단계(계획 기록에서 확인되는 것만)
+    var shared=[];history.forEach(function(h){
+      var seen={},count={};(h.plan&&h.plan.buses||[]).forEach(function(b){if(!b.route)return;var id=b.route.nodes.join('-');if(seen[id])return;seen[id]=true;
+        var segs={};for(var i=0;i+1<b.route.nodes.length;i++){var a=b.route.nodes[i],c=b.route.nodes[i+1];segs[a<c?a+'–'+c:c+'–'+a]=true;}
+        Object.keys(segs).forEach(function(k){count[k]=(count[k]||0)+1;});});
+      Object.keys(count).forEach(function(k){if(count[k]>1)shared.push({phase:h.phase,seg:k});});
+    });
+    if(shared.length&&costs[0][0]!=='holding'){var segs=shared.map(function(x){return x.seg;}).filter(function(k,i,a){return a.indexOf(k)===i;});
+      tips.push({code:'overlap',text:costs[0][1]+'가 '+won(costs[0][2])+'로 가장 컸어요. '+segs.slice(0,3).map(function(k){return k.split('–').map(function(id){return nodeName(config,id);}).join('–');}).join(', ')+' 구간을 노선 여러 개가 함께 달렸어요(단계별 합계 '+shared.length+'번). 겹친 구간의 승객이 그만큼 많았는지 노선별 이용표와 비교해 보세요.'});}
+    return {
+      totals:sum,costs:costs,crowd:crowd,noLink:noLink,notBoarded:notBoarded,resting:resting,running:running,perBus:perBus,
+      event:{fare:eventFare,phases:eventPhases,unknown:eventUnknown},
+      tips:tips.slice(0,3),
+      caution:'이용이 적은 외곽 노선을 없애는 것만이 답은 아니에요. 위탁 지원금은 그런 이동을 지키라고 주는 돈이고, 외곽 주민의 하루도 학기 결과에 들어가요.'
+    };
+  }
+  var api = { won:won, financeReview:financeReview, josa:josa, residentResult:residentResult,satisfactionTargets:satisfactionTargets,satisfactionText:satisfactionText,residentTally:residentTally,endingReactions:endingReactions,endingConclusion:endingConclusion, fill: fill, bubbles: bubbles, residentStory: residentStory, zoneSubtitleText: zoneSubtitleText, hookLines: hookLines, nodeName: nodeName };
   root.PB = root.PB || {};
   root.PB.Narrative = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

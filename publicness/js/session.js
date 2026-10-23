@@ -31,7 +31,8 @@
   function create(config, opts) {
     opts = opts || {};
     var mode = opts.mode || 'default', seed;
-    if (mode === 'random') seed = Math.floor((opts.rand || Math.random)() * 4294967296) >>> 0;
+    // 랜덤도 seed를 주면 그 세팅 그대로(‘같은 조건으로 재도전’)
+    if (mode === 'random') seed = opts.seed != null ? Number(opts.seed) >>> 0 : Math.floor((opts.rand || Math.random)() * 4294967296) >>> 0;
     else if (mode === 'fixed') seed = Number(opts.seed) >>> 0;
     else seed = config.defaultSeed;
     if (mode !== 'default' && config.map) {
@@ -40,7 +41,7 @@
         var challenge=config.challenge;config.challengeApplied=true;
         config.phases=config.phases.concat(challenge.phases);
         config.progression={routes:[2,3,4,4,4,5,5,6],buses:[2,3,4,5,6,7,8,9]};config.bus.maxBuses=9;
-        config.satisfactionTargets=challenge.targets;config.familyTrips=challenge.families;
+        config.satisfactionTargets=challenge.targets;config.familyTrips=challenge.families;config.residents=config.residents.concat(clone(challenge.residents||[]));
         config.nodes=config.nodes.concat(challenge.nodes);config.demandRows=config.demandRows.concat(challenge.demandRows);
         config.residents.forEach(function(r){if(r.itineraries){r.itineraries[6]={o:'J',d:'H',depart:60,returnAt:100,stay:20,returnTo:'B'};r.itineraries[7]=clone(r.itineraries[5]);}});
       }
@@ -62,7 +63,8 @@
         nextNum: config.initialDraft.routes.length + 1,
         buses: config.initialDraft.buses.map(function (b) { return { id: b.id, routeNum: b.routeNum, offset: b.offset }; })
       },
-      goal: null, goalHistory: [], lastRec: null, current: null, history: []
+      goal: null, goalHistory: [], lastRec: null, current: null, history: [],
+      ledger: [], deficits: 0, end: null // 확정 정산·누적 적자·종료 상태(저장본에 함께 남는다)
     };
     graph(s).nodes.forEach(function (id) { s.trust[id] = config.trust.initial; });
     return s;
@@ -336,14 +338,60 @@
       metrics: c.metrics, expected: c.expected, requestsN: c.requestsN, D: D, trustBefore: before, trustAfter: clone(s.trust),
       event: c.event, petition: c.result.petition, residents: residentRecords(s, c.result), goal: s.goal
     };
+    entry.eventFare = s.config.finance.fare * c.result.passengers.filter(function (p) { return p.kind === 'extra' && p.firstBoardT != null; }).length;
     s.history.push(entry);
+    settle(s, entry);
     s.stage = 'result';
     return entry;
   }
 
+  /* ── 재정 판정 ──
+   * 회차 수지 = 그 단계 수입(위탁 지원금 + 운임) − 비용(보유·운영·이동) = metrics.costs.total
+   * 보유 잔액 = 확정된 회차 수지의 합. 적자 = 회차 수지 < 0(정확히 0원은 적자 아님). 판정은 반올림 전 값으로 한다.
+   * 기본: 중간에 멈추지 않고 마지막 단계 뒤 잔액 < 0이면 파산 엔딩. 랜덤(도전): 적자 단계가 누적 3번이면 운영 계약 종료(흑자로 초기화 안 됨). */
+  var DEFICIT_LIMIT = 3;
+  function financeRule(s) { return s.mode === 'default' ? 'final-balance' : 'deficit-count'; }
+  function balance(s) { return s.history.reduce(function (a, h) { return a + h.metrics.costs.total; }, 0); }
+  function ledgerRow(k, phase, before) {
+    return { phase: phase, income: k.subsidy + k.fare, cost: k.holding + k.op + k.move, total: k.total, balance: before + k.total, deficit: k.total < 0 };
+  }
+  // 정산 확정: 단계마다 한 번(finishRun의 중복 방지 뒤에서만 불린다)
+  function settle(s, entry) {
+    if (!s.ledger) rebuildLedger(s);
+    if (s.ledger.some(function (r) { return r.phase === entry.phase; })) return;
+    var before = s.ledger.length ? s.ledger[s.ledger.length - 1].balance : 0, row = ledgerRow(entry.metrics.costs, entry.phase, before);
+    s.ledger.push(row);
+    if (row.deficit && financeRule(s) === 'deficit-count') {
+      s.deficits++;
+      if (s.deficits >= DEFICIT_LIMIT && !s.end) s.end = { cause: 'contract', phase: entry.phase, balance: row.balance };
+    }
+  }
+  // 정산 기록이 없는 예전 저장본: 기록된 운행에서 다시 만든다(같은 단계는 한 번만)
+  function rebuildLedger(s) {
+    s.ledger = []; s.deficits = 0;
+    var seen = {}, end = s.end; s.end = null;
+    s.history.forEach(function (h) { if (!seen[h.phase]) { seen[h.phase] = true; settle(s, h); } });
+    if (end && !s.end) s.end = end;
+  }
+  function financeStatus(s) {
+    var ledger = s.ledger || [], bal = balance(s), rule = financeRule(s);
+    return {
+      rule: rule, balance: bal, ledger: ledger, deficits: s.deficits || 0, limit: DEFICIT_LIMIT,
+      deficitPhases: ledger.filter(function (r) { return r.deficit; }).map(function (r) { return r.phase; }),
+      // 기본 모드에서 잔액이 한 단계 지원금보다 적으면 ‘학기 말에 평가한다’는 안내를 띄운다
+      low: rule === 'final-balance' && bal < s.config.finance.subsidy,
+      end: s.end || null
+    };
+  }
+
   function nextPhase(s) {
     if (s.stage !== 'result') return false;
-    if (s.phase >= s.config.phases.length) { s.stage = 'ending'; return true; }
+    if (s.end && s.end.cause === 'contract') { s.stage = 'ending'; return true; }
+    if (s.phase >= s.config.phases.length) {
+      var bal = balance(s);
+      s.end = { cause: financeRule(s) === 'final-balance' && bal < 0 ? 'bankrupt' : 'complete', phase: s.phase, balance: bal };
+      s.stage = 'ending'; return true;
+    }
     s.phase++;
     if (s.config.progression) {
       // 도전 모드에서 노선 한도가 5가 되는 단계는 항상 5번 직행 자리에 새 노선을 만든다(앞 단계에서 지운 번호가 있어도)
@@ -392,11 +440,13 @@
     if (s.stage === 'run') { s.stage = 'plan'; s.current = null; s.resumedFromRun = true; }
     else if (s.stage === 'result' && s.current && s.current.plan) { var keep = s.current.routeReportShown; s.current = computeRun(s, s.current.plan); s.current.routeReportShown = keep; }
     else s.current = null;
+    if (!s.ledger) rebuildLedger(s);
+    if (s.stage === 'ending' && !s.end) { var bal = balance(s); s.end = { cause: financeRule(s) === 'final-balance' && bal < 0 ? 'bankrupt' : 'complete', phase: s.phase, balance: bal }; }
     return s;
   }
 
   var api = {
-    serialize: serialize, restore: restore, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
+    serialize: serialize, restore: restore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
     assign: assign, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,

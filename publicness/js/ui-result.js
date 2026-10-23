@@ -71,6 +71,19 @@
     return parts.join(' · ');
   }
   UI.waitLine=waitLine;
+  // 재정 알림(결과 화면 본문, 새 창 없이): 랜덤은 이번 적자·2회째 경고·3회째 계약 종료, 기본은 잔액이 낮을 때 ‘학기 말에 평가’ 안내
+  function financeNotice(App,h){
+    var s=App.s,f=S.financeStatus(s),row=f.ledger.filter(function(r){return r.phase===h.phase;})[0],lines=[],warn=false;
+    if(!row)return null;
+    if(f.rule==='deficit-count'){
+      if(row.deficit)lines.push('이번 단계 회차 수지 '+App.won(row.total)+' — 적자예요.');
+      if(f.end&&f.end.cause==='contract'&&f.end.phase===h.phase){lines.push('누적 적자 '+f.deficits+'/'+f.limit+'회 — 적자 누적으로 운영 계약이 종료돼요. 이번 단계 결과와 정산을 확인한 뒤 종료 화면으로 넘어가요.');warn=true;}
+      else if(f.deficits===f.limit-1){lines.push('누적 적자 '+f.deficits+'/'+f.limit+'회 — 한 번 더 적자가 발생하면 운영 계약이 종료됩니다.');warn=true;}
+      else if(row.deficit)lines.push('누적 적자 '+f.deficits+'/'+f.limit+'회. 흑자가 나도 이 횟수는 줄지 않아요.');
+    }else if(f.low)lines.push('보유 잔액 '+App.won(f.balance)+'. 기본 모드는 재정을 학기 말에 평가해요. 마지막 단계가 끝난 뒤 잔액이 0원 미만이면 파산으로 끝나요.');
+    if(!lines.length)return null;
+    return el('p',{id:'finance-status','class':'callout'+(warn?' warn':''),role:'status'},lines.join(' '));
+  }
 
   UI.result = function (App, panel) {
     document.querySelector('#stage-overlay').textContent='';
@@ -107,6 +120,7 @@
     });
     if(!outcomes.children.length)outcomes.appendChild(el('li',null,'모든 지역의 요청이 목적지에 도착했어요.'));
     summary.appendChild(outcomes);summary.appendChild(el('p',{id:'reason-focus',role:'status','class':'note'},'지역을 누르면 출발 정류장을 지도에서 확인할 수 있어요. 만차 경험은 지연의 단서이며 유일한 원인이라는 뜻은 아니에요.'));summary.appendChild(el('p',{'class':'note',id:'result-waits'},waitLine(App,m)+'. 대기는 정류장에서 처음 버스를 탈 때까지와 갈아탈 때 기다린 시간이에요.'));panel.appendChild(summary);
+    var notice=financeNotice(App,h);if(notice)panel.appendChild(notice);
     panel.appendChild(routeReport(App));
     // 운행 중 지나간 소식(사건·만차·주요 인물의 말)을 그대로 다시 본다
     var log=el('details',{id:'run-log'});log.appendChild(el('summary',null,'운행 기록 다시 보기'));var lu=el('ul',{'class':'feed'});
@@ -130,7 +144,7 @@
       row('도착', function (x) { return x.arrived + '명 (' + M.fmtRate(x.arrivalRate) + ')'; }),
       row('탄 사람 최장 대기', function (x) { return App.duration(x.maxWait); }),
       row('노선 없음 / 종료까지 못 탐', function (x) { return x.noLink + '건 / ' + x.notBoarded.count + '건'; }),
-      row('이번 단계 손익', function (x) { return App.won(x.costs.total); }),
+      row('이번 단계 회차 수지', function (x) { return App.won(x.costs.total); }),
       row('대학교·병원 도착률', function (x) { return M.fmtRate(x.essential.arriveRate); })
     ]));
     var notes = ['예상은 추가 사건 없는 기본 수요 기준이에요.'];
@@ -191,26 +205,27 @@
     // 재정
     var fs = el('section', { id: 'finance', 'aria-labelledby': 'fin-h' });
     fs.appendChild(el('h3', { id: 'fin-h' }, '재정(가상원)'));
-    var k = m.costs, bal = s.history.reduce(function (a, x) { return a + x.metrics.costs.total; }, 0);
+    var k = m.costs, bal = S.balance(s);
     fs.appendChild(table(['항목', '금액'], [
       ['위탁 지원금', App.won(k.subsidy)], ['운임 수입', App.won(k.fare)], ['차량 보유비', App.won(-k.holding)],
       ['원격 관제·운영비', App.won(-k.op)], ['에너지·정비(이동)', App.won(-k.move)]
-    ], ['이번 단계 손익', App.won(k.total)]));
+    ], ['이번 단계 회차 수지', App.won(k.total) + (k.total < 0 ? ' (적자)' : '')]));
     // 지원금이 손익 대부분을 덮어 노선 선택의 재정 차이가 안 보이므로, 운임과 운영비만의 차이를 따로 보여 준다
     fs.appendChild(el('p', { id: 'operating-balance', 'class': 'note' }, '지원금을 뺀 운영 손익(운임 − 보유비·운영비·이동비): ' + App.won(k.total - k.subsidy) + '. 이용이 적은 곳까지 버스를 보내면 이 값이 줄어들 수 있고, 위탁 지원금은 그런 이동을 지키라고 주는 돈이에요.'));
-    fs.appendChild(el('p', null, '누적 잔액: ' + App.won(bal)));
-    if (bal < 0) fs.appendChild(el('p', { 'class': 'note' }, '잔액이 마이너스여도 운행과 다음 단계는 그대로 이어져요.'));
+    fs.appendChild(el('p', { id: 'finance-balance' }, '보유 잔액(누적): ' + App.won(bal) + (S.financeRule(s) === 'deficit-count' ? ' · 누적 적자 ' + S.financeStatus(s).deficits + '/' + S.DEFICIT_LIMIT + '회' : '')));
+    fs.appendChild(el('p', { 'class': 'note' }, '회차 수지 = 수입(위탁 지원금 + 운임) − 비용(보유비·운영비·이동비). 0원 미만이면 적자, 정확히 0원은 적자가 아니에요. ' + App.financeRuleText(s)));
     details.appendChild(fs);
 
-    var last = s.phase >= cfg.phases.length;
+    var last = s.phase >= cfg.phases.length, ended = !!(s.end && s.end.cause === 'contract');
     panel.appendChild(el('button', { type: 'button', 'class': 'btn btn-primary btn-lg', id: 'btn-next-phase', onclick: function () {
       function advance(){S.nextPhase(s); App.go(s.stage === 'ending' ? 'ending' : 'reveal');}
-      if(last){advance();return;}
+      if(last||ended){advance();return;}
       // 새 인물이 등장하는 단계만 짧은 Stage 카드와 소개 컷을 보여 준다. 나머지는 바로 단계 안내로
       var stage={number:s.phase+1,total:cfg.phases.length,name:cfg.phases[s.phase]};
-      var kind=s.phase===2?'sol':s.phase===3&&s.config.residents.some(function(r){return r.id==='yuna';})?'baseball':null;
+      var has=function(id){return s.config.residents.some(function(r){return r.id===id;});};
+      var kind=s.phase===2?'sol':s.phase===3&&has('yuna')?'baseball':s.phase===6&&has('jinho')?'mall':null;
       if(kind)PB.Cutscene.play(kind,advance,null,stage);else advance();
-    } }, last ? '학기 마무리 보기' : (s.phase + 1) + '단계로'));
+    } }, ended ? '운영 종료 화면 보기' : last ? '학기 마무리 보기' : (s.phase + 1) + '단계로'));
     return {};
   };
 })(window);

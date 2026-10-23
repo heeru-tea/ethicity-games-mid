@@ -284,6 +284,11 @@ body[data-screen="plan"] .panel-body { flex: 1; min-height: 0; overflow-y: auto;
 .rider-count .resident-tag { color: var(--accent-ink, var(--accent)); font-weight: 800; }
 .stop-name { font-size: 13px; }
 .topbar .balance { display: none; }
+.deficit-count { font-size: .9rem; font-weight: 700; color: var(--text-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.deficit-count.warn { color: var(--warn); }
+.deficit-count[hidden] { display: none; }
+.retry-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+.retry-actions .note { flex-basis: 100%; margin: 0; }
 #result-details { margin: 16px 0; }
 @media (max-width: 850px) {
   .game { grid-template-columns: 1fr; }

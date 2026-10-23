@@ -208,8 +208,8 @@
     // 스크립트를 미리 불러 두고, 풀리면 그 구역의 기본 도형을 모델로 바꾼다. 모델은 기본 도형이 차지하던 자리(가로·세로) 안에 맞춘다.
     // ZONE_KEEP: 모델과 함께 남겨 둘 기본 도형(기차역 선로). 모델이 없으면 지금까지의 기본 도형 그대로
     var ZONE_KEEP = { A: ['station-rails'] }, zoneModels = {};
-    // 구역별 크기 비율(1 = 기본 도형 자리만큼). 종합운동장은 상징성은 살리되 화면을 덜 차지하게 줄인다(2026-10-23 사용자)
-    var ZONE_SCALE = { H: 0.8 };
+    // 구역별 크기 비율(1 = 기본 도형 자리만큼). 종합운동장은 상징성은 살리되 화면을 덜 차지하게, 대도시도 살짝(90%) 줄인다(2026-10-23 사용자)
+    var ZONE_SCALE = { H: 0.8, N: 0.9 };
     function zoneModel(id) { return loadedModel(zoneModels, 'zoneModelData', id); }
     // 구역 건물·정류장 시설 공통: 풀린 모델 데이터 → 공유 형상·재질(한 번만 만든다). 아직 안 풀렸으면 null
     function loadedModel(cache, reg, id) {

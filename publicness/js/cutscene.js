@@ -12,7 +12,8 @@
     {image:'interlude-cheer.webp',fallback:'intro-village.webp',name:'유나 · 치어리더',text:'저는 유나예요. 오늘 오후에는 종합운동장에서 치어리더로 일해요. 경기가 끝나면 친구 집으로 집들이를 가기로 했어요.'},
     {image:'interlude-cheer.webp',fallback:'intro-village.webp',name:'다은 · 야구 팬',text:'저는 다은이에요. 유나와 터미널에서 함께 왔어요. 오늘 밤에는 밀집 주거지의 친구 집에 가고, 다음 날에는 운동장에 들렀다가 밤에 터미널로 돌아갈 거예요.'}
   ];
-  var scenes={intro:intro,sol:sol,baseball:baseball};
+  var mall=[{image:'interlude-influencer.webp',fallback:'intro-village.webp',name:'진호 · 인플루언서',text:'안녕하세요, 진호예요! 오늘은 솔잎몰 개장 날이라 신도시에서 버스 타고 가는 길부터 라이브로 보여 드릴 거예요. 다들 몰로 몰릴 텐데… 방송 끝나면 저녁에는 신도시 집으로 돌아가야 해요.'}];
+  var scenes={intro:intro,sol:sol,baseball:baseball,mall:mall};
   var STAGE_MS=1600,auto=null,IGNORE=['Tab','Shift','Control','Alt','Meta','CapsLock'];
   function $(id){return document.getElementById(id);}
   function clear(){if(timer!==null){clearInterval(timer);timer=null;}if(auto!==null){clearTimeout(auto);auto=null;}}
@@ -35,7 +36,7 @@
     $('story-full').textContent=cut.text;a.text=cut.text;a.typed=0;$('story-typed').textContent='';
     img.alt=cut.name==='솔잎마을의 AI'?'솔잎마을 전경':cut.name+'의 하루';img.dataset.fallback=cut.fallback||'';img.src='assets/art/'+cut.image;
     img.classList.remove('story-fade');void img.offsetWidth;img.classList.add('story-fade');
-    $('story-next').textContent=a.index===a.cuts.length-1?(a.kind==='ending'?'운행 기록 살펴보기':a.kind==='intro'?'솔잎마을의 첫 노선 만들기':a.kind==='baseball'?'터미널과 운동장 연결하기':'신도시 연결하기'):'다음';
+    $('story-next').textContent=a.index===a.cuts.length-1?(a.kind==='ending'?'운행 기록 살펴보기':a.kind==='intro'?'솔잎마을의 첫 노선 만들기':a.kind==='baseball'?'터미널과 운동장 연결하기':a.kind==='mall'?'솔잎몰 연결하기':'신도시 연결하기'):'다음';
     $('btn-goal-start').textContent=a.kind==='ending'?'결과로 건너뛰기':a.kind==='intro'?'건너뛰고 시작':'건너뛰기';
     if(PB.App.reducedMotion())reveal();
     else timer=setInterval(function(){if(active!==a)return; a.typed++;$('story-typed').textContent=a.text.slice(0,a.typed);if(a.typed>=a.text.length)clear();},28);

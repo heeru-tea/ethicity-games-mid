@@ -62,7 +62,8 @@
       }
       if(scene.boundary){
         var city=nodes.N,cx=city.x*U,cy=city.y*U,bx=scene.boundary.x*U;
-        var town=el('g',{'class':'regional-city','pointer-events':'none'},layers.terrain);
+        // 대도시 빌딩군은 3D와 같이 90%로(2026-10-23 사용자) — 정류장 자리를 중심으로 줄인다
+        var town=el('g',{'class':'regional-city','pointer-events':'none',transform:'translate('+cx+' '+cy+') scale(.9) translate('+(-cx)+' '+(-cy)+')'},layers.terrain);
         [[-95,-80,40,110],[-43,-125,46,155],[12,-95,35,120],[57,-145,45,175],[110,-75,30,105]].forEach(function(b,i){
           el('rect',{x:cx+b[0],y:cy+b[1]-65,width:b[2],height:b[3],fill:i%2?'#bdcdd4':'#d0d9db',stroke:'#7e929e','stroke-width':2},town);
           for(var y=cy+b[1]-53;y<cy+b[1]-65+b[3]-8;y+=20)el('path',{d:'M'+(cx+b[0]+6)+' '+y+'h'+(b[2]-12),stroke:'#819caa','stroke-width':5},town);

@@ -5,7 +5,7 @@ try{
  await page.goto(`http://127.0.0.1:${server.address().port}/publicness/?no3d=1`);
  await page.evaluate(()=>{
   const S=PB.Session,s=S.create(PB.config);PB.App.s=s;PB.App.motion=true;
-  for(let phase=1;phase<=5;phase++){for(const r of s.draft.routes)S.updateRoute(s,r.num,{nodes:['A','B'],stops:[true,true]});s.draft.buses.forEach(b=>S.assign(s,b.id,1));S.beginPlan(s);S.startRun(s);S.finishRun(s);S.nextPhase(s);}
+  for(let phase=1;phase<=5;phase++){for(const r of s.draft.routes)S.updateRoute(s,r.num,{nodes:['A','B'],stops:[true,true]});s.draft.buses.forEach(b=>S.assign(s,b.id,1));S.beginPlan(s);S.startRun(s);s.current.metrics.costs.total=Math.max(0,s.current.metrics.costs.total);S.finishRun(s);S.nextPhase(s);} // 이 설계는 원래 학기 말 잔액이 음수(파산) — 파산 화면은 finance-browser, 여기서는 기존 엔딩 분기만
   // Deliberately synthesized completion evidence exercises both presentation branches.
   for(const h of s.history)for(const r of Object.values(h.residents))if(r){r.dayStatus='complete';r.satisfied=true;r.homeT=110;}
   PB.App.go('ending');
