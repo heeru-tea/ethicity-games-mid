@@ -424,8 +424,8 @@
       waitingNow = map || {};
       clear(groups.people);
       personGeo = personGeo || new T.CylinderGeometry(0.28, 0.28, 1.0, 8);
-      Object.keys(labelEls.wait).forEach(function (id) { labelEls.wait[id].remove(); });
-      labelEls.wait = {};
+      // 숫자표는 지우고 다시 만들지 않는다 — 매 틱 새로 만들면 자리 잡기 전 한 프레임이 보여 깜빡였다
+      Object.keys(labelEls.wait).forEach(function (id) { if (!waitingNow[id] || !nodes[id]) { labelEls.wait[id].remove(); delete labelEls.wait[id]; } });
       Object.keys(waitingNow).forEach(function (id) {
         var n = waitingNow[id];
         if (!n || !nodes[id]) return;
@@ -436,7 +436,9 @@
           m.castShadow = true;
           groups.people.add(m);
         }
-        var l = document.createElement('div'); l.className = 'label-3d wait-num'; l.textContent = n; labels.appendChild(l); labelEls.wait[id] = l;
+        var l = labelEls.wait[id];
+        if (!l) { l = document.createElement('div'); l.className = 'label-3d wait-num'; labels.appendChild(l); labelEls.wait[id] = l; placeLabels(); }
+        if (l.textContent !== String(n)) l.textContent = n;
       });
       dirty = true;
     }

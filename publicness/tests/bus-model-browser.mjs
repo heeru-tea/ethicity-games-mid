@@ -16,6 +16,12 @@ try{
   assert.ok(info.buses.every(b=>b.model),'모든 버스가 모델: '+JSON.stringify(info.buses));
   info.buses.forEach(b=>assert.equal(b.color,info.want[b.id],b.id+'호차 노선 색'));
   assert.equal(await page.locator('.bus-num').evaluateAll(ls=>ls.filter(l=>/호차/.test(l.textContent)).length),0,'버스 위 호차 이름표 없음');
+  // 대기 인원 숫자표는 틱마다 새로 만들지 않는다(깜빡임 방지): 같은 요소가 유지되고 자리가 잡혀 있어야 함
+  await page.waitForFunction(()=>document.querySelector('.wait-num'),{},{timeout:20000});
+  await page.evaluate(()=>{window.__waitEl=document.querySelector('.wait-num');});
+  await page.waitForTimeout(600);
+  const kept=await page.evaluate(()=>({same:window.__waitEl.isConnected,placed:[...document.querySelectorAll('.wait-num')].every(l=>l.style.left&&l.style.top)}));
+  assert.ok(kept.same,'대기 숫자표 요소 유지');assert.ok(kept.placed,'대기 숫자표 위치 지정됨');
   assert.deepEqual(errors,[]);
-  console.log('PASS 3d: bus model on every bus, route-color material, no name tag ('+info.buses.length+' buses)');
+  console.log('PASS 3d: bus model on every bus, route-color material, no name tag, waiting labels kept ('+info.buses.length+' buses)');
 }finally{await browser?.close();server.close();}
