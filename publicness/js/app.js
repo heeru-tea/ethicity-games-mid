@@ -7,8 +7,9 @@
   var PB = root.PB, cfg = PB.config, S = PB.Session;
   var $ = function (s) { return document.querySelector(s); };
 
-  // 노선 색 = 서울 지하철 노선색(1번만 빨강 — 신분당선 색). 연결된 노선은 모두 실선이고, 점선은 AI 제안 미리보기만 쓴다
-  var COLORS = ['#D4003B', '#00A84D', '#EF7C1C', '#00A5DE', '#996CAC', '#CD7C2F'];
+  // 노선 색 = 서울 지하철 노선색 계열(1번만 빨강 — 신분당선)을 채도만 낮춘 차분한 톤(원색은 어른 눈에 쨍해서, 2026-10-23).
+  // 연결된 노선은 모두 실선이고, 점선은 AI 제안 미리보기만 쓴다
+  var COLORS = ['#C4505E', '#3F9B6B', '#D98A45', '#4A9CC2', '#8D77AA', '#A97C52'];
   var COLOR_NAMES = ['빨강', '초록', '주황', '하늘', '보라', '갈색'];
 
   var App = {
