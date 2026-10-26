@@ -91,6 +91,7 @@ AI 빠른 이동 평가는 외출 실패로 생성되지 않은 귀가도 미충
 | `js/ui-plan.js` `ui-run.js` `ui-result.js` `ui-ending.js` `app.js` | 화면 |
 | `vendor/three.min.js` | three@0.149.0 UMD 빌드(MIT, `vendor/THREE_LICENSE`) |
 | `assets/art/` | 게임이 쓰는 일러스트 `.webp`. 원본 PNG는 git 밖 로컬에 보존하고 `node publicness/tools/to-webp.mjs`로 다시 만든다 |
+| `assets/models/env.js` · `assets/art/env-sky.webp` | 3D 마을 바탕(지브리풍): 지도 판 뒤 하늘·원경(CSS 배경), 판 윗면 잔디, 생활권마다 정류장 발밑 둥근 땅 조각(기차역·터미널 화강암, 주거지·복지관 포석, 시장 벽돌, 외곽 밭, 대학교 잔디, 산업·대도시 콘크리트, 신도시·병원·몰 판석, 호수공원 풀밭, 운동장은 잔디). 위치와 무관한 반복 타일이라 랜덤 지도에도 그대로 쓴다. 원본 `assets/art/env-*.png`(git 밖) → `node publicness/tools/env-art.mjs` |
 | `assets/models/` · `js/model-data.js` | 3D 모델(자동 생성 데이터): 버스 `bus.js`(노선 색 띠는 런타임에 칠함)와 구역 건물 `zone-<id>.js`(목록 `zones.js`, 3D 화면이 뒤에서 불러와 기본 도형과 바꿈). 원본 그림·GLB는 git 밖 로컬 — 버스는 `tools/fal-3d.mjs`→`tools/bus-model.mjs`, 구역은 `node publicness/tools/zone-models.mjs image|model|pack [구역]`(fal.ai, 키는 `.env`). 모델이 없으면 기본 도형 |
 | `tests/` · `tools/sweep.mjs` | 검증 도구(게임 실행에는 쓰이지 않음) |
 
@@ -153,6 +154,7 @@ Playwright가 별도 폴더에 설치되어 있으면 `PLAYWRIGHT_MODULE` 환경
 - 3D: [three.js](https://threejs.org/) r149 — MIT License (`vendor/THREE_LICENSE`)
 - 3D 버스: 팀 2D 버스 그림(`sheet-bus.png`)을 [fal.ai](https://fal.ai/)의 TRELLIS(image-to-3D)로 변환한 모델(2026-10-23)
 - 3D 구역 건물·정류장 시설: fal.ai의 nano-banana로 그린 미니어처 그림을 Tripo(image-to-3D)로 변환한 모델(2026-10-23)
+- 3D 마을 바탕(하늘·잔디·생활권 땅 타일): fal.ai의 nano-banana로 시작 화면 마을 그림 화풍을 따라 그린 뒤 이음매 없이 다듬은 그림(2026-10-26)
 - 교육적 참고: 관계부처 합동 「사람이 중심이 되는 인공지능(AI) 윤리기준」(2020.12.23) — 공공성 요건을 토론하기 위한 수업용 해석이며 공식 평가척도가 아닙니다.
 
 ### 일러스트 도입

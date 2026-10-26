@@ -12,7 +12,7 @@
   var LANE = 2.4;           // 같은 길을 지나는 노선 사이 간격(3D) — 버스 폭(1.52×BUS_SCALE≈2.3)보다 넓게 해 버스가 겹치지 않게
   var CAMERA_ELEVATION = 55; // 지면 기준 고도각: 건물 옆면과 노선 가독성의 절충
   var C = {
-    bg: 0xF5F5F4, ground: 0xEAE7E1, road: 0xA3A9B2, stop: 0xFFFFFF, ring: 0x1A1D24, accent: 0x2563EB, warn: 0x9A3412,
+    bg: 0xF5F5F4, ground: 0xA7BE86, soil: 0x9C7B57, soilDark: 0x6F5640, road: 0xA3A9B2, stop: 0xFFFFFF, ring: 0x1A1D24, accent: 0x2563EB, warn: 0x9A3412,
     wall: [0xE8E3DA, 0xDAD4C9, 0xCFD7DB, 0xE4D6C6, 0xD7DDD3], roof: [0x8E9AA6, 0xB0805A, 0x7C8A8C, 0x9B6B5B],
     green: 0x93AD8F, field: 0xC7B995, people: 0x8A5A44
   };
@@ -29,9 +29,10 @@
     var T = root.THREE;
     if (!T || !supported()) return { ok: false, kind: '3d' };
     var renderer;
-    try { renderer = new T.WebGLRenderer({ antialias: true }); } catch (e) { return { ok: false, kind: '3d' }; }
+    try { renderer = new T.WebGLRenderer({ antialias: true, alpha: true }); } catch (e) { return { ok: false, kind: '3d' }; }
     renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, 2));
-    renderer.setClearColor(C.bg, 1);
+    // 지도 판 바깥은 비워 두고 그 뒤 CSS 배경(.stage-3d — 하늘·원경 그림 env-sky)이 보이게 한다
+    renderer.setClearColor(C.bg, 0);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
@@ -54,7 +55,7 @@
     Object.keys(groups).forEach(function (k) { scene.add(groups[k]); });
     var nodes = {}, stops = {}, hits = [], zoneGroups = {}, routeSegs = {}, busMesh = {}, lastBus = {};
     var labelEls = { stop: {}, wait: {}, bus: {} };
-    var reduced = false, dirty = true, bounds = null, rising = null, prevIds = null, waitingNow = {}, currentRoutes = [];
+    var reduced = false, dirty = true, bounds = null, board = null, rising = null, prevIds = null, waitingNow = {}, currentRoutes = [];
 
     // 3D 버스 모델(assets/models/bus.js, 없거나 실패하면 상자 버스). 노선 색마다 띠를 칠한 재질을 하나씩 만든다
     var busGeo = null, busTex = null, busMats = {};
@@ -109,6 +110,69 @@
     function windows(x,z,width,height,g){for(var y=1.5;y<height-.5;y+=1.8){box(width*.75,.65,.08,0x7393A3,x,z,g,y);}}
     function building(x,z,width,depth,height,g,color){box(width,height,depth,color||0xDADFD8,x,z,g);box(width+.25,.28,depth+.25,0x71858A,x,z,g,height);windows(x,z+depth/2+.05,width,height,g);box(.8,1.35,.12,0x526F7B,x,z+depth/2+.08,g);}
     function garden(x,z,g){box(2.2,.25,1.1,0xC6CCBE,x,z,g);[-.65,0,.65].forEach(function(dx){mesh(new T.IcosahedronGeometry(.5,0),0x819B7D,x+dx,.65,z,g);});}
+    // 마을 바탕(지브리풍, assets/models/env.js·tools/env-art.mjs): 지도 판 윗면 잔디 + 생활권마다 정류장 발밑 둥근 땅 조각.
+    // 그림은 위치와 무관한 반복 타일이라 랜덤 배치에서도 그대로 쓴다. 그림이 없거나 늦게 풀리면 단색 판 → 풀린 뒤 장면을 다시 짓는다
+    var GRASS_TILE = 28, PATCH_TILE = 9, BOARD_MARGIN = 4, BOARD_DEPTH = 5;
+    var PATCH_ART = { A: 'A', J: 'A', B: 'B', K: 'B', C: 'C', E: 'E', F: 'F', G: 'G', N: 'G', I: 'I', D: 'I', M: 'I', L: 'L' }; // H(운동장)는 잔디 그대로
+    var envImg = {}, groundTex = null;
+    (function () {
+      var art = root.PB && root.PB.envArt; if (!art) return;
+      var list = [['ground', art.ground]].concat(Object.keys(art.tiles || {}).map(function (k) { return [k, art.tiles[k]]; })), left = list.length;
+      list.forEach(function (it) {
+        var img = new Image();
+        img.onload = function () { envImg[it[0]] = img; if (--left === 0 && lastScene) setScene(lastScene); };
+        img.onerror = function () { if (--left === 0 && lastScene) setScene(lastScene); };
+        img.src = it[1];
+      });
+    })();
+    function boardMats(gw, gd) {
+      var side = mat(C.soil), top = mat(C.ground);
+      if (envImg.ground) {
+        if (!groundTex) { groundTex = new T.Texture(envImg.ground); groundTex.wrapS = groundTex.wrapT = T.RepeatWrapping; groundTex.needsUpdate = true; }
+        groundTex.repeat.set(gw / GRASS_TILE, gd / GRASS_TILE);
+        top = new T.MeshLambertMaterial({ map: groundTex, color: 0xb4b4b4 });
+      }
+      return [side, side, top, mat(C.soilDark), side, side]; // BoxGeometry 면 순서 +x −x +y −y +z −z
+    }
+    // 땅 조각: 타일 무늬를 판 축척(PATCH_TILE 칸)으로 깔고, 가장자리를 물결진 원으로 부드럽게 지운 캔버스 한 장
+    function patchTexture(key, r, seed) {
+      var img = envImg[key]; if (!img) return null;
+      var N = 512, c = document.createElement('canvas'); c.width = c.height = N;
+      var x = c.getContext('2d'), k = N / (2 * r) * PATCH_TILE / img.naturalWidth, pat = x.createPattern(img, 'repeat');
+      x.save(); x.scale(k, k); x.fillStyle = pat; x.fillRect(0, 0, N / k, N / k); x.restore();
+      var m = document.createElement('canvas'); m.width = m.height = N;
+      var y = m.getContext('2d'); y.filter = 'blur(' + Math.round(N * 0.025) + 'px)'; y.beginPath();
+      for (var i = 0; i <= 72; i++) {
+        var a = i / 72 * Math.PI * 2, rr = N / 2 * (0.84 + 0.05 * Math.sin(3 * a + seed) + 0.03 * Math.sin(5 * a + seed * 2.3));
+        y[i ? 'lineTo' : 'moveTo'](N / 2 + Math.cos(a) * rr, N / 2 + Math.sin(a) * rr);
+      }
+      y.fillStyle = '#000'; y.fill();
+      x.globalCompositeOperation = 'destination-in'; x.drawImage(m, 0, 0);
+      return new T.CanvasTexture(c);
+    }
+    function buildPatch(id, p, g, n) {
+      var key = PATCH_ART[id], box3 = new T.Box3().setFromObject(g);
+      if (!key || box3.isEmpty()) return;
+      // 구역 건물 자리와 정류장을 함께 덮는 원: 둘의 가운데, 건물 자리 반 대각선과 정류장 거리 중 큰 쪽
+      var bx = (box3.min.x + box3.max.x) / 2, bz = (box3.min.z + box3.max.z) / 2, cx = (bx + p.x) / 2, cz = (bz + p.z) / 2;
+      var half = Math.hypot(box3.max.x - box3.min.x, box3.max.z - box3.min.z) / 2;
+      var r = Math.min(20, Math.max(half * 0.8 + Math.hypot(bx - cx, bz - cz), Math.hypot(p.x - cx, p.z - cz) + 6));
+      var tex = patchTexture(key, r, n * 1.7 + 0.4); if (!tex) return;
+      var disc = new T.Mesh(new T.CircleGeometry(r, 48), new T.MeshLambertMaterial({ map: tex, color: 0xc4c4c4, transparent: true, depthWrite: false }));
+      disc.rotation.x = -Math.PI / 2; disc.position.set(cx, 0.004 + n * 0.0004, cz); disc.receiveShadow = true; disc.renderOrder = -1; disc.name = 'patch-' + id;
+      groups.world.add(disc);
+    }
+    // 강 같은 띠 장식을 지도 판 안쪽으로 자른다(판 밖 하늘에 걸리지 않게)
+    function clipSeg(a, b, box) {
+      var t0 = 0, t1 = 1, d = { x: b.x - a.x, z: b.z - a.z };
+      [['x', box.minX, box.maxX], ['z', box.minZ, box.maxZ]].forEach(function (q) {
+        var k = q[0], lo = q[1], hi = q[2];
+        if (!d[k]) { if (a[k] < lo || a[k] > hi) t1 = -1; return; }
+        var u = (lo - a[k]) / d[k], v = (hi - a[k]) / d[k]; if (u > v) { var tmp = u; u = v; v = tmp; }
+        t0 = Math.max(t0, u); t1 = Math.min(t1, v);
+      });
+      return t0 < t1 ? [{ x: a.x + d.x * t0, z: a.z + d.z * t0 }, { x: a.x + d.x * t1, z: a.z + d.z * t1 }] : null;
+    }
     function w(i) { return C.wall[i % C.wall.length]; }
     function rf(i) { return C.roof[i % C.roof.length]; }
 
@@ -353,15 +417,19 @@
       var frame = sceneDef.frame || sceneDef.nodes;
       var xs = frame.map(function (n) { return n.x * K; }), zs = frame.map(function (n) { return n.y * K; });
       bounds = { minX: Math.min.apply(null, xs) - 20, maxX: Math.max.apply(null, xs) + 16, minZ: Math.min.apply(null, zs) - 18, maxZ: Math.max.apply(null, zs) + 18 };
-      var gw = bounds.maxX - bounds.minX + 40, gd = bounds.maxZ - bounds.minZ + 40;
-      var ground = mesh(new T.BoxGeometry(gw, 0.2, gd), C.ground, (bounds.minX + bounds.maxX) / 2, -0.1, (bounds.minZ + bounds.maxZ) / 2, groups.world);
-      ground.castShadow = false;
+      // 디오라마 판: 화면 틀보다 BOARD_MARGIN만큼 큰 흙 판, 윗면은 잔디 타일. 판 밖은 하늘 배경
+      board = { minX: bounds.minX - BOARD_MARGIN, maxX: bounds.maxX + BOARD_MARGIN, minZ: bounds.minZ - BOARD_MARGIN, maxZ: bounds.maxZ + BOARD_MARGIN };
+      var gw = board.maxX - board.minX, gd = board.maxZ - board.minZ;
+      var ground = new T.Mesh(new T.BoxGeometry(gw, BOARD_DEPTH, gd), boardMats(gw, gd));
+      ground.position.set((board.minX + board.maxX) / 2, -BOARD_DEPTH / 2, (board.minZ + board.maxZ) / 2); ground.receiveShadow = true; ground.name = 'board';
+      groups.world.add(ground);
       if(sceneDef.river && sceneDef.river.length){
         // Flat ribbons sit below roads and route markings, with softly coloured banks.
-        [[.25,0xD3DFCD,.012],[.18,0xA8CBD4,.018]].forEach(function(style){
-          var vertices=[],points=sceneDef.river.filter(function(p){return p.y*K>=bounds.minZ-20&&p.y*K<=bounds.maxZ+20;});
+        [[.25,0xA3B784,.012],[.18,0x6B9AAE,.018]].forEach(function(style){
+          var vertices=[],points=sceneDef.river,inner={minX:board.minX+style[0]*K,maxX:board.maxX-style[0]*K,minZ:board.minZ,maxZ:board.maxZ};
           for(var i=1;i<points.length;i++){
-            var a=points[i-1],b=points[i],dx=b.x-a.x,dz=b.y-a.y,len=Math.hypot(dx,dz);
+            var seg=clipSeg({x:points[i-1].x*K,z:points[i-1].y*K},{x:points[i].x*K,z:points[i].y*K},inner);if(!seg)continue;
+            var a={x:seg[0].x/K,y:seg[0].z/K},b={x:seg[1].x/K,y:seg[1].z/K},dx=b.x-a.x,dz=b.y-a.y,len=Math.hypot(dx,dz);if(!len)continue;
             var ox=-dz/len*style[0],oz=dx/len*style[0];
             [[a.x+ox,a.y+oz],[a.x-ox,a.y-oz],[b.x+ox,b.y+oz],[a.x-ox,a.y-oz],[b.x-ox,b.y-oz],[b.x+ox,b.y+oz]].forEach(function(p){vertices.push(p[0]*K,style[2],p[1]*K);});
           }
@@ -384,6 +452,7 @@
         buildZone(id, g);
         groups.world.add(g);
         zoneGroups[id] = g;
+        g.updateMatrixWorld(true); buildPatch(id, p, g, ids.indexOf(id));
         var tier = (sceneDef.load && sceneDef.load[id] && sceneDef.load[id].tier) || 'low';
         stops[id] = buildStop(id, tier, p);
         var hit = new T.Mesh(new T.CylinderGeometry(4, 4, 4, 12), new T.MeshBasicMaterial({ visible: false }));
@@ -569,7 +638,8 @@
       camera.lookAt(cx, 0, cz);
       camera.updateMatrixWorld();
       var inv = camera.matrixWorldInverse, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      [bounds.minX, bounds.maxX].forEach(function (x) { [bounds.minZ, bounds.maxZ].forEach(function (z) { [0, nodes.N?21:8].forEach(function (y) {
+      var fb = board || bounds; // 판 전체(앞 옆면 포함)가 들어오게 — 위·옆으로 하늘이 조금 보인다
+      [fb.minX, fb.maxX].forEach(function (x) { [fb.minZ, fb.maxZ].forEach(function (z) { [-BOARD_DEPTH, nodes.N?21:8].forEach(function (y) {
         var v = new T.Vector3(x, y, z).applyMatrix4(inv);
         minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
       }); }); });
