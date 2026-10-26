@@ -258,72 +258,38 @@
   function computeRun(s, plan) {
     var g = graph(s), ev = s.events[s.phase - 1];
     var requests = Demand.sortReqs(Demand.base(s.config, s.phase, s.seed).concat(Demand.extra(s.config, s.phase, ev)));
-    var result = Sim.run({ g: g, config: s.config, phase: s.phase, plan: plan, requests: requests, event: ev });
-    return { plan: plan, result: result, metrics: Metrics.summarize(result, g, plan, s.config), expected: expected(s, plan), requestsN: result.passengers.length, event: ev };
+    var adjustments=(s.emergencyLog||[]).filter(function(a){return a.phase===s.phase&&a.busId!=null;});
+    var result = Sim.run({ g: g, config: s.config, phase: s.phase, plan: plan, requests: requests, event: ev, adjustments:adjustments });
+    var baseline=adjustments.length?Metrics.summarize(Sim.run({g:g,config:s.config,phase:s.phase,plan:plan,requests:requests,event:ev}),g,plan,s.config):null;
+    return { baseline:baseline, plan: plan, result: result, metrics: Metrics.summarize(result, g, plan, s.config), expected: expected(s, plan), requestsN: result.passengers.length, event: ev };
   }
   function startRun(s) {
     if (s.stage !== 'plan' || validate(s).length) return null;
+    s.emergencyLog=(s.emergencyLog||[]).filter(function(a){return a.phase!==s.phase;});
+    delete s.runCursor;
     s.current = computeRun(s, clone(toPlan(s)));
     s.stage = 'run'; s.resumedFromRun = false;
     return s.current.result;
+  }
+  function emergencyDecision(s,at,busId,routeNum){
+    if(s.stage!=='run'||s.phase<3||[34,67].indexOf(at)<0)return false;
+    var decisions=s.emergencyLog||(s.emergencyLog=[]);
+    if(decisions.some(function(a){return a.phase===s.phase&&a.at===at;}))return false;
+    var route=busId==null?null:routeByNum(s,routeNum);
+    if(busId!=null&&(!route||!canAssign(s,busId,routeNum)||Graph.validateRoute(graph(s),route).length))return false;
+    if(busId!=null&&!s.draft.buses.some(function(b){return b.id===busId;}))return false;
+    var departure=s.current.plan,baseline=s.current.baseline||s.current.metrics;
+    decisions.push({phase:s.phase,at:at,busId:busId,routeNum:routeNum,route:route?clone(route):null});
+    s.current=computeRun(s,departure);s.current.baseline=baseline;
+    return true;
   }
 
   // 주요 인물의 ‘해낸 하루’ 판정 — 출발 전 경고(예상), 결과 화면, 학기 말 누적이 모두 이 함수 하나를 쓴다.
   // 기준: 첫 이동과 다음 이동을 운행 시간 안에 모두 마칠 것 + 서비스 기준(config.service, 없으면 생략).
   // reasons는 학생에게 보여 줄 구체적 이유(목적지 미연결·다음 이동 경로 없음·대기 기준 초과 등)
-  function residentVerdict(config, rd, rec, passengers) {
-    if (!rec) return { ok: false, reasons: [] };
-    var reasons = [], legs = passengers.filter(function (p) { return p.residentId === rd.id; });
-    var out = legs.filter(function (p) { return p.leg === 'outbound'; })[0], back = legs.filter(function (p) { return p.leg === 'return'; })[0];
-    var name = function (id) { var n = config.nodes.filter(function (x) { return x.id === id; })[0]; return n ? n.name : id; };
-    function legReason(p, label) {
-      if (!p) return null;
-      if (p.fail === 'NO_LINK') return { code: 'noLink', text: label + '(' + name(p.o) + ' → ' + name(p.d) + ')을 잇는 운행 노선이 없어요.' };
-      if (p.fail === 'NO_TRIP_IN_WINDOW') return { code: 'noTrip', text: label + ' 준비가 된 뒤에는 운행 시간 안에 도착하는 버스편이 없어요.' };
-      if (p.status === 'riding') return { code: 'riding', text: label + ' 중 운행이 끝나 버스 안에 남아요.' };
-      if (p.status !== 'arrived' && p.deniedBoardings > 0) return { code: 'full', text: label + '에서 만차로 버스를 놓쳐 운행 시간 안에 도착하지 못해요.' };
-      if (p.status !== 'arrived') return { code: 'late', text: label + '을 운행 시간 안에 마치지 못해요.' };
-      return null;
-    }
-    if (rec.dayStatus === 'outboundIncomplete') reasons.push(legReason(out, '첫 이동') || { code: 'late', text: '첫 이동을 마치지 못해요.' });
-    else if (rec.dayStatus === 'returnIncomplete') {
-      if (!back) reasons.push({ code: 'tooLate', text: '첫 목적지 도착과 체류가 늦어 운행 시간 안에 다음 이동을 시작하지 못해요.' });
-      else reasons.push(legReason(back, '다음 이동') || { code: 'late', text: '다음 이동을 마치지 못해요.' });
-    }
-    var sv = config.service;
-    if (sv && rec.dayStatus === 'complete') [[out, '첫 이동'], [back, '다음 이동']].forEach(function (x) {
-      var p = x[0]; if (!p) return;
-      if (sv.maxWait != null && p.waitTotal > sv.maxWait) reasons.push({ code: 'longWait', text: x[1] + '에서 버스를 ' + Demand.duration(config, p.waitTotal) + ' 기다렸어요(기준 ' + Demand.duration(config, sv.maxWait) + ' 이하).' });
-      if (sv.maxTripFactor != null) {
-        var limit = tripLimit(config, p.o, p.d);
-        if (p.arriveT - p.t > limit) reasons.push({ code: 'slowTrip', text: x[1] + '에 ' + Demand.duration(config, p.arriveT - p.t) + ' 걸렸어요(기준 ' + Demand.duration(config, limit) + ' 이하).' });
-      }
-    });
-    return { ok: !reasons.length, reasons: reasons };
-  }
-  // 이동 시간 기준 = 두 정류장을 바로 잇는 도로 시간 × 배수(짧은 거리는 최소값)
-  function tripLimit(config, a, b) {
-    var sv = config.service, g = Graph.build(config, 99), t = g.time(a, b) || 1;
-    return Math.max(sv.minTrip || 0, Math.round(sv.maxTripFactor * t));
-  }
-
-  function residentRecords(s, result) {
-    var out = {};
-    s.config.residents.forEach(function (rd) {
-      if (rd.fromPhase > s.phase) { out[rd.id] = null; return; }
-      var p = result.passengers.filter(function (x) { return s.config.day ? x.residentId===rd.id&&x.leg==='outbound' : x.kind === 'base' && x.o === rd.o && x.d === rd.d && x.key.slice(-2) === '-0'; })[0];
-      if(s.config.day){
-        var back=result.passengers.filter(function(x){return x.residentId===rd.id&&x.leg==='return';})[0];
-        out[rd.id]=p?{o:p.o,d:p.d,finalDestination:p.returnTrip&&p.returnTrip.destination||p.o,multiStop:!!rd.itineraries,t:p.t,status:p.status,waitTotal:p.waitTotal+(back?back.waitTotal:0),arriveT:p.arriveT,firstBoardT:p.firstBoardT,transfer:p.boardings>1||(back&&back.boardings>1),
-          returnT:back?back.t:p.returnReadyT,homeT:back?back.arriveT:null,returnStatus:back?back.status:null,dayStatus:p.status!=='arrived'?'outboundIncomplete':back&&back.status==='arrived'?'complete':'returnIncomplete'}:null;
-        if(out[rd.id]){var v=residentVerdict(s.config,rd,out[rd.id],result.passengers);out[rd.id].satisfied=v.ok;out[rd.id].reasons=v.reasons;}
-        return;
-      }
-      out[rd.id] = p ? { t: p.t, status: p.status, waitTotal: p.waitTotal, arriveT: p.arriveT, firstBoardT: p.firstBoardT, boardings: p.boardings,
-        transfer: !!(p.journey && p.journey.length === 2), fail: p.fail } : null;
-    });
-    return out;
-  }
+  var Evaluation = NODE ? require('./resident-evaluation.js') : root.PB.ResidentEvaluation;
+  var residentVerdict = Evaluation.verdict, tripLimit = Evaluation.tripLimit;
+  function residentRecords(s,result){return Evaluation.records(s.config,s.phase,result);}
 
   function finishRun(s) {
     if (s.stage !== 'run' || !s.current) return null;
@@ -437,7 +403,8 @@
   function restore(data, baseConfig) {
     var s = clone(data);
     if (!s.config) s.config = baseConfig;
-    if (s.stage === 'run') { s.stage = 'plan'; s.current = null; s.resumedFromRun = true; }
+    if(s.stage==='run'&&typeof s.runCursor==='number'&&s.current&&s.current.plan){s.current=computeRun(s,s.current.plan);}
+    else if (s.stage === 'run') { s.stage = 'plan'; s.current = null; s.resumedFromRun = true; }
     else if (s.stage === 'result' && s.current && s.current.plan) { var keep = s.current.routeReportShown; s.current = computeRun(s, s.current.plan); s.current.routeReportShown = keep; }
     else s.current = null;
     if (!s.ledger) rebuildLedger(s);
@@ -446,6 +413,7 @@
   }
 
   var api = {
+    emergencyDecision:emergencyDecision,
     serialize: serialize, restore: restore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,

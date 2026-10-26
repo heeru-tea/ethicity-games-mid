@@ -12,6 +12,7 @@
     P.message=S.routeRule(st(),r.num)+' 기존 정류장을 드래그해 바꾸거나 삭제한 뒤 추가하세요.';render();return false;
   }
   function assigned(num){return st().draft.buses.filter(function(b){return b.routeNum===num;});}
+  UI.planAssignBus=function(id,num){if(!S.canAssign(st(),id,num))return false;changed();S.assign(st(),id,num);P.message=id+'호차를 '+(num==null?'쉬게 했어요.':num+'번에 배정했어요.');return true;};
   function unassigned(){return st().draft.routes.filter(function(r){return !assigned(r.num).length;});}
   function snapshot(){return JSON.stringify({draft:st().draft,owned:st().owned,fourthPhase:st().fourthPhase,goal:st().goal,goalHistory:st().goalHistory,lastRec:st().lastRec,editing:P.editing,anchor:P.anchor});}
   function changed(){
@@ -97,11 +98,11 @@
       c.appendChild(el('p',{'class':'note'},'버스를 탄 사람의 최장 대기 '+app().duration(rec.baseline.maxWait)+' → '+app().duration(rec.expected.maxWait)+' · 노선 없음 '+rec.baseline.noLink+' → '+rec.expected.noLink+'건'));
       var v=recView(rec);
       if(st().config.day){var pb=peopleCount(v.before),pa=peopleCount(v.after),fb=v.before.families,fa=v.after.families;
-        c.appendChild(el('p',{id:'rec-people'},'주요 인물 하루 일정 '+pb.ok+'/'+pb.total+'명 → '+pa.ok+'/'+pa.total+'명'+(fa&&fa.total?' · 가족 전원 왕복 '+fb.complete+' → '+fa.complete+'/'+fa.total+'팀':'')));}
-      c.appendChild(el('p',{'class':'note'},'적용하면 노선과 배차'));var rl=el('ul',{id:'rec-routes','class':'plain'});
+        c.appendChild(el('p',{id:'rec-people'},'주요 인물 기준 충족 '+pb.ok+'/'+pb.total+'명 → '+pa.ok+'/'+pa.total+'명'+(fa&&fa.total?' · 가족 전원 왕복 '+fb.complete+' → '+fa.complete+'/'+fa.total+'팀':'')));}
+      var more=el('details');more.appendChild(el('summary',null,'노선·배차 상세'));c.appendChild(more);var rl=el('ul',{id:'rec-routes','class':'plain'});
       v.rows.forEach(function(row){var li=el('li',{'data-num':row.num},row.num+'번'+(S.stopLimit(st(),row.num)===3?' 직행':'')+' · '+routeText(row.route)+' · '+row.buses.split(',').map(function(id){return id+'호차';}).join(', '));
         if(row.changed)li.appendChild(el('b',{'class':'rec-changed'},' 바뀜'));rl.appendChild(li);});
-      if(v.resting.length)rl.appendChild(el('li',null,'쉬는 버스: '+v.resting.map(function(id){return id+'호차';}).join(', ')));c.appendChild(rl);
+      if(v.resting.length)rl.appendChild(el('li',null,'쉬는 버스: '+v.resting.map(function(id){return id+'호차';}).join(', ')));more.appendChild(rl);
       c.appendChild(el('p',{'class':'note'},'공개된 수요를 기준으로 비교한 제안이에요. 어떤 이동을 책임질지는 직접 결정하세요.'));
       var same=Object.keys(P.recSeen).filter(function(g){return g!==st().goal&&P.recSeen[g]===P.recSeen[st().goal];});
       if(same.length)c.appendChild(el('p',{id:'rec-same','class':'note'},'‘'+same.map(function(g){return GOALS[g];}).join('’·‘')+'’ 목표의 제안과 같은 노선이에요. 지금 버스와 노선 수에서는 목표가 달라도 같은 계획이 나올 수 있어요.'));
@@ -157,7 +158,12 @@
         if(!loop)pos.appendChild(el('option',{value:'-1'},'맨 앞에'));
         for(var k=0;k<count;k++)pos.appendChild(el('option',{value:String(k)},(k===count-1&&!loop?'맨 끝(':'')+app().nodeName(r.nodes[k])+' 다음'+(k===count-1&&!loop?')':'')));
         pos.value=String(P.anchor==null?count-1:Math.min(P.anchor,count-1));
-        pos.addEventListener('change',function(){P.anchor=Number(pos.value);P.pickerOpen=true;render('#insert-at');});
+        // Keep the native select alive while its popup commits a choice (Edge).
+        // Replacing it inside change can display the previous native popup selection.
+        pos.addEventListener('change',function(){P.anchor=Number(pos.value);P.pickerOpen=true;
+          c.querySelectorAll('.stop-anchor').forEach(function(b,i){b.setAttribute('aria-pressed',String(i===P.anchor));});
+          var demand=c.querySelector('#stop-demand');if(demand)demand.hidden=true;
+        });
         var lab=el('label',{'class':'insert-at','for':'insert-at'},'추가 위치 ');lab.appendChild(pos);options.appendChild(lab);}
       var stops=el('div',{'class':'chips'});nextStops().forEach(function(id){var b=btn(app().nodeName(id),'next-'+id,function(){P.pickerOpen=true;insert(id,'#stop-picker .next-stop, #picker-done');},'next-stop');b.dataset.node=id;stops.appendChild(b);});options.appendChild(stops);
       options.appendChild(btn('완료','picker-done',function(){P.pickerOpen=false;render('#route-'+r.num);}));c.appendChild(options);sec.appendChild(c);
@@ -176,11 +182,11 @@
   var TRIP={complete:'일정 완료 가능',returnIncomplete:'다음 목적지까지 가기 어려움',outboundIncomplete:'운동장까지 가기 어려움'};
   function routeText(r){var ns=G.isLoop(r)?r.nodes.slice(0,-1):r.nodes;return ns.map(function(id){return app().nodeName(id);}).join(' → ')+(G.isLoop(r)?' → (처음으로)':'');}
   // 예상(Session.expected)의 주요 인물 하루 일정: 완료 가능 인원 / 등장 인원
-  function peopleCount(m){var ids=Object.keys(m.residents||{}).filter(function(id){return m.residents[id];});return {ok:ids.filter(function(id){return m.residents[id].dayStatus==='complete';}).length,total:ids.length};}
+  function peopleCount(m){var ids=Object.keys(m.residents||{}).filter(function(id){return m.residents[id];});return {ok:ids.filter(function(id){return m.residents[id].satisfied===true;}).length,total:ids.length};}
   function people(sec,m){
     var s=st(),tally=PB.Narrative.residentTally(s.config,s.history),ul=el('ul',{id:'resident-forecast','class':'resident-outcomes'});
     PB.Demand.residents(s.config,s.phase).forEach(function(rd){var r=m.residents[rd.id],t=tally[rd.id];if(!r)return;
-      ul.appendChild(el('li',{'data-resident':rd.id,'data-status':r.dayStatus},rd.name+' · '+(rd.itineraries?TRIP:DAY)[r.dayStatus]+(t?' · 누적 '+t.completed+'/'+t.threshold+'회'+(t.completed>=t.threshold?' 기준 달성':' · 남은 '+t.remaining+'단계'):'')));});
+      ul.appendChild(el('li',{'data-resident':rd.id,'data-status':r.dayStatus},rd.name+' · '+(r.satisfied?'기준 충족 예상':(r.reasons||[]).map(function(x){return x.text;}).join(' ')||(rd.itineraries?TRIP:DAY)[r.dayStatus])+(t?' · 누적 '+t.completed+'/'+t.threshold+'회'+(t.completed>=t.threshold?' 기준 달성':' · 남은 '+t.remaining+'단계'):'')));});
     if(m.families&&m.families.total)ul.appendChild(el('li',{id:'family-forecast'},'호수공원 가족 '+m.families.total+'팀 중 '+m.families.complete+'팀 전원 왕복 예상'));
     sec.appendChild(el('h4',null,'주요 인물·가족 예상'));sec.appendChild(ul);
   }

@@ -101,7 +101,7 @@
   function start(App) {
     var s = App.s;
     cfg = s.config;
-    R = { phase: s.phase, s: s, acc: 0, speed: App.speed || 1, last: null, minute: -1, done: false, shown: 0, lastBubbleAt: {} };
+    R = { phase: s.phase, s: s, acc: (s.runCursor||0)*App.msPerMinute(), speed: App.speed || 1, last: null, minute: -1, done: false, shown: 0, lastBubbleAt: {} };
     R.res = s.current.result;
     R.wait = waitingTable(R.res);
     R.items = runFeed(s);
@@ -131,7 +131,7 @@
     });
     R.onBusAt = function (pid, m) { var on = (R.boardsByPid[pid] || []).filter(function (t) { return t <= m; }).length, off = (offs[pid] || []).filter(function (t) { return t <= m; }).length; return on > off; };
     R.timer = root.setInterval(tick, 50);
-    (function loop() { if (!R || R.done) return; tick(); R.raf = root.requestAnimationFrame(loop); })();
+    R.raf=root.requestAnimationFrame(function loop() { if (!R || R.done) return; tick(); R.raf = root.requestAnimationFrame(loop); });
   }
 
   function stop() {
@@ -150,6 +150,8 @@
     if (document.hidden || R.paused) return;
     R.acc += Math.min(dt, 250) * R.speed;
     var App = app(), tf = Math.min(W, R.acc / App.msPerMinute());
+    var checkpoint=nextCheckpoint();
+    if(checkpoint!=null&&tf>=checkpoint){tf=checkpoint;R.acc=tf*App.msPerMinute();R.paused=true;R.s.runCursor=checkpoint;App.save();showEmergency(checkpoint);}
     var m = Math.floor(tf);
     drawBuses(App, App.reducedMotion() ? m : tf);
     if (m !== R.minute) {
@@ -160,6 +162,7 @@
       else if (resident) App.sfx('resident');
       else if (people && now - R.lastPop > 450) { R.lastPop = now; App.sfx('person'); }
       R.minute = m;
+      R.s.runCursor=m;App.save();
       onMinute(App, m);
     }
     if (tf >= W && !R.finishing) {
@@ -173,6 +176,30 @@
     }
   }
 
+  function nextCheckpoint(){
+    if(!R||R.s.phase<3)return null;
+    var log=R.s.emergencyLog||[];return [34,67].filter(function(t){return !log.some(function(a){return a.phase===R.s.phase&&a.at===t;});})[0];
+  }
+  function showEmergency(at){
+    var d=$('#emergency-dialog');if(!d){d=el('dialog',{id:'emergency-dialog','class':'dialog','aria-labelledby':'emergency-title'});document.body.appendChild(d);}
+    d.textContent='';d.oncancel=function(e){e.preventDefault();};
+    d.appendChild(el('h2',{id:'emergency-title'},app().clock(at)+' · 긴급 조정'));
+    // Current facts from the replay prefix, not future outcomes.
+    var waiting={},counts={};R.res.log.filter(function(e){return e.t<=at;}).forEach(function(e){if(e.type==='request'||e.type==='alight')waiting[e.pid]=e.node;if(e.type==='board'||e.type==='arrive')delete waiting[e.pid];});Object.keys(waiting).forEach(function(pid){var node=waiting[pid];counts[node]=(counts[node]||0)+1;});
+    var waits=Object.keys(counts).map(function(id){return {id:id,n:counts[id]};}).sort(function(a,b){return b.n-a.n;});
+    d.appendChild(el('p',null,waits.length&&waits[0].n?app().nodeName(waits[0].id)+'에 '+waits[0].n+'명이 기다리고 있어요.':'지금 정류장에서 기다리는 사람은 없어요.'));
+    d.appendChild(el('p',{'class':'note'},'이번 기회에 버스 한 대를 옮길 수 있어요. 조정권 1회를 사용하며, 승객을 내려주고 종점에 도착한 뒤 이동해요. 이동 시간과 운영 비용도 들어요.'));
+    var bus=el('select',{id:'emergency-bus'}),route=el('select',{id:'emergency-route'});
+    R.s.draft.buses.forEach(function(b){bus.appendChild(el('option',{value:b.id},b.id+'호차'));});
+    function options(){route.textContent='';PB.Session.routesInOrder(R.s).forEach(function(r){if(PB.Session.canAssign(R.s,Number(bus.value),r.num)&&!PB.Graph.validateRoute(PB.Session.graph(R.s),r).length)route.appendChild(el('option',{value:r.num},r.num+'번 · '+r.nodes.map(app().nodeName).join(' → ')));});}
+    bus.addEventListener('change',options);options();
+    d.appendChild(el('label',{'for':'emergency-bus'},'옮길 버스'));d.appendChild(bus);d.appendChild(el('label',{'for':'emergency-route'},'새 노선'));d.appendChild(route);
+    function finish(id,num){if(!PB.Session.emergencyDecision(R.s,at,id,num))return;var s=R.s;s.runCursor=at;d.close();stop();start(app());app().save();app().syncStage({keepBuses:true});}
+    var apply=el('button',{type:'button',id:'emergency-apply','class':'btn btn-primary',onclick:function(){if(route.value)finish(Number(bus.value),Number(route.value));}},'버스 한 대 옮기기');apply.disabled=!route.options.length;bus.addEventListener('change',function(){apply.disabled=!route.options.length;});d.appendChild(apply);
+    d.appendChild(el('button',{type:'button',id:'emergency-continue','class':'btn',onclick:function(){finish(null,null);}},'변경 없이 계속'));
+    d.showModal();
+  }
+
   // 버스별로 지금 타고 있는 주요 인물 이름(특수 캐릭터) — 버스 위 말풍선에 [하늘]처럼 띄운다
   function namesOnBus(m) {
     var out = {};
@@ -183,7 +210,8 @@
     var v = App.view;
     var counts = PB.Sim.occupancyAt(R.res, Math.floor(t)), names = namesOnBus(Math.floor(t));
     v.setBuses(R.res.timelines.map(function (tl) {
-      var pos = PB.Schedule.positionAt(tl, cfg, t), num = tl.route ? App.numForPlanRoute(tl.route) : null;
+      var changes=(tl.assignments||[]).filter(function(a){return a.t<=t;}),route=changes.length?changes[changes.length-1].route:tl.route;
+      var pos = PB.Schedule.positionAt(tl, cfg, t), num = route ? App.numForPlanRoute(route) : null;
       var color = num ? App.routeStyle(num).color : '#6B7280';
       if (pos.node) {
         var p = App.nodeXY(pos.node);
@@ -273,6 +301,7 @@
     panel.appendChild(el('p', { 'class': 'eyebrow' }, s.phase + '단계 · ' + cfg.phases[s.phase - 1] + ' — 운행'));
     panel.appendChild(el('h2', null, '버스가 달리고 있어요'));
     var speeds = $('#run-controls'); speeds.textContent = '';
+    speeds.appendChild(el('button',{type:'button',id:'run-skip','class':'btn',onclick:function(){if(!R||R.done||$('#emergency-dialog[open]'))return;R.acc=(nextCheckpoint()||W)*App.msPerMinute();R.paused=false;tick();}},'끝까지 건너뛰기'));
     var paused = R && R.s === s && R.phase === s.phase && !R.done && R.paused;
     // 좁은 화면에서는 아이콘만 보이도록 글자를 따로 감싼다(이름은 aria-label로 유지)
     function iconLabel(b, icon, text) { b.textContent = ''; b.appendChild(el('span', { 'aria-hidden': 'true' }, icon + ' ')); b.appendChild(el('span', { 'class': 'btn-text' }, text)); b.setAttribute('aria-label', text); return b; }
@@ -282,7 +311,7 @@
       $('#run-status').textContent = R.paused ? '일시정지 중 · 재개하면 ' + R.speed + '배속으로 이어져요.' : '운행 중';
     } }), paused ? '▶' : '⏸', paused ? '재개' : '일시정지'));
     SPEEDS.forEach(function (speed) {
-      var b = el('button', { type: 'button', id: 'speed-' + speed, 'class': 'btn', 'aria-pressed': String((App.speed || 1) === speed), title: '하루를 ' + (120 / speed) + '초에 보기', onclick: function () { tick(); setSpeed(speed); } }, speed + '×');
+      var b = el('button', { type: 'button', id: 'speed-' + speed, 'class': 'btn', 'aria-pressed': String((App.speed || 1) === speed), title: '하루를 ' + (Math.round(120*cfg.playback.msPerMinute/1000) / speed) + '초에 보기', onclick: function () { tick(); setSpeed(speed); } }, speed + '×');
       speeds.appendChild(b);
     });
     speeds.appendChild(iconLabel(el('button', { type: 'button', id: 'run-sound', 'class': 'btn', 'aria-pressed': String(App.sound), title: '효과음 켜기/끄기', onclick: function () { App.setSound(!App.sound); if (App.sound) App.sfx('person'); } }), App.sound ? '🔊' : '🔇', '소리'));
@@ -295,7 +324,7 @@
     panel.appendChild(live);
     panel.appendChild(el('h3', null, '운행 소식'));
     panel.appendChild(el('ul', { id: 'run-feed', 'class': 'feed', 'aria-live': 'polite' }));
-    panel.appendChild(el('p', { 'class': 'note' }, '일반 버스 정원은 ' + cfg.bus.capacity + '명이에요.' + (s.config.challengeApplied && s.phase >= 6 ? ' 7호차 직행버스는 정원 18명·주행 속도 1.5배예요.' : '') + (s.config.challengeApplied && s.phase >= 8 ? ' 9호차 광역버스는 정원 24명이에요.' : '') + ' 운행 중에는 노선과 배차를 바꿀 수 없어요. 배속은 보는 속도만 바꾸고 결과는 같아요. 지나간 소식은 결과 화면의 ‘운행 기록’에서 다시 볼 수 있어요.'));
+    panel.appendChild(el('p', { 'class': 'note' }, '일반 버스 정원은 ' + cfg.bus.capacity + '명이에요.' + (s.config.challengeApplied && s.phase >= 6 ? ' 7호차 직행버스는 정원 18명·주행 속도 1.5배예요.' : '') + (s.config.challengeApplied && s.phase >= 8 ? ' 9호차 광역버스는 정원 24명이에요.' : '') + ' 3단계부터 오전·오후 한 번씩 멈춰 버스 한 대를 옮길 수 있어요. 배속은 보는 속도만 바꾸고 결과는 같아요. 지나간 소식은 결과 화면의 ‘운행 기록’에서 다시 볼 수 있어요.'));
     panel.appendChild(el('p', { id: 'node-info', 'class': 'note', 'aria-live': 'polite' }));
     App.onNodeClick = function (id) {
       var n = R && R.wait[id] ? R.wait[id][Math.max(0, R.minute)] : 0;

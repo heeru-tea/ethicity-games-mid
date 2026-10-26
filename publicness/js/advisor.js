@@ -14,6 +14,8 @@
   var Metrics = NODE ? require('./metrics.js') : root.PB.Metrics;
   var Schedule = NODE ? require('./schedule.js') : root.PB.Schedule;
 
+  var Evaluation = NODE ? require('./resident-evaluation.js') : root.PB.ResidentEvaluation;
+
   var KEYS = ['phase', 'g', 'requests', 'owned', 'fourthAllowed', 'fourthMustBeNew', 'prevMetrics', 'prevRouteIds', 'plan', 'config'];
 
   function makeRevealed(src) {
@@ -203,6 +205,9 @@
 
     function result() {
       var three = state.three || state.cur;
+      // Only surfaced candidates need resident prose; scoring uses the numeric metrics.
+      three.metrics.residents = Evaluation.records(rev.config, rev.phase, three.sim);
+      base.metrics.residents = Evaluation.records(rev.config, rev.phase, base.sim);
       var changes = [];
       three.plan.buses.forEach(function (b, i) {
         var old = base.plan.buses[i];

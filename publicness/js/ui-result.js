@@ -35,7 +35,7 @@
     var face=el('span',{'class':'resident-face '+rd.id,'aria-hidden':'true'});
     face.appendChild(el('img',{src:'assets/art/'+(['yuna','daeun'].indexOf(rd.id)>=0?'interlude-cheer.webp':'portrait-'+rd.id+'-calm.webp'),alt:'',loading:'lazy'}));
     head.appendChild(face);var words=el('span',{'class':'resident-identity'});words.appendChild(el('strong',null,rd.name));
-    words.appendChild(el('span',{'class':'resident-state '+(data.complete?'complete':'incomplete')},(data.complete?'✓ ':'○ ')+data.label));head.appendChild(words);
+    words.appendChild(el('span',{'class':'resident-state '+(r.satisfied?'complete':'incomplete')},(r.satisfied?'✓ 만족':'○ 불만족')));words.appendChild(el('span',{'class':'resident-reason'},r.satisfied?'필요한 이동을 기준 안에 마쳤어요.':(r.reasons||[]).map(function(x){return x.text;}).join(' ')||data.reason));head.appendChild(words);
     head.appendChild(el('span',{'class':'resident-expand','aria-hidden':'true'},'＋'));card.appendChild(head);
     var body=el('div',{'class':'resident-journey'});
     data.legs.forEach(function(leg){body.appendChild(el('p',{'class':'journey-leg'},(leg.state==='도착'?'✓ ':leg.state==='미도착'?'✕ ':'— ')+App.nodeName(leg.o)+' → '+App.nodeName(leg.d)+' · '+leg.state));});
@@ -218,7 +218,7 @@
 
     var last = s.phase >= cfg.phases.length, ended = !!(s.end && s.end.cause === 'contract');
     panel.appendChild(el('button', { type: 'button', 'class': 'btn btn-primary btn-lg', id: 'btn-next-phase', onclick: function () {
-      function advance(){S.nextPhase(s); App.go(s.stage === 'ending' ? 'ending' : 'reveal');}
+      function advance(){S.nextPhase(s);if(s.stage!=='ending')s.transitionStep='reflect'; App.go(s.stage === 'ending' ? 'ending' : 'reveal');}
       if(last||ended){advance();return;}
       // 새 인물이 등장하는 단계만 짧은 Stage 카드와 소개 컷을 보여 준다. 나머지는 바로 단계 안내로
       var stage={number:s.phase+1,total:cfg.phases.length,name:cfg.phases[s.phase]};

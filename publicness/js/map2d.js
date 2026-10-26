@@ -85,7 +85,7 @@
         id.textContent = n.id;
         var label = el('text', { x: p.x, y: p.y + h + 21, 'text-anchor': 'middle', 'class': 'stop-label' }, g);
         label.textContent = n.name;
-        if (ld) { var c = el('text', { x: p.x, y: p.y + h + 36, 'text-anchor': 'middle', 'class': 'stop-load' }, g); c.textContent = '출발·도착 ' + ld.count + '건'; }
+        if (ld) { var c = el('text', { x: p.x, y: p.y + h + 36, 'text-anchor': 'middle', 'class': 'stop-load' }, g); c.textContent = ld.tier==='high'?'● ● ●':ld.tier==='mid'?'● ●':'●';var title=el('title',{},g);title.textContent='출발·도착 '+ld.count+'건'; }
       });
     }
 

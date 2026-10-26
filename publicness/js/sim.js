@@ -160,9 +160,42 @@
     });
     Object.keys(visitAt).forEach(function (t) { visitAt[t].sort(function (a, c) { return a.b.tl.busId - c.b.tl.busId; }); });
 
-    var log = [], petition = null, linkMemo = {};
+    var log = [], petition = null, linkMemo = {}, draining = {}, emergencyActive=false, activePlans = plan.buses.map(function(b){return {id:b.id,route:b.route};});
+    function replanWaiting(t) {
+      planner=makePlanner(indexed.filter(function(b){return !draining[b.tl.busId];}),W);linkMemo={};
+      queue=[];
+      passengers.forEach(function(p){
+        if(p.t>t||(p.status!=='waiting'&&!(p.status==='transfer'&&p._ready<=t)))return;
+        var origin=p._location||(p.journey&&p.journey[p.legIndex]?p.journey[p.legIndex].from:p.o),j=planner(origin,p.d,t,tMin);
+        if(j){p.journey=j.legs;p.legIndex=0;p.fail=null;if(p._waitStart==null)p._waitStart=t;queue.push(p);}
+        else{p.journey=null;p.fail=structural(g,{buses:activePlans},origin,p.d)?'NO_TRIP_IN_WINDOW':'NO_LINK';}
+      });
+    }
+    function switchRoute(change,from,t) {
+      var id=change.busId,tl=timelines.filter(function(x){return x.busId===id;})[0];
+      var delay=from===change.route.nodes[0]?0:Schedule.travel(g,config,id,from,change.route.nodes[0]);
+      var start=t+Math.max(1,delay),future=Schedule.timeline(g,config,id,change.route,start);
+      // Playback retains the actual driven prefix, including empty repositioning.
+      tl.segments=tl.segments.filter(function(x){return x.t0<t;});
+      if(delay)tl.segments.push({from:from,to:change.route.nodes[0],t0:t,t1:t+delay,deadhead:true});
+      tl.segments=tl.segments.concat(future.segments);tl.visits=tl.visits.filter(function(v){return v.t<=t;}).concat(future.visits);tl.tail=future.tail;
+      tl.assignments=tl.assignments||[];tl.assignments.push({t:start,depart:t,route:change.route});
+      if(!tl.opMinutes)tl.opMinutes=Math.max(0,W-t);
+      tl.moveMinutes=tl.segments.reduce(function(sum,x){return sum+Math.max(0,Math.min(x.t1,W)-x.t0);},0);
+      var next=indexBus(future);indexed=indexed.filter(function(b){return b.tl.busId!==id;});indexed.push(next);
+      Object.keys(visitAt).forEach(function(k){if(Number(k)>t)visitAt[k]=visitAt[k].filter(function(e){return e.b.tl.busId!==id;});});
+      future.visits.forEach(function(v,k){(visitAt[v.t]||(visitAt[v.t]=[])).push({b:next,v:v,k:k});visitAt[v.t].sort(function(a,b){return a.b.tl.busId-b.b.tl.busId;});});
+      activePlans.forEach(function(b){if(b.id===id)b.route=change.route;});delete draining[id];
+      log.push({t:t,type:'reassign',bus:id,node:from,data:{destination:change.route.nodes[0],starts:start}});replanWaiting(t);
+    }
 
     for (var t = 0; t <= W; t++) {
+      (input.adjustments||[]).filter(function(a){return a.at===t;}).forEach(function(a){
+        emergencyActive=true;
+        draining[a.busId]=a;replanWaiting(t);
+        var tl=timelines.filter(function(x){return x.busId===a.busId;})[0];
+        if(tl&&!activePlans.filter(function(b){return b.id===a.busId;})[0].route)switchRoute(a,config.bus.depot,t);
+      });
       // ① 요청 생성
       (byT[t] || []).forEach(function (p) {
         var j = planner(p.o, p.d, t, tMin);
@@ -171,7 +204,7 @@
         if (j) { p.journey = j.legs; queue.push(p); }
         else {
           var lk = p.o + p.d;
-          if (!(lk in linkMemo)) linkMemo[lk] = structural(g, plan, p.o, p.d);
+          if (!(lk in linkMemo)) linkMemo[lk] = structural(g, emergencyActive?{buses:activePlans}:plan, p.o, p.d);
           p.fail = linkMemo[lk] ? 'NO_TRIP_IN_WINDOW' : 'NO_LINK';
           // 잇는 노선 자체가 없으면 버스를 기다린 것이 아니다(‘경로 없음’). 시간 안에 탈 편이 없으면 종료까지 기다린 것으로 센다
           if (p.fail === 'NO_LINK') p._waitStart = null;
@@ -188,6 +221,7 @@
         if (p._ready !== t) return true;
         p._waitStart = t;
         queue.push(p);
+        if(emergencyActive){p.status='waiting';replanWaiting(t);}
         return false;
       });
       // ③ 버스 도착
@@ -209,12 +243,18 @@
             }
           } else {
             p.status = 'transfer'; p.legIndex++; p._ready = t + tMin; p._bus = null;
+            p._location=e.v.node;
             walking.push(p);
             log.push({ t: t, type: 'alight', pid: p.id, bus: busId, node: e.v.node });
           }
           return false;
         });
         if (t >= W) return;
+        if(draining[busId]){
+          var route=e.b.tl.route,terminal=e.v.node===route.nodes[0]||(!Graph.isLoop(route)&&e.v.node===route.nodes[route.nodes.length-1]);
+          if(!onBus[busId].length&&terminal)switchRoute(draining[busId],e.v.node,t);
+          return;
+        }
         var ah = e.b.ahead[e.k];
         var eligible = queue.filter(function (p) {
           var leg = p.journey[p.legIndex];
@@ -243,7 +283,7 @@
       if (p.status === 'transfer' || p.status === 'riding' || p.status === 'arrived') return;
       p.status = 'waiting';
     });
-    passengers.forEach(function (p) { delete p._waitStart; delete p._ready; delete p._bus; });
+    passengers.forEach(function (p) { delete p._waitStart; delete p._ready; delete p._bus; delete p._location; });
 
     var users = passengers.filter(function (p) { return p.firstBoardT != null; });
     var costs = {

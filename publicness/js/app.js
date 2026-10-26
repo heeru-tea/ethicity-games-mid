@@ -27,7 +27,7 @@
     App.s = S.restore(saved.session, cfg);
     App._sceneKey = null;
     var st = App.s.stage;
-    App.go(st === 'reveal' ? 'reveal' : st === 'result' ? 'result' : st === 'ending' ? 'ending' : 'plan');
+    App.go(st === 'run' ? 'run' : st === 'reveal' ? 'reveal' : st === 'result' ? 'result' : st === 'ending' ? 'ending' : 'plan');
   };
 
   function routeStyle(num) {
@@ -71,6 +71,8 @@
 
   /* ── 화면 ───────────────────────── */
   App.go = function (screen) {
+    if(screen==='reveal'&&App.s&&App.s.transitionStep==='reflect')screen='reflect';
+    document.body.classList.remove('result-map-open');
     document.body.setAttribute('data-screen', screen);
     App.render();
   };
@@ -86,14 +88,14 @@
     App.onLink = null; App.onRouteClick = null;
     var stageOpts = fn ? fn(App, panel) : null;
     var heading=panel.querySelector('h2'),focus=PB.stories.phaseEthics[App.s.phase-1];
-    if(screen!=='ending'&&heading&&focus){
+    if(screen==='reveal'&&heading&&focus){
       // 단계 질문은 한 줄. 단계 안내에서는 그대로, 다른 화면에서는 접어 두고 펼치면 전체 문장
       var line=el('span'),ethics;line.appendChild(el('b',null,'이번 단계 질문 · '));line.appendChild(document.createTextNode(focus.short||focus.title));
       if(screen==='reveal'){ethics=el('p',{'class':'callout ethics-focus','data-phase':App.s.phase});ethics.appendChild(line);}
       else{ethics=el('details',{'class':'callout ethics-focus','data-phase':App.s.phase});var sm=el('summary');sm.appendChild(line);ethics.appendChild(sm);ethics.appendChild(el('p',null,focus.title+' — '+focus.text));}
       heading.insertAdjacentElement('afterend',ethics);
     }
-    App.syncStage(stageOpts || {});
+    if(screen!=='reflect')App.syncStage(stageOpts || {});
     renderTextRoutes();
     App.save();
     var h = panel.querySelector('h2');
@@ -151,10 +153,11 @@
         return { num: num, route: b.route, color: st.color, dim: false };
       }).filter(function (r, i, arr) { return arr.findIndex(function (x) { return x.num === r.num; }) === i; })
       : App.stageRoutes();
+    if(s.stage==='run')(s.emergencyLog||[]).filter(function(a){return a.phase===s.phase&&a.route;}).forEach(function(a){if(!routes.some(function(r){return r.num===a.routeNum;}))routes.push({num:a.routeNum,route:a.route,color:routeStyle(a.routeNum).color});});
     if(opts.preview){
       var previewState=Object.assign({},s,{draft:JSON.parse(JSON.stringify(s.draft)),goalHistory:JSON.parse(JSON.stringify(s.goalHistory))});
       S.applyRecommendation(previewState,{plan:opts.preview});
-      routes=previewState.draft.routes.filter(function(r){return r.nodes.length>=2;}).map(function(r){var style=routeStyle(r.num);return{num:r.num,route:r,color:style.color,dash:'8 6',preview:true};});
+      routes=routes.concat(previewState.draft.routes.filter(function(r){return r.nodes.length>=2;}).map(function(r){var style=routeStyle(r.num);return{num:r.num,route:r,color:style.color,dash:'8 6',preview:true};}));
     }
     else if(s.stage==='plan'&&opts.activeRoute!=null)routes.forEach(function(r){r.dim=r.num!==opts.activeRoute;});
     v.setRoutes(routes);
@@ -221,6 +224,7 @@
     L: '가족 3팀(12명)이 함께 방문하고 귀가', M: '낮 방문 60명 · 저녁 귀가 60명', N: '아침 출발 36명 · 저녁 귀가 36명' };
   function signed(n) { return n > 0 ? '+' + n : String(n); }
   function renderReveal(app, panel) {
+    if(App.s.phase>1)return PB.UI.changes(App,panel);
     var s = App.s, cfg = s.config, p = s.phase, reqs = PB.Demand.base(cfg, p, s.seed).length, prog = cfg.progression;
     panel.appendChild(el('p', { 'class': 'eyebrow' }, p + '단계 · ' + cfg.phases[p - 1]));
     panel.appendChild(el('h2', null, p === 1 ? '첫 운행을 준비해요' : '이번 단계에서 달라진 것'));
@@ -280,6 +284,8 @@
     panel.appendChild(sec);
   }
 
+  App.renderLearning=learning;
+
   /* ── 첫 노선 안내(1단계 계획에 처음 들어올 때, 도움말에서 다시 보기) ── */
   App.showTutorial = function () {
     var s = App.s; if (!s) return; s.tutorialSeen = true;
@@ -290,11 +296,11 @@
     d.appendChild(el('p', { 'class': 'eyebrow' }, '첫 노선 만들기'));
     d.appendChild(el('h2', { id: 'tutorial-title', tabindex: '-1' }, '정류장 두 곳을 이어 보세요'));
     var ol = el('ol', { 'class': 'tutorial-steps' });
-    ['지도에서 출발할 정류장을 누르세요(오른쪽 ‘정류장 목록에서 연결하기’로 골라도 돼요).', '이어서 갈 정류장을 누르면 노선이 생겨요. 정류장을 끌어서 이어도 돼요.', '새 버스는 처음에 ‘쉬기’예요. 노선 카드에서 버스를 배정하고 ‘이 노선으로 출발’을 누르세요.'].forEach(function (t) { ol.appendChild(el('li', null, t)); });
+    ['지도에서 출발할 정류장을 누르세요(‘텍스트로 편집’ 안의 정류장 목록으로 골라도 돼요).', '이어서 갈 정류장을 누르면 노선이 생겨요. 정류장을 끌어서 이어도 돼요.', '새 버스는 처음에 ‘쉬기’예요. 하단 버스 토큰을 노선으로 끌어 놓고 ‘이 노선으로 출발’을 누르세요.'].forEach(function (t) { ol.appendChild(el('li', null, t)); });
     d.appendChild(ol);
     if (who) d.appendChild(el('p', null, '예: ' + who.name + ' · ' + App.clock(who.depart) + ' ' + App.nodeName(who.o) + ' → ' + App.nodeName(who.d) + '. 누구의 길부터 이을지는 직접 정하세요.'));
-    d.appendChild(el('p', { 'class': 'note' }, '이번 단계는 버스 ' + s.owned + '대, 노선 ' + S.routeLimit(s) + '개까지예요. 쓰지 않는 버스는 버스 배정에서 ‘쉬기’로 둘 수 있어요.'));
-    d.appendChild(el('p', { 'class': 'note' }, '출발하면 05:00~23:00 하루를 120초 동안 보여 줘요. 운행 중에는 노선을 바꿀 수 없고, 결과를 보고 다음 단계에서 고쳐요.'));
+    d.appendChild(el('p', { 'class': 'note' }, '이번 단계는 버스 ' + s.owned + '대, 노선 ' + S.routeLimit(s) + '개까지예요. 버스 토큰을 선택한 뒤 ‘쉬게 하기’를 누를 수 있어요.'));
+    d.appendChild(el('p', { 'class': 'note' }, '출발하면 05:00~23:00 하루를 약 20초에 보여 줘요. 3단계부터는 오전·오후에 한 번씩 멈춰 버스 한 대를 조정할 수 있어요. 결과를 보고 다음 계획을 고쳐 보세요.'));
     d.appendChild(el('button', { type: 'button', id: 'btn-tutorial-close', 'class': 'btn btn-primary', onclick: function () { d.close(); } }, '정류장 이어 보기'));
     // 닫으면 누를 수 있는 정류장을 한 번 깜빡여 지도로 시선을 옮긴다
     d.onclose = function () { if (App.s === s && s.stage === 'plan') { S.visibleNodeIds(s).forEach(function (id) { App.view.flash(id); }); var h = document.querySelector('#panel h2'); if (h) h.focus({ preventScroll: true }); } };
@@ -400,7 +406,7 @@
     if (saved && cont) {
       var ss = saved.session, total = (ss.config ? ss.config.phases.length : cfg.phases.length);
       cont.hidden = false;
-      $('#continue-note').textContent = (ss.mode === 'default' ? '기본' : '랜덤') + ' 세팅 · ' + (ss.stage === 'ending' ? (ss.end && ss.end.cause === 'bankrupt' ? '파산으로 운영 종료' : ss.end && ss.end.cause === 'contract' ? '적자 누적으로 운영 계약 종료' : '학기 마무리') : ss.phase + ' / ' + total + '단계 ' + ({ reveal: '안내', plan: '계획', run: '운행(출발 직전 계획으로 돌아가요)', result: '결과' }[ss.stage] || '')) + ' · ' + new Date(saved.savedAt).toLocaleString('ko-KR');
+      $('#continue-note').textContent = (ss.mode === 'default' ? '기본' : '랜덤') + ' 세팅 · ' + (ss.stage === 'ending' ? (ss.end && ss.end.cause === 'bankrupt' ? '파산으로 운영 종료' : ss.end && ss.end.cause === 'contract' ? '적자 누적으로 운영 계약 종료' : '학기 마무리') : ss.phase + ' / ' + total + '단계 ' + ({ reveal: '안내', plan: '계획', run: typeof ss.runCursor==='number'?'운행 이어보기':'운행(출발 직전 계획으로 돌아가요)', result: '결과' }[ss.stage] || '')) + ' · ' + new Date(saved.savedAt).toLocaleString('ko-KR');
       cont.addEventListener('click', function () { App.resume(PB.Storage.readSave(cfg.SCENARIO_VERSION) || saved); });
       $('#btn-start').textContent = '새로 시작하기';
       $('#btn-start').classList.remove('btn-primary');

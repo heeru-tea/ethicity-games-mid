@@ -130,7 +130,7 @@
     },
 
     ai: { maxCandidates: 30, maxIterations: 3 },
-    playback: { msPerMinute: 1000 }
+    playback: { msPerMinute: 167 }
   };
 
   root.PB = root.PB || {};

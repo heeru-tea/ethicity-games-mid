@@ -81,7 +81,8 @@
 
   // 렌더용 위치. 출차 전·미배정은 A에 주차
   function positionAt(tl, config, t) {
-    if (!tl.route || t < tl.offset) return { node: config.bus.depot, parked: true };
+    var firstAssignment=(tl.assignments||[])[0];
+    if ((!tl.route && (!firstAssignment || t < firstAssignment.depart)) || t < tl.offset) return { node: config.bus.depot, parked: true };
     for (var i = 0; i < tl.segments.length; i++) {
       var s = tl.segments[i];
       if (t >= s.t0 && t < s.t1) return { from: s.from, to: s.to, f: (t - s.t0) / (s.t1 - s.t0), parked: false };
@@ -91,7 +92,7 @@
     return { node: node, parked: false };
   }
 
-  var api = { cycleMinutes:cycleMinutes,vehicle:vehicle,timeline: timeline, positionAt: positionAt, spacePlan: spacePlan };
+  var api = { travel:travel,cycleMinutes:cycleMinutes,vehicle:vehicle,timeline: timeline, positionAt: positionAt, spacePlan: spacePlan };
   root.PB = root.PB || {};
   root.PB.Schedule = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

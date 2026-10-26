@@ -209,7 +209,7 @@
     // ZONE_KEEP: 모델과 함께 남겨 둘 기본 도형(기차역 선로). 모델이 없으면 지금까지의 기본 도형 그대로
     var ZONE_KEEP = { A: ['station-rails'] }, zoneModels = {};
     // 구역별 크기 비율(1 = 기본 도형 자리만큼). 종합운동장은 상징성은 살리되 화면을 덜 차지하게, 대도시도 살짝(90%) 줄인다(2026-10-23 사용자)
-    var ZONE_SCALE = { H: 0.8, N: 0.9 };
+    var ZONE_SCALE = { H: 0.65, N: 0.9 };
     function zoneModel(id) { return loadedModel(zoneModels, 'zoneModelData', id); }
     // 구역 건물·정류장 시설 공통: 풀린 모델 데이터 → 공유 형상·재질(한 번만 만든다). 아직 안 풀렸으면 null
     function loadedModel(cache, reg, id) {
@@ -268,7 +268,7 @@
 
     // H(종합운동장)는 기차역 이름표 뒤에 깔리지 않도록 오른쪽 위로 비켜 둔다(2026-10-23 플레이테스트)
     // 큰 구역(H)은 후보 자리 중 다른 정류장과 그 이름표(정류장 앞쪽)에서 가장 먼 곳에 둔다 — 랜덤 배치에서도 이름표를 덮지 않게
-    var OFFS_CAND = { H: [[11, -9], [-11, -9], [0, -11], [13, 3], [-13, 3]] };
+    var OFFS_CAND = { H: [[0, -9], [0, 9], [9, 0], [-9, 0]] };
     function zoneOffset(id, p, ids) {
       var cands = OFFS_CAND[id]; if (!cands) return OFFS[id];
       var best = null, bestScore = -1;
@@ -398,7 +398,7 @@
       labels.innerHTML = ''; labelEls = { stop: {}, wait: {}, bus: {} };
       ids.forEach(function (id) {
         var l = document.createElement('div'), ld = sceneDef.load && sceneDef.load[id]; l.className = 'label-3d stop-name'; l.textContent = nodes[id].name; l.dataset.tier = ld ? ld.tier : 'low';
-        if (ld) { var c = document.createElement('span'); c.className = 'stop-load'; c.textContent = '출발·도착 ' + ld.count + '건'; c.title = '이 정류장에서 출발하거나 도착하는 이동 요청'; l.appendChild(c); }
+        if (ld) { var c = document.createElement('span'); c.className = 'stop-load'; c.textContent = ld.tier==='high'?'● ● ●':ld.tier==='mid'?'● ●':'●'; c.title = '출발·도착 '+ld.count+'건'; l.appendChild(c); }
         labels.appendChild(l); labelEls.stop[id] = l;
       });
       fit(); dirty = true;
@@ -628,7 +628,7 @@
 
     return {
       kind: '3d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
-      zoneInfo: function () { return Object.keys(zoneGroups).map(function (id) { return { id: id, model: !!zoneGroups[id].userData.model }; }); },
+      zoneInfo: function () { return Object.keys(zoneGroups).map(function (id) { return { id: id, model: !!zoneGroups[id].userData.model, offset: {x:zoneGroups[id].position.x-wp(id).x,z:zoneGroups[id].position.z-wp(id).z} }; }); },
       busInfo: function () { return Object.keys(busMesh).filter(function (id) { return busMesh[id].visible; }).map(function (id) { var u = busMesh[id].userData; return { id: Number(id), model: !!u.model, color: u.color || null }; }); },
       setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },

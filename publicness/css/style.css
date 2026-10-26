@@ -101,7 +101,7 @@ body[data-screen="title"] #topbar, body[data-screen="title"] #screen-game { disp
 .balance { color: var(--text-mute); font-variant-numeric: tabular-nums; }
 .ethics-focus { margin: 14px 0 18px; font-size: .9rem; }
 .ethics-focus p { margin: 6px 0 0; }
-#route-report { width: min(760px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
+#route-report { width: 100%; min-width: 0; max-width: 100%; }
 #route-report h2 { margin-bottom: 20px; }
 #route-report .table-wrap { margin-bottom: 16px; }
 .top-actions { margin-left: auto; display: flex; gap: 4px; }
@@ -452,6 +452,63 @@ details.ethics-focus[open] summary::after { content: ' ▴'; }
 #depart-risks .risk-goal { display: block; font-size: .875rem; color: var(--text-mute); }
 #depart-risks li.final-risk .risk-goal { color: inherit; font-weight: 700; }
 #route-report { margin-top: 24px; }
+
+/* The map is the planning surface; detailed text controls remain available on request. */
+body[data-screen="plan"],body[data-screen="reflect"],body[data-screen="result"] { height:auto; min-height:100dvh; overflow:auto; display:block; }
+body[data-screen="plan"] .game,body[data-screen="reflect"] .game,body[data-screen="result"] .game { overflow:visible; grid-template-rows:none; }
+body[data-screen="plan"] .game { display:grid; grid-template-columns:minmax(0,1fr); }
+body[data-screen="plan"] .stage-col { border:0; padding:12px 20px; min-width:0; }
+body[data-screen="plan"] .stage { height:calc(100dvh - 300px); min-height:340px; max-height:none; }
+body[data-screen="plan"]:not(.plan-text-open) #panel { display:none; }
+body[data-screen="plan"].plan-text-open .game { grid-template-columns:minmax(0,1fr) minmax(300px,370px); }
+body[data-screen="plan"] #text-routes, body[data-screen="plan"] #no3d-note { display:none; }
+#plan-toolbar { max-width:1050px; margin:0 auto; padding:12px 0; }
+body:not([data-screen="plan"]) #plan-toolbar,body:not([data-screen="plan"]) #map-people,body:not([data-screen="plan"]) #resident-destination,body:not([data-screen="plan"]) #plan-ai-popover { display:none; }
+.map-tools-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; }
+.map-tools-row .route-tabs { flex:1; margin:0; }
+.map-tools-row #btn-depart { width:auto; margin-left:auto; min-height:44px; font-size:16px; padding:8px 16px; }
+.bus-tokens { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+.bus-token { display:flex; gap:8px; align-items:center; border-width:2px; touch-action:none; cursor:grab; position:relative; }
+.bus-token small { font-size:12px; color:var(--text-mute); }
+.bus-token[aria-pressed="true"] { outline:3px solid var(--accent); outline-offset:2px; }
+.bus-token.dragging { z-index:40; cursor:grabbing; }
+#map-plan-message { margin:8px 0 0; font-size:14px; line-height:1.5; }
+#plan-ai-popover { position:absolute; top:12px; right:12px; width:min(350px,calc(100% - 24px)); max-height:calc(100% - 24px); overflow:auto; padding:16px; background:var(--bg); border:1px solid var(--border); border-radius:10px; z-index:20; box-shadow:0 5px 18px #17233518; }
+#plan-ai-popover #ai-tools>summary { display:none; }
+#map-people,#resident-destination { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+#map-people { z-index:8; }
+.map-person { position:absolute; width:38px; height:38px; pointer-events:auto; border:2px solid white; box-shadow:0 1px 5px #17233540; padding:0; cursor:pointer; }
+.map-person[aria-pressed="true"] { outline:3px solid var(--accent); }
+.map-person-name { position:absolute; bottom:0; left:0; width:100%; color:white; background:#1a1d24b0; font-size:10px; line-height:14px; }
+#resident-destination { z-index:7; }
+#resident-destination line { stroke:var(--accent); stroke-width:2; stroke-dasharray:5 6; }
+body[data-screen="result"] .game,body[data-screen="reflect"] .game { display:block; }
+body[data-screen="result"]:not(.result-map-open) .stage-col,body[data-screen="reflect"] .stage-col { display:none; }
+body[data-screen="result"] #panel,body[data-screen="reflect"] #panel { position:static; max-height:none; height:auto; width:min(100%,920px); margin:0 auto; padding:32px 24px; overflow:visible; }
+.result-key-metrics { display:grid; grid-template-columns:1fr 1fr; gap:24px; border-block:1px solid var(--border); padding:24px 0; margin:24px 0; }
+.result-key-metrics h3 { font-size:16px; margin:0; }
+.result-key-metrics section p { font-size:26px; font-weight:700; margin:8px 0; }
+.result-key-metrics section+section { margin-top:0; }
+.result-key-metrics>.note { grid-column:1/-1; margin:0; }
+.resident-reason { font-size:14px; line-height:1.7; color:var(--text-mute); }
+body[data-screen="result"] .resident-cards>li { animation:resident-reveal .35s ease-out both; animation-delay:var(--reveal-delay,0s); }
+@keyframes resident-reveal { from {opacity:0;transform:rotateX(-12deg)} to {opacity:1;transform:none} }
+.show-all-results .resident-cards>li { animation:none!important; }
+#reflection-answer { display:block; width:100%; resize:vertical; padding:12px; margin:12px 0; font:inherit; border:1px solid var(--border); border-radius:8px; }
+.reflection-prompt { font-size:18px; line-height:1.8; }
+.resource-token { display:inline-block; border:2px solid var(--accent); border-radius:8px; padding:10px 16px; font-weight:700; }
+#emergency-dialog label,#emergency-dialog select { display:block; width:100%; margin:8px 0; }
+#emergency-dialog select { min-height:44px; font:inherit; }
+@media(prefers-reduced-motion:reduce){body[data-screen="result"] .resident-cards>li { animation:none; }}
+@media(max-width:850px){
+ body[data-screen="plan"].plan-text-open .game { grid-template-columns:minmax(0,1fr); }
+ body[data-screen="plan"] .stage-col { padding:8px; }
+ body[data-screen="plan"] .stage { height:52dvh; min-height:300px; }
+ body[data-screen="plan"].plan-text-open #panel { height:auto; max-height:none; }
+ #plan-toolbar .route-tab { font-size:13px; padding:6px 8px; }
+ #plan-toolbar .bus-token { font-size:13px; padding:6px; }
+ .map-tools-row #btn-depart { margin-left:0; }
+}
 .insert-at { display: block; margin: 8px 0; font-size: .9rem; }
 .insert-at select { min-height: 36px; margin-left: 4px; }
 #picker-done { margin-top: 8px; }

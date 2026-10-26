@@ -103,10 +103,12 @@
     return {total:ids.length,complete:complete};
   }
   function routeReport(result,routes,buses){
-    var byNum={},byBus={};
+    var byNum={},byBus={},used={},changes={};
     var rows=routes.map(function(route){var row={num:route.num,buses:0,boardings:0,arrived:0,fulls:0,perBus:null};byNum[route.num]=row;return row;});
-    buses.forEach(function(b){var row=byNum[b.routeNum];if(row){row.buses++;byBus[b.id]=row;}});
-    result.log.forEach(function(e){var row=byBus[e.bus];if(!row)return;if(e.type==='board')row.boardings++;if(e.type==='arrive')row.arrived++;if(e.type==='full')row.fulls++;});
+    function mark(row,id){if(!row)return;var set=used[row.num]||(used[row.num]={});set[id]=true;row.buses=Object.keys(set).length;}
+    buses.forEach(function(b){var row=byNum[b.routeNum];if(row){mark(row,b.id);byBus[b.id]=row;}});
+    (result.timelines||[]).forEach(function(tl){changes[tl.busId]=(tl.assignments||[]).map(function(a){var match=routes.filter(function(r){return r.nodes.join('|')===a.route.nodes.join('|')&&r.stops.join('|')===a.route.stops.join('|');})[0];var row=match&&byNum[match.num];mark(row,tl.busId);return {t:a.t,row:row};});});
+    result.log.forEach(function(e){var row=byBus[e.bus];(changes[e.bus]||[]).forEach(function(a){if(e.t>=a.t)row=a.row;});if(!row)return;if(e.type==='board')row.boardings++;if(e.type==='arrive')row.arrived++;if(e.type==='full')row.fulls++;});
     rows.forEach(function(row){row.perBus=row.buses?r1(row.boardings/row.buses):null;});return rows;
   }
 
