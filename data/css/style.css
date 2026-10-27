@@ -15,7 +15,7 @@
   --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font); }
+html, body { margin: 0; height: 100%; overscroll-behavior: none; background: var(--bg); color: var(--ink); font-family: var(--font); }
 body { overflow: hidden; word-break: keep-all; }
 #app { position: fixed; inset: 0; }
 .screen { position: absolute; inset: 0; overflow: auto; }
@@ -37,8 +37,8 @@ body { overflow: hidden; word-break: keep-all; }
 .title-lead { color: var(--ink-2); font-size: 18px; line-height: 1.7; margin: 0 0 32px; }
 
 /* 달리기 */
-#screen-run { overflow: hidden; background: var(--bg); }
-#run-stage { position: absolute; inset: 0; background:
+#screen-run { overflow: hidden; background: var(--bg); touch-action: none; }
+#run-stage { position: absolute; inset: 0; touch-action: none; background:
   radial-gradient(ellipse 60% 30% at 50% 42%, rgba(255,95,176,.45), transparent 70%),
   linear-gradient(180deg, #0d0828 0%, #2a1a6e 40%, #120c2e 60%); }
 #run-stage canvas { display: block; width: 100%; height: 100%; }

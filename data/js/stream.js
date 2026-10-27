@@ -2,13 +2,14 @@
  * 코스 생성(기획서 §4.2·§7.3) — 같은 seed면 같은 코스.
  * 카드를 섞어 "줄"(같은 z)마다 1~2장씩 놓고, 드문 카드("?" 포함)는 같은 레인 바로 앞에 노이즈 벽을 둔다.
  * 벽은 그 밖에도 줄 사이에 듬성듬성(카드 수의 약 15%). 한 줄을 세 레인 모두 막는 일은 없다.
- * 보충(focusKeys): 짧은 코스, 카드 12장 중 8장을 빠진 조합 key로 고르게 채운다.
+ * 보충: 짧은 코스. focusCounts(부족한 장 수)가 있으면 key마다 부족분 × 1.5장 + 흔한 카드 4장,
+ * focusKeys만 있으면 카드 12장 중 8장을 그 key로 고르게 채운다.
  */
 (function (root) {
   'use strict';
 
   var START_SECONDS = 3, END_SECONDS = 1.5;
-  var SUPPLEMENT_CARDS = 12, SUPPLEMENT_FOCUS = 8, EXTRA_WALL_RATE = 0.15;
+  var SUPPLEMENT_CARDS = 12, SUPPLEMENT_FOCUS = 8, SUPPLEMENT_SPARE = 1.5, SUPPLEMENT_COMMON = 4, EXTRA_WALL_RATE = 0.15;
 
   function rngApi() {
     if (root.DR && root.DR.Rng) return root.DR.Rng;
@@ -34,22 +35,31 @@
     return deck;
   }
 
-  function supplementDeck(mission, focusKeys) {
+  // focusCounts({key: 부족한 장 수})가 있으면 부족분 × SUPPLEMENT_SPARE장씩(놓칠 여유), 없으면 focusKeys로 8장 고르게
+  function supplementDeck(mission, focusKeys, focusCounts) {
     var deck = [];
-    for (var i = 0; i < SUPPLEMENT_FOCUS; i++) deck.push({ key: focusKeys[i % focusKeys.length] });
+    if (focusCounts) {
+      Object.keys(focusCounts).forEach(function (k) {
+        for (var n = Math.ceil(focusCounts[k] * SUPPLEMENT_SPARE); n > 0; n--) deck.push({ key: k });
+      });
+    } else {
+      for (var i = 0; i < SUPPLEMENT_FOCUS; i++) deck.push({ key: focusKeys[i % focusKeys.length] });
+    }
+    var fill = focusCounts ? deck.length + SUPPLEMENT_COMMON : SUPPLEMENT_CARDS;
     // 나머지는 흔한 카드(드물지 않은 것 중 많은 순)
     var common = Object.keys(mission.counts).filter(function (k) { return !mission.cardTypes[k].rare; })
       .sort(function (a, b) { return mission.counts[b] - mission.counts[a]; });
-    for (var j = 0; deck.length < SUPPLEMENT_CARDS; j++) deck.push({ key: common[j % common.length] });
+    for (var j = 0; deck.length < fill; j++) deck.push({ key: common[j % common.length] });
     return deck;
   }
 
   function build(mission, cfg, opts) {
-    var focus = opts.focusKeys && opts.focusKeys.length ? opts.focusKeys : null;
+    var counts = opts.focusCounts && Object.keys(opts.focusCounts).length ? opts.focusCounts : null;
+    var focus = counts ? Object.keys(counts) : (opts.focusKeys && opts.focusKeys.length ? opts.focusKeys : null);
     var seconds = opts.seconds || (focus ? mission.supplementSeconds : mission.runSeconds);
     var length = seconds * cfg.baseSpeed;
     var rng = rngApi().create(opts.seed);
-    var deck = shuffle(focus ? supplementDeck(mission, focus) : mainDeck(mission), rng);
+    var deck = shuffle(focus ? supplementDeck(mission, focus, counts) : mainDeck(mission), rng);
 
     // 줄 수: 한 줄에 1~2장
     var rowCount = Math.max(1, Math.ceil(deck.length / 1.35));

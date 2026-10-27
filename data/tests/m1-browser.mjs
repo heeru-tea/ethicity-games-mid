@@ -103,9 +103,10 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
       assert.ok(await page.locator('#btn-supplement').isEnabled(), 'enabled after freeing 6');
       await page.locator('#btn-supplement').click();
       await page.waitForFunction(() => DR.Run.peek().running, null, { timeout: 8000 });
+      // 부족분(각 2장) × 1.5 = 3장씩 + 흔한 카드 4장
       const focus = await page.evaluate(() => DR.App.course.items.filter((i) => i.kind === 'card').map((i) => i.key));
-      assert.equal(focus.length, 12);
-      assert.ok(focus.filter((k) => k === 'night_shallow' || k === 'night_muddy').length >= 8, 'supplement focus');
+      assert.equal(focus.length, 10);
+      for (const k of ['night_shallow', 'night_muddy']) assert.ok(focus.filter((x) => x === k).length >= 3, 'supplement focus ' + k);
       await fillAndFinish(page, { night_shallow: 2, night_muddy: 2 });
       assert.ok(await page.locator('#screen-supervisor').isVisible(), 'supervisor after supplement');
       await page.locator('#btn-confirm').click();

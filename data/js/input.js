@@ -37,7 +37,8 @@
       if (kind === 'left') handlers.lane(-1);
       else if (kind === 'right') handlers.lane(1);
       else if (kind === 'tap') handlers.grab();
-      if (kind) e.preventDefault();
+      // 스크롤·확대는 CSS touch-action:none이 막는다. 취소 가능한 이벤트일 때만 클릭 합성을 막는다.
+      if (kind && e.cancelable) e.preventDefault();
     }
     window.addEventListener('keydown', onKey);
     target.addEventListener('touchstart', onStart, { passive: true });

@@ -87,3 +87,11 @@ test('missingLines does not repeat a shared line', () => {
   const lines = missingLines(m1, judge(m1, [], cfg));
   assert.equal(lines.length, new Set(lines).size);
 });
+
+test('shortfall lists missing cards per key (shared key takes the larger need)', () => {
+  const { shortfall } = require('../js/judge.js');
+  assert.deepEqual(shortfall(m1, bagOf({ day_deep: 15, day_shallow: 15 }), cfg),
+    { day_wet: 2, day_dry: 2, night_wet: 2, night_neon: 2, night_deep: 2, night_shallow: 2, night_muddy: 2 });
+  assert.deepEqual(shortfall(m1, bagOf({ ...ALL2, night_shallow: 1, night_muddy: 0 }), cfg), { night_shallow: 1, night_muddy: 2 });
+  assert.deepEqual(shortfall(m1, bagOf(ALL2), cfg), {});
+});

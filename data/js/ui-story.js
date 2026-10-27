@@ -103,7 +103,6 @@
       el('div', { class: 'actions' }, [run])
     ]));
     root.DR.App.go('briefing');
-    run.focus();
   }
 
   // 튜토리얼 결과 한 장: 통과면 [다음], 실패면 귀여운 실패 + [다시 달리기]
@@ -124,7 +123,6 @@
     parts.push(el('div', { class: 'actions' }, [btn]));
     screen.appendChild(el('div', { class: 'page' }, parts));
     root.DR.App.go('result');
-    btn.focus();
   }
 
   // 마무리 안내(기획서 §4.7) — 대화 뒤 안내 카드
@@ -140,7 +138,6 @@
         el('div', { class: 'actions' }, [again])
       ]));
       root.DR.App.go('outro');
-      again.focus();
     });
   }
 

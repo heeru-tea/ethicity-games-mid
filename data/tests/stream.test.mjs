@@ -76,3 +76,17 @@ test('tutorial course builds', () => {
   assert.equal(t.items.filter((i) => i.key === 'dog').length, 9);
   assert.equal(t.items.filter((i) => i.key === 'cat').length, 9);
 });
+
+test('common-only bag can pass after one perfect supplement', () => {
+  const { judge, shortfall } = require('../js/judge.js');
+  const bag = [...Array(15)].map((_, i) => ({ id: 'a' + i, key: 'day_deep' })).concat([...Array(15)].map((_, i) => ({ id: 'b' + i, key: 'day_shallow' })));
+  const short = shortfall(m1, bag, cfg);
+  const s = build(m1, cfg, { seed: 5, focusCounts: short });
+  const picked = s.items.filter((i) => i.kind === 'card' && short[i.key]).map((i) => ({ id: i.uid, key: i.key }));
+  for (const [k, n] of Object.entries(short)) assert.ok(picked.filter((p) => p.key === k).length >= Math.ceil(n * 1.5), k);
+  const kept = bag.filter((c) => c.id === 'a0' || c.id === 'a1' || c.id === 'b0' || c.id === 'b1');
+  const after = kept.concat(picked);
+  assert.ok(after.length <= m1.bag, `${after.length} > ${m1.bag}`);
+  assert.equal(judge(m1, after, cfg).allPass, true);
+  assert.equal(s.length, m1.supplementSeconds * cfg.baseSpeed);
+});

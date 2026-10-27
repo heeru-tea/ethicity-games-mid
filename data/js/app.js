@@ -9,7 +9,9 @@
   var SCREENS = ['title', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'result', 'prep', 'outro'];
   var DR = root.DR;
 
+  // 화면을 바꿀 때 포커스를 풀어 둔다 — 연타한 Space/Enter가 다음 화면 버튼을 눌러 브리핑·결과를 건너뛰지 않게
   function go(name) {
+    if (document.activeElement && document.activeElement !== document.body && document.activeElement.blur) document.activeElement.blur();
     SCREENS.forEach(function (s) {
       var el = document.getElementById('screen-' + s);
       if (el) el.hidden = s !== name;
@@ -102,16 +104,13 @@
     });
   }
 
-  // 보충: 실패 장면의 빠진 조합 key가 자주 나오는 짧은 코스. 이미 모은 가방은 그대로.
+  // 보충: 빠진 조합에 모자란 장 수만큼(여유 포함) 그 카드가 나오는 짧은 코스. 이미 모은 가방은 그대로.
+  // 부족분은 보충 준비에서 플레이어가 카드를 뺀 뒤의 가방으로 센다.
   function prepSupplement(m, r) {
     DR.UI.supplementPrep(m, r, App.state.bag, function (bag) {
       App.state.supplements++;
-      var byCombo = {}, focus = [];
-      m.scenes.forEach(function (s) { s.combos.forEach(function (c) { byCombo[c.id] = c; }); });
-      r.scenes.forEach(function (s) {
-        s.missing.forEach(function (id) { byCombo[id].keys.forEach(function (k) { if (focus.indexOf(k) < 0) focus.push(k); }); });
-      });
-      var course = DR.Stream.build(m, DR.config, { seed: App.state.seed + App.state.supplements, focusKeys: focus });
+      var short = DR.Judge.shortfall(m, bag, DR.config);
+      var course = DR.Stream.build(m, DR.config, { seed: App.state.seed + App.state.supplements, focusCounts: short });
       runCourse(m, course, bag, function (fresh) {
         App.state.bag = bag.concat(fresh);
         var undecided = fresh.some(function (c) { return c.ambiguousId && c.assigned === undefined; });

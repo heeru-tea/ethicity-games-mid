@@ -161,7 +161,6 @@
       el('div', { class: 'actions' }, [b, c])
     ]));
     DR.App.go('supervisor');
-    c.focus();
   }
 
   /* ---------- 보충 준비 ---------- */

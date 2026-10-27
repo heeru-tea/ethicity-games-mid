@@ -47,7 +47,6 @@
       screen.innerHTML = '';
       screen.appendChild(el('div', { class: 'page' }, [el('div', { class: 'result-scene', 'data-scene': s.id, 'data-outcome': outcome }, parts)]));
       screen.scrollTop = 0;
-      next.focus();
     }
 
     DR.App.go('result');

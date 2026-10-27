@@ -59,7 +59,20 @@
     return out;
   }
 
-  var api = { judge: judge, missingLines: missingLines };
+  // 빠진 조합을 채우려면 key마다 몇 장이 더 필요한지(보충 코스용). 여러 장면이 같은 key를 쓰면 큰 쪽.
+  function shortfall(mission, bag, cfg) {
+    var t = tally(mission, bag || [], cfg), out = {};
+    mission.scenes.forEach(function (s) {
+      s.combos.forEach(function (c) {
+        var have = c.keys.reduce(function (n, k) { return n + (t.counts[k] || 0); }, 0);
+        var lack = c.need - have, k0 = c.keys[0];
+        if (lack > 0) out[k0] = Math.max(out[k0] || 0, lack);
+      });
+    });
+    return out;
+  }
+
+  var api = { judge: judge, missingLines: missingLines, shortfall: shortfall };
   root.DR = root.DR || {};
   root.DR.Judge = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
