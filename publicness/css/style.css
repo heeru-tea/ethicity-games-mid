@@ -111,7 +111,7 @@ body[data-screen="title"] #topbar, body[data-screen="title"] #screen-game { disp
 .stage-col { padding: 16px; border-right: 1px solid var(--border); min-width: 0; }
 .stage { position: relative; background: var(--surface); border-radius: var(--radius); overflow: hidden; aspect-ratio: 4 / 3; }
 .stage-svg { width: 100%; height: 100%; display: block; }
-.stage-3d { position: absolute; inset: 0; background: #A9C6E4 url("../assets/art/env-sky.webp") center bottom / cover no-repeat; } /* 3D 지도 판 뒤 하늘·원경(지브리풍) */
+.stage-3d { position: absolute; inset: 0; background: #9DB57C; } /* 3D는 화면 전체가 풀밭(하늘·원경 배경은 2026-10-27 사용자 결정으로 뺌) */
 .stage-overlay { position: absolute; inset: 0; pointer-events: none; }
 body[data-screen="run"] .stage::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 body[data-screen="run"] .stage[data-daylight="dawn"]::before { background: rgba(224, 171, 106, .10); }

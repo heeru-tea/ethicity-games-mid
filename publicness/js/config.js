@@ -139,7 +139,7 @@
     },
 
     ai: { maxCandidates: 30, maxIterations: 3 },
-    playback: { msPerMinute: 167 }
+    playback: { msPerMinute: 209 } // 1× = 엔진 1단위당 209ms(하루 약 25초). 2026-10-27 사용자 지시로 이전 167에서 0.8배 속도
   };
 
   root.PB = root.PB || {};

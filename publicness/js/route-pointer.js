@@ -1,14 +1,15 @@
-/* A gesture commits on pointerup only. Pointer cancellation leaves the plan unchanged. */
+/* A gesture commits on pointerup only. Pointer cancellation leaves the plan unchanged.
+ * 같은 노선 선을 DOUBLE_MS 안에 두 번 누르면(마우스 더블클릭·터치 두 번 탭, 거리 DOUBLE_PX 이내) 두 번째는 onRouteDouble로 간다. */
 (function(root){
   'use strict';
   function attach(surface,pick,opts){
-    var gesture=null,guide=null,suppress=false;
+    var gesture=null,guide=null,suppress=false,lastTap=null,DOUBLE_MS=400,DOUBLE_PX=16;
     function clear(){if(guide)guide.remove();guide=null;gesture=null;}
     surface.addEventListener('pointerdown',function(e){
       suppress=false;
       if(e.button!==0||!opts.canEdit||!opts.canEdit())return;
       var from=pick(e.clientX,e.clientY);if(!from)return;
-      gesture={id:e.pointerId,from:from,x:e.clientX,y:e.clientY,moved:false};surface.setPointerCapture(e.pointerId);e.preventDefault();
+      gesture={id:e.pointerId,from:from,x:e.clientX,y:e.clientY,moved:false};try{surface.setPointerCapture(e.pointerId);}catch(err){/* 이미 끝난 포인터(합성 이벤트 등) — 캡처 없이 진행 */}e.preventDefault();
     });
     surface.addEventListener('pointermove',function(e){
       if(!gesture||gesture.id!==e.pointerId)return;var dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
@@ -19,7 +20,13 @@
     surface.addEventListener('pointerup',function(e){
       if(!gesture||gesture.id!==e.pointerId)return;var g=gesture,to=pick(e.clientX,e.clientY);clear();suppress=true;
       if(surface.hasPointerCapture(e.pointerId))surface.releasePointerCapture(e.pointerId);
-      if(g.moved){if(to&&opts.onLink)opts.onLink(g.from,to);}else if(g.from.node&&opts.onNode)opts.onNode(g.from.node);else if(g.from.route!=null&&opts.onRoute)opts.onRoute(g.from.route,g.from.index);
+      // 사용자가 누른 시각(이벤트 시각) 기준 — 첫 클릭 뒤 다시 그리기가 오래 걸려도(3D·느린 기기) 두 번 누름을 놓치지 않게
+      var now=e.timeStamp,tap=lastTap;lastTap=null;
+      if(g.moved){if(to&&opts.onLink)opts.onLink(g.from,to);}else if(g.from.node&&opts.onNode)opts.onNode(g.from.node);
+      else if(g.from.route!=null){
+        if(tap&&tap.route===g.from.route&&now-tap.t<DOUBLE_MS&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<DOUBLE_PX&&opts.onRouteDouble){opts.onRouteDouble(g.from.route);return;}
+        lastTap={route:g.from.route,t:now,x:e.clientX,y:e.clientY};if(opts.onRoute)opts.onRoute(g.from.route,g.from.index);
+      }
     });
     surface.addEventListener('pointercancel',function(){clear();suppress=true;});surface.addEventListener('lostpointercapture',function(){if(gesture){clear();suppress=true;}});
     surface.addEventListener('click',function(e){

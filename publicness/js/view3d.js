@@ -31,7 +31,7 @@
     var renderer;
     try { renderer = new T.WebGLRenderer({ antialias: true, alpha: true }); } catch (e) { return { ok: false, kind: '3d' }; }
     renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, 2));
-    // 지도 판 바깥은 비워 두고 그 뒤 CSS 배경(.stage-3d — 하늘·원경 그림 env-sky)이 보이게 한다
+    // 2026-10-27 사용자 결정: 하늘·원경 배경과 흙 판 옆면은 산만해서 뺐다 — 화면 전체가 초록 풀밭(아주 큰 잔디 판), 그 위에 마을. 판 바깥이 보일 일은 없지만 CSS도 풀밭 색
     renderer.setClearColor(C.bg, 0);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.PCFSoftShadowMap;
@@ -112,7 +112,7 @@
     function garden(x,z,g){box(2.2,.25,1.1,0xC6CCBE,x,z,g);[-.65,0,.65].forEach(function(dx){mesh(new T.IcosahedronGeometry(.5,0),0x819B7D,x+dx,.65,z,g);});}
     // 마을 바탕(지브리풍, assets/models/env.js·tools/env-art.mjs): 지도 판 윗면 잔디 + 생활권마다 정류장 발밑 둥근 땅 조각.
     // 그림은 위치와 무관한 반복 타일이라 랜덤 배치에서도 그대로 쓴다. 그림이 없거나 늦게 풀리면 단색 판 → 풀린 뒤 장면을 다시 짓는다
-    var GRASS_TILE = 28, PATCH_TILE = 9, BOARD_MARGIN = 4, BOARD_DEPTH = 5;
+    var GRASS_TILE = 28, PATCH_TILE = 9, BOARD_MARGIN = 400, BOARD_DEPTH = 5; // 판 = 화면 틀보다 훨씬 넓은 풀밭(가장자리가 화면에 안 보이게)
     var PATCH_ART = { A: 'A', J: 'A', B: 'B', K: 'B', C: 'C', E: 'E', F: 'F', G: 'G', N: 'G', I: 'I', D: 'I', M: 'I', L: 'L' }; // H(운동장)는 잔디 그대로
     var envImg = {}, groundTex = null;
     (function () {
@@ -417,7 +417,7 @@
       var frame = sceneDef.frame || sceneDef.nodes;
       var xs = frame.map(function (n) { return n.x * K; }), zs = frame.map(function (n) { return n.y * K; });
       bounds = { minX: Math.min.apply(null, xs) - 20, maxX: Math.max.apply(null, xs) + 16, minZ: Math.min.apply(null, zs) - 18, maxZ: Math.max.apply(null, zs) + 18 };
-      // 디오라마 판: 화면 틀보다 BOARD_MARGIN만큼 큰 흙 판, 윗면은 잔디 타일. 판 밖은 하늘 배경
+      // 풀밭 판: 화면 틀보다 BOARD_MARGIN만큼 넓게, 윗면은 잔디 타일. 강은 판 안쪽까지 잘라 그린다
       board = { minX: bounds.minX - BOARD_MARGIN, maxX: bounds.maxX + BOARD_MARGIN, minZ: bounds.minZ - BOARD_MARGIN, maxZ: bounds.maxZ + BOARD_MARGIN };
       var gw = board.maxX - board.minX, gd = board.maxZ - board.minZ;
       var ground = new T.Mesh(new T.BoxGeometry(gw, BOARD_DEPTH, gd), boardMats(gw, gd));
@@ -638,8 +638,8 @@
       camera.lookAt(cx, 0, cz);
       camera.updateMatrixWorld();
       var inv = camera.matrixWorldInverse, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      var fb = board || bounds; // 판 전체(앞 옆면 포함)가 들어오게 — 위·옆으로 하늘이 조금 보인다
-      [fb.minX, fb.maxX].forEach(function (x) { [fb.minZ, fb.maxZ].forEach(function (z) { [-BOARD_DEPTH, nodes.N?21:8].forEach(function (y) {
+      var fb = bounds; // 마을(화면 틀)만 맞춘다 — 둘레는 풀밭이 이어진다
+      [fb.minX, fb.maxX].forEach(function (x) { [fb.minZ, fb.maxZ].forEach(function (z) { [0, nodes.N?21:8].forEach(function (y) {
         var v = new T.Vector3(x, y, z).applyMatrix4(inv);
         minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
       }); }); });

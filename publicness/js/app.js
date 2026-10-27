@@ -85,7 +85,7 @@
     panel.innerHTML = '';
     var fn = screen === 'reveal' ? renderReveal : (PB.UI && PB.UI[screen]);
     App.onNodeClick = null;
-    App.onLink = null; App.onRouteClick = null;
+    App.onLink = null; App.onRouteClick = null; App.onRouteDouble = null;
     var stageOpts = fn ? fn(App, panel) : null;
     var heading=panel.querySelector('h2'),focus=PB.stories.phaseEthics[App.s.phase-1];
     if(screen==='reveal'&&heading&&focus){
@@ -141,7 +141,7 @@
     if (App._sceneKey !== key) {
       // Decorative terrain only: route distance and accessibility remain unchanged.
       var river = [];
-      if(s.mode === 'default')for(var y=-7;y<=7;y+=.15)river.push({x:-3.9+.45*Math.sin(y*.48),y:y});
+      if(s.mode === 'default')for(var y=-30;y<=30;y+=.15)river.push({x:-3.9+.45*Math.sin(y*.48),y:y});
       var frame = s.config.nodes.filter(function (n) { return n.id !== 'N' || g.has('N'); });
       v.setScene({ nodes: nodes, frame: frame, roads: roads, phase: s.phase, river: river, load: PB.Demand.stopLoad(s.config, s.phase, s.seed), boundary: nodes.some(function(n){return n.id==='N';}) ? {x:Math.sign(nodes.filter(function(n){return n.id==='N';})[0].x)*6.4} : null }); App._sceneKey = key;
     }
@@ -302,7 +302,7 @@
     d.appendChild(ol);
     if (who) d.appendChild(el('p', null, '예: ' + who.name + ' · ' + App.clock(who.depart) + ' ' + App.nodeName(who.o) + ' → ' + App.nodeName(who.d) + '. 누구의 길부터 이을지는 직접 정하세요.'));
     d.appendChild(el('p', { 'class': 'note' }, '이번 단계는 버스 ' + s.owned + '대, 노선 ' + S.routeLimit(s) + '개까지예요. 노선 위 ‘버스 ×N’을 대기 영역으로 끌면 그 버스는 쉬어요(누른 뒤 ‘대기로 돌리기’도 돼요).'));
-    d.appendChild(el('p', { 'class': 'note' }, '출발하면 05:00~23:00 하루를 약 20초에 보여 줘요. 3단계부터는 오전·오후에 한 번씩 멈춰 버스 한 대를 조정할 수 있어요. 결과를 보고 다음 계획을 고쳐 보세요.'));
+    d.appendChild(el('p', { 'class': 'note' }, '출발하면 05:00~23:00 하루를 약 25초에(2×는 약 13초) 보여 줘요. 3단계부터는 오전·오후에 한 번씩 멈춰 버스 한 대를 조정할 수 있어요. 결과를 보고 다음 계획을 고쳐 보세요.'));
     d.appendChild(el('button', { type: 'button', id: 'btn-tutorial-close', 'class': 'btn btn-primary', onclick: function () { d.close(); } }, '정류장 이어 보기'));
     // 닫으면 누를 수 있는 정류장을 한 번 깜빡여 지도로 시선을 옮긴다
     d.onclose = function () { if (App.s === s && s.stage === 'plan') { S.visibleNodeIds(s).forEach(function (id) { App.view.flash(id); }); var h = document.querySelector('#panel h2'); if (h) h.focus({ preventScroll: true }); } };
@@ -379,7 +379,7 @@
     $('#hook-1').textContent = lines[0];
     $('#hook-2').textContent = lines[1];
 
-    var controls={onNode:onNode,canEdit:function(){return App.s&&App.s.stage==='plan';},onLink:function(a,b){if(App.onLink)App.onLink(a,b);},onRoute:function(n,i){if(App.onRouteClick)App.onRouteClick(n,i);},
+    var controls={onNode:onNode,canEdit:function(){return App.s&&App.s.stage==='plan';},onLink:function(a,b){if(App.onLink)App.onLink(a,b);},onRoute:function(n,i){if(App.onRouteClick)App.onRouteClick(n,i);},onRouteDouble:function(n){if(App.onRouteDouble)App.onRouteDouble(n);},
       // 지도 위 시계 영역 — 2D 지도는 이 영역 밑에 정류장이 깔리지 않도록 화면을 비켜 그린다
       reserved:function(){return ['#map-clock','#run-controls'].map(function(id){return $(id);}).filter(function(c){return c&&c.getClientRects().length;}).map(function(c){return c.getBoundingClientRect();});}};
     App.map2d = PB.Map2D.create($('#stage-svg'), controls);

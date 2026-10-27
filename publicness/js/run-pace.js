@@ -8,7 +8,8 @@
  */
 (function (root) {
   'use strict';
-  var NEXT = 8, ALERT_WAIT = 10, SLOW_GAME_MINUTES = 30;
+  // NEXT: 다음 결정까지 빨리 가기 배속. 1×를 0.8배로 늦춘 뒤에도(msPerMinute 167→209) 실제 빠르기는 예전 8배속과 같게 10
+  var NEXT = 10, ALERT_WAIT = 10, SLOW_GAME_MINUTES = 30;
 
   // 게임 시간 30분을 엔진 시간 단위로(기본 하루 05:00~23:00 = 120단위 → 1단위 9분 → 약 3.3단위)
   function slowSpan(config) {

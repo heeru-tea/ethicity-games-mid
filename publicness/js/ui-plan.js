@@ -17,6 +17,11 @@
   UI.planLease=function(){if(!S.leaseLimit(st()))return null;changed();var b=S.lease(st());P.message=b.id+'호차를 이번 단계에 임차했어요 · 임차료 '+app().won(st().config.finance.lease.fee)+'(쉬어도 듦, 단계가 끝나면 자동 반납). 노선으로 끌어 놓으세요.';return b;};
   UI.planUnlease=function(id){var b=st().draft.buses.filter(function(x){return x.id===id;})[0];if(!b||!b.leased||b.routeNum!=null)return false;changed();S.unlease(st(),id);P.message=id+'호차를 반납했어요. 이번 단계 임차료가 들지 않아요.';return true;};
   UI.planEditing=function(){return P.editing;};
+  // 노선 철거(지도에서 선을 두 번 누르기): 확인창 없이 바로, 실린 버스는 대기로. 되돌리기 한 번으로 노선·버스 모두 복구
+  function demolish(num){var r=S.routeByNum(st(),num);if(!r||P.preview)return false;var ids=assigned(num).map(function(b){return b.id;});
+    changed();S.deleteRoute(st(),num);if(P.editing===num)P.editing=null;P.anchor=null;
+    P.message=num+'번 노선을 철거했어요'+(ids.length?' · '+ids.join('·')+'호차는 대기로':'')+'. 잘못 지웠다면 ↶ 되돌리기를 누르세요.';render('#btn-undo');return true;}
+  UI.planDemolish=demolish;
   function unassigned(){return st().draft.routes.filter(function(r){return !assigned(r.num).length;});}
   function snapshot(){return JSON.stringify({draft:st().draft,owned:st().owned,fourthPhase:st().fourthPhase,goal:st().goal,goalHistory:st().goalHistory,lastRec:st().lastRec,editing:P.editing,anchor:P.anchor});}
   function changed(){
@@ -148,7 +153,7 @@
         var b=btn(app().nodeName(id),'stop-'+i,function(){P.anchor=i;P.message=app().nodeName(id)+' 다음에 추가할 곳을 고르세요.';render('#stop-'+i);},'stop-anchor');
         b.setAttribute('aria-pressed',String(P.anchor===i));li.appendChild(b);var del=btn('×','remove-stop-'+i,function(){removeAt(r,i);},'btn-ghost');del.setAttribute('aria-label',app().nodeName(id)+' 정류장 제거');li.appendChild(del);ol.appendChild(li);});c.appendChild(ol);
       // 순서 바꾸기·경유지 편집은 정류장이 세 곳 이상일 때 의미가 있어 그때만 안내한다
-      if(ns.length>=3)c.appendChild(el('p',{id:'edit-tips','class':'note'},'↕ 손잡이를 끌면 정류장 순서가 바뀌어요. 지도에서는 정류장을 끌어 교체하거나 선 중간을 당겨 경유지를 추가하세요. 잘못 고쳤다면 되돌리기를 누르세요.'));
+      if(ns.length>=3)c.appendChild(el('p',{id:'edit-tips','class':'note'},'↕ 손잡이를 끌면 정류장 순서가 바뀌어요. 지도에서는 정류장을 끌어 교체하거나 선 중간을 당겨 경유지를 추가하세요. 선을 두 번 누르면 노선을 철거해요. 잘못 고쳤다면 되돌리기를 누르세요.'));
       if(G.isLoop(r))c.appendChild(el('p',{'class':'note'},'마지막 정류장에서 '+PB.Narrative.josa(app().nodeName(r.nodes[0]),'으로')+' 돌아와요.'));
       if(r.nodes.length){
         var origin=r.nodes[P.anchor==null?0:P.anchor],needs={};
@@ -273,47 +278,26 @@
     var depart=btn('이 노선으로 출발','btn-depart',function(){if(S.validate(s).length)return;departCheck();},'btn-primary btn-lg');depart.disabled=errors.length>0||P.busy;
     var foot=el('div',{id:'depart-bar','class':'depart-bar'});foot.appendChild(depart);panel.appendChild(foot);
     App.onNodeClick=function(id){if(P.preview){P.message='AI 제안을 적용하거나 내 노선으로 돌아온 뒤 편집하세요.';render();return;}insert(id);};
-    App.onLink=function(from,to){if(!P.preview)link(from,to);};App.onRouteClick=function(num,index){if(P.preview)return;P.editing=num;P.anchor=index;P.message='이 구간에 추가할 정류장을 누르세요.';render();};
+    App.onLink=function(from,to){if(!P.preview)link(from,to);};App.onRouteDouble=function(num){demolish(num);};App.onRouteClick=function(num,index){if(P.preview)return;P.editing=num;P.anchor=index;P.message='이 구간에 추가할 정류장을 누르세요.';render();};
     // 출발 버튼은 스크롤 영역 밖 아래 줄에 둔다 — 내용을 덮지 않는다(편집할 때 스크롤 위치 유지)
     var bodyWrap=el('div',{'class':'panel-body'});while(panel.firstChild&&panel.firstChild!==foot)bodyWrap.appendChild(panel.firstChild);panel.insertBefore(bodyWrap,foot);bodyWrap.scrollTop=P.scroll||0;
     P.baseline=snapshot();var r=active();return{selectable:P.preview?[]:nextStops(),selected:P.preview?[]:(r?r.nodes:[]),activeRoute:P.editing,preview:P.preview&&P.rec?P.rec.plan:null};
   };
-  // 출발 확인(하나의 화면): ① 운행 구성 ② 이번 계획으로 기준을 채우기 어려운 주요 인물과 이유(결과 판정과 같은 Session.residentVerdict)
-  // ③ 노선별 예상 이용. 인물 위험은 막지 않는다(전략적 선택). 구성 오류(빈 노선 배정 등)는 출발 버튼 자체가 막는다
+  // 출발 확인(2026-10-27 사용자 결정으로 단순화): 운행 구성만 보여 주고 [노선 고치기]·[이대로 출발]. 예상 결과(인물 위험·노선별 예상 이용·재정 예상)는 빼서
+  // 텍스트를 줄이고 모바일에서도 한눈에 보이게 한다(재정 예상은 계획 화면 지도 아래 한 줄에 있다). 구성 오류(빈 노선 배정 등)는 출발 버튼 자체가 막는다
   function departCheck(){
-    var s=st(),run=S.expectedRun(s),m=run.metrics,body=document.querySelector('#confirm-depart-body');body.textContent='';
+    var s=st(),body=document.querySelector('#confirm-depart-body');body.textContent='';
     var used=s.draft.buses.filter(function(b){return b.routeNum!=null;}),resting=s.draft.buses.filter(function(b){return b.routeNum==null;});
     var comp=el('ul',{'class':'plain depart-plan'});
     S.routesInOrder(s).forEach(function(r){var ids=assigned(r.num).map(function(b){return b.id+'호차';});
       comp.appendChild(el('li',{'data-num':r.num},r.num+'번 · '+(r.nodes.length?routeText(r):'정류장 없음')+' · '+(ids.length?ids.join(', '):'버스 없음 — 운행하지 않아요')));});
-    if(resting.length)comp.appendChild(el('li',null,'쉬는 버스: '+resting.map(function(b){return b.id+'호차';}).join(', ')+' (보유비는 들어요)'));
+    if(resting.length)comp.appendChild(el('li',null,'쉬는 버스: '+resting.map(function(b){return b.id+'호차';}).join(', ')));
     body.appendChild(el('h3',null,'운행 구성'));body.appendChild(comp);
-    // 재정 예상: 공공서비스 조건(달성 여부·금액·지급 시점)과 예상 수지 — 돌발 수요 제외
-    var E=PB.UI.Econ,ec=E.plan(s),cp=M.costParts(ec.k),money=el('section',{id:'depart-finance'});
-    money.appendChild(el('h3',null,'재정 예상(기본 수요 기준)'));
-    money.appendChild(el('p',null,'이번 단계 수지 약 '+(cp.total>0?'+':'')+app().won(cp.total)+' · 누적 잔액 '+app().won(S.balance(s))+' → 약 '+app().won(S.balance(s)+cp.total)+(cp.leased?' · 임차 '+cp.leased+'대 '+app().won(cp.lease):'')));
-    money.appendChild(el('p',{'class':'note'},'공공서비스 수행분: '+E.conditionText(s)+'.'));money.appendChild(E.conditions(ec.k,true));
-    money.appendChild(el('p',{'class':'note'},'돌발 수요가 생기면 운임이 달라질 수 있어요. 정산은 운행이 끝난 뒤 한 번 해요.'));body.appendChild(money);
     if(!used.length)body.appendChild(el('p',{'class':'callout warn',id:'depart-no-bus'},'운행하는 버스가 없어요. 이대로 출발하면 아무도 버스를 탈 수 없어요.'));
-    if(sharedRoutes().length)body.appendChild(el('p',{'class':'note'},sharedRoutes().map(function(n){return n+'번';}).join(', ')+' 노선의 버스들은 자동으로 간격을 두고 출발해요.'));
-    var tally=PB.Narrative.residentTally(s.config,s.history),risks=[];
-    PB.Demand.residents(s.config,s.phase).forEach(function(rd){var r=m.residents[rd.id],t=tally[rd.id];if(!r||r.satisfied)return;
-      var goal=!t?'':t.completed>=t.threshold?'학기 말 기준('+t.threshold+'회)은 이미 채웠어요.':t.completed+t.remaining-1<t.threshold?'이번에 놓치면 학기 말 기준('+t.threshold+'회)을 채울 수 없어요.':'놓쳐도 남은 '+(t.remaining-1)+'단계에서 만회할 수 있어요(누적 '+t.completed+'/'+t.threshold+'회).';
-      risks.push({rd:rd,r:r,goal:goal,final:t&&t.completed<t.threshold&&t.completed+t.remaining-1<t.threshold});});
-    var rs=el('section',{id:'depart-risks'});rs.appendChild(el('h3',null,'이번 계획으로 기준을 채우기 어려운 사람'));
-    if(!risks.length)rs.appendChild(el('p',{'class':'note'},'돌발 수요가 없다면 오늘 주요 인물은 모두 기준을 채울 것으로 예상돼요.'));
-    var ul=el('ul',{'class':'resident-outcomes'});risks.forEach(function(x){var li=el('li',{'data-resident':x.rd.id,'class':x.final?'final-risk':''});
-      li.appendChild(el('b',null,x.rd.name+' · '));li.appendChild(document.createTextNode((x.r.reasons||[]).map(function(y){return y.text;}).join(' ')+' '));li.appendChild(el('span',{'class':'risk-goal'},x.goal));ul.appendChild(li);});
-    if(risks.length)rs.appendChild(ul);
-    rs.appendChild(el('p',{'class':'note'},'예상은 돌발 수요가 없는 기본 수요로 계산해요. 결과 화면의 판정과 같은 기준이에요.'));body.appendChild(rs);
-    var eff=M.routeReport(run.result,S.routesInOrder(s),s.draft.buses).filter(function(x){return x.buses;});
-    if(eff.length){body.appendChild(el('h3',null,'노선별 예상 이용'));body.appendChild(PB.UI.table(['노선','배정','예상 승차','대당 승차'],eff.map(function(x){return [x.num+'번',x.buses+'대',x.boardings+'회',x.perBus+'회'];})));}
-    P.risk=risks[0]||null;
-    document.querySelector('#confirm-depart').showModal();document.querySelector(risks.length?'#confirm-no':'#confirm-yes').focus();
+    document.querySelector('#confirm-depart').showModal();document.querySelector('#confirm-yes').focus();
   }
   var M=PB.Metrics;
   document.querySelector('#confirm-yes').addEventListener('click',function(){document.querySelector('#confirm-depart').close();if(S.startRun(st()))app().go('run');});
-  // 노선 고치기: 위험한 인물이 있으면 그 사람의 출발·목적지를 지도에 표시하고 이유를 상태 줄에 남긴다
-  document.querySelector('#confirm-no').addEventListener('click',function(){document.querySelector('#confirm-depart').close();var x=P.risk;
-    if(x){P.message=x.rd.name+' · '+(x.r.reasons||[]).map(function(y){return y.text;}).join(' ');render('#plan-message');app().view.setSelected([x.r.o,x.r.d]);app().view.flash(x.r.o);app().view.flash(x.r.d);}});
+  // 노선 고치기: 창을 닫고 지도로 돌아간다
+  document.querySelector('#confirm-no').addEventListener('click',function(){document.querySelector('#confirm-depart').close();});
 })(window);
