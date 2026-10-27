@@ -1,0 +1,78 @@
+// 코스 생성 — 기획서 §4.2·§7.3 카드 흐름
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const cfg = require('../js/config.js');
+require('../js/rng.js');
+const m1 = require('../missions/m1.js');
+const tutorial = require('../missions/tutorial.js');
+const { build } = require('../js/stream.js');
+
+const c = build(m1, cfg, { seed: 1101 });
+const cards = (course) => course.items.filter((i) => i.kind === 'card');
+
+test('card counts match mission', () => {
+  for (const [k, n] of Object.entries(m1.counts)) assert.equal(c.items.filter((i) => i.key === k).length, n, k);
+  assert.equal(c.items.filter((i) => i.ambiguousId).length, 3);
+});
+
+test('same seed same course, other seed differs', () => {
+  assert.deepEqual(build(m1, cfg, { seed: 1101 }), c);
+  assert.notDeepEqual(build(m1, cfg, { seed: 2 }).items, c.items);
+});
+
+test('items sorted by z with unique uids', () => {
+  for (let i = 1; i < c.items.length; i++) assert.ok(c.items[i].z >= c.items[i - 1].z);
+  assert.equal(new Set(c.items.map((i) => i.uid)).size, c.items.length);
+});
+
+test('rare cards sit behind a wall in their lane', () => {
+  for (const it of c.items.filter((i) => i.ambiguousId || (i.key && m1.cardTypes[i.key].rare))) {
+    assert.ok(c.items.some((w) => w.kind === 'wall' && w.lane === it.lane && it.z - w.z > 0 && it.z - w.z <= cfg.rareWallGap), it.uid);
+  }
+});
+
+test('extra walls beyond rare ones', () => {
+  const rare = c.items.filter((i) => i.ambiguousId || (i.key && m1.cardTypes[i.key].rare)).length;
+  assert.ok(c.items.filter((i) => i.kind === 'wall').length > rare);
+});
+
+test('never three walls in one row', () => {
+  const rows = Object.groupBy(c.items.filter((i) => i.kind === 'wall'), (w) => Math.round(w.z));
+  for (const r of Object.values(rows)) assert.ok(new Set(r.map((w) => w.lane)).size < 3);
+});
+
+test('walls never share a spot with a card', () => {
+  for (const w of c.items.filter((i) => i.kind === 'wall')) assert.ok(!cards(c).some((k) => k.lane === w.lane && Math.abs(k.z - w.z) < 2), w.uid);
+});
+
+test('same-lane spacing and opening gap', () => {
+  const cs = cards(c);
+  assert.ok(cs[0].z >= cfg.baseSpeed * 3);
+  for (const l of [0, 1, 2]) {
+    const zs = cs.filter((i) => i.lane === l).map((i) => i.z);
+    for (let i = 1; i < zs.length; i++) assert.ok(zs[i] - zs[i - 1] >= cfg.baseSpeed * 0.35 - 1e-9);
+  }
+});
+
+test('course length matches run time', () => {
+  assert.equal(c.length, m1.runSeconds * cfg.baseSpeed);
+  assert.ok(c.items.at(-1).z < c.length);
+});
+
+test('supplement focuses on missing keys', () => {
+  const s = build(m1, cfg, { seed: 3, focusKeys: ['night_shallow', 'night_muddy'] });
+  const cs = cards(s);
+  assert.equal(cs.length, 12);
+  assert.ok(cs.filter((i) => ['night_shallow', 'night_muddy'].includes(i.key)).length >= 8);
+  for (const k of ['night_shallow', 'night_muddy']) assert.ok(cs.filter((i) => i.key === k).length >= 4, k);
+  assert.equal(cs.filter((i) => i.ambiguousId).length, 0);
+  assert.equal(s.length, m1.supplementSeconds * cfg.baseSpeed);
+});
+
+test('tutorial course builds', () => {
+  const t = build(tutorial, cfg, { seed: 7 });
+  assert.equal(t.items.filter((i) => i.key === 'dog').length, 9);
+  assert.equal(t.items.filter((i) => i.key === 'cat').length, 9);
+});
