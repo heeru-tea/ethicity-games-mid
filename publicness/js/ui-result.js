@@ -90,6 +90,7 @@
     cfg=s.config;
     panel.appendChild(el('p', { 'class': 'eyebrow' }, h.phase + '단계 · ' + cfg.phases[h.phase - 1] + ' — 결과'));
     panel.appendChild(el('h2', null, '운행이 끝났어요'));
+    if (UI.phaseScores) panel.appendChild(UI.phaseScores(App, h, M.routeReport(s.current.result, S.routesInOrder(s), s.draft.buses)));
     if(m.families&&m.families.total)panel.appendChild(el('p',{id:'family-result','class':'callout'},'호수공원 가족 나들이 · '+m.families.total+'팀 중 '+m.families.complete+'팀이 전원 방문·귀가를 마쳤어요. 가족 중 한 명이라도 이동을 마치지 못하면 그 팀의 일정은 미완료예요.'));
     var summary=el('section',{id:'resident-summary'});
     summary.appendChild(el('p',{'class':'outcome-lead'},m.N+'명 중 '+m.arrived+'명이 목적지에 도착했어요.'));

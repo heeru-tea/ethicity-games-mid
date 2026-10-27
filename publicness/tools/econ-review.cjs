@@ -97,4 +97,4 @@ if (require.main === module) {
     r.phases.map((p) => Math.round(p.total / 1000) + 'k').join(' ') + ' | ' + r.phases.map((p) => p.outer || '-').join(' / ')));
   fs.writeFileSync(path.join(__dirname, '../tests/_econ-review.json'), JSON.stringify(rows, null, 1));
 }
-module.exports = { play, STRATEGIES };
+module.exports = { play, STRATEGIES, apply };

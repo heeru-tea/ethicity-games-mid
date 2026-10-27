@@ -15,6 +15,7 @@
   var Advisor = NODE ? require('./advisor.js') : root.PB.Advisor;
   var Rng = NODE ? require('./rng.js') : root.PB.Rng;
   var Schedule = NODE ? require('./schedule.js') : root.PB.Schedule;
+  var Scores = NODE ? require('./scores.js') : root.PB.Scores;
 
   function copyRoute(r) { return { nodes: r.nodes.slice(), stops: r.stops.slice() }; }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -189,16 +190,8 @@
     return Math.round((F.opPerMin * tl.opMinutes + F.fuelPerKm * tl.km) / 100) * 100;
   }
   // 노선을 정하기 전에 보여 줄 대략값: 이번 단계 정류장 두 곳 왕복 노선들의 1대 운영비 중앙값
-  function typicalBusCost(s) {
-    var g = graph(s), F = s.config.finance, list = [];
-    g.nodes.forEach(function (a, i) { g.nodes.slice(i + 1).forEach(function (b) {
-      if (a === 'N' || b === 'N') return;
-      var tl = Schedule.timeline(g, s.config, 1, { nodes: [a, b], stops: [true, true] }, 0);
-      list.push(F.opPerMin * tl.opMinutes + F.fuelPerKm * tl.km);
-    }); });
-    list.sort(function (a, b) { return a - b; });
-    return list.length ? Math.round(list[Math.floor(list.length / 2)] / 1000) * 1000 : 0;
-  }
+  // (재정 건전성의 기준 예비비도 같은 값을 쓴다 — Scores.referenceBusCost)
+  function typicalBusCost(s) { return Math.round(Scores.referenceBusCost(graph(s), s.config) / 1000) * 1000; }
   /* ── 추가 임차(2026-10-27) ──
    * 이번 단계에만 쓰는 일반 버스(정원 12명) 1대씩, 단계당 최대 lease.perPhase대. 임차료 = 차량 확보 비용(보유비 대신, 쉬어도 듦).
    * 운행하면 관제·운영비·연료비는 따로. 노선 배치·이동·회수에는 임차료를 다시 받지 않는다(정산 때 출발한 계획의 임차 대수 × 임차료 한 번).
@@ -373,6 +366,8 @@
     entry.eventFare = s.config.finance.fare * c.result.passengers.filter(function (p) { return p.kind === 'extra' && p.firstBoardT != null; }).length;
     s.history.push(entry);
     settle(s, entry);
+    // 두 점수(재정 건전성·이동 수요 충족) — 정산 직후 한 번 기록해 저장본에 남긴다(js/scores.js)
+    entry.scores = Scores.phaseScores(s.config, graph(s), s.phase, s.seed, c.event, c.plan, c.result.passengers, ledgerBalance(s, s.phase));
     s.stage = 'result';
     return entry;
   }
@@ -400,6 +395,22 @@
     s.negStreak = row.balance < 0 ? (s.negStreak || 0) + 1 : 0;
     if (financeRule(s) === 'balance-streak' && s.negStreak >= NEGATIVE_LIMIT && !s.end) s.end = { cause: 'contract', phase: entry.phase, balance: row.balance };
   }
+  function ledgerBalance(s, phase) { var row = (s.ledger || []).filter(function (r) { return r.phase === phase; })[0]; return row ? row.balance : null; }
+  // 점수 기록이 없는 예전 저장본: 저장된 출발 계획·사건·긴급 조정으로 운행을 다시 계산해, 기록된 요청 수·도착 수와 같을 때만 채운다
+  // (설정이 바뀌어 결과가 달라지면 채우지 않고 ‘평가 자료 없음’으로 둔다 — 없는 평가를 만들어 넣지 않는다)
+  function rescore(s, h) {
+    var bal = ledgerBalance(s, h.phase);
+    if (!h.plan || !h.metrics || h.event === undefined || bal == null) return false;
+    var g = Graph.build(s.config, h.phase), adj = (s.emergencyLog || []).filter(function (a) { return a.phase === h.phase && a.busId != null; });
+    var req = Demand.sortReqs(Demand.base(s.config, h.phase, s.seed).concat(Demand.extra(s.config, h.phase, h.event)));
+    var res = Sim.run({ g: g, config: s.config, phase: h.phase, plan: h.plan, requests: req, event: h.event, adjustments: adj });
+    var arrived = res.passengers.filter(function (p) { return p.status === 'arrived'; }).length;
+    if (res.passengers.length !== h.metrics.N || arrived !== h.metrics.arrived) return false;
+    h.scores = Scores.phaseScores(s.config, g, h.phase, s.seed, h.event, h.plan, res.passengers, bal);
+    h.scores.recomputed = true;
+    return true;
+  }
+  function scoresOverall(s) { return Scores.overall(s.history, s.config.phases.length); }
   // 정산 기록이 없는 예전 저장본: 기록된 운행에서 다시 만든다(같은 단계는 한 번만)
   function rebuildLedger(s) {
     s.ledger = []; s.deficits = 0; s.negStreak = 0;
@@ -480,13 +491,14 @@
     if (!s.ledger) rebuildLedger(s);
     // 예전 저장본(적자 3회 규칙 시절): 연속 마이너스 잔액 횟수를 정산 기록에서 다시 센다. 이미 끝난 계약(s.end)은 그대로 둔다
     if (s.negStreak == null) s.negStreak = (s.ledger || []).reduce(function (k, r) { return r.balance < 0 ? k + 1 : 0; }, 0);
+    s.history.forEach(function (h) { if (!h.scores || h.scores.version !== Scores.VERSION) rescore(s, h); });
     if (s.stage === 'ending' && !s.end) { var bal = balance(s); s.end = { cause: financeRule(s) === 'final-balance' && bal < 0 ? 'bankrupt' : 'complete', phase: s.phase, balance: bal }; }
     return s;
   }
 
   var api = {
     emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,
-    serialize: serialize, restore: restore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
+    serialize: serialize, restore: restore, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
     assign: assign, lease: lease, unlease: unlease, leaseLimit: leaseLimit, leasedBuses: leasedBuses, LEASE_BASE: LEASE_BASE, restingFor: restingFor, autoPlace: autoPlace, busCost: busCost, typicalBusCost: typicalBusCost, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,

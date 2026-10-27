@@ -159,6 +159,7 @@
     }
     panel.appendChild(el('p', {id:'ending-verdict','class':'outcome-lead'}, conclusion.verdict));
     panel.appendChild(el('p', {id:'ending-profit'}, (failed?'보유 잔액 ':'총 수익 ')+App.won(conclusion.profit)+' · 지원금 포함 누적 손익'));
+    if (UI.finalScores) panel.appendChild(UI.finalScores(App, s));
     if(failed)panel.appendChild(failureReport(App,s));
     var families=s.history.reduce(function(a,h){var f=h.metrics.families;if(f){a.total+=f.total;a.complete+=f.complete;}return a;},{total:0,complete:0});
     if(families.total)panel.appendChild(el('p',{id:'ending-families'},'호수공원 가족 일정 '+families.total+'팀 중 '+families.complete+'팀 전원 방문·귀가 완료'));

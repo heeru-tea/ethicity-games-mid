@@ -108,6 +108,11 @@
     // 3시간이면 성실한 접근성 설계도 6명 중 4명만 만족, 4시간이면 6명 모두·긴 순환은 3명 — 차이를 만들면서 초반 여유를 둔다
     service: { maxWait: 27 },
     essential: ['C', 'D'],
+    // 두 점수(재정 건전성·이동 수요 충족, 2026-10-27) — 계산 js/scores.js, 근거 tools/score-review.cjs. 경제 수치(finance)와 별개인 평가 설정
+    //   reservePhases: 기준 예비비 = 기본 제공 버스 × (보유비 + 기준 버스 하루 운행비 − 기본 지원) × 이 값(1 = 운임·수행분 없이 한 단계)
+    //   outer: 외곽 지역(외곽 마을 F — 공공서비스 수행 조건의 그 정류장). 필수 목적지는 위 essential을 그대로 쓴다
+    //   suggest: 다음 행동 제안의 근거 — 만차 fullMin번 이상인 노선 / 대당 승차가 운행 노선 평균의 lowUseRatio배 미만인 2대 이상 노선
+    scores: { reservePhases: 1, outer: ['F'], suggest: { fullMin: 3, lowUseRatio: 0.5 } },
     reachInitial: ['F', 'E'],
     newZone: 'I',
     newTownPhase: 3,
