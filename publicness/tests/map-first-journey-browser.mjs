@@ -10,7 +10,7 @@ try{for(const mode of ['default','fixed']){
   await page.locator('#btn-begin-plan').click();
   if(phase===3){await page.screenshot({path:`publicness/docs/map-first/plan-journey-${mode}.png`});}
   await page.locator('#btn-depart').click();await page.locator('#confirm-yes').click();
-  for(let i=0;i<(phase>=3?2:0);i++){if(!await page.locator('#emergency-dialog[open]').count())await page.locator('#run-skip').click();await page.locator('#emergency-continue').click();}
+  for(let i=0;i<(phase>=3?2:0);i++){for(let k=0;k<40&&!await page.locator('#emergency-dialog[open]').count();k++){await page.locator('#run-next').click();await page.waitForFunction(()=>PB.UI.runState()&&PB.UI.runState().hold,null,{timeout:20000,polling:20});}await page.locator('#emergency-continue').click();}
   await page.locator('#run-skip').click();await page.locator('#resident-day-results').waitFor();
   assert.equal(await page.evaluate(()=>PB.App.s.history.length),phase);
   if(phase===3){await page.screenshot({path:`publicness/docs/map-first/result-${mode}.png`});await page.setViewportSize({width:375,height:812});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`publicness/docs/map-first/result-${mode}-375.png`});await page.setViewportSize({width:1366,height:900});}

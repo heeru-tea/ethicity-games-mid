@@ -16,7 +16,7 @@
     s: null, view: null, map2d: null, seedParam: null, player: null,
     sound: false, motion: false, busy: false, speed: 1
   };
-  // 운행 재생 배속(1·2·4). 재생 속도만 바꾸며 이 브라우저에 기억한다
+  // 운행 재생 배속(1·2 — 고른 값, ‘다음 결정까지’는 저장하지 않음). 재생 속도만 바꾸며 이 브라우저에 기억한다
   App.setSpeed = function (v) { if (PB.Storage.SPEEDS.indexOf(v) < 0) return; App.speed = v; PB.Storage.writeSpeed(v); };
   // 자동 저장 — 화면을 그릴 때마다(계획 편집·출발·결과·다음 단계). 운행 결과는 저장하지 않고 다시 계산한다
   App.save = function () {

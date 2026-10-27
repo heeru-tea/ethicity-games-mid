@@ -123,6 +123,15 @@
   </div>
 </dialog>
 
+<dialog id="confirm-skip" class="dialog" aria-labelledby="confirm-skip-h">
+  <h2 id="confirm-skip-h">남은 긴급 조정 기회를 쓰지 않고 넘어갈까요?</h2>
+  <p>건너뛴 기회는 ‘변경 없이 계속’으로 기록되고, 이번 운행은 끝까지 그대로 진행돼요.</p>
+  <div class="row-actions">
+    <button type="button" class="btn" id="skip-no">아니요, 계속 볼게요</button>
+    <button type="button" class="btn btn-primary" id="skip-yes">끝까지 건너뛰기</button>
+  </div>
+</dialog>
+
 <dialog id="confirm-restart" class="dialog" aria-labelledby="confirm-restart-h">
   <h2 id="confirm-restart-h">처음부터 다시 할까요?</h2>
   <p>저장된 진행과 지금까지의 운행 기록이 사라져요.</p>
@@ -155,6 +164,7 @@
 <script src="js/view3d.js"></script>
 <script src="js/ui-plan.js"></script>
 <script src="js/ui-map-plan.js"></script>
+<script src="js/run-pace.js"></script>
 <script src="js/ui-run.js"></script>
 <script src="js/ui-result.js"></script>
 <script src="js/ui-transition.js"></script>

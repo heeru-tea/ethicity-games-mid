@@ -271,8 +271,10 @@
     s.stage = 'run'; s.resumedFromRun = false;
     return s.current.result;
   }
+  // 긴급 조정 시점(엔진 시간, 10:06·15:03) — 운행 화면(ui-run)도 이 값을 쓴다
+  var EMERGENCY_AT=[34,67];
   function emergencyDecision(s,at,busId,routeNum){
-    if(s.stage!=='run'||s.phase<3||[34,67].indexOf(at)<0)return false;
+    if(s.stage!=='run'||s.phase<3||EMERGENCY_AT.indexOf(at)<0)return false;
     var decisions=s.emergencyLog||(s.emergencyLog=[]);
     if(decisions.some(function(a){return a.phase===s.phase&&a.at===at;}))return false;
     var route=busId==null?null:routeByNum(s,routeNum);
@@ -413,7 +415,7 @@
   }
 
   var api = {
-    emergencyDecision:emergencyDecision,
+    emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,
     serialize: serialize, restore: restore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
