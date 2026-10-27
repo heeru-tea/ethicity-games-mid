@@ -10,6 +10,7 @@
     speedRamp: 0.25,        // 코스 끝까지 최대 +25%
     laneWidth: 2.4,         // m
     catchLead: 0.7,         // s — 닿기 이만큼 전부터 잡을 수 있다(판정 구간)
+    catchLate: 0.12,        // s — 닿은 직후에도 이만큼은 잡힌다(닿는 순간 누르는 손 버릇)
     perfectWindow: 0.08,    // s — 닿는 순간 ± 이 안이면 퍼펙트(연출만)
     grabBuffer: 0.15,       // s — 잡기 입력을 이만큼 들고 있는다(레인 이동 직전·직후 허용)
     wallSlow: { factor: 0.5, seconds: 1 },

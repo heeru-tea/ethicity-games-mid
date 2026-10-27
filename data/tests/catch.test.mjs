@@ -12,7 +12,7 @@ const st = (over) => ({ now: 0, items: [], runnerZ: 0, speed: 16, lane: 1, bagCo
 test('phase boundaries', () => {
   assert.equal(phase(card(16 * 0.7), 0, 16, cfg), 'active');
   assert.equal(phase(card(16 * 0.71), 0, 16, cfg), 'far');
-  assert.equal(phase(card(-0.1), 0, 16, cfg), 'passed');
+  assert.equal(phase(card(-16 * 0.13), 0, 16, cfg), 'passed');
 });
 
 test('grabs nearest active card in own lane only', () => {
@@ -73,4 +73,21 @@ test('perfect only at contact', () => {
 test('taken cards are skipped', () => {
   const g = grabber(cfg); g.press(0);
   assert.equal(g.update(st({ items: [card(2, 1, 't')], taken: new Set(['t']) })), null);
+});
+
+test('slowed runner keeps the same catch distance (wall hit must not shrink the window)', () => {
+  assert.equal(phase(card(16 * 0.65), 0, 8, cfg), 'active');
+  const g = grabber(cfg); g.press(0);
+  assert.equal(g.update(st({ items: [card(5.8, 1, 'behind-wall')], speed: 8 })).item.uid, 'behind-wall');
+});
+
+test('press just after contact still grabs', () => {
+  assert.equal(phase(card(-16 * 0.1), 0, 16, cfg), 'active');
+  const g = grabber(cfg); g.press(0);
+  assert.equal(g.update(st({ items: [card(-1, 1, 'late')] })).item.uid, 'late');
+});
+
+test('perfect works on both sides of contact', () => {
+  const g = grabber(cfg); g.press(0);
+  assert.equal(g.update(st({ items: [card(-0.8)] })).perfect, true);
 });

@@ -278,8 +278,8 @@
       if (d < -VIEW_BEHIND) { if (m && !isFlying(it.uid)) removeMesh(it.uid); continue; }
       if (!m && !S.taken.has(it.uid)) m = S.meshes[it.uid] = makeItemMesh(it);
       if (!m || S.taken.has(it.uid)) continue;
-      // 러너를 지나친 것은 카메라 앞을 가리지 않게 숨긴다
-      m.visible = d > (it.kind === 'card' ? -0.3 : -0.8);
+      // 러너를 지나친 것은 카메라 앞을 가리지 않게 숨긴다(카드는 늦게 잡기 여유가 끝날 때까지 보인다)
+      m.visible = d > (it.kind === 'card' ? -c.baseSpeed * c.catchLate : -0.8);
       if (it.kind !== 'card') continue;
       var active = root.DR.Catch.phase(it, S.z, speed, c) === 'active';
       var mine = active && it.lane === S.lane;

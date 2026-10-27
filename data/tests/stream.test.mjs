@@ -73,8 +73,8 @@ test('supplement focuses on missing keys', () => {
 
 test('tutorial course builds', () => {
   const t = build(tutorial, cfg, { seed: 7 });
-  assert.equal(t.items.filter((i) => i.key === 'dog').length, 9);
-  assert.equal(t.items.filter((i) => i.key === 'cat').length, 9);
+  assert.equal(t.items.filter((i) => i.key === 'dog').length, tutorial.counts.dog);
+  assert.equal(t.items.filter((i) => i.key === 'cat').length, tutorial.counts.cat);
 });
 
 test('common-only bag can pass after one perfect supplement', () => {

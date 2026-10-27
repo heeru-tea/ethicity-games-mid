@@ -8,7 +8,7 @@
   'use strict';
 
   var m1 = {
-    id: 'm1', title: '침수 판별 AI', bag: 30, runSeconds: 180, supplementSeconds: 30, seed: 1101,
+    id: 'm1', title: '침수 판별 AI', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 1101,
     labelOptions: [
       { id: 'flood_deep', text: '침수(깊음)' },
       { id: 'flood_shallow', text: '침수(얕음)' },
@@ -47,7 +47,7 @@
         ] }
     ],
     counts: {
-      day_deep: 22, day_shallow: 18, day_wet: 6, day_dry: 6, night_wet: 9,
+      day_deep: 11, day_shallow: 9, day_wet: 4, day_dry: 4, night_wet: 6,
       night_neon: 3, night_deep: 3, night_shallow: 3, night_muddy: 3
     },
     scenes: [

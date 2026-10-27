@@ -39,9 +39,9 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
       assert.equal(await page.locator('#screen-briefing .brief-scene').nth(3).getAttribute('data-emphasis'), 'low');
       await page.locator('#btn-run').click();
       await page.waitForFunction(() => DR.Run.peek().running, null, { timeout: 8000 });
-      await fillAndFinish(page, { day_deep: 15, day_shallow: 15 });
+      await fillAndFinish(page, { day_deep: 11, day_shallow: 9 });
       assert.ok(await page.locator('#screen-inspect').isVisible(), 'inspect');
-      assert.equal(await page.locator('#inspect-grid .bag-card').count(), 30);
+      assert.equal(await page.locator('#inspect-grid .bag-card').count(), 20);
       assert.ok(!/\d+\s*\/\s*\d+|%/.test(await page.locator('#inspect-scenes').innerText()), 'no counts in scene summary');
       if (!big) await page.screenshot({ path: shotPath('inspect-375') });
       await page.locator('#btn-submit').click();
@@ -92,7 +92,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
     const { browser, page, errors } = await openGame({ viewport, query: '?start=m1' });
     try {
       await toRun(page);
-      await fillAndFinish(page, { ...ALL2, night_shallow: 0, night_muddy: 0, day_deep: 18 });
+      await fillAndFinish(page, { ...ALL2, night_shallow: 0, night_muddy: 0, day_deep: 11, day_shallow: 9 });
       await submitAndConfirm(page);
       await page.locator('#screen-result .result-scene').waitFor();
       const res = await readResults(page);

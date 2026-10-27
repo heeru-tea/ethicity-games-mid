@@ -6,14 +6,14 @@
   'use strict';
 
   var tutorial = {
-    id: 'tutorial', title: '러너 자격 시험', bag: 10, runSeconds: 90, seed: 7,
+    id: 'tutorial', title: '러너 자격 시험', bag: 10, runSeconds: 45, seed: 7,
     labelOptions: [],
     cardTypes: {
       dog: { icons: ['dog'], art: { animal: 'dog' } },
       cat: { icons: ['cat'], art: { animal: 'cat' } }
     },
     ambiguous: [],
-    counts: { dog: 9, cat: 9 },
+    counts: { dog: 8, cat: 8 },
     scenes: [
       { id: 'T1', title: '보호소 입양 안내', art: { place: 'shelter', time: 'day' },
         combos: [

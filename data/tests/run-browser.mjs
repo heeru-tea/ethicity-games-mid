@@ -46,7 +46,7 @@ try {
   await page.evaluate(() => { for (let i = 0; i < 5; i++) window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', key: ' ', repeat: true })); DR.Run.step(0.016); });
   assert.equal((await peek()).bagCount, before, 'repeat ignored');
   await page.evaluate(() => { window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', key: ' ' })); DR.Run.step(0.016); });
-  assert.equal((await peek()).bagCount, before + 1, 'fresh press grabs');
+  assert.equal((await peek()).bagCount, before + 1, 'fresh press grabs ' + JSON.stringify({ target, p: await peek(), taken: await page.evaluate((u) => DR.Run.isTaken(u), target.uid) }));
 
   // 벽: 앞의 벽 레인으로 옮겨 통과 → 감속
   assert.ok(await stepUntil(`const w = items.find(i => i.kind==='wall' && i.z - p.runnerZ > 1 && i.z - p.runnerZ < 6); if (w) { window.__wall = w; return true; } return false;`), 'reach a wall');
