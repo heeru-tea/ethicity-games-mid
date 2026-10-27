@@ -14,13 +14,16 @@
       roads = [];
       var points = config.nodes.filter(function (n) { return n.fromPhase <= phase; });
       points.forEach(function (a, i) { points.slice(i + 1).forEach(function (b) {
-        roads.push({ a: a.id, b: b.id, fromPhase: 1, min: Math.max(1, Math.round(Math.hypot(a.x - b.x, a.y - b.y) * config.map.pixelsPerUnit / config.map.pixelsPerSecond)) });
+        // km = 실제 주행거리(지도 좌표 1 = 게임 거리 1km, 화면 확대·카메라와 무관). min = 그 거리를 달리는 시간(정수 초)
+        var km = Math.hypot(a.x - b.x, a.y - b.y);
+        roads.push({ a: a.id, b: b.id, fromPhase: 1, km: km, min: Math.max(1, Math.round(km * config.map.pixelsPerUnit / config.map.pixelsPerSecond)) });
       }); });
     }
     roads.forEach(function (r) {
       if (r.fromPhase > phase || !adj[r.a] || !adj[r.b]) return;
-      adj[r.a].push({ to: r.b, min: r.min });
-      adj[r.b].push({ to: r.a, min: r.min });
+      var km = r.km != null ? r.km : r.min; // 예전 고정 도로표는 거리 = 시간으로 본다
+      adj[r.a].push({ to: r.b, min: r.min, km: km });
+      adj[r.b].push({ to: r.a, min: r.min, km: km });
     });
     Object.keys(adj).forEach(function (id) { adj[id].sort(function (p, q) { return p.to < q.to ? -1 : 1; }); });
     return {
@@ -31,6 +34,11 @@
       time: function (a, b) {
         if (!adj[a]) return null;
         for (var i = 0; i < adj[a].length; i++) if (adj[a][i].to === b) return adj[a][i].min;
+        return null;
+      },
+      dist: function (a, b) {
+        if (!adj[a]) return null;
+        for (var i = 0; i < adj[a].length; i++) if (adj[a][i].to === b) return adj[a][i].km;
         return null;
       }
     };
@@ -85,6 +93,13 @@
     return oneWayMinutes(g, route) * 2 + (2 + inner * 2) * dwell;
   }
 
+  // 노선 한 바퀴 거리(km): 왕복은 편도×2, 순환은 한 바퀴
+  function routeKm(g, route) {
+    var sum = 0;
+    for (var i = 1; i < route.nodes.length; i++) sum += g.dist(route.nodes[i - 1], route.nodes[i]) || 0;
+    return isLoop(route) ? sum : sum * 2;
+  }
+
   function isLoop(route) { return !!route && route.nodes.length >= 4 && route.nodes[0] === route.nodes[route.nodes.length - 1]; }
 
   function lessPath(p, q) {
@@ -122,7 +137,7 @@
     validateRoute: validateRoute,
     routeId: routeId,
     oneWayMinutes: oneWayMinutes,
-    cycleMinutes: cycleMinutes,
+    cycleMinutes: cycleMinutes, routeKm: routeKm,
     shortestPath: shortestPath
   };
   root.PB = root.PB || {};

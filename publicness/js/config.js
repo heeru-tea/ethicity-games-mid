@@ -87,7 +87,16 @@
     ],
 
     bus: { capacity: 12, window: 120, requestWindow: 90, offsets: [0], initialBuses: 2, maxBuses: 6, autoSpacing: true, depot: 'A', dwell: 1, transferMin: 1 },
-    finance: { fare: 1000, subsidy: 150000, holding: 20000, opPerMin: 100, movePerMin: 150 },
+    // 재정(2026-10-27 개편, 게임용 가상 수치) — 근거·대표 전략 비교는 tools/econ-review.cjs
+    finance: {
+      fare: 1000,              // 이동 요청당 첫 탑승 때 1번(환승 추가 요금 없음)
+      basePerBus: 10000,       // 기본 지원: 기본 제공 차량 1대당(보유비의 절반 — 운행하지 않으면 남지 않는다)
+      holding: 20000,          // 기본 제공 차량 보유비(쉬어도 듦)
+      opPerMin: 100,           // 관제·운영비: 운행 배정 차량의 하루 근무 시간당(120 × 100 = 대당 12,000원)
+      fuelPerKm: 150,          // 연료·정비비: 실제 주행거리 1km당(지도 좌표 1 = 1km)
+      lease: { fee: 25000, perPhase: 2 }, // 추가 임차: 이번 단계 1대당(보유비 대신 — 쉬어도 듦), 단계당 최대 2대
+      service: { amount: 20000, minStops: 6, stops: [{ id: 'F', label: '외곽 마을', fromPhase: 1 }, { id: 'D', label: '병원', fromPhase: 1 }, { id: 'K', label: '복지관', fromPhase: 5 }] }
+    },
     events: { pNone: 0.60, pDemand: 0.85, timeBase: 35, timeSpan: 26, extraPerMin: 2, extraMinutes: 6 },
     defaultSeed: 42,
     rush: { share: 0.75, outbound: 8, inbound: 50, spread: 10, jitter: 4 },

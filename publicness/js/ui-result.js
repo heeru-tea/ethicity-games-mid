@@ -71,15 +71,14 @@
     return parts.join(' · ');
   }
   UI.waitLine=waitLine;
-  // 재정 알림(결과 화면 본문, 새 창 없이): 랜덤은 이번 적자·2회째 경고·3회째 계약 종료, 기본은 잔액이 낮을 때 ‘학기 말에 평가’ 안내
+  // 재정 알림(결과 화면 본문, 새 창 없이): 랜덤은 잔액 마이너스 1번째 경고·2번째 연속 계약 종료(회차 적자는 정보), 기본은 잔액이 낮을 때 ‘학기 말에 평가’ 안내
   function financeNotice(App,h){
     var s=App.s,f=S.financeStatus(s),row=f.ledger.filter(function(r){return r.phase===h.phase;})[0],lines=[],warn=false;
     if(!row)return null;
-    if(f.rule==='deficit-count'){
-      if(row.deficit)lines.push('이번 단계 회차 수지 '+App.won(row.total)+' — 적자예요.');
-      if(f.end&&f.end.cause==='contract'&&f.end.phase===h.phase){lines.push('누적 적자 '+f.deficits+'/'+f.limit+'회 — 적자 누적으로 운영 계약이 종료돼요. 이번 단계 결과와 정산을 확인한 뒤 종료 화면으로 넘어가요.');warn=true;}
-      else if(f.deficits===f.limit-1){lines.push('누적 적자 '+f.deficits+'/'+f.limit+'회 — 한 번 더 적자가 발생하면 운영 계약이 종료됩니다.');warn=true;}
-      else if(row.deficit)lines.push('누적 적자 '+f.deficits+'/'+f.limit+'회. 흑자가 나도 이 횟수는 줄지 않아요.');
+    if(f.rule==='balance-streak'){
+      if(row.deficit)lines.push('이번 단계 회차 수지 '+App.won(row.total)+' — 적자예요.'+(row.balance>=0?' 모아 둔 잔액('+App.won(row.balance)+')으로 메웠어요.':''));
+      if(f.end&&f.end.cause==='contract'&&f.end.phase===h.phase){lines.push('누적 잔액이 '+f.limit+'번 연속 0원 미만('+App.won(row.balance)+')이라 운영 계약이 종료돼요. 이번 단계 결과와 정산을 확인한 뒤 종료 화면으로 넘어가요.');warn=true;}
+      else if(row.balance<0){lines.push('누적 잔액 '+App.won(row.balance)+' — 다음 단계를 마칠 때도 0원 미만이면 운영 계약이 종료됩니다.');warn=true;}
     }else if(f.low)lines.push('보유 잔액 '+App.won(f.balance)+'. 기본 모드는 재정을 학기 말에 평가해요. 마지막 단계가 끝난 뒤 잔액이 0원 미만이면 파산으로 끝나요.');
     if(!lines.length)return null;
     return el('p',{id:'finance-status','class':'callout'+(warn?' warn':''),role:'status'},lines.join(' '));
@@ -205,15 +204,15 @@
     // 재정
     var fs = el('section', { id: 'finance', 'aria-labelledby': 'fin-h' });
     fs.appendChild(el('h3', { id: 'fin-h' }, '재정(가상원)'));
-    var k = m.costs, bal = S.balance(s);
-    fs.appendChild(table(['항목', '금액'], [
-      ['위탁 지원금', App.won(k.subsidy)], ['운임 수입', App.won(k.fare)], ['차량 보유비', App.won(-k.holding)],
-      ['원격 관제·운영비', App.won(-k.op)], ['에너지·정비(이동)', App.won(-k.move)]
-    ], ['이번 단계 회차 수지', App.won(k.total) + (k.total < 0 ? ' (적자)' : '')]));
-    // 지원금이 손익 대부분을 덮어 노선 선택의 재정 차이가 안 보이므로, 운임과 운영비만의 차이를 따로 보여 준다
-    fs.appendChild(el('p', { id: 'operating-balance', 'class': 'note' }, '지원금을 뺀 운영 손익(운임 − 보유비·운영비·이동비): ' + App.won(k.total - k.subsidy) + '. 이용이 적은 곳까지 버스를 보내면 이 값이 줄어들 수 있고, 위탁 지원금은 그런 이동을 지키라고 주는 돈이에요.'));
-    fs.appendChild(el('p', { id: 'finance-balance' }, '보유 잔액(누적): ' + App.won(bal) + (S.financeRule(s) === 'deficit-count' ? ' · 누적 적자 ' + S.financeStatus(s).deficits + '/' + S.DEFICIT_LIMIT + '회' : '')));
-    fs.appendChild(el('p', { 'class': 'note' }, '회차 수지 = 수입(위탁 지원금 + 운임) − 비용(보유비·운영비·이동비). 0원 미만이면 적자, 정확히 0원은 적자가 아니에요. ' + App.financeRuleText(s)));
+    var k = m.costs, bal = S.balance(s), E = PB.UI.Econ, kp = M.costParts(k);
+    fs.appendChild(E.financeTable(k));
+    if (!kp.legacy) { fs.appendChild(el('h4', null, '공공서비스 수행분')); fs.appendChild(E.conditions(k, false)); }
+    // 회차 수지·지원금을 뺀 운영 손익·누적 잔액을 서로 다른 줄로(혼동 방지)
+    fs.appendChild(el('p', { id: 'operating-balance', 'class': 'note' }, '지원금을 뺀 운영 손익(운임 − 보유비·임차료·운영비·연료비): ' + App.won(k.total - kp.subsidyBase - kp.subsidyService) + '. 이용이 적은 곳까지 버스를 보내면 이 값이 줄어들 수 있고, 지원금은 그런 이동을 지키라고 주는 돈이에요.'));
+    fs.appendChild(el('p', { id: 'finance-balance' }, '보유 잔액(누적): ' + App.won(bal) + (S.financeRule(s) === 'balance-streak' && S.financeStatus(s).negStreak ? ' · 잔액 마이너스 ' + S.financeStatus(s).negStreak + '/' + S.NEGATIVE_LIMIT + '회 연속' : '')));
+    fs.appendChild(el('p', { 'class': 'note' }, '회차 수지 = 수입(지원금 + 운임) − 비용(보유비·임차료·운영비·연료비). 0원 미만이면 그 단계 적자예요(정확히 0원은 적자 아님). ' + App.financeRuleText(s)));
+    fs.appendChild(el('h4', null, '노선별 재정과 이동'));
+    fs.appendChild(E.routeTable(M.routeEconomy(s.current.result, S.routesInOrder(s), s.draft.buses, s.config, S.graph(s))));
     details.appendChild(fs);
 
     var last = s.phase >= cfg.phases.length, ended = !!(s.end && s.end.cause === 'contract');

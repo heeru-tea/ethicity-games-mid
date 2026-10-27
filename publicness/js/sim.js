@@ -32,6 +32,40 @@
   }
 
   // 운행 노선으로 최대 1회 환승해 구조적으로 이어지는지(정차 지점만, 시간·정원 무시)
+  /* 단계 정산(게임용 가상 수치, 실제 교통 원가 아님)
+   * 수입: 기본 지원(기본 제공 차량 1대당) + 공공서비스 수행분(사전 공개 조건마다 따로) + 운임(요청당 첫 탑승 1번, 환승 무료)
+   * 비용: 차량 보유비(기본 제공 차량, 쉬어도 듦) + 임차료(이번 단계 추가 임차 차량 — 보유비 대신) + 관제·운영비(운행 배정 차량의 하루 근무)
+   *       + 연료·정비비(실제 주행거리 km × 단가 — 속도와 무관, 공차 이동 포함, 종료 시각까지 달린 만큼만) */
+  function finance(config, g, phase, plan, timelines, riders) {
+    var F = config.finance, leased = plan.buses.filter(function (b) { return b.leased; }).length, provided = plan.buses.length - leased;
+    var km = timelines.reduce(function (s, tl) { return s + (tl.km || 0); }, 0);
+    var service = serviceChecks(config, g, phase, timelines);
+    var k = {
+      subsidyBase: (F.basePerBus || 0) * provided,
+      subsidyService: service.reduce(function (s, c) { return s + (c.met ? c.amount : 0); }, 0),
+      service: service,
+      fare: F.fare * riders,
+      holding: F.holding * provided,
+      lease: (F.lease ? F.lease.fee : 0) * leased, leased: leased,
+      op: F.opPerMin * timelines.reduce(function (s, tl) { return s + tl.opMinutes; }, 0),
+      fuel: Math.round(F.fuelPerKm * km), km: Math.round(km * 10) / 10
+    };
+    k.subsidy = k.subsidyBase + k.subsidyService;
+    k.total = k.subsidy + k.fare - k.holding - k.lease - k.op - k.fuel;
+    return k;
+  }
+  // 공공서비스 수행 조건: 이번 단계에 공개된 정류장마다 ‘실제로 달린 버스가 운행 시간 안에 N번 이상 정차’. 승객 수와 무관,
+  // 노선만 그리고 버스를 안 보내면 정차 0번. 조건마다 따로 지급(하나를 놓쳐도 나머지는 받는다)
+  function serviceChecks(config, g, phase, timelines) {
+    var S = config.finance.service, W = config.bus.window;
+    if (!S) return [];
+    return S.stops.filter(function (x) { return x.fromPhase <= phase && g.has(x.id); }).map(function (x) {
+      var n = 0;
+      timelines.forEach(function (tl) { tl.visits.forEach(function (v) { if (v.node === x.id && v.kind === 'stop' && v.t <= W) n++; }); });
+      return { id: x.id, label: x.label, need: S.minStops, stops: n, met: n >= S.minStops, amount: S.amount };
+    });
+  }
+
   function structural(g, plan, o, d) {
     var rs = operatingRoutes(plan).map(function (r) { return { id: r.id, s: stopSet(r.route) }; });
     for (var i = 0; i < rs.length; i++) {
@@ -181,7 +215,7 @@
       tl.segments=tl.segments.concat(future.segments);tl.visits=tl.visits.filter(function(v){return v.t<=t;}).concat(future.visits);tl.tail=future.tail;
       tl.assignments=tl.assignments||[];tl.assignments.push({t:start,depart:t,route:change.route});
       if(!tl.opMinutes)tl.opMinutes=Math.max(0,W-t);
-      tl.moveMinutes=tl.segments.reduce(function(sum,x){return sum+Math.max(0,Math.min(x.t1,W)-x.t0);},0);
+      tl.moveMinutes=tl.segments.reduce(function(sum,x){return sum+Math.max(0,Math.min(x.t1,W)-x.t0);},0);tl.km=Schedule.driven(g,tl.segments,W);
       var next=indexBus(future);indexed=indexed.filter(function(b){return b.tl.busId!==id;});indexed.push(next);
       Object.keys(visitAt).forEach(function(k){if(Number(k)>t)visitAt[k]=visitAt[k].filter(function(e){return e.b.tl.busId!==id;});});
       future.visits.forEach(function(v,k){(visitAt[v.t]||(visitAt[v.t]=[])).push({b:next,v:v,k:k});visitAt[v.t].sort(function(a,b){return a.b.tl.busId-b.b.tl.busId;});});
@@ -286,15 +320,8 @@
     passengers.forEach(function (p) { delete p._waitStart; delete p._ready; delete p._bus; delete p._location; });
 
     var users = passengers.filter(function (p) { return p.firstBoardT != null; });
-    var costs = {
-      subsidy: F.subsidy,
-      fare: F.fare * users.length,
-      holding: F.holding * plan.buses.length,
-      op: F.opPerMin * timelines.reduce(function (s, tl) { return s + tl.opMinutes; }, 0),
-      move: F.movePerMin * timelines.reduce(function (s, tl) { return s + tl.moveMinutes; }, 0),
-      paidUnfinished: users.filter(function (p) { return p.status !== 'arrived'; }).length
-    };
-    costs.total = costs.subsidy + costs.fare - costs.holding - costs.op - costs.move;
+    var costs = finance(config, g, input.phase, plan, timelines, users.length);
+    costs.paidUnfinished = users.filter(function (p) { return p.status !== 'arrived'; }).length;
 
     return { timelines: timelines, passengers: passengers, log: log, costs: costs, petition: petition };
   }

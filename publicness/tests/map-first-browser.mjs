@@ -7,10 +7,10 @@ try{for(const view of ['2d','3d']){
  await page.evaluate(()=>{PB.App.startGame();PB.Session.beginPlan(PB.App.s);PB.App.go('plan');});
  assert.equal(await page.locator('#plan-toolbar').count(),1,'map toolbar exists');
  assert.equal(await page.locator('#panel').isVisible(),false,'text editor starts closed');
- await page.locator('#bus-token-1').click();await page.locator('#route-1').click();
- assert.equal(await page.evaluate(()=>PB.App.s.draft.buses[0].routeNum),1);
+ // 노선을 완성하면 대기 버스 1대(1호차)가 자동으로 운행한다(2026-10-27 버스 배치 개편)
  await page.evaluate(()=>{PB.App.onNodeClick('F');PB.App.onNodeClick('D');});
  assert.deepEqual(await page.evaluate(()=>PB.App.s.draft.routes[0].nodes),['F','D']);
+ assert.equal(await page.evaluate(()=>PB.App.s.draft.buses[0].routeNum),1);
  const target=await page.evaluate(()=>{const a=PB.App.view.project(PB.App.nodeXY('F').x,PB.App.nodeXY('F').y),b=PB.App.view.project(PB.App.nodeXY('D').x,PB.App.nodeXY('D').y),r=document.querySelector('#stage').getBoundingClientRect();return{x:r.left+(a.left+b.left)/2,y:r.top+(a.top+b.top)/2};});
  const token=await page.locator('#bus-token-2').boundingBox();await page.mouse.move(token.x+token.width/2,token.y+token.height/2);await page.mouse.down();await page.mouse.move(target.x,target.y,{steps:12});await page.mouse.up();
  assert.equal(await page.evaluate(()=>PB.App.s.draft.buses[1].routeNum),1,'actual pointer drag assigns bus');

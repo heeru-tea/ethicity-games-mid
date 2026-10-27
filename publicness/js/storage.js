@@ -5,6 +5,7 @@
  *   ethicity.publicness.sound  효과음 끔/켬('0'/'1'). 없으면 켜짐
  *   ethicity.publicness.speed  운행 재생 배속(1·2). 없으면 1, 예전 값 4는 2로 바꿔 둔다
  *   ethicity.publicness.save   진행 자동 저장 {version, savedAt, session} — 시나리오 버전이 다르면 버린다
+ *   ethicity.publicness.busHint 첫 버스 끌어 놓기 안내를 봤는지('1') — ui-map-plan.js가 직접 읽고 쓴다
  * 저장소가 막혔거나 손상됐으면 조용히 건너뛴다.
  */
 (function (root) {

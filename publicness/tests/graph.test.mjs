@@ -83,7 +83,7 @@ test('config carries PRD values', () => {
   assert.equal(cfg.bus.capacity, 12);
   assert.equal(cfg.bus.window, 120);
   assert.deepEqual(cfg.bus.offsets, [0]);
-  assert.equal(cfg.finance.subsidy, 150000);
+  assert.deepEqual([cfg.finance.basePerBus, cfg.finance.holding, cfg.finance.fuelPerKm, cfg.finance.service.amount, cfg.finance.service.minStops], [10000, 20000, 150, 20000, 6]);
   assert.equal(cfg.defaultSeed, 42);
   assert.equal(cfg.nodes.length, 9);
   assert.equal(cfg.roads.length, 13);

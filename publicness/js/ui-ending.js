@@ -73,8 +73,8 @@
     sec.appendChild(UI.table(heads, rows));
 
     sec.appendChild(el('h4', null, '재정'));
-    var fr = sum.finance.perPhase.map(function (k, i) { return [(i + 1) + '단계', App.won(k.fare), App.won(-(k.holding + k.op + k.move)), App.won(k.total)]; });
-    sec.appendChild(UI.table(['단계', '운임', '비용', '손익(지원금 포함)'], fr, ['누적 잔액', '', '', App.won(sum.finance.balance)]));
+    var fr = sum.finance.perPhase.map(function (raw, i) { var k = M.costParts(raw); return [(i + 1) + '단계', App.won(k.subsidyBase + k.subsidyService), App.won(k.fare), App.won(-(k.holding + k.lease + k.op + k.fuel)), App.won(k.total)]; });
+    sec.appendChild(UI.table(['단계', '지원금', '운임', '비용', '회차 수지'], fr, ['누적 잔액', '', '', '', App.won(sum.finance.balance)]));
     sec.appendChild(el('p', { 'class': 'note' }, cfg.phases.length+'개 대표 운행 창의 합계예요. 한 학기 전체 결산이 아니에요.'));
 
     sec.appendChild(el('h4', null, 'AI 목표 선택 이력'));
@@ -92,26 +92,26 @@
 
   // 운영 종료(파산·계약 종료) — 회차별 재정, 주요 비용·운영 문제, 사건과 선택의 영향, 기록 기반 제안, 다시 하기
   function failureReport(App, s) {
-    var f = S.financeStatus(s), rv = N.financeReview(s.config, s.history), byCount = f.rule === 'deficit-count';
+    var f = S.financeStatus(s), rv = N.financeReview(s.config, s.history), byStreak = f.rule === 'balance-streak';
     var sec = el('section', { id: 'failure-report', 'class': 'card', 'aria-labelledby': 'fail-h' });
     sec.appendChild(el('h3', { id: 'fail-h' }, '재정 돌아보기'));
     sec.appendChild(el('p', { id: 'failure-cause' }, (f.end.cause === 'contract'
-      ? f.end.phase + '단계까지 회차 수지가 0원 미만인 적자가 누적 ' + f.deficits + '번 생겨 운영 계약이 종료됐어요.' + (f.balance >= 0 ? ' 보유 잔액 ' + App.won(f.balance) + '이 남아 있어도 적자 횟수로 판정해요.' : ' 보유 잔액은 ' + App.won(f.balance) + '이에요.')
+      ? (f.end.phase - 1) + '·' + f.end.phase + '단계를 마칠 때 누적 잔액이 연속으로 0원 미만이어서 운영 계약이 종료됐어요. 마지막 보유 잔액은 ' + App.won(f.balance) + '이에요. 한 단계 적자는 경고였고, 지급 능력(누적 잔액)으로 판정했어요.'
       : '마지막 단계까지 운행했지만 학기 말 보유 잔액이 ' + App.won(f.balance) + '이에요. 기본 모드는 학기 말 잔액이 0원 미만이면 파산으로 끝나요.') + ' 재정 판정과 별개로, 주민이 해낸 이동은 아래 인물 결과에 그대로 남아 있어요.'));
     var n = 0, rows = f.ledger.map(function (r) {
       if (r.deficit) n++;
       // 좁은 패널에서도 판정 열(회차 수지·적자·잔액)이 먼저 보이게 앞에 둔다
-      var row = [r.phase + '단계', App.won(r.total) + (!byCount && r.deficit ? ' (적자)' : '')].concat(byCount ? [r.deficit ? n + '회째' : '-'] : []);
+      var row = [r.phase + '단계', App.won(r.total) + (r.deficit ? ' (적자)' : '')].concat(byStreak ? [r.balance < 0 ? '마이너스' : '-'] : []);
       return row.concat([App.won(r.balance), App.won(r.income), App.won(-r.cost)]);
     });
-    var tbl = UI.table(['단계', '회차 수지'].concat(byCount ? ['적자'] : []).concat(['보유 잔액', '수입', '비용']), rows);
+    var tbl = UI.table(['단계', '회차 수지'].concat(byStreak ? ['잔액 판정'] : []).concat(['보유 잔액', '수입', '비용']), rows);
     tbl.querySelector('table').id = 'failure-ledger';
     sec.appendChild(tbl);
-    sec.appendChild(el('p', { 'class': 'note' }, '수입 = 위탁 지원금 + 운임, 비용 = 차량 보유비 + 원격 관제·운영비 + 에너지·정비. 0원 미만이면 적자예요.' + (byCount ? ' 적자 단계: ' + (f.deficitPhases.length ? f.deficitPhases.join('·') + '단계' : '없음') + ' (누적 ' + f.deficits + '/' + f.limit + '회).' : '')));
+    sec.appendChild(el('p', { 'class': 'note' }, '수입 = 지원금(기본 + 공공서비스 수행분) + 운임, 비용 = 차량 보유비 + 임차료 + 관제·운영비 + 연료·정비비. 회차 수지가 0원 미만인 단계는 적자, 보유 잔액은 그 합이에요.' + (f.deficitPhases.length ? ' 적자 단계: ' + f.deficitPhases.join('·') + '단계.' : '')));
     sec.appendChild(el('h4', null, '돈이 나간 곳'));
     var spent = rv.costs.reduce(function (a, c) { return a + c[2]; }, 0), cu = el('ul', { id: 'failure-costs' });
     rv.costs.forEach(function (c) { cu.appendChild(el('li', null, c[1] + ' ' + App.won(c[2]) + (spent ? ' (' + Math.round(c[2] / spent * 100) + '%)' : ''))); });
-    cu.appendChild(el('li', null, '수입: 위탁 지원금 ' + App.won(rv.totals.subsidy) + ' · 운임 ' + App.won(rv.totals.fare)));
+    cu.appendChild(el('li', null, '수입: 지원금 ' + App.won(rv.totals.subsidy) + ' · 운임 ' + App.won(rv.totals.fare)));
     sec.appendChild(cu);
     sec.appendChild(el('h4', null, '운영 중 드러난 문제'));
     var pu = el('ul', { id: 'failure-problems' });

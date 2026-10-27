@@ -458,20 +458,57 @@ body[data-screen="plan"],body[data-screen="reflect"],body[data-screen="result"] 
 body[data-screen="plan"] .game,body[data-screen="reflect"] .game,body[data-screen="result"] .game { overflow:visible; grid-template-rows:none; }
 body[data-screen="plan"] .game { display:grid; grid-template-columns:minmax(0,1fr); }
 body[data-screen="plan"] .stage-col { border:0; padding:12px 20px; min-width:0; }
-body[data-screen="plan"] .stage { height:calc(100dvh - 300px); min-height:340px; max-height:none; }
+body[data-screen="plan"] .stage { height:calc(100dvh - 330px); min-height:340px; max-height:none; }
 body[data-screen="plan"]:not(.plan-text-open) #panel { display:none; }
 body[data-screen="plan"].plan-text-open .game { grid-template-columns:minmax(0,1fr) minmax(300px,370px); }
 body[data-screen="plan"] #text-routes, body[data-screen="plan"] #no3d-note { display:none; }
 #plan-toolbar { max-width:1050px; margin:0 auto; padding:12px 0; }
-body:not([data-screen="plan"]) #plan-toolbar,body:not([data-screen="plan"]) #map-people,body:not([data-screen="plan"]) #resident-destination,body:not([data-screen="plan"]) #plan-ai-popover { display:none; }
+body:not([data-screen="plan"]) #plan-toolbar,body:not([data-screen="plan"]) #map-people,body:not([data-screen="plan"]) #route-buses,body:not([data-screen="plan"]) #drop-highlight,body:not([data-screen="plan"]) #resident-destination,body:not([data-screen="plan"]) #plan-ai-popover { display:none; }
 .map-tools-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; }
 .map-tools-row .route-tabs { flex:1; margin:0; }
 .map-tools-row #btn-depart { width:auto; margin-left:auto; min-height:44px; font-size:16px; padding:8px 16px; }
-.bus-tokens { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
-.bus-token { display:flex; gap:8px; align-items:center; border-width:2px; touch-action:none; cursor:grab; position:relative; }
-.bus-token small { font-size:12px; color:var(--text-mute); }
-.bus-token[aria-pressed="true"] { outline:3px solid var(--accent); outline-offset:2px; }
-.bus-token.dragging { z-index:40; cursor:grabbing; }
+/* 대기 버스(차고지) — 바깥 radius 14 = 버튼 6 + 안쪽 여백 8 */
+#bus-depot { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; margin:8px 0; padding:8px; background:var(--surface); border:1px solid var(--border); border-radius:14px; }
+#bus-depot.drop-target { background:var(--accent-soft); border:1px dashed var(--accent); }
+body.bus-picked #bus-depot { border-style:dashed; }
+.depot-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; padding:0 4px; }
+.depot-head h3 { margin:0; font-size:15px; }
+#depot-count { font-weight:700; font-variant-numeric:tabular-nums; }
+.depot-cost { font-size:13px; color:var(--text-mute); }
+.depot-buses { display:flex; flex-wrap:wrap; gap:8px; flex:1; }
+.depot-bus { display:inline-flex; align-items:center; gap:6px; min-height:48px; padding:4px 12px 4px 6px; touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none; }
+.depot-bus .bus-sprite { height:34px; width:auto; display:block; pointer-events:none; }
+.depot-bus .depot-id { font-size:14px; }
+.depot-bus small { font-size:12px; color:var(--text-mute); font-weight:600; }
+.depot-bus[aria-pressed="true"] { outline:3px solid var(--accent); outline-offset:2px; }
+.depot-empty { margin:0; font-size:14px; color:var(--text-mute); }
+.depot-hint { flex-basis:100%; margin:0; padding:0 4px; font-size:14px; color:var(--accent-ink); }
+#bus-rest { min-height:44px; }
+.drag-source { opacity:.45; }
+body.bus-dragging, body.bus-dragging * { cursor:grabbing !important; user-select:none; -webkit-user-select:none; }
+/* 노선별 고정 표시 ‘버스 ×N’ — 노선 색은 테두리·번호 원으로만(그림은 원본 그대로) */
+#route-buses { position:absolute; inset:0; pointer-events:none; z-index:9; }
+.route-bus { position:absolute; transform:translate(-50%,-50%); display:flex; align-items:center; gap:4px; min-height:36px; padding:2px 8px 2px 3px; background:var(--bg); border:2px solid var(--route); border-radius:12px; box-shadow:0 1px 4px #17233533; pointer-events:auto; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; font:inherit; color:var(--text); line-height:1.2; }
+.route-bus::before { content:""; position:absolute; inset:-6px; } /* 손가락용 판정 여유 */
+.route-bus.idle { border-style:dashed; cursor:pointer; }
+.route-bus .bus-sprite { height:24px; width:auto; display:block; pointer-events:none; }
+.route-num { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 4px; border-radius:10px; background:var(--route); color:#fff; font-size:12px; font-weight:700; text-shadow:0 0 2px #0006; }
+.route-count { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+.route-idle { display:grid; text-align:left; }
+.route-idle b { font-size:12px; }
+.route-idle small { font-size:11px; color:var(--text-mute); white-space:nowrap; }
+.route-bus[aria-pressed="true"] { outline:3px solid var(--accent); outline-offset:2px; }
+.route-bus.drop-target, #plan-toolbar .route-tab.drop-target { outline:3px solid var(--route, var(--accent)); outline-offset:2px; }
+#drop-highlight { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:6; }
+#drop-highlight polyline { fill:none; stroke-linecap:round; stroke-linejoin:round; }
+#drop-highlight .drop-halo { stroke:#fff; stroke-width:18; opacity:.85; }
+#drop-highlight .drop-line { stroke-width:10; }
+/* 끌고 있는 버스 — 판정 기준점은 포인터(그림은 받침 위에 얹힌 모양) */
+#drag-ghost { position:fixed; z-index:100; pointer-events:none; transform:translate(-50%,-75%); display:grid; justify-items:center; gap:4px; }
+#drag-ghost::before { content:""; position:absolute; top:34px; width:78px; height:18px; border-radius:50%; background:var(--ring,#9CA3AF); opacity:.55; }
+#drag-ghost .ghost-sprite { position:relative; height:52px; width:auto; filter:drop-shadow(0 3px 4px #17233540); }
+#drag-ghost .ghost-label { max-width:260px; padding:3px 8px; border-radius:6px; background:#5B606B; color:#fff; font-size:13px; font-weight:600; line-height:1.4; text-align:center; }
+#drag-ghost.ok .ghost-label { background:var(--text); }
 #map-plan-message { margin:8px 0 0; font-size:14px; line-height:1.5; }
 #plan-ai-popover { position:absolute; top:12px; right:12px; width:min(350px,calc(100% - 24px)); max-height:calc(100% - 24px); overflow:auto; padding:16px; background:var(--bg); border:1px solid var(--border); border-radius:10px; z-index:20; box-shadow:0 5px 18px #17233518; }
 #plan-ai-popover #ai-tools>summary { display:none; }
@@ -525,9 +562,28 @@ body[data-screen="result"] .resident-cards>li { animation:resident-reveal .35s e
  body[data-screen="plan"] .stage { height:52dvh; min-height:300px; }
  body[data-screen="plan"].plan-text-open #panel { height:auto; max-height:none; }
  #plan-toolbar .route-tab { font-size:13px; padding:6px 8px; }
- #plan-toolbar .bus-token { font-size:13px; padding:6px; }
+ .depot-bus { padding:4px 8px 4px 4px; }
+ .depot-bus .bus-sprite { height:28px; }
+ .depot-cost { flex-basis:100%; }
  .map-tools-row #btn-depart { margin-left:0; }
 }
 .insert-at { display: block; margin: 8px 0; font-size: .9rem; }
 .insert-at select { min-height: 36px; margin-left: 4px; }
 #picker-done { margin-top: 8px; }
+/* 경제 정보(2026-10-27) — 계획 화면 지도 아래 한 줄 + 펼치는 상세, 출발 확인·결과 공통 표 */
+#plan-econ { margin:8px 0; padding:8px 12px; border:1px solid var(--border); border-radius:14px; background:var(--bg); }
+#plan-econ .econ-line { margin:0; font-size:15px; line-height:1.6; font-variant-numeric:tabular-nums; }
+#plan-econ .econ-line small { display:inline-block; margin-left:6px; color:var(--text-mute); font-size:12px; }
+.econ-route { margin:4px 0 0; font-size:14px; line-height:1.6; color:var(--text); font-variant-numeric:tabular-nums; }
+#plan-econ-more > summary { margin-top:4px; font-size:14px; color:var(--accent-ink); cursor:pointer; }
+#plan-econ-more h4 { margin:12px 0 4px; font-size:14px; }
+.service-checks { margin:4px 0 8px; padding:0; font-size:14px; line-height:1.6; }
+.service-checks li.met b { color:var(--ok); }
+.service-checks li.unmet b { color:var(--warn); }
+.finance-table td, .route-economy-table td { font-variant-numeric:tabular-nums; white-space:nowrap; }
+.route-economy { overflow-x:auto; }
+.leased-bus { display:inline-flex; align-items:center; gap:4px; }
+.leased-bus .depot-bus small { color:var(--accent-ink); }
+#btn-lease { white-space:nowrap; }
+#lease-note { flex-basis:100%; padding:0 4px; }
+.depot-bus .depot-id, .depot-bus small, .leased-bus .btn { white-space:nowrap; }

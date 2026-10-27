@@ -21,7 +21,7 @@
     <fieldset class="setting">
       <legend>마을 세팅</legend>
       <label class="radio"><input type="radio" name="setting" value="default" checked> <span><b>기본 · 교육용 5단계</b> — 같은 지도와 사건으로 시작해요. 재정은 학기 말 잔액으로 평가해요</span></label>
-      <label class="radio"><input type="radio" name="setting" value="random"> <span><b>랜덤 · 도전용 8단계</b> — 위치·사건 변화, 직행과 광역 노선까지. 단계 적자가 누적 3번이면 운영 계약이 끝나요</span></label>
+      <label class="radio"><input type="radio" name="setting" value="random"> <span><b>랜덤 · 도전용 8단계</b> — 위치·사건 변화, 직행과 광역 노선까지. 단계를 마칠 때 누적 잔액이 2번 연속 0원 미만이면 운영 계약이 끝나요</span></label>
       <p class="note" id="seed-note" aria-live="polite"></p>
     </fieldset>
     <button type="button" class="btn btn-primary btn-lg" id="btn-continue" hidden>이어하기</button>
@@ -93,7 +93,7 @@
   <h2 id="help-h">도움말</h2>
   <h3>어떻게 하나요?</h3>
   <ul>
-    <li>먼저 노선을 만들고 버스를 배정해요. 같은 노선의 버스는 자동으로 간격을 두고 출발해요. AI 제안은 지도에서 미리 보고 적용할 수 있어요.</li>
+    <li>정류장 두 곳 이상을 이어 노선을 만들면 대기 버스 1대가 바로 운행해요. 지도 아래 대기 버스를 노선으로 끌어 놓으면 증차, 노선 위 ‘버스 ×N’을 대기로 끌면 회수, 다른 노선에 놓으면 이동이에요(누르고 고르기·키보드로도 돼요). 같은 노선의 버스는 자동으로 간격을 두고 출발해요. AI 제안은 지도에서 미리 보고 적용할 수 있어요.</li>
     <li>지도에서 정류장을 누르거나 드래그해서 자유롭게 연결해요. 선 중간을 정류장으로 당기면 경유지가 추가돼요. 시작점으로 연결하면 순환하고, 열린 노선은 왕복해요.</li>
     <li>두 노선이 <b>모두 정차하는</b> 정류장에서만 한 번 갈아탈 수 있어요. 지도에서 선이 겹치기만 하는 곳은 환승 정류장이 아니에요.</li>
     <li>출발하면 운행이 끝날 때까지 계획을 바꿀 수 없어요. 결과를 보고 다음 단계에서 고쳐요.</li>
@@ -167,6 +167,7 @@
 <script src="js/run-pace.js"></script>
 <script src="js/ui-run.js"></script>
 <script src="js/ui-result.js"></script>
+<script src="js/ui-economy.js"></script>
 <script src="js/ui-transition.js"></script>
 <script src="js/ui-ending.js"></script>
 <script src="js/cutscene.js"></script>

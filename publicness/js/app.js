@@ -113,11 +113,11 @@
     });
     var bal = s.history.reduce(function (a, h) { return a + h.metrics.costs.total; }, 0);
     $('#top-balance').textContent = '누적 잔액 ' + App.won(bal);
-    // 랜덤(도전) 모드는 플레이 내내 누적 적자 횟수를 보여 준다
+    // 랜덤(도전) 모드: 누적 잔액이 마이너스로 단계를 마친 횟수(연속)를 경고로 보여 준다 — 0이면 숨김
     var fin = S.financeStatus(s), def = $('#top-deficit');
-    def.hidden = fin.rule !== 'deficit-count';
-    def.textContent = '누적 적자 ' + fin.deficits + '/' + fin.limit + '회';
-    def.classList.toggle('warn', fin.deficits >= fin.limit - 1);
+    def.hidden = fin.rule !== 'balance-streak' || !fin.negStreak;
+    def.textContent = '잔액 마이너스 ' + fin.negStreak + '/' + fin.limit + '회 연속';
+    def.classList.toggle('warn', fin.negStreak >= fin.limit - 1);
     if (s.stage !== 'run') App.updateClock(s.stage==='result'||s.stage==='ending'?s.config.bus.window:0,s.stage==='ending'?'학기 끝':s.stage==='result'?'운행 끝':'계획 중');
   }
 
@@ -166,10 +166,11 @@
     v.setSelectable(opts.selectable || []);
     v.setSelected(opts.selected || []);
     if (!opts.keepBuses) {
-      v.setBuses(s.draft.buses.map(function (b) {
+      // 줄 세우는 순서는 번호가 아니라 목록 순서(임차 21호차가 화면 밖으로 밀려나지 않게)
+      v.setBuses(s.draft.buses.map(function (b, i) {
         var r=b.routeNum!=null?S.routeByNum(s,b.routeNum):null;
         var a = nodeXY(r&&r.nodes.length?r.nodes[0]:cfg.bus.depot);
-        return { id: b.id, x: a.x, y: a.y, dx: -30, dy: -24 - (b.id - 1) * 21, riders:0,color: b.routeNum != null ? routeStyle(b.routeNum).color : '#6B7280' };
+        return { id: b.id, x: a.x, y: a.y, dx: -30, dy: -24 - i * 21, riders:0,color: b.routeNum != null ? routeStyle(b.routeNum).color : '#6B7280' };
       }));
       v.setWaiting({});
     }
@@ -235,6 +236,7 @@
       rows.push(['오늘 이동 요청', requestText(cfg, p, s.seed)]);
       rows.push(['할 일', '정류장을 이어 첫 노선을 만들어 보세요']);
       rows.push(['학기 말 기준', (cfg.challengeApplied ? '총 ' + cfg.phases.length + '단계 · ' : '') + PB.Narrative.satisfactionText(cfg)]);
+      rows.push(['지원금', '기본: 기본 제공 차량 ' + s.owned + '대 × ' + App.won(cfg.finance.basePerBus) + '(보유비 대당 ' + App.won(cfg.finance.holding) + '의 일부) · 공공서비스 수행분: ' + PB.UI.Econ.conditionText(s)]);
       rows.push(['재정 규칙', App.financeRuleText(s)]);
     } else {
       var h = s.history[s.history.length - 1], m = h.metrics;
@@ -248,7 +250,7 @@
       var newest = s.draft.buses[s.draft.buses.length - 1];
       if (cfg.challengeApplied && p === 6 && S.routeByNum(s, 5)) bus += ' · 7호차 직행(정원 18명·1.5배)은 5번 직행 전용, 정류장 3곳까지';
       else if (cfg.challengeApplied && p === 8) bus += ' · 9호차 광역(정원 24명)은 6번 광역 전용';
-      else if (dBus && newest && newest.routeNum == null) bus += ' · 새 ' + newest.id + '호차는 직접 배정';
+      else if (dBus && newest && newest.routeNum == null) bus += ' · 새 ' + newest.id + '호차는 대기 버스(새 노선을 완성하면 바로 운행)';
       rows.push(['버스·노선', bus]);
       var prev = PB.Demand.base(cfg, p - 1, s.seed).length;
       rows.push(['오늘 이동 요청', requestText(cfg, p, s.seed) + ' · 예정 이동 ' + signed(reqs - prev) + '건']);
@@ -296,10 +298,10 @@
     d.appendChild(el('p', { 'class': 'eyebrow' }, '첫 노선 만들기'));
     d.appendChild(el('h2', { id: 'tutorial-title', tabindex: '-1' }, '정류장 두 곳을 이어 보세요'));
     var ol = el('ol', { 'class': 'tutorial-steps' });
-    ['지도에서 출발할 정류장을 누르세요(‘텍스트로 편집’ 안의 정류장 목록으로 골라도 돼요).', '이어서 갈 정류장을 누르면 노선이 생겨요. 정류장을 끌어서 이어도 돼요.', '새 버스는 처음에 ‘쉬기’예요. 하단 버스 토큰을 노선으로 끌어 놓고 ‘이 노선으로 출발’을 누르세요.'].forEach(function (t) { ol.appendChild(el('li', null, t)); });
+    ['지도에서 출발할 정류장을 누르세요(‘텍스트로 편집’ 안의 정류장 목록으로 골라도 돼요).', '이어서 갈 정류장을 누르면 노선이 생겨요. 정류장을 끌어서 이어도 돼요.', '노선이 완성되면 대기 버스 1대가 바로 운행해요. 더 보내려면 지도 아래 대기 버스를 노선으로 끌어 놓고, ‘이 노선으로 출발’을 누르세요.'].forEach(function (t) { ol.appendChild(el('li', null, t)); });
     d.appendChild(ol);
     if (who) d.appendChild(el('p', null, '예: ' + who.name + ' · ' + App.clock(who.depart) + ' ' + App.nodeName(who.o) + ' → ' + App.nodeName(who.d) + '. 누구의 길부터 이을지는 직접 정하세요.'));
-    d.appendChild(el('p', { 'class': 'note' }, '이번 단계는 버스 ' + s.owned + '대, 노선 ' + S.routeLimit(s) + '개까지예요. 버스 토큰을 선택한 뒤 ‘쉬게 하기’를 누를 수 있어요.'));
+    d.appendChild(el('p', { 'class': 'note' }, '이번 단계는 버스 ' + s.owned + '대, 노선 ' + S.routeLimit(s) + '개까지예요. 노선 위 ‘버스 ×N’을 대기 영역으로 끌면 그 버스는 쉬어요(누른 뒤 ‘대기로 돌리기’도 돼요).'));
     d.appendChild(el('p', { 'class': 'note' }, '출발하면 05:00~23:00 하루를 약 20초에 보여 줘요. 3단계부터는 오전·오후에 한 번씩 멈춰 버스 한 대를 조정할 수 있어요. 결과를 보고 다음 계획을 고쳐 보세요.'));
     d.appendChild(el('button', { type: 'button', id: 'btn-tutorial-close', 'class': 'btn btn-primary', onclick: function () { d.close(); } }, '정류장 이어 보기'));
     // 닫으면 누를 수 있는 정류장을 한 번 깜빡여 지도로 시선을 옮긴다
@@ -311,8 +313,8 @@
   // 캐릭터 소개 뒤 바로 단계 안내(‘생각해 보기’ 포함). 별도 Stage 카드·교육 창은 두지 않는다
   // 모드별 재정 규칙(안내·결과·종료 화면이 같은 문장을 쓴다)
   App.financeRuleText = function (s) {
-    return S.financeRule(s) === 'deficit-count'
-      ? '단계가 끝날 때마다 회차 수지(지원금·운임 − 운영 비용)를 정산해요. 0원 미만인 적자가 누적 ' + S.DEFICIT_LIMIT + '번이면 잔액이 남아 있어도 운영 계약이 종료돼요. 흑자가 나도 적자 횟수는 줄지 않아요.'
+    return S.financeRule(s) === 'balance-streak'
+      ? '단계가 끝날 때마다 회차 수지를 정산해 누적 잔액에 더해요. 한 단계 적자는 경고일 뿐, 모아 둔 잔액으로 적자 노선을 유지할 수 있어요. 누적 잔액이 0원 미만인 채로 ' + S.NEGATIVE_LIMIT + '번 연속 단계를 마치면 운영 계약이 종료돼요.'
       : '중간에 돈이 모자라도 운행은 계속돼요. 마지막 단계가 끝난 뒤 누적 잔액이 0원 미만이면 파산으로 끝나요.';
   };
   // 다시 하기: 기본은 같은 시나리오, 랜덤은 같은 조건(같은 세팅 번호 → 같은 지도·수요·사건) 또는 새 랜덤 게임. 진행 상태는 모두 새로 만든다

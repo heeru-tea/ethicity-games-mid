@@ -9,6 +9,7 @@
 (function (root) {
   'use strict';
   var Sim = (typeof require === 'function' && typeof module !== 'undefined') ? require('./sim.js') : root.PB.Sim;
+  var Schedule = (typeof require === 'function' && typeof module !== 'undefined') ? require('./schedule.js') : root.PB.Schedule;
 
   function r1(x) { return Math.round(x * 10) / 10; }
   function ratio(a, n) { return n ? a / n : null; }
@@ -112,7 +113,60 @@
     rows.forEach(function(row){row.perBus=row.buses?r1(row.boardings/row.buses):null;});return rows;
   }
 
-  var api = { requestBreakdown:requestBreakdown, familyReport:familyReport,routeReport:routeReport, summarize: summarize, discontent: discontent, nextTrust: nextTrust, subtitle: subtitle, fmtRate: fmtRate };
+  /* 노선별 재정(2026-10-27). 운임은 그 이동의 ‘첫 탑승’ 노선에 1번만(환승해도 나눠 세지 않는다 — 요금도 첫 탑승 때 1번 받으므로).
+   * 운영비·연료비는 그 시각에 버스가 달리던 노선에(긴급 조정으로 옮긴 뒤의 공차 이동은 새 노선 몫). 보유비·임차료·지원금은 노선에 나누지 않는 공동 항목.
+   * 맞춤: Σ노선 운임 = 전체 운임, Σ노선 운영비 = 전체 운영비, Σ노선 연료비 = 전체 연료비(반올림 차이는 가장 큰 노선에) →
+   *       Σ노선 손익 + 지원금 − 보유비 − 임차료 = 회차 수지. arrived = 이 노선에서 첫 탑승해 목적지에 도착한 이동 요청 */
+  function routeEconomy(result, routes, buses, config, g) {
+    var F = config.finance, W = config.bus.window, k = result.costs, rows = {}, order = [];
+    function rowFor(route) {
+      if (!route) return null;
+      var hit = routes.filter(function (r) { return r.nodes.join('|') === route.nodes.join('|') && r.stops.join('|') === route.stops.join('|'); })[0], key = hit ? hit.num : 'etc';
+      if (!rows[key]) { rows[key] = { num: hit ? hit.num : null, buses: {}, km: 0, op: 0, fuelRaw: 0, fare: 0, riders: 0, arrived: 0, service: {} }; order.push(key); }
+      return rows[key];
+    }
+    routes.forEach(function (r) { rowFor(r); });
+    var periods = {}, start = {};
+    (result.timelines || []).forEach(function (tl) {
+      var list = [], first = buses.filter(function (b) { return b.id === tl.busId; })[0];
+      if (tl.route) list.push({ t: 0, row: rowFor(tl.route) });
+      (tl.assignments || []).forEach(function (a) { list.push({ t: a.depart, row: rowFor(a.route) }); });
+      periods[tl.busId] = list;
+      function at(t) { var row = null; list.forEach(function (p) { if (t >= p.t) row = p.row; }); return row; }
+      list.forEach(function (p, i) {
+        var end = i + 1 < list.length ? list[i + 1].t : W;
+        p.row.op += F.opPerMin * Math.max(0, Math.min(end, W) - p.t); p.row.buses[tl.busId] = true;
+      });
+      tl.segments.forEach(function (x) { var row = at(x.t0); if (row) row.km += Schedule.driven(g, [x], W); });
+      tl.visits.forEach(function (v) { var row = at(v.t); if (row && v.kind === 'stop' && v.t <= W) row.service[v.node] = (row.service[v.node] || 0) + 1; });
+      start[tl.busId] = at;
+    });
+    var firstBoard = {};
+    result.log.forEach(function (e) { if (e.type === 'board' && !(e.pid in firstBoard)) firstBoard[e.pid] = e; });
+    result.passengers.forEach(function (p) {
+      var e = firstBoard[p.id]; if (!e || p.firstBoardT == null) return;
+      var row = start[e.bus] && start[e.bus](e.t); if (!row) return;
+      row.fare += F.fare; row.riders++; if (p.status === 'arrived') row.arrived++;
+    });
+    var out = order.map(function (key) { var r = rows[key]; r.buses = Object.keys(r.buses).length; r.fuelRaw = F.fuelPerKm * r.km; r.fuel = Math.round(r.fuelRaw); r.km = Math.round(r.km * 10) / 10; return r; });
+    // 반올림 차이를 가장 많이 달린 노선에 맞춰 전체 연료비와 정확히 같게
+    var diff = (k.fuel || 0) - out.reduce(function (a, r) { return a + r.fuel; }, 0);
+    if (diff && out.length) out.slice().sort(function (a, b) { return b.fuelRaw - a.fuelRaw; })[0].fuel += diff;
+    out.forEach(function (r) { r.cost = r.op + r.fuel; r.profit = r.fare - r.cost; delete r.fuelRaw;
+      r.service = (k.service || []).filter(function (c) { return r.service[c.id]; }).map(function (c) { return { id: c.id, label: c.label, stops: r.service[c.id] }; }); });
+    return { rows: out.filter(function (r) { return r.num != null || r.fare || r.cost; }), common: { subsidyBase: k.subsidyBase || 0, subsidyService: k.subsidyService || 0, holding: k.holding || 0, lease: k.lease || 0 } };
+  }
+
+  // 정산 항목을 한 모양으로(예전 저장본: 지원금 하나·이동 시간 기준 ‘move’ → legacy 표시). 화면·종료 분석이 이것만 쓴다
+  function costParts(k) {
+    k = k || {};
+    var legacy = k.subsidyBase == null;
+    return { legacy: legacy, subsidyBase: legacy ? (k.subsidy || 0) : k.subsidyBase, subsidyService: legacy ? 0 : k.subsidyService, service: k.service || [],
+      subsidy: k.subsidy || 0, fare: k.fare || 0, holding: k.holding || 0, lease: k.lease || 0, leased: k.leased || 0, op: k.op || 0,
+      fuel: legacy ? (k.move || 0) : k.fuel, km: k.km == null ? null : k.km, total: k.total || 0 };
+  }
+
+  var api = { costParts: costParts, routeEconomy: routeEconomy, requestBreakdown:requestBreakdown, familyReport:familyReport,routeReport:routeReport, summarize: summarize, discontent: discontent, nextTrust: nextTrust, subtitle: subtitle, fmtRate: fmtRate };
   root.PB = root.PB || {};
   root.PB.Metrics = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

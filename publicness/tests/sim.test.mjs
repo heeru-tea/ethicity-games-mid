@@ -136,11 +136,13 @@ test('costs identity with deadhead, unassigned and 4 buses (AC19)', () => {
   const res = run(plan(['A-B-C', 0], ['F-C-D-A', 4], [null, 0], ['A-B', 12]), rs);
   const k = res.costs;
   assert.equal(k.holding, 80000);
-  assert.equal(k.subsidy, 150000);
-  assert.equal(k.op, 100 * (120 + 116 + 0 + 108));
-  const move = res.timelines.reduce((s, t) => s + t.moveMinutes, 0);
-  assert.equal(k.move, 150 * move);
-  assert.equal(k.total, k.subsidy + k.fare - k.holding - k.op - k.move);
+  assert.equal(k.subsidyBase, 40000, '기본 지원 = 기본 제공 차량 1대당 10,000원');
+  assert.equal(k.subsidy, k.subsidyBase + k.subsidyService);
+  assert.equal(k.op, 100 * (120 + 120 + 0 + 120), '운행 배정 차량은 출발이 늦어도 하루 근무 전체(2026-10-27)');
+  const km = res.timelines.reduce((s, t) => s + t.km, 0);
+  assert.equal(k.fuel, Math.round(150 * km), '연료·정비비 = 실제 주행거리 × 단가');
+  assert.equal(k.lease, 0);
+  assert.equal(k.total, k.subsidy + k.fare - k.holding - k.lease - k.op - k.fuel);
   const users = res.passengers.filter((p) => p.firstBoardT != null).length;
   assert.equal(k.fare, 1000 * users);
   assert.equal(k.paidUnfinished, res.passengers.filter((p) => p.firstBoardT != null && p.status !== 'arrived').length);

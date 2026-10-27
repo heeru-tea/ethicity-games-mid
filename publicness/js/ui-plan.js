@@ -13,6 +13,10 @@
   }
   function assigned(num){return st().draft.buses.filter(function(b){return b.routeNum===num;});}
   UI.planAssignBus=function(id,num){if(!S.canAssign(st(),id,num))return false;changed();S.assign(st(),id,num);P.message=id+'호차를 '+(num==null?'쉬게 했어요.':num+'번에 배정했어요.');return true;};
+  // 추가 임차·반납도 초안 편집 — 되돌리기 한 번으로 돌아간다(한도·반납 조건은 Session이 판단)
+  UI.planLease=function(){if(!S.leaseLimit(st()))return null;changed();var b=S.lease(st());P.message=b.id+'호차를 이번 단계에 임차했어요 · 임차료 '+app().won(st().config.finance.lease.fee)+'(쉬어도 듦, 단계가 끝나면 자동 반납). 노선으로 끌어 놓으세요.';return b;};
+  UI.planUnlease=function(id){var b=st().draft.buses.filter(function(x){return x.id===id;})[0];if(!b||!b.leased||b.routeNum!=null)return false;changed();S.unlease(st(),id);P.message=id+'호차를 반납했어요. 이번 단계 임차료가 들지 않아요.';return true;};
+  UI.planEditing=function(){return P.editing;};
   function unassigned(){return st().draft.routes.filter(function(r){return !assigned(r.num).length;});}
   function snapshot(){return JSON.stringify({draft:st().draft,owned:st().owned,fourthPhase:st().fourthPhase,goal:st().goal,goalHistory:st().goalHistory,lastRec:st().lastRec,editing:P.editing,anchor:P.anchor});}
   function changed(){
@@ -54,8 +58,12 @@
         changed();r.nodes.push(id);r.stops.push(true);P.anchor=null;P.message='순환 노선으로 연결했어요. 표시된 순서로 돌아요.';
       }else{P.anchor=r.nodes.indexOf(id);P.message=app().nodeName(id)+' 다음에 추가할 곳을 고르세요.';}
     }else{
-      changed();var at=P.anchor==null?(G.isLoop(r)?r.nodes.length-1:r.nodes.length):P.anchor+1;
+      changed();var before=r.nodes.length,at=P.anchor==null?(G.isLoop(r)?r.nodes.length-1:r.nodes.length):P.anchor+1;
       r.nodes.splice(at,0,id);r.stops.splice(at,0,true);P.anchor=at;P.message=app().nodeName(id)+' 정류장을 연결했어요.';
+      // 노선이 처음 완성되는 순간(정류장 2곳) 대기 버스 1대가 운행을 시작한다 — 같은 편집 단계라 되돌리기 한 번에 함께 돌아간다
+      if(before<2&&r.nodes.length>=2){var placed=S.autoPlace(st(),r.num);
+        if(placed&&placed.busId!=null)P.message+=' '+placed.busId+'호차가 대기에서 나와 '+r.num+'번 운행을 시작해요 · 운영·연료 약 '+app().won(S.busCost(st(),placed.busId,r.num))+'.';
+        else if(placed)P.message+=' 대기 버스가 없어 '+r.num+'번은 운행 대기예요 — 다른 노선의 버스를 옮겨 주세요.';}
     }render(focus);
   }
   function link(from,to){
@@ -119,12 +127,13 @@
     back.addEventListener('pointercancel',function(){tap=null;});
     back.addEventListener('pointerup',function(e){var t=tap;tap=null;if(!t||t.id!==e.pointerId||Math.hypot(e.clientX-t.x,e.clientY-t.y)>7||back.disabled)return;P.ignoreUndoClickUntil=performance.now()+700;undo();});
     sec.appendChild(back);var list=el('div',{'class':'route-tabs'});
-    S.routesInOrder(st()).forEach(function(r){var b=btn(r.num+'번'+(S.stopLimit(st(),r.num)===2?' 광역':S.stopLimit(st(),r.num)===3?' 직행':'')+(G.isLoop(r)?' 순환':'')+(!assigned(r.num).length?' · 미배정':''),'route-'+r.num,function(){P.editing=r.num;P.anchor=null;P.preview=false;P.message='정류장을 잇거나 선 중간을 당겨 보세요.';render();},'route-tab');
+    S.routesInOrder(st()).forEach(function(r){var b=btn(r.num+'번'+(S.stopLimit(st(),r.num)===2?' 광역':S.stopLimit(st(),r.num)===3?' 직행':'')+(G.isLoop(r)?' 순환':'')+(!assigned(r.num).length?(r.nodes.length>=2?' · 운행 대기':' · 미배정'):''),'route-'+r.num,function(){P.editing=r.num;P.anchor=null;P.preview=false;P.message='정류장을 잇거나 선 중간을 당겨 보세요.';render();},'route-tab');
       b.setAttribute('aria-pressed',String(P.editing===r.num));b.style.borderLeft='5px solid '+app().routeStyle(r.num).color;list.appendChild(b);});
     var add=btn('+ 새 노선','btn-new-route',function(){startRoute();render('.next-stop');});add.disabled=st().draft.routes.length>=S.routeLimit(st());list.appendChild(add);sec.appendChild(list);sec.appendChild(el('p',{'class':'note'},'이번 단계: 노선 최대 '+S.routeLimit(st())+'개 · 버스 '+st().owned+'대'));var r=active();
     if(r){var c=el('div',{'class':'route-card editing','data-num':r.num}),ok=!G.validateRoute(S.graph(st()),r).length;
       if(S.stopLimit(st(),r.num)===2)c.appendChild(el('p',{id:'regional-rule','class':'callout'},'6번 광역 · 마을 한 곳 ↔ 대도시. 9호차 전용·정원 24명. 마을 쪽 정류장을 골라 시내버스와 환승할 수 있게 연결하세요.'));
       if(S.stopLimit(st(),r.num)===3)c.appendChild(el('p',{id:'express-rule','class':'callout'},'5번 직행 · 최대 3개 정류장 ('+new Set(r.nodes).size+'/3). 7호차는 정원 18명·주행 속도 1.5배인 전용 버스예요. 정류장은 언제든 바꿀 수 있어요.'));
+      var econLine=PB.UI.Econ?PB.UI.Econ.routeLine(st(),r.num):'';if(econLine)c.appendChild(el('p',{id:'route-econ-text','class':'note econ-route'},econLine));
       c.appendChild(el('p',{'class':'route-summary'},r.num+'번 · '+(G.isLoop(r)?'순환':'왕복')+(ok?(st().config.challengeApplied&&r.num===5?' · 7호차 한 바퀴 '+app().duration(PB.Schedule.cycleMinutes(S.graph(st()),st().config,7,r)):' · 한 바퀴 '+app().duration(G.cycleMinutes(S.graph(st()),r))):'')));
       if(!r.nodes.length)c.appendChild(el('p',{'class':'note'},'아직 연결한 정류장이 없어요. 지도나 아래 목록에서 두 곳 이상 선택하세요.'));
       var running=assigned(r.num),allocation=el('div',{id:'route-allocation','class':running.length?'note':'callout warn'});
@@ -170,7 +179,7 @@
     }panel.appendChild(sec);
   }
   function buses(panel){var sec=el('section');sec.appendChild(el('h3',null,'버스 배정'));
-    st().draft.buses.forEach(function(b){var row=el('div',{'class':'bus-assignment','data-bus':b.id});row.appendChild(el('label',{'for':'bus-sel-'+b.id},b.id+'호차'+(st().config.challengeApplied&&b.id===9?' · 광역 (24명)':st().config.challengeApplied&&b.id===7?' · 직행 (18명 · 1.5배)':'')));
+    st().draft.buses.forEach(function(b){var row=el('div',{'class':'bus-assignment','data-bus':b.id});row.appendChild(el('label',{'for':'bus-sel-'+b.id},b.id+'호차'+(b.leased?' · 임차(이번 단계)':'')+(st().config.challengeApplied&&b.id===9?' · 광역 (24명)':st().config.challengeApplied&&b.id===7?' · 직행 (18명 · 1.5배)':'')));
       var sel=el('select',{id:'bus-sel-'+b.id,onchange:function(e){changed();S.assign(st(),b.id,e.target.value===''?null:Number(e.target.value));render('#bus-sel-'+b.id);}});
       sel.appendChild(el('option',{value:''},'쉬기'));S.routesInOrder(st()).forEach(function(r){if(!S.canAssign(st(),b.id,r.num))return;var o=el('option',{value:r.num},r.num+'번 '+(G.isLoop(r)?'순환':'왕복')+(G.validateRoute(S.graph(st()),r).length?' (편집 중)':''));sel.appendChild(o);});
       sel.value=b.routeNum==null?'':String(b.routeNum);row.appendChild(sel);sec.appendChild(row);});
@@ -237,8 +246,11 @@
   }
   // 상태 메시지가 없을 때 지금 할 일을 알려 준다
   function hint(){var r=active();if(!r||P.preview)return '';
-    if(!r.nodes.length)return '지도에서 정류장 두 곳을 차례로 누르면 '+r.num+'번 노선이 생겨요. 누구의 길부터 이을지 골라 보세요.';
-    if(r.nodes.length===1)return app().nodeName(r.nodes[0])+'에서 이어 갈 정류장을 하나 더 누르세요.';return '';}
+    if(!r.nodes.length)return '지도에서 정류장 두 곳을 차례로 누르면 '+r.num+'번 노선이 생겨요. 누구의 길부터 이을지 골라 보세요.'+busNote(r);
+    if(r.nodes.length===1)return app().nodeName(r.nodes[0])+'에서 이어 갈 정류장을 하나 더 누르세요.'+busNote(r);return '';}
+  // 노선이 완성되면 생길 일(자동 배치)과 비용을 미리 알린다
+  function busNote(r){if(r.autoPlaced||assigned(r.num).length)return '';var b=S.restingFor(st(),r.num);
+    return b?' 이으면 대기 중인 '+b.id+'호차가 바로 운행해요(운영·연료 약 '+app().won(S.typicalBusCost(st()))+').':' 대기 버스가 없어 노선만 생겨요.';}
   UI.plan=function(App,panel){var s=App.s;if(P.session!==s||P.phase!==s.phase)P={session:s,phase:s.phase,editing:s.draft.routes[0]?s.draft.routes[0].num:null,anchor:null,rec:null,preview:false,busy:false,token:P.token+1,message:'',history:[],baseline:null,recSeen:{},pickerOpen:null};
     if(s.resumedFromRun){s.resumedFromRun=false;P.message='운행 도중 창이 닫혀, 출발 직전 계획으로 돌아왔어요. 같은 계획으로 다시 출발하면 같은 결과로 운행해요(이 단계 정산은 아직 하지 않았어요).';}
     panel.appendChild(el('p',{'class':'eyebrow'},s.phase+'단계 · '+s.config.phases[s.phase-1]));panel.appendChild(el('h2',null,'어느 동네를 이을까요?'));
@@ -276,6 +288,12 @@
       comp.appendChild(el('li',{'data-num':r.num},r.num+'번 · '+(r.nodes.length?routeText(r):'정류장 없음')+' · '+(ids.length?ids.join(', '):'버스 없음 — 운행하지 않아요')));});
     if(resting.length)comp.appendChild(el('li',null,'쉬는 버스: '+resting.map(function(b){return b.id+'호차';}).join(', ')+' (보유비는 들어요)'));
     body.appendChild(el('h3',null,'운행 구성'));body.appendChild(comp);
+    // 재정 예상: 공공서비스 조건(달성 여부·금액·지급 시점)과 예상 수지 — 돌발 수요 제외
+    var E=PB.UI.Econ,ec=E.plan(s),cp=M.costParts(ec.k),money=el('section',{id:'depart-finance'});
+    money.appendChild(el('h3',null,'재정 예상(기본 수요 기준)'));
+    money.appendChild(el('p',null,'이번 단계 수지 약 '+(cp.total>0?'+':'')+app().won(cp.total)+' · 누적 잔액 '+app().won(S.balance(s))+' → 약 '+app().won(S.balance(s)+cp.total)+(cp.leased?' · 임차 '+cp.leased+'대 '+app().won(cp.lease):'')));
+    money.appendChild(el('p',{'class':'note'},'공공서비스 수행분: '+E.conditionText(s)+'.'));money.appendChild(E.conditions(ec.k,true));
+    money.appendChild(el('p',{'class':'note'},'돌발 수요가 생기면 운임이 달라질 수 있어요. 정산은 운행이 끝난 뒤 한 번 해요.'));body.appendChild(money);
     if(!used.length)body.appendChild(el('p',{'class':'callout warn',id:'depart-no-bus'},'운행하는 버스가 없어요. 이대로 출발하면 아무도 버스를 탈 수 없어요.'));
     if(sharedRoutes().length)body.appendChild(el('p',{'class':'note'},sharedRoutes().map(function(n){return n+'번';}).join(', ')+' 노선의 버스들은 자동으로 간격을 두고 출발해요.'));
     var tally=PB.Narrative.residentTally(s.config,s.history),risks=[];

@@ -39,7 +39,11 @@
   if(added>0)changes.appendChild(el('p',{'class':'resource-token'},'+ 버스 '+added+'대'));
   if(!places.length&&!added)changes.appendChild(el('p',null,'새로운 이동 요청이 들어왔어요.'));
   var people=s.config.residents.filter(function(r){return r.fromPhase===p;});if(people.length)changes.appendChild(el('p',null,people.map(function(r){return r.name;}).join(' · ')+'의 하루도 함께 살펴보세요.'));
-  panel.appendChild(changes);panel.appendChild(el('p',{'class':'note'},'새 버스는 쉬고 있어요. 하단의 버스 토큰을 노선에 놓아 주세요.'));
+  panel.appendChild(changes);panel.appendChild(el('p',{'class':'note'},'새 버스는 대기 중이에요. 지도 아래 대기 버스를 노선으로 끌어 놓거나, 새 노선을 완성하면 1대가 바로 운행해요.'));
+  // 이번 단계 재정 조건(출발 전에 공개): 기본 지원·공공서비스 수행분·임차
+  var F=s.config.finance,fin=el('dl',{id:'phase-finance','class':'kv phase-changes'});
+  [['기본 지원','기본 제공 차량 '+s.owned+'대 × '+App.won(F.basePerBus)+' · 보유비는 대당 '+App.won(F.holding)+'(쉬어도 듦)'],['공공서비스 수행분',PB.UI.Econ.conditionText(s)],['추가 임차','이번 단계에만 1대 '+App.won(F.lease.fee)+', 최대 '+F.lease.perPhase+'대 · 다음 단계에 자동으로 다시 빌리지 않아요'],['재정 규칙',App.financeRuleText(s)]]
+   .forEach(function(r){fin.appendChild(el('dt',null,r[0]));fin.appendChild(el('dd',null,r[1]));});panel.appendChild(fin);
   panel.appendChild(el('button',{type:'button','class':'btn btn-primary',id:'btn-begin-plan',onclick:function(){delete s.transitionStep;S.beginPlan(s);App.go('plan');}},'노선 설계하기'));
   return {};
  };

@@ -83,7 +83,9 @@
   function toPlan(s) {
     return Schedule.spacePlan(graph(s), s.config, { buses: s.draft.buses.map(function (b) {
       var r = b.routeNum != null ? routeByNum(s, b.routeNum) : null;
-      return { id: b.id, route: r ? copyRoute(r) : null, offset: s.config.map ? 0 : b.offset };
+      var o = { id: b.id, route: r ? copyRoute(r) : null, offset: s.config.map ? 0 : b.offset };
+      if (b.leased) o.leased = true;
+      return o;
     }) });
   }
 
@@ -157,6 +159,67 @@
   }
   function bus(s, id) { return s.draft.buses.filter(function (b) { return b.id === id; })[0]; }
   function assign(s, busId, routeNum) { var b = bus(s, busId); if(!canAssign(s,busId,routeNum))return false; if (b) b.routeNum = routeNum; }
+  // 대기(쉬는) 버스 중 이 노선에 보낼 한 대 — 도전 모드 전용 버스(5번 직행=7호차, 6번 광역=9호차)는 자기 노선에 먼저, 나머지는 번호순
+  function restingFor(s, num) {
+    var list = s.draft.buses.filter(function (b) { return b.routeNum == null && canAssign(s, b.id, num); });
+    var own = s.config.challengeApplied ? (num === 5 ? 7 : num === 6 ? 9 : null) : null;
+    return list.filter(function (b) { return b.id === own; })[0] || list[0] || null;
+  }
+  // 노선이 처음 완성되면(정류장 2곳 이상·유효) 대기 버스 1대를 자동 배치한다. 새 버스를 만들지 않고 보유 버스에서 옮긴다.
+  // 노선마다 한 번뿐(autoPlaced) — 이미 버스가 있거나, 고치다 다시 완성되거나, 대기 버스가 없으면 배치하지 않는다(‘운행 대기’로 남음)
+  function autoPlace(s, num) {
+    var r = routeByNum(s, num);
+    if (!r || r.autoPlaced || r.nodes.length < 2 || Graph.validateRoute(graph(s), r).length || !routeFits(s, num, r)) return null;
+    r.autoPlaced = true;
+    if (s.draft.buses.some(function (b) { return b.routeNum === num; })) return null;
+    var b = restingFor(s, num);
+    if (!b) return { busId: null };
+    b.routeNum = num;
+    return { busId: b.id };
+  }
+  // 이 버스를 이 노선에 보내면 늘어나는 비용(관제·운영비 + 연료·정비비, 원). Sim과 같은 시각표·자동 간격으로 계산한다. 보유비·임차료는 쉬어도 들어 빼고 센다
+  function busCost(s, busId, num) {
+    var r = routeByNum(s, num);
+    if (!r || Graph.validateRoute(graph(s), r).length) return null;
+    var pv = Object.assign({}, s, { draft: clone(s.draft) }), F = s.config.finance;
+    bus(pv, busId).routeNum = num;
+    var pb = toPlan(pv).buses.filter(function (b) { return b.id === busId; })[0];
+    var tl = Schedule.timeline(graph(s), s.config, busId, pb.route, pb.offset);
+    return Math.round((F.opPerMin * tl.opMinutes + F.fuelPerKm * tl.km) / 100) * 100;
+  }
+  // 노선을 정하기 전에 보여 줄 대략값: 이번 단계 정류장 두 곳 왕복 노선들의 1대 운영비 중앙값
+  function typicalBusCost(s) {
+    var g = graph(s), F = s.config.finance, list = [];
+    g.nodes.forEach(function (a, i) { g.nodes.slice(i + 1).forEach(function (b) {
+      if (a === 'N' || b === 'N') return;
+      var tl = Schedule.timeline(g, s.config, 1, { nodes: [a, b], stops: [true, true] }, 0);
+      list.push(F.opPerMin * tl.opMinutes + F.fuelPerKm * tl.km);
+    }); });
+    list.sort(function (a, b) { return a - b; });
+    return list.length ? Math.round(list[Math.floor(list.length / 2)] / 1000) * 1000 : 0;
+  }
+  /* ── 추가 임차(2026-10-27) ──
+   * 이번 단계에만 쓰는 일반 버스(정원 12명) 1대씩, 단계당 최대 lease.perPhase대. 임차료 = 차량 확보 비용(보유비 대신, 쉬어도 듦).
+   * 운행하면 관제·운영비·연료비는 따로. 노선 배치·이동·회수에는 임차료를 다시 받지 않는다(정산 때 출발한 계획의 임차 대수 × 임차료 한 번).
+   * 계획 중 임차·반납은 초안 편집이라 되돌리기·저장 복구를 그대로 따른다. 단계가 끝나면 자동 반납(nextPhase), 다음 단계에 자동 재임차 없음.
+   * 번호는 21호차부터(도전 모드 전용 7·9호차와 겹치지 않게) */
+  var LEASE_BASE = 21;
+  function leasedBuses(s) { return s.draft.buses.filter(function (b) { return b.leased; }); }
+  function leaseLimit(s) { var L = s.config.finance.lease; return L ? Math.max(0, L.perPhase - leasedBuses(s).length) : 0; }
+  function lease(s) {
+    if ((s.stage !== 'plan' && s.stage !== 'reveal') || !leaseLimit(s)) return null;
+    var id = LEASE_BASE; while (bus(s, id)) id++;
+    var b = { id: id, routeNum: null, offset: 0, leased: true };
+    s.draft.buses.push(b);
+    return b;
+  }
+  // 반납: 계획 중, 대기(쉬는) 상태인 임차 버스만. 반납하면 이번 단계 임차료가 들지 않는다
+  function unlease(s, id) {
+    var b = bus(s, id);
+    if ((s.stage !== 'plan' && s.stage !== 'reveal') || !b || !b.leased || b.routeNum != null) return false;
+    s.draft.buses = s.draft.buses.filter(function (x) { return x !== b; });
+    return true;
+  }
   function setOffset(s, busId, offset) { var b = bus(s, busId); if (b) b.offset = s.config.map ? 0 : offset; }
 
   function beginPlan(s) { if (s.stage === 'reveal') s.stage = 'plan'; }
@@ -241,7 +304,7 @@
 
   function runnable(s, plan) {
     var g = graph(s);
-    return { buses: plan.buses.map(function (b) { return { id: b.id, route: b.route && Graph.validateRoute(g, b.route).length === 0 ? b.route : null, offset: b.offset }; }) };
+    return { buses: plan.buses.map(function (b) { var o = { id: b.id, route: b.route && Graph.validateRoute(g, b.route).length === 0 ? b.route : null, offset: b.offset }; if (b.leased) o.leased = true; return o; }) };
   }
 
   // 예상 = 추가 사건 없는 기본 수요로 같은 엔진을 돌린 결과(출발 경고·AI 예상이 같은 기준을 쓴다)
@@ -314,14 +377,17 @@
   }
 
   /* ── 재정 판정 ──
-   * 회차 수지 = 그 단계 수입(위탁 지원금 + 운임) − 비용(보유·운영·이동) = metrics.costs.total
-   * 보유 잔액 = 확정된 회차 수지의 합. 적자 = 회차 수지 < 0(정확히 0원은 적자 아님). 판정은 반올림 전 값으로 한다.
-   * 기본: 중간에 멈추지 않고 마지막 단계 뒤 잔액 < 0이면 파산 엔딩. 랜덤(도전): 적자 단계가 누적 3번이면 운영 계약 종료(흑자로 초기화 안 됨). */
-  var DEFICIT_LIMIT = 3;
-  function financeRule(s) { return s.mode === 'default' ? 'final-balance' : 'deficit-count'; }
+   * 회차 수지 = 그 단계 수입(지원금 기본+수행분 + 운임) − 비용(보유·임차·운영·연료) = metrics.costs.total
+   * 보유 잔액 = 확정된 회차 수지의 합. 적자 = 회차 수지 < 0(정확히 0원은 적자 아님) — 경고·분석용 정보. 판정은 반올림 전 값으로 한다.
+   * 기본: 중간에 멈추지 않고 마지막 단계 뒤 잔액 < 0이면 파산 엔딩.
+   * 랜덤(도전, 2026-10-27 개편): 지급 능력 기준 — 단계 정산 뒤 누적 잔액이 0원 미만인 채로 2번 연속이면 운영 계약 종료(1번째는 경고).
+   *   모아 둔 흑자로 적자 노선(외곽·병원)을 유지하는 운영은 계속할 수 있다. 예전 ‘적자 3회’ 규칙은 흑자가 쌓여 있어도 끝나 이 전략을 막았다. */
+  var DEFICIT_LIMIT = 3, NEGATIVE_LIMIT = 2;
+  function financeRule(s) { return s.mode === 'default' ? 'final-balance' : 'balance-streak'; }
   function balance(s) { return s.history.reduce(function (a, h) { return a + h.metrics.costs.total; }, 0); }
   function ledgerRow(k, phase, before) {
-    return { phase: phase, income: k.subsidy + k.fare, cost: k.holding + k.op + k.move, total: k.total, balance: before + k.total, deficit: k.total < 0 };
+    var c = Metrics.costParts(k); // 예전 저장본(move)·새 항목(임차료·연료비) 모두
+    return { phase: phase, income: c.subsidy + c.fare, cost: c.holding + c.lease + c.op + c.fuel, total: k.total, balance: before + k.total, deficit: k.total < 0 };
   }
   // 정산 확정: 단계마다 한 번(finishRun의 중복 방지 뒤에서만 불린다)
   function settle(s, entry) {
@@ -329,14 +395,13 @@
     if (s.ledger.some(function (r) { return r.phase === entry.phase; })) return;
     var before = s.ledger.length ? s.ledger[s.ledger.length - 1].balance : 0, row = ledgerRow(entry.metrics.costs, entry.phase, before);
     s.ledger.push(row);
-    if (row.deficit && financeRule(s) === 'deficit-count') {
-      s.deficits++;
-      if (s.deficits >= DEFICIT_LIMIT && !s.end) s.end = { cause: 'contract', phase: entry.phase, balance: row.balance };
-    }
+    if (row.deficit) s.deficits++;
+    s.negStreak = row.balance < 0 ? (s.negStreak || 0) + 1 : 0;
+    if (financeRule(s) === 'balance-streak' && s.negStreak >= NEGATIVE_LIMIT && !s.end) s.end = { cause: 'contract', phase: entry.phase, balance: row.balance };
   }
   // 정산 기록이 없는 예전 저장본: 기록된 운행에서 다시 만든다(같은 단계는 한 번만)
   function rebuildLedger(s) {
-    s.ledger = []; s.deficits = 0;
+    s.ledger = []; s.deficits = 0; s.negStreak = 0;
     var seen = {}, end = s.end; s.end = null;
     s.history.forEach(function (h) { if (!seen[h.phase]) { seen[h.phase] = true; settle(s, h); } });
     if (end && !s.end) s.end = end;
@@ -344,10 +409,11 @@
   function financeStatus(s) {
     var ledger = s.ledger || [], bal = balance(s), rule = financeRule(s);
     return {
-      rule: rule, balance: bal, ledger: ledger, deficits: s.deficits || 0, limit: DEFICIT_LIMIT,
+      rule: rule, balance: bal, ledger: ledger, deficits: s.deficits || 0, limit: NEGATIVE_LIMIT, negStreak: s.negStreak || 0,
       deficitPhases: ledger.filter(function (r) { return r.deficit; }).map(function (r) { return r.phase; }),
       // 기본 모드에서 잔액이 한 단계 지원금보다 적으면 ‘학기 말에 평가한다’는 안내를 띄운다
-      low: rule === 'final-balance' && bal < s.config.finance.subsidy,
+      // 기본 모드: 잔액이 기본 제공 차량 한 단계 보유비보다 적으면 ‘학기 말에 평가’ 안내
+      low: rule === 'final-balance' && bal < s.config.finance.holding * s.owned,
       end: s.end || null
     };
   }
@@ -361,6 +427,7 @@
       s.stage = 'ending'; return true;
     }
     s.phase++;
+    s.draft.buses = s.draft.buses.filter(function (b) { return !b.leased; }); // 임차 차량은 단계가 끝나면 반납(자동 재임차 없음)
     if (s.config.progression) {
       // 도전 모드에서 노선 한도가 5가 되는 단계는 항상 5번 직행 자리에 새 노선을 만든다(앞 단계에서 지운 번호가 있어도)
       var express = s.config.challengeApplied ? (s.phase===8?6:s.phase===6?5:null) : null;
@@ -410,16 +477,18 @@
     else if (s.stage === 'result' && s.current && s.current.plan) { var keep = s.current.routeReportShown; s.current = computeRun(s, s.current.plan); s.current.routeReportShown = keep; }
     else s.current = null;
     if (!s.ledger) rebuildLedger(s);
+    // 예전 저장본(적자 3회 규칙 시절): 연속 마이너스 잔액 횟수를 정산 기록에서 다시 센다. 이미 끝난 계약(s.end)은 그대로 둔다
+    if (s.negStreak == null) s.negStreak = (s.ledger || []).reduce(function (k, r) { return r.balance < 0 ? k + 1 : 0; }, 0);
     if (s.stage === 'ending' && !s.end) { var bal = balance(s); s.end = { cause: financeRule(s) === 'final-balance' && bal < 0 ? 'bankrupt' : 'complete', phase: s.phase, balance: bal }; }
     return s;
   }
 
   var api = {
     emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,
-    serialize: serialize, restore: restore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
+    serialize: serialize, restore: restore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
-    assign: assign, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,
+    assign: assign, lease: lease, unlease: unlease, leaseLimit: leaseLimit, leasedBuses: leasedBuses, LEASE_BASE: LEASE_BASE, restingFor: restingFor, autoPlace: autoPlace, busCost: busCost, typicalBusCost: typicalBusCost, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,
     chooseGoal: chooseGoal, markGoalAction: markGoalAction, applyRecommendation: applyRecommendation, applyFourth: applyFourth,
     revealed: revealed, expected: expected, startRun: startRun, finishRun: finishRun, nextPhase: nextPhase, endingSummary: endingSummary
   };

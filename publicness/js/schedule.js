@@ -22,15 +22,19 @@
     return {buses:plan.buses.map(function (b) {
       var ids = b.route && groups[JSON.stringify(b.route)];
       if (ids) ids.sort(function(a,b){return a-b;});
-      return {id:b.id, route:b.route, offset:ids ? Math.round(Math.min(config.bus.window,Graph.cycleMinutes(g,b.route)) * ids.indexOf(b.id) / ids.length) : 0};
+      var o = {id:b.id, route:b.route, offset:ids ? Math.round(Math.min(config.bus.window,Graph.cycleMinutes(g,b.route)) * ids.indexOf(b.id) / ids.length) : 0};
+      if (b.leased) o.leased = true; // 임차 차량 표시는 정산(임차료 vs 보유비)까지 그대로 간다
+      return o;
     })};
   }
   function timeline(g, config, busId, route, offset) {
     if (config.map && !config.bus.autoSpacing) offset = 0;
     var W = config.bus.window, dwell = config.bus.dwell;
-    var tl = { busId: busId, route: route || null, routeId: route ? Graph.routeId(route) : null, offset: offset, visits: [], segments: [], opMinutes: 0, moveMinutes: 0 };
+    var tl = { busId: busId, route: route || null, routeId: route ? Graph.routeId(route) : null, offset: offset, visits: [], segments: [], opMinutes: 0, moveMinutes: 0, km: 0 };
     if (!route) return tl;
-    tl.opMinutes = Math.max(0, W - offset);
+    // 관제·운영비 시간 = 운행에 배정된 하루 전체(05~23). 자동 간격으로 첫 출발이 늦어도 그 버스는 대기 근무 중이라 깎지 않는다
+    // (예전엔 W − 출발 시각이라 긴 노선일수록 간격이 벌어져 운영비가 줄어드는 할인이 생겼다)
+    tl.opMinutes = W;
 
     var t = offset;
     var dh = config.map ? { nodes: [route.nodes[0]] } : Graph.shortestPath(g, config.bus.depot, route.nodes[0]);
@@ -55,6 +59,7 @@
         t += duration; index = ni;
       }
       tl.moveMinutes = tl.segments.reduce(function (sum, seg) { return sum + Math.max(0, Math.min(seg.t1, W) - seg.t0); }, 0);
+      tl.km = driven(g, tl.segments, W);
       return tl;
     }
     var n = route.nodes.length, run = 0, idx = 0, dir = 1, lastEnd = true;
@@ -76,7 +81,17 @@
     }
 
     tl.moveMinutes = tl.segments.reduce(function (s, x) { return s + Math.max(0, Math.min(x.t1, W) - Math.max(x.t0, 0)); }, 0);
+    tl.km = driven(g, tl.segments, W);
     return tl;
+  }
+  // 실제 주행거리(km) — 운행 종료(W) 전에 달린 만큼만. 구간 도중에 끝나면 달린 비율만, 정차·대기는 0, 공차 이동(deadhead)도 포함.
+  // 속도가 빨라도 같은 구간이면 같은 거리(시간이 아니라 도로 거리로 센다)
+  function driven(g, segments, W) {
+    return segments.reduce(function (sum, x) {
+      var d = g.dist ? g.dist(x.from, x.to) : null, span = x.t1 - x.t0;
+      if (d == null || span <= 0) return sum;
+      return sum + d * Math.max(0, Math.min(1, (Math.min(x.t1, W) - Math.max(x.t0, 0)) / span));
+    }, 0);
   }
 
   // 렌더용 위치. 출차 전·미배정은 A에 주차
@@ -92,7 +107,7 @@
     return { node: node, parked: false };
   }
 
-  var api = { travel:travel,cycleMinutes:cycleMinutes,vehicle:vehicle,timeline: timeline, positionAt: positionAt, spacePlan: spacePlan };
+  var api = { driven:driven, travel:travel,cycleMinutes:cycleMinutes,vehicle:vehicle,timeline: timeline, positionAt: positionAt, spacePlan: spacePlan };
   root.PB = root.PB || {};
   root.PB.Schedule = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

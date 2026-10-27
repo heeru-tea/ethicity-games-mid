@@ -9,6 +9,7 @@
   var Graph = NODE ? require('./graph.js') : root.PB.Graph;
   var Demand = NODE ? require('./demand.js') : root.PB.Demand;
   var Session = NODE ? require('./session.js') : root.PB.Session;
+  var Metrics = NODE ? require('./metrics.js') : root.PB.Metrics;
 
   var MAX_BUBBLES = 12;
 
@@ -236,18 +237,18 @@
   // 운영 종료(파산·계약 종료) 화면의 재정 돌아보기 — 기록된 운행 수치만 쓴다(새 사건·추정 없음)
   // 사건 영향 = 돌발 수요 승객이 낸 운임(청원은 재정에 직접 영향 없음), 나머지 비용·운임은 노선과 버스 배치(선택)에서 나온다
   function financeReview(config,history){
-    var F=config.finance,sum={holding:0,op:0,move:0,fare:0,subsidy:0},noLink=0,notBoarded=0,resting=0,running=0,boardings=0,eventFare=0,eventPhases=[],eventUnknown=false;
+    var F=config.finance,sum={holding:0,lease:0,op:0,fuel:0,fare:0,subsidy:0},noLink=0,notBoarded=0,resting=0,running=0,boardings=0,eventFare=0,eventPhases=[],eventUnknown=false;
     history.forEach(function(h){
-      var k=h.metrics.costs,m=h.metrics;Object.keys(sum).forEach(function(x){sum[x]+=k[x];});
+      var k=Metrics.costParts(h.metrics.costs),m=h.metrics;Object.keys(sum).forEach(function(x){sum[x]+=k[x];});
       noLink+=m.noLink||0;notBoarded+=m.notBoarded?m.notBoarded.count:0;boardings+=m.boardings||0;
       var buses=h.plan&&h.plan.buses||[];buses.forEach(function(b){if(b.route)running++;else resting++;});
       if(h.event&&h.event.type==='demand'){if(h.eventFare==null)eventUnknown=true;else{eventFare+=h.eventFare;eventPhases.push(h.phase);}}
     });
-    var costs=[['holding','차량 보유비',sum.holding],['op','원격 관제·운영비',sum.op],['move','에너지·정비(이동)',sum.move]].sort(function(a,b){return b[2]-a[2];});
+    var costs=[['holding','차량 보유비',sum.holding],['op','관제·운영비',sum.op],['fuel','연료·정비비(주행거리)',sum.fuel]].concat(sum.lease?[['lease','임차료',sum.lease]]:[]).sort(function(a,b){return b[2]-a[2];});
     // 한 노선에 몰아 넣은 버스 수(단계별 최댓값)
     var crowd=0;history.forEach(function(h){var n={};(h.plan&&h.plan.buses||[]).forEach(function(b){if(!b.route)return;var id=b.route.nodes.join('-');n[id]=(n[id]||0)+1;crowd=Math.max(crowd,n[id]);});});
     var perBus=running?boardings/running:0,need=F.holding/F.fare,tips=[];
-    if(resting)tips.push({code:'resting',text:'쉬는 버스도 대당 '+won(F.holding)+'씩 보유비가 나가요. 이번 운영에서 쉬게 한 버스가 단계별로 합쳐 '+resting+'대였어요.'+(notBoarded?' 운행 종료까지 버스를 못 탄 요청('+notBoarded+'건)이 남은 노선에 넣으면 운임으로 일부를 메울 수 있어요.':' 이동 요청이 있는 구간에 넣어 운임을 받을 수 있는지 살펴보세요.')});
+    if(resting)tips.push({code:'resting',text:'쉬는 버스도 대당 '+won(F.holding)+'씩 보유비가 나가요'+(F.basePerBus?'(기본 지원 '+won(F.basePerBus)+'을 받아도 '+won(F.holding-F.basePerBus)+'이 남아요)':'')+'. 이번 운영에서 쉬게 한 버스가 단계별로 합쳐 '+resting+'대였어요.'+(notBoarded?' 운행 종료까지 버스를 못 탄 요청('+notBoarded+'건)이 남은 노선에 넣으면 운임으로 일부를 메울 수 있어요.':' 이동 요청이 있는 구간에 넣어 운임을 받을 수 있는지 살펴보세요.')});
     if(noLink)tips.push({code:'noLink',text:'잇는 노선이 없어 떠나지 못한 요청이 '+noLink+'건이에요. 한 건을 이으면 운임 '+won(F.fare)+'이 생겨요. 정류장 연결부터 살펴보세요.'});
     if(running&&perBus<need)tips.push({code:'perBus',text:'운행한 버스 한 대가 단계마다 평균 '+(Math.round(perBus*10)/10)+'회 태웠어요. 보유비를 운임만으로 메우려면 대당 '+need+'회가 필요해요.'+(crowd>=3?' 한 노선에 버스를 최대 '+crowd+'대까지 넣은 단계가 있었어요. 버스를 여러 노선에 나눠 요청이 있는 정류장을 더 지나게 하면 대당 승차가 늘 수 있어요.':' 노선별 이용표에서 승차가 적은 노선의 버스를 요청이 남은 노선으로 옮길 수 있는지 살펴보세요.')});
     // 중복 구간: 서로 다른 노선 둘 이상이 같은 두 정류장 사이를 달린 단계(계획 기록에서 확인되는 것만)
@@ -263,7 +264,7 @@
       totals:sum,costs:costs,crowd:crowd,noLink:noLink,notBoarded:notBoarded,resting:resting,running:running,perBus:perBus,
       event:{fare:eventFare,phases:eventPhases,unknown:eventUnknown},
       tips:tips.slice(0,3),
-      caution:'이용이 적은 외곽 노선을 없애는 것만이 답은 아니에요. 위탁 지원금은 그런 이동을 지키라고 주는 돈이고, 외곽 주민의 하루도 학기 결과에 들어가요.'
+      caution:'이용이 적은 외곽 노선을 없애는 것만이 답은 아니에요. 공공서비스 수행분은 외곽·병원 같은 곳에 실제로 버스를 보낼 때 받는 돈이고, 외곽 주민의 하루도 학기 결과에 들어가요.'
     };
   }
   var api = { won:won, financeReview:financeReview, josa:josa, residentResult:residentResult,satisfactionTargets:satisfactionTargets,satisfactionText:satisfactionText,residentTally:residentTally,endingReactions:endingReactions,endingConclusion:endingConclusion, fill: fill, bubbles: bubbles, residentStory: residentStory, zoneSubtitleText: zoneSubtitleText, hookLines: hookLines, nodeName: nodeName };
