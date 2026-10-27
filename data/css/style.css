@@ -19,7 +19,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); 
 body { overflow: hidden; word-break: keep-all; }
 #app { position: fixed; inset: 0; }
 .screen { position: absolute; inset: 0; overflow: auto; }
-.screen[hidden] { display: none; }
+.screen[hidden] { display: none !important; }
 
 .btn { font: inherit; font-weight: 700; font-size: 17px; border-radius: 999px; padding: 14px 28px; border: 2px solid var(--cyan); background: transparent; color: var(--ink); cursor: pointer; }
 .btn:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
@@ -55,3 +55,37 @@ body { overflow: hidden; word-break: keep-all; }
 .run-hint { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); margin: 0; background: rgba(18,12,46,.8); border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; font-size: 16px; white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) { .hud-bag.bump { animation: none; } }
+
+/* 공통 페이지(브리핑·검수·결과·마무리) */
+.screen:not(#screen-run):not(#screen-title) { background: linear-gradient(180deg, #1c1446 0%, var(--bg) 70%); }
+.page { max-width: 46rem; margin: 0 auto; padding: 32px 16px 48px; line-height: 1.7; }
+.page h2 { font-size: 22px; margin: 32px 0 16px; }
+.kicker { color: var(--cyan); font-size: 14px; letter-spacing: .06em; margin: 0 0 16px; }
+.lead { font-size: 18px; color: var(--ink); }
+.note { color: var(--ink-2); font-size: 16px; }
+.missing { border-left: 3px solid var(--pink); padding: 4px 0 4px 12px; margin: 12px 0; color: var(--ink); }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+.btn-ghost { border-color: var(--line); color: var(--ink-2); padding: 10px 18px; font-size: 15px; }
+.portrait { flex: none; }
+.line { display: flex; gap: 12px; align-items: flex-start; margin: 16px 0; }
+.line-body b { font-size: 15px; }
+.line-body p { margin: 2px 0 0; font-size: 17px; }
+
+/* 대화창 */
+#screen-story { display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
+.skip { position: absolute; top: 16px; right: 16px; }
+.dialog { width: 100%; max-width: 44rem; display: flex; gap: 16px; align-items: flex-start; background: var(--panel); border: 2px solid var(--line); border-radius: 22px; padding: 20px; margin-bottom: 8vh; cursor: pointer; }
+.dialog-body { flex: 1; min-width: 0; }
+.dialog-name { font-size: 16px; }
+.dialog-text { font-size: 19px; line-height: 1.7; margin: 4px 0 8px; }
+.dialog-hint { font-size: 13px; color: var(--ink-2); }
+
+/* 브리핑 장면 */
+.brief-scenes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 16px; align-items: start; }
+.brief-scene { margin: 0; background: var(--panel); border-radius: var(--r); padding: 8px; }
+.brief-scene img { display: block; width: 100%; border-radius: 6px; }
+.brief-scene figcaption { font-size: 16px; padding: 8px 4px 2px; }
+.brief-scene[data-emphasis="low"] { opacity: .72; transform: scale(.88); transform-origin: top left; }
+.brief-scene[data-emphasis="low"] figcaption { font-size: 14px; color: var(--ink-2); }
+
+.result-art { display: block; width: 100%; max-width: 30rem; border-radius: var(--r); }

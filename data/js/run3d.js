@@ -427,6 +427,14 @@
     setPaused: function (p) { if (S) { S.paused = !!p; S.last = null; } },
     course: function () { return S ? S.course : null; },
     isTaken: function (uid) { return !!(S && S.taken.has(uid)); },
+    // 테스트용: 코스의 카드를 잡은 것으로 처리
+    debugTake: function (uid) {
+      if (!S || S.taken.has(uid)) return false;
+      var it = S.course.items.filter(function (i) { return i.uid === uid; })[0];
+      if (!it || it.kind !== 'card') return false;
+      take(it, false);
+      return true;
+    },
     peek: function () {
       if (!S) return { running: false };
       return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, running: S.running, slowedUntil: S.slowedUntil, paused: S.paused };
