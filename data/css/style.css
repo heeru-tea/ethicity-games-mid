@@ -89,3 +89,42 @@ body { overflow: hidden; word-break: keep-all; }
 .brief-scene[data-emphasis="low"] figcaption { font-size: 14px; color: var(--ink-2); }
 
 .result-art { display: block; width: 100%; max-width: 30rem; border-radius: var(--r); }
+
+/* 검수 · 보충 준비 */
+.notice { background: rgba(255,95,176,.14); border: 1px solid var(--pink); border-radius: 12px; padding: 10px 14px; }
+.notice[hidden] { display: none; }
+.bag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.bag-card { position: relative; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 6px; }
+.bag-card.ambiguous { border-color: var(--pink); }
+.bag-card.undecided { box-shadow: 0 0 0 3px rgba(255,95,176,.35); }
+.bag-open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.bag-open > img { display: block; width: 100%; image-rendering: pixelated; border-radius: 6px; }
+.bag-icons { display: flex; gap: 4px; margin-top: 4px; }
+.bag-icons img { width: 22px; height: 22px; }
+.bag-state { display: block; font-size: 12px; color: var(--pink); margin-top: 2px; }
+.btn-remove { margin-top: 6px; width: 100%; font: inherit; font-size: 13px; padding: 4px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-2); cursor: pointer; }
+.btn-remove:hover { color: var(--ink); border-color: var(--ink-2); }
+.scene-sum { margin: 0 0 16px; }
+.scene-sum h3 { font-size: 16px; margin: 0 0 8px; color: var(--ink-2); }
+.scene-thumbs { display: flex; flex-wrap: wrap; gap: 4px; min-height: 40px; }
+.scene-thumbs img { width: 40px; height: 40px; image-rendering: pixelated; border-radius: 4px; }
+.scene-thumbs .empty { color: var(--ink-2); font-size: 14px; }
+.zoom { position: fixed; inset: 0; z-index: 10; background: rgba(8,5,24,.8); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.zoom-panel { background: var(--bg-2); border: 2px solid var(--cyan); border-radius: 20px; padding: 16px; width: min(100%, 40rem); max-height: 100%; overflow: auto; }
+.zoom-art { display: block; width: 100%; max-width: 22rem; border-radius: 10px; }
+.zoom-panel h3 { font-size: 16px; margin: 16px 0 8px; }
+.clues { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.clue { margin: 0; }
+.clue img { display: block; width: 100%; border-radius: 8px; }
+.clue figcaption { font-size: 14px; margin-top: 4px; }
+.labels { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-label { padding: 8px 14px; font-size: 15px; border-color: var(--line); }
+.btn-label[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: #10093a; }
+.page-center { min-height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.failed { padding-left: 20px; }
+
+/* 결과 */
+.chip { display: inline-block; border-radius: 999px; padding: 4px 14px; font-weight: 700; font-size: 15px; margin: 16px 0 0; }
+.chip-ok { background: var(--ok); color: #0b2a1c; }
+.chip-warn { background: #ff9f5a; color: #3a1a00; }
+.chip-danger { background: var(--danger); color: #2a0008; }

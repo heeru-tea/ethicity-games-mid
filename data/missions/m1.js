@@ -106,6 +106,8 @@
       guideBrief: '이 AI는 비 오는 날 밤에도 침수 도로와 젖은 도로를 구별해야 합니다. 무엇을 모을지는 러너의 판단 영역입니다.',
       supervisorQuestion: '브리핑 장면 네 개, 하나씩 다 떠올려 봤어?',
       responsibility: '승인한 건 나니까, 나도 같이 책임질게.',
+      clientPass: [{ who: 'client', text: '덕분에 오늘 밤은 길 걱정을 좀 덜었네요.' }],
+      clientFail: [{ who: 'client', text: '아직 몇 군데는 불안하네요. 다시 한번 부탁해요.' }],
       senior: [
         { who: 'senior', text: '첫날치고 나쁘지 않네.' },
         { who: 'senior', text: '근데 AI 너무 믿지는 마. AI는 네가 준 것 이상은 절대 몰라.' }

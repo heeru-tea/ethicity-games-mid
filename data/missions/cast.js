@@ -12,7 +12,8 @@
     guide:      { name: '안내 AI', color: '#7FF9FF', shape: 'hex' },
     bot:        { name: '수거봇',  color: '#FF9F5A', shape: 'bot' },
     senior:     { name: '선배',    color: '#E58BFF', shape: 'circle' },
-    examiner:   { name: '시험관',  color: '#C9C9D9', shape: 'diamond' }
+    examiner:   { name: '시험관',  color: '#C9C9D9', shape: 'diamond' },
+    client:     { name: '도로 관리원', color: '#A8E06A', shape: 'square' }
   };
 
   root.DR = root.DR || {};

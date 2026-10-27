@@ -81,8 +81,51 @@
     });
   }
 
-  // 달리기 뒤 검수부터(1 임무) — Task 8에서 채운다
-  function afterRun(m) { go('inspect'); }
+  // 달리기 뒤: 검수 → 감독관 → 결과
+  function afterRun(m) { review(m); }
+
+  function review(m) {
+    DR.UI.inspect(m, App.state.bag, function () { askSupervisor(m); });
+  }
+
+  function askSupervisor(m) {
+    DR.UI.supervisor(m.story.supervisorQuestion, function () { review(m); }, function () { judgeAndShow(m); });
+  }
+
+  function judgeAndShow(m) {
+    var r = DR.Judge.judge(m, App.state.bag, DR.config);
+    App.lastJudge = r;
+    if (App.state.firstTry === null) App.state.firstTry = r.allPass;
+    DR.UI.result(m, r, function () {
+      if (r.allPass || App.state.supplements >= DR.config.maxSupplements) finishMission(m);
+      else prepSupplement(m, r);
+    });
+  }
+
+  // 보충: 실패 장면의 빠진 조합 key가 자주 나오는 짧은 코스. 이미 모은 가방은 그대로.
+  function prepSupplement(m, r) {
+    DR.UI.supplementPrep(m, r, App.state.bag, function (bag) {
+      App.state.supplements++;
+      var byCombo = {}, focus = [];
+      m.scenes.forEach(function (s) { s.combos.forEach(function (c) { byCombo[c.id] = c; }); });
+      r.scenes.forEach(function (s) {
+        s.missing.forEach(function (id) { byCombo[id].keys.forEach(function (k) { if (focus.indexOf(k) < 0) focus.push(k); }); });
+      });
+      var course = DR.Stream.build(m, DR.config, { seed: App.state.seed + App.state.supplements, focusKeys: focus });
+      runCourse(m, course, bag, function (fresh) {
+        App.state.bag = bag.concat(fresh);
+        var undecided = fresh.some(function (c) { return c.ambiguousId && c.assigned === undefined; });
+        if (undecided) review(m); else askSupervisor(m);
+      });
+    });
+  }
+
+  function finishMission(m) {
+    App.state.record = { firstTry: App.state.firstTry, supplements: App.state.supplements };
+    DR.UI.dialogue(m.story.senior, function () {
+      DR.UI.outro(m.story.outro, function () { DR.Sfx.play('ui'); go('title'); });
+    });
+  }
 
   // 테스트 훅: 달리는 중 현재 코스에서 key(또는 ambiguousId) 카드를 앞에서부터 골라 가방에 넣는다
   function debugFill(counts) {
