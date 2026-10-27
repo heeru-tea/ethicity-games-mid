@@ -64,8 +64,9 @@ try{
  if(await page.locator('#learning-dialog:modal').count())await page.locator('#btn-learning-continue').click();await page.locator('#btn-begin-plan').click();
  // 1단계 계획에 처음 들어오면 첫 노선 안내 모달
  assert.ok(await page.locator('#tutorial-dialog').evaluate(d=>d.open&&d.matches(':modal')));
- assert.match(await page.locator('#tutorial-title').textContent(),/정류장 두 곳을 이어 보세요/);assert.equal(await page.locator('.tutorial-steps li').count(),3);
- assert.match(await page.locator('#tutorial-dialog').textContent(),/예: 나래 · 09:03 외곽 마을 → 병원·공공서비스. 누구의 길부터/);assert.match(await page.locator('#tutorial-dialog').textContent(),/버스 2대, 노선 2개까지/);
+ assert.match(await page.locator('#tutorial-title').textContent(),/정류장 두 곳을 이어 보세요/);assert.equal(await page.locator('.tutorial-steps li').count(),2);
+ assert.equal((await page.$$eval('#tutorial-rule p',ps=>ps.map(p=>p.textContent))).join('\n'),'이번 단계는 버스 2대 · 노선 최대 2개로 운영해요.
+출발하면 05:00~23:00의 하루 운행이 시작돼요.');
  await page.screenshot({path:'publicness/tests/_shot-tutorial.png'});
  await page.locator('#btn-tutorial-close').click();assert.equal(await page.locator('#tutorial-dialog').evaluate(d=>d.open),false);
  // 도움말에서 다시 보기

@@ -148,6 +148,10 @@
             var p = { buses: buses };
             if (rev.config.progression && new Set(buses.filter(function(b){return b.route;}).map(function(b){return JSON.stringify(b.route);})).size > rev.config.progression.routes[rev.phase - 1]) return;
             if(rev.config.challengeApplied&&new Set(buses.filter(function(b){return b.id!==9&&b.route;}).map(function(b){return JSON.stringify(b.route);})).size>5)return;
+            // 5번 직행은 7호차만(2026-10-27): 일반 버스는 7호차 노선을 같이 달리지 않고, 일반 노선은 1~4번 4개까지
+            if(rev.config.challengeApplied){var r7=buses.filter(function(b){return b.id===7&&b.route;})[0],reg=buses.filter(function(b){return b.id!==7&&b.id!==9&&b.route;});
+              if(r7&&reg.some(function(b){return JSON.stringify(b.route)===JSON.stringify(r7.route);}))return;
+              if(new Set(reg.map(function(b){return JSON.stringify(b.route);})).size>4)return;}
             if (rev.config.challengeApplied && new Set(buses.filter(function(b){return b.route&&new Set(b.route.nodes).size>3;}).map(function(b){return JSON.stringify(b.route);})).size>4) return;
             if (samePlan(p, cur.plan) || (allow && !allow(p))) return;
             out.push(p);

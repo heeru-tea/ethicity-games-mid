@@ -18,13 +18,10 @@
     var c = el('article', { 'class': 'card resident-card', 'data-id': story.residentId, 'aria-labelledby': 'res-' + story.residentId });
     var head = el('div', { 'class': 'resident-head' });
     var face = el('div', { 'class': 'face', 'aria-hidden': 'true' });
-    // 유나·다은은 초상화가 없어 이름만 쓴다(그림을 요청하지도 않음)
-    if(story.residentId==='yuna'||story.residentId==='daeun')face.textContent=story.name;
-    else{
-      var img = el('img', { src: 'assets/art/portrait-' + story.residentId + '-calm.webp', alt: '' });
-      img.addEventListener('error', function () { face.textContent = story.name; img.remove(); });
-      face.appendChild(img);
-    }
+    // 모든 인물 초상(유나·다은도 2026-10-27 설정 시트에서 잘라 만듦 — tools/portrait-crop.mjs). 그림이 없을 때만 이름 글자
+    var img = el('img', { src: 'assets/art/portrait-' + story.residentId + '-calm.webp', alt: '' });
+    img.addEventListener('error', function () { face.textContent = story.name; img.remove(); });
+    face.appendChild(img);
     head.appendChild(face);
     var rd = cfg.residents.filter(function (r) { return r.id === story.residentId; })[0];
     var t = el('div');
@@ -95,7 +92,9 @@
     var f = S.financeStatus(s), rv = N.financeReview(s.config, s.history), byStreak = f.rule === 'balance-streak';
     var sec = el('section', { id: 'failure-report', 'class': 'card', 'aria-labelledby': 'fail-h' });
     sec.appendChild(el('h3', { id: 'fail-h' }, '재정 돌아보기'));
-    sec.appendChild(el('p', { id: 'failure-cause' }, (f.end.cause === 'contract'
+    sec.appendChild(el('p', { id: 'failure-cause' }, (f.end.cause === 'contract' && f.end.balance >= 0
+      ? f.end.phase + '단계에서 이전 규칙(회차 적자 누적 3번)으로 운영 계약이 종료됐어요. 보유 잔액은 ' + App.won(f.balance) + '이에요.'
+      : f.end.cause === 'contract'
       ? (f.end.phase - 1) + '·' + f.end.phase + '단계를 마칠 때 누적 잔액이 연속으로 0원 미만이어서 운영 계약이 종료됐어요. 마지막 보유 잔액은 ' + App.won(f.balance) + '이에요. 한 단계 적자는 경고였고, 지급 능력(누적 잔액)으로 판정했어요.'
       : '마지막 단계까지 운행했지만 학기 말 보유 잔액이 ' + App.won(f.balance) + '이에요. 기본 모드는 학기 말 잔액이 0원 미만이면 파산으로 끝나요.') + ' 재정 판정과 별개로, 주민이 해낸 이동은 아래 인물 결과에 그대로 남아 있어요.'));
     var n = 0, rows = f.ledger.map(function (r) {
@@ -149,10 +148,10 @@
       App._resultFor = s;
       var counts = { stable: 0, improving: 0, remaining: 0 };
       Object.keys(sum.zones).forEach(function (z) { if (sum.zones[z].subtitle.firstPhase != null) counts[sum.zones[z].subtitle.kind]++; });
-      PB.Storage.writeResult('이번 정류장은… · '+(failed?(end.cause==='bankrupt'?'파산':'적자 누적 계약 종료')+' · ':'')+'생활권 안정 ' + counts.stable + ' · 개선 중 ' + counts.improving + ' · 과제 ' + counts.remaining);
+      PB.Storage.writeResult('이번 정류장은… · '+(failed?(end.cause==='bankrupt'?'파산':App.contractTitle(end))+' · ':'')+'생활권 안정 ' + counts.stable + ' · 개선 중 ' + counts.improving + ' · 과제 ' + counts.remaining);
     }
     panel.appendChild(el('p', { 'class': 'eyebrow' }, failed ? '운영 종료' : '학기 말 — 마무리'));
-    panel.appendChild(el('h2', { id: 'ending-title' }, end.cause === 'bankrupt' ? '파산 — 학기 말 잔액이 0원 미만이에요' : end.cause === 'contract' ? '적자 누적으로 운영 계약 종료' : '한 학기 운행이 끝났어요'));
+    panel.appendChild(el('h2', { id: 'ending-title' }, end.cause === 'bankrupt' ? '파산 — 학기 말 잔액이 0원 미만이에요' : end.cause === 'contract' ? App.contractTitle(end) : '한 학기 운행이 끝났어요'));
     if (App.player) {
       var who = el('p', { id: 'end-player', 'class': 'player-name' });
       who.textContent = App.player.nickname + ' 운영자님의 기록';

@@ -132,7 +132,8 @@
     if(num!==6)return r.nodes.indexOf('N')<0&&new Set(r.nodes).size<=stopLimit(s,num);
     return r.nodes.length<=2&&new Set(r.nodes).size===r.nodes.length&&(r.nodes.length<2||r.nodes.indexOf('N')>=0);
   }
-  function canAssign(s,id,num){return num==null||!s.config.challengeApplied||((id!==7||num===5)&&(id!==9||num===6)&&(num!==6||id===9));}
+  // 도전 모드 전용 노선·버스: 5번 직행 ↔ 7호차, 6번 광역 ↔ 9호차(서로만). 2026-10-27: 일반 버스가 5번에 들어가던 문제를 막음
+  function canAssign(s,id,num){return num==null||!s.config.challengeApplied||((id!==7||num===5)&&(id!==9||num===6)&&(num!==6||id===9)&&(num!==5||id===7));}
   // 화면 표시용: 노선 번호순 사본(초안 배열 순서는 생성·적용 순서라 섞일 수 있음)
   function routesInOrder(s) { return s.draft.routes.slice().sort(function (a, b) { return a.num - b.num; }); }
   function addRoute(s, route, preferNum) {

@@ -34,9 +34,9 @@
   }
   function hex(color) { var n = parseInt(String(color).replace('#', ''), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
 
-  // px: RGBA 바이트 배열(ImageData.data). 새 배열을 돌려준다
-  function recolor(px, color) {
-    var out = new Uint8ClampedArray(px.length), rc = hex(color);
+  // px: RGBA 바이트 배열(ImageData.data). 새 배열을 돌려준다. body가 있으면 흰 몸체(채도 낮고 밝은 칠)를 그 색으로(명암 유지)
+  function recolor(px, color, body) {
+    var out = new Uint8ClampedArray(px.length), rc = hex(color), bc = body ? hex(body) : null;
     for (var i = 0; i < px.length; i += 4) {
       var r = px[i], g = px[i + 1], b = px[i + 2], c = hsv(r, g, b);
       if (c.h >= 200 && c.h <= 245 && c.s >= 0.45 && c.v >= 0.3) {
@@ -45,6 +45,9 @@
       } else if (c.h >= 170 && c.h < 200 && c.s >= 0.35) {
         var y = 0.299 * r + 0.587 * g + 0.114 * b;
         out[i] = out[i + 1] = out[i + 2] = Math.min(255, y * 1.15);
+      } else if (bc && c.s < 0.18 && c.v > 0.62) {
+        var k = Math.min(1.1, c.v / 0.9);
+        out[i] = bc[0] * k; out[i + 1] = bc[1] * k; out[i + 2] = bc[2] * k;
       } else { out[i] = r; out[i + 1] = g; out[i + 2] = b; }
       out[i + 3] = px[i + 3];
     }

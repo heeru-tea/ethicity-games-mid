@@ -295,6 +295,7 @@
     row.appendChild(el('button',{type:'button',id:'emergency-continue','class':'btn',onclick:function(){finish(null,null);}},'변경 없이 계속'));
     row.appendChild(apply);
     d.appendChild(row);
+    if (document.body.classList.contains('panel-collapsed')) App.setPanelCollapsed(false); // 조정 창은 패널 안에 있다
     if (!d.open) d.show();
     if (panel) panel.scrollTop = 0;
     $('#emergency-title').focus({ preventScroll: true });
@@ -393,7 +394,8 @@
     if (R.hold || R.slowed) return 1;
     return R.mode === 'next' ? 'next' : R.speed;
   }
-  function iconLabel(b, icon, text) { b.textContent = ''; b.appendChild(el('span', { 'aria-hidden': 'true' }, icon + ' ')); b.appendChild(el('span', { 'class': 'btn-text' }, text)); b.setAttribute('aria-label', text); return b; }
+  // 운행 조작은 지도 모서리의 작은 아이콘 묶음 — 글자는 aria-label·툴팁으로(2026-10-27 시각 위계)
+  function iconLabel(b, icon, text) { b.textContent = ''; b.appendChild(el('span', { 'aria-hidden': 'true' }, icon)); b.appendChild(el('span', { 'class': 'btn-text' }, text)); b.setAttribute('aria-label', text); if (!b.title) b.title = text; return b; }
   function syncControls() {
     var shown = shownSpeed();
     SPEEDS.forEach(function (n) { var b = $('#speed-' + n); if (b) b.setAttribute('aria-pressed', String(n === shown)); });
@@ -469,7 +471,7 @@
       speeds.appendChild(el('button', { type: 'button', id: 'speed-' + speed, 'class': 'btn', 'aria-pressed': String((App.speed || 1) === speed), title: '하루를 ' + Math.round(dayMs / speed / 1000) + '초에 보기', onclick: function () { tick(); setSpeed(speed); } }, speed + '×'));
     });
     speeds.appendChild(iconLabel(el('button', { type: 'button', id: 'run-next', 'class': 'btn', 'aria-pressed': 'false', title: '다음 긴급 조정이나 만차·대기 ' + P.ALERT_WAIT + '명 이상 같은 사건까지 빨리 가기', onclick: nextDecision }), '⏭', '다음 결정까지'));
-    speeds.appendChild(el('button',{type:'button',id:'run-skip','class':'btn',onclick:skipToEnd},'끝까지 건너뛰기'));
+    speeds.appendChild(iconLabel(el('button',{type:'button',id:'run-skip','class':'btn',title:'끝까지 건너뛰기',onclick:skipToEnd}),'⏩','끝까지 건너뛰기'));
     speeds.appendChild(iconLabel(el('button', { type: 'button', id: 'run-sound', 'class': 'btn', 'aria-pressed': String(App.sound), title: '효과음 켜기/끄기', onclick: function () { App.setSound(!App.sound); if (App.sound) App.sfx('person'); } }), App.sound ? '🔊' : '🔇', '소리'));
     panel.appendChild(el('p', { id: 'run-status', 'class': 'h-small', role: 'status' }, '운행 시작'));
     var live = el('section', { id: 'run-live', 'aria-labelledby': 'run-live-h' });

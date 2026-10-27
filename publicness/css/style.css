@@ -374,9 +374,6 @@ body.story-open { overflow: hidden; }
 .resident-card > summary:focus-visible { outline: 2px solid #245cdb; outline-offset: 3px; border-radius: 8px; }
 .resident-face { position: relative; display: block; width: 68px; height: 68px; flex: 0 0 68px; overflow: hidden; border-radius: 50%; background: #f0f3f6; }
 .resident-face img { position: absolute; width: 112%; max-width: none; left: -6%; top: -2%; }
-.resident-face.yuna img, .resident-face.daeun img { width: 800%; top: -68%; }
-.resident-face.yuna img { left: -287%; }
-.resident-face.daeun img { left: -384%; }
 .resident-identity { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
 .resident-identity strong { font-size: 18px; }
 .resident-state { font-size: 15px; line-height: 1.6; word-break: keep-all; }
@@ -488,15 +485,14 @@ body.bus-picked #bus-depot { border-style:dashed; }
 body.bus-dragging, body.bus-dragging * { cursor:grabbing !important; user-select:none; -webkit-user-select:none; }
 /* 노선별 고정 표시 ‘버스 ×N’ — 노선 색은 테두리·번호 원으로만(그림은 원본 그대로) */
 #route-buses { position:absolute; inset:0; pointer-events:none; z-index:9; }
-.route-bus { position:absolute; transform:translate(-50%,-50%); display:flex; align-items:center; gap:4px; min-height:36px; padding:2px 8px 2px 3px; background:var(--bg); border:2px solid var(--route); border-radius:12px; box-shadow:0 1px 4px #17233533; pointer-events:auto; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; font:inherit; color:var(--text); line-height:1.2; }
-.route-bus::before { content:""; position:absolute; inset:-6px; } /* 손가락용 판정 여유 */
-.route-bus.idle { border-style:dashed; cursor:pointer; }
-.route-bus .bus-sprite { height:24px; width:auto; display:block; pointer-events:none; }
-.route-num { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 4px; border-radius:10px; background:var(--route); color:#fff; font-size:12px; font-weight:700; text-shadow:0 0 2px #0006; }
-.route-count { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
-.route-idle { display:grid; text-align:left; }
-.route-idle b { font-size:12px; }
-.route-idle small { font-size:11px; color:var(--text-mute); white-space:nowrap; }
+/* 노선 손잡이 = 노선 시작 번호 원(네트워크층과 같은 자리·모양) + 운행 버스 수. 번호 원 중심이 (left, top) */
+.route-bus { position:absolute; transform:translate(-14px,-50%); display:flex; align-items:center; gap:2px; padding:2px; background:transparent; border:0; pointer-events:auto; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; font:inherit; line-height:1; }
+.route-bus::before { content:""; position:absolute; inset:-9px -6px; } /* 손가락용 판정 여유(약 44px) */
+.route-bus .route-num { display:inline-grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--route); color:#fff; border:2px solid #fff; box-shadow:0 1px 3px rgba(23,35,53,.35); font-size:var(--fs-label); font-weight:700; }
+.route-bus .route-count { min-width:16px; padding:1px 4px; border-radius:8px; background:#fff; color:var(--map-label-ink); font-size:var(--fs-label); font-weight:700; text-align:center; font-variant-numeric:tabular-nums; box-shadow:0 1px 2px rgba(23,35,53,.3); }
+.route-bus.idle { cursor:pointer; }
+.route-bus.idle .route-num { border-style:dashed; }
+.route-bus.idle .route-count { color:var(--text-mute); }
 .route-bus[aria-pressed="true"] { outline:3px solid var(--accent); outline-offset:2px; }
 .route-bus.drop-target, #plan-toolbar .route-tab.drop-target { outline:3px solid var(--route, var(--accent)); outline-offset:2px; }
 #drop-highlight { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:6; }
@@ -549,8 +545,8 @@ body[data-screen="result"] .resident-cards>li { animation:resident-reveal .35s e
 .emergency-buses .bus-chip { display:inline-block; width:10px; height:10px; margin-right:6px; border-radius:3px; vertical-align:-1px; }
 /* 원인 정류장 경고 고리와 예고 문구(지도 위, 2D·3D 공통) */
 .run-alert { position:absolute; z-index:3; width:0; height:0; pointer-events:none; }
-.run-alert-ring { position:absolute; left:-30px; top:-30px; width:60px; height:60px; border:4px solid #EA580C; border-radius:50%; box-shadow:0 0 0 3px rgba(255,255,255,.75), 0 0 14px rgba(234,88,12,.45); animation:run-alert-pulse 1.2s ease-in-out infinite; }
-.run-alert-label { position:absolute; left:0; top:50px; transform:translateX(-50%); white-space:nowrap; background:var(--warn); color:#fff; font-size:13px; font-weight:700; line-height:1.4; padding:3px 8px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,.18); }
+.run-alert-ring { position:absolute; left:-30px; top:-30px; width:60px; height:60px; border:4px solid var(--sem-caution); border-radius:50%; box-shadow:0 0 0 3px rgba(255,255,255,.75), 0 0 14px rgba(234,88,12,.45); animation:run-alert-pulse 1.2s ease-in-out infinite; }
+.run-alert-label { position:absolute; left:0; top:50px; transform:translateX(-50%); white-space:nowrap; background:var(--sem-caution-ink); color:#fff; font-size:13px; font-weight:700; line-height:1.4; padding:3px 8px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,.18); }
 .run-alert[data-kind="wait"] .run-alert-ring { border-color:#D97706; }
 .run-alert[data-reduced="true"] .run-alert-ring { animation:none; }
 @keyframes run-alert-pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.12); } }
@@ -587,3 +583,62 @@ body[data-screen="result"] .resident-cards>li { animation:resident-reveal .35s e
 #btn-lease { white-space:nowrap; }
 #lease-note { flex-basis:100%; padding:0 4px; }
 .depot-bus .depot-id, .depot-bus small, .leased-bus .btn { white-space:nowrap; }
+/* ── 지도 3층(2026-10-27 시각 위계) ── 배경층(3D 캔버스·2D 지형) / 네트워크층(#net-layer: 노선·정류장·번호 원·이름표) / 상태층(대기 pill·경고·인물 링) */
+#net-layer { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+#net-layer .net-svg { position: absolute; inset: 0; overflow: visible; }
+.net-casing line { stroke: var(--map-casing); stroke-linecap: round; }
+.net-lines line { stroke-linecap: round; }
+.net-lines line.active { filter: drop-shadow(0 0 4px rgba(255,255,255,.95)) drop-shadow(0 0 6px currentColor); }
+.net-lines line.express { stroke-dasharray: none; }
+.net-stop circle:first-child { fill: #fff; stroke: #1A1D24; stroke-width: 2; }
+.net-stop .tick { stroke: #fff; stroke-width: 1.2; }
+.net-stop.selected circle:first-child { stroke: var(--sem-action); stroke-width: 3.5; }
+.net-stop.muted { opacity: .55; }
+.net-stop.flash circle:first-child { stroke: var(--sem-action); stroke-width: 5; }
+.net-cap circle { stroke: #fff; stroke-width: 2; }
+.net-cap text { font: 700 var(--fs-label)/1 var(--font); }
+.net-cap .cap-count { fill: var(--map-label-ink); paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+.net-labels { position: absolute; inset: 0; }
+.net-label { position: absolute; display: flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 10px; background: var(--map-label-bg); color: var(--map-label-ink); font: 600 var(--fs-label)/1.5 var(--font); white-space: nowrap; box-shadow: 0 1px 3px rgba(23,35,53,.25); }
+.net-wait { padding: 0 5px; border-radius: 8px; background: #EEF0F3; font-variant-numeric: tabular-nums; }
+.net-wait.caution { background: var(--sem-caution); color: #fff; }
+.net-wait.danger { background: var(--sem-danger); color: #fff; }
+/* 예전 표시는 네트워크층이 대신한다: 3D 정류장 이름·대기 숫자, 2D 노선·정류장·대기 배지 */
+.labels-3d .stop-name, .labels-3d .wait-num { display: none !important; }
+#stage-svg .layer-routes, #stage-svg .layer-stops, #stage-svg .layer-badges { display: none; }
+/* 배경층: 설계·운행 중에는 채도 −40%·대비 −20%·밝기 +10%(제목·컷신·결과·엔딩은 원래 색) */
+body[data-screen="plan"] #stage-3d canvas, body[data-screen="run"] #stage-3d canvas,
+body[data-screen="plan"] #stage-svg .layer-terrain, body[data-screen="run"] #stage-svg .layer-terrain { filter: saturate(.6) contrast(.8) brightness(1.1); }
+/* 직행(5번)·광역(6번) 노선 표시 — 노선색 위 가운데 줄로 일반 노선과 바로 구분 */
+.net-lines .express-stripe { stroke: #fff; stroke-dasharray: 2 7; stroke-linecap: round; }
+.net-lines .regional-stripe { stroke: rgba(26,29,36,.75); }
+/* 버스 탑승: 차오르는 막대(정원 대비). 숫자는 title */
+.label-3d .rider-fill { display: block; width: 30px; height: 7px; padding: 0; border-radius: 4px; border: 1.5px solid #fff; background: linear-gradient(to right, #1A1D24 var(--fill, 0%), rgba(255,255,255,.75) var(--fill, 0%)); box-shadow: 0 1px 2px rgba(0,0,0,.3); font-size: 0; }
+.depot-bus[data-bus="7"] .bus-sprite { filter: sepia(.4) hue-rotate(230deg) saturate(1.6) brightness(.6); }
+
+/* 운행 조작: 지도 오른쪽 위 작은 아이콘 묶음(글자 숨김 — aria-label·툴팁) */
+#run-controls { gap: 0 !important; padding: 3px; border-radius: 14px; background: rgba(255,255,255,.94); box-shadow: 0 2px 8px rgba(23,35,53,.18); }
+#run-controls .btn { min-width: 44px; min-height: 40px; padding: 4px 8px; border: 0; border-radius: 11px; font-size: var(--fs-body); background: transparent; }
+#run-controls .btn-text { display: none; }
+#run-controls .btn[aria-pressed="true"] { background: var(--sem-action); color: #fff; }
+
+/* 단계 표시: 글자 + 진행 점(지난 단계 점은 눌러 결과 요약) */
+.phase-label { font-size: var(--fs-label); font-weight: 700; color: var(--text); white-space: nowrap; }
+.phase-steps { gap: 2px; align-items: center; }
+.phase-steps li { padding: 0; background: none; font-size: 0; }
+.phase-dot { display: block; width: 10px; height: 10px; margin: 0; padding: 0; border-radius: 50%; border: 2px solid var(--text-mute); background: transparent; }
+button.phase-dot { width: 24px; height: 24px; border: 0; background: radial-gradient(circle, var(--text) 0 5px, transparent 5.5px); cursor: pointer; }
+button.phase-dot:hover { background: radial-gradient(circle, var(--sem-action) 0 6px, transparent 6.5px); }
+.phase-steps li.now .phase-dot { border-color: var(--sem-action); background: var(--sem-action); }
+.phase-steps li span.phase-dot { margin: 7px; }
+.phase-peek { position: absolute; z-index: 60; min-width: 200px; padding: 10px 14px; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 6px 20px rgba(23,35,53,.18); font-size: var(--fs-label); }
+.phase-peek p { display: flex; justify-content: space-between; gap: 12px; margin: 4px 0 0; }
+
+/* 오른쪽 패널 접기: 운행 화면에서 지도가 전체 폭 */
+body.panel-collapsed[data-screen="run"] .game { grid-template-columns: minmax(0, 1fr) !important; }
+body.panel-collapsed[data-screen="run"] #panel { display: none !important; }
+#run-controls .btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 2px var(--sem-action); }
+
+/* 2D 버스층: 네트워크층(z 5) 위 */
+.stage-svg-buses { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 6; pointer-events: none; }
+.net-leaders line { stroke: #1A1D24; stroke-width: 1.2; stroke-dasharray: 2 2; opacity: .7; }

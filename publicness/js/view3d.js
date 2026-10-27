@@ -55,7 +55,7 @@
     Object.keys(groups).forEach(function (k) { scene.add(groups[k]); });
     var nodes = {}, stops = {}, hits = [], zoneGroups = {}, routeSegs = {}, busMesh = {}, lastBus = {};
     var labelEls = { stop: {}, wait: {}, bus: {} };
-    var reduced = false, dirty = true, bounds = null, board = null, rising = null, prevIds = null, waitingNow = {}, currentRoutes = [];
+    var frameBox = null, reduced = false, dirty = true, bounds = null, board = null, rising = null, prevIds = null, waitingNow = {}, currentRoutes = [];
 
     // 3D 버스 모델(assets/models/bus.js, 없거나 실패하면 상자 버스). 노선 색마다 띠를 칠한 재질을 하나씩 만든다
     var busGeo = null, busTex = null, busMats = {};
@@ -76,12 +76,14 @@
         img.src = d.texture;
       } catch (e) { busGeo = null; }
     })();
-    function busMat(color) {
-      if (busMats[color]) return busMats[color];
+    var EXPRESS_BODY = '#4B2E5C'; // 직행 7호차 몸체(짙은 자두색) — 흰 일반 버스와 구분
+    function busMat(color, body) {
+      var key = color + '|' + (body || '');
+      if (busMats[key]) return busMats[key];
       var c = document.createElement('canvas'); c.width = busTex.width; c.height = busTex.height;
-      c.getContext('2d').putImageData(new ImageData(root.PB.ModelData.recolor(busTex.data, color), c.width, c.height), 0, 0);
+      c.getContext('2d').putImageData(new ImageData(root.PB.ModelData.recolor(busTex.data, color, body), c.width, c.height), 0, 0);
       var t = new T.CanvasTexture(c); t.flipY = false; // glTF UV는 위가 0
-      return (busMats[color] = new T.MeshLambertMaterial({ map: t, flatShading: true }));
+      return (busMats[key] = new T.MeshLambertMaterial({ map: t, flatShading: true }));
     }
 
     var matCache = {};
@@ -112,6 +114,7 @@
     function garden(x,z,g){box(2.2,.25,1.1,0xC6CCBE,x,z,g);[-.65,0,.65].forEach(function(dx){mesh(new T.IcosahedronGeometry(.5,0),0x819B7D,x+dx,.65,z,g);});}
     // 마을 바탕(지브리풍, assets/models/env.js·tools/env-art.mjs): 지도 판 윗면 잔디 + 생활권마다 정류장 발밑 둥근 땅 조각.
     // 그림은 위치와 무관한 반복 타일이라 랜덤 배치에서도 그대로 쓴다. 그림이 없거나 늦게 풀리면 단색 판 → 풀린 뒤 장면을 다시 짓는다
+    var NETWORK_OVERLAY = true; // 노선·정류장 표시는 오버레이 층이 맡는다(false면 예전 3D 노선 표시)
     var GRASS_TILE = 28, PATCH_TILE = 9, BOARD_MARGIN = 400, BOARD_DEPTH = 5; // 판 = 화면 틀보다 훨씬 넓은 풀밭(가장자리가 화면에 안 보이게)
     var PATCH_ART = { A: 'A', J: 'A', B: 'B', K: 'B', C: 'C', E: 'E', F: 'F', G: 'G', N: 'G', I: 'I', D: 'I', M: 'I', L: 'L' }; // H(운동장)는 잔디 그대로
     var envImg = {}, groundTex = null;
@@ -273,7 +276,7 @@
     // ZONE_KEEP: 모델과 함께 남겨 둘 기본 도형(기차역 선로). 모델이 없으면 지금까지의 기본 도형 그대로
     var ZONE_KEEP = { A: ['station-rails'] }, zoneModels = {};
     // 구역별 크기 비율(1 = 기본 도형 자리만큼). 종합운동장은 상징성은 살리되 화면을 덜 차지하게, 대도시도 살짝(90%) 줄인다(2026-10-23 사용자)
-    var ZONE_SCALE = { H: 0.65, N: 0.9 };
+    var ZONE_SCALE = { H: 0.65, N: 0.9 }, BUILDING_SCALE = 0.8;
     function zoneModel(id) { return loadedModel(zoneModels, 'zoneModelData', id); }
     // 구역 건물·정류장 시설 공통: 풀린 모델 데이터 → 공유 형상·재질(한 번만 만든다). 아직 안 풀렸으면 null
     function loadedModel(cache, reg, id) {
@@ -301,7 +304,7 @@
       tmp.updateMatrixWorld(true);
       var box = new T.Box3().setFromObject(tmp), bw = box.max.x - box.min.x, bd = box.max.z - box.min.z;
       var s = Math.min(Math.sqrt(bw * bd) * 1.1, Math.max(bw, bd)) / Math.max(zm.w, zm.d); // 기본 도형 자리의 넓이만큼(긴 변은 넘지 않게)
-      s *= ZONE_SCALE[id] || 1;
+      s *= (ZONE_SCALE[id] || 1) * BUILDING_SCALE; // 건물은 정류장 마커 뒤 배경 그림 — 80%
       var mesh = new T.Mesh(zm.geo, zm.mat); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'zone-model';
       mesh.scale.setScalar(s); mesh.position.set((box.min.x + box.max.x) / 2, 0, (box.min.z + box.max.z) / 2);
       g.add(mesh); kept.forEach(function (c) { g.add(c); }); g.scale.set(1, g.scale.y, 1); g.userData.model = true;
@@ -416,6 +419,7 @@
       // 화면 틀은 이 세팅의 모든 정류장(sceneDef.frame)으로 정한다 — 새 정류장이 생겨도 기존 정류장 위치·배율이 흔들리지 않게
       var frame = sceneDef.frame || sceneDef.nodes;
       var xs = frame.map(function (n) { return n.x * K; }), zs = frame.map(function (n) { return n.y * K; });
+      frameBox = { minX: Math.min.apply(null, xs), maxX: Math.max.apply(null, xs), minZ: Math.min.apply(null, zs), maxZ: Math.max.apply(null, zs) };
       bounds = { minX: Math.min.apply(null, xs) - 20, maxX: Math.max.apply(null, xs) + 16, minZ: Math.min.apply(null, zs) - 18, maxZ: Math.max.apply(null, zs) + 18 };
       // 풀밭 판: 화면 틀보다 BOARD_MARGIN만큼 넓게, 윗면은 잔디 타일. 강은 판 안쪽까지 잘라 그린다
       board = { minX: bounds.minX - BOARD_MARGIN, maxX: bounds.maxX + BOARD_MARGIN, minZ: bounds.minZ - BOARD_MARGIN, maxZ: bounds.maxZ + BOARD_MARGIN };
@@ -499,7 +503,10 @@
           if (!nodes[ns[i - 1]] || !nodes[ns[i]]) continue;
           var a = wp(ns[i - 1]), b = wp(ns[i]), o = laneWorld(ns[i - 1], ns[i], r.num);
           var len = Math.hypot(b.x - a.x, b.z - a.z), ux = (b.x - a.x) / len, uz = (b.z - a.z) / len, ang = -Math.atan2(uz, ux);
+          if (NETWORK_OVERLAY) continue;
           var lanes=(routeSegs[segKey(ns[i-1],ns[i])]||[r.num]).length,road=new T.Mesh(new T.BoxGeometry(len,0.10,2.6+(lanes-1)*LANE),mat(C.road));road.position.set((a.x+b.x)/2,0.08,(a.z+b.z)/2);road.rotation.y=ang;groups.routes.add(road);
+          // 노선색 선·정차 점·통과 고리는 2026-10-27부터 지도 네트워크층(map-network.js, SVG)이 그린다 — 3D에는 회색 도로 띠(배경)만
+          if (NETWORK_OVERLAY) continue;
           var pieces = [];
           if (!dash.length) pieces.push([1.8, len - 1.8]);
           else { var pos = 1.8, di = 0; while (pos < len - 1.8) { var on = Math.min(dash[di % dash.length], len - 1.8 - pos); pieces.push([pos, pos + on]); pos += on + (dash[(di + 1) % dash.length] || 0); di += 2; } }
@@ -519,7 +526,7 @@
           });
         }
         ns.forEach(function (id, i) {
-          if (r.route.stops[i] || !nodes[id]) return;
+          if (NETWORK_OVERLAY || r.route.stops[i] || !nodes[id]) return;
           var o = laneWorld(ns[i - 1], id, r.num), p = wp(id);
           var ring = new T.Mesh(new T.TorusGeometry(0.55, 0.16, 6, 16), m);
           ring.rotation.x = Math.PI / 2; ring.position.set(p.x + o.x, 0.75, p.z + o.z);
@@ -549,8 +556,8 @@
         if (g && g.userData.box && busGeo) { groups.buses.remove(g); g = null; } // 모델이 늦게 풀렸으면 상자 버스를 바꾼다
         if (!g && busGeo) {
           g = new T.Group();
-          var model = new T.Mesh(busGeo, busMat(b.color)); model.castShadow = true; g.add(model);
-          g.userData.model = model; g.userData.color = b.color;
+          var model = new T.Mesh(busGeo, busMat(b.color, b.express ? EXPRESS_BODY : null)); model.castShadow = true; g.add(model);
+          g.userData.model = model; g.userData.color = b.color + (b.express ? '|x' : '');
           groups.buses.add(g); busMesh[b.id] = g;
         }
         if (!g) {
@@ -567,7 +574,7 @@
         // 버스 위 이름표는 두지 않는다 — 탑승 인원(있을 때만)만 버스 위에 작게
         if (!labelEls.bus[b.id]) { var l = document.createElement('div'); l.className = 'label-3d bus-num'; labels.appendChild(l); labelEls.bus[b.id] = l; }
         if (g.userData.stripe) g.userData.stripe.material.color.set(b.color);
-        else if (g.userData.color !== b.color) { g.userData.model.material = busMat(b.color); g.userData.color = b.color; }
+        else if (g.userData.color !== b.color + (b.express ? '|x' : '')) { g.userData.model.material = busMat(b.color, b.express ? EXPRESS_BODY : null); g.userData.color = b.color + (b.express ? '|x' : ''); }
         var x = b.x * K + (b.dx || 0) * K / PX, z = b.y * K + (b.dy || 0) * K / PX;
         var last = lastBus[b.id];
         if (last && Math.hypot(x - last.x, z - last.z) > 0.05) g.rotation.y = -Math.atan2(z - last.z, x - last.x);
@@ -576,10 +583,9 @@
         g.visible = true;
         labelEls.bus[b.id].textContent = '';
         g.scale.set(BUS_SCALE*(b.regional?1.4:b.express?1.2:1), BUS_SCALE, BUS_SCALE);
-        if(b.riders>0){var count=document.createElement('span');count.className='rider-count';count.dataset.riders=b.riders;
-          // 주요 인물(특수 캐릭터)이 타고 있으면 이름을 [하늘]처럼 먼저 보여 준다
-          (b.names||[]).forEach(function(n){var tag=document.createElement('b');tag.className='resident-tag';tag.textContent='['+n+']';count.appendChild(tag);count.appendChild(document.createTextNode(' '));});
-          count.appendChild(document.createTextNode(b.riders+'명'));labelEls.bus[b.id].appendChild(count);}
+        // 탑승 인원은 버스 위 작은 막대가 정원만큼 차오르는 정도로(숫자 배지 대신). 숫자·주요 인물 이름은 마우스를 올렸을 때(title)·aria-label로
+        if(b.riders>0){var cap=b.regional?24:b.express?18:12,count=document.createElement('span');count.className='rider-count rider-fill';count.dataset.riders=b.riders;
+          count.style.setProperty('--fill',Math.min(100,Math.round(b.riders/cap*100))+'%');count.title=(b.names&&b.names.length?b.names.join('·')+' 포함 ':'')+b.riders+'/'+cap+'명';labelEls.bus[b.id].appendChild(count);}
         labelEls.bus[b.id].setAttribute('aria-label',b.id+'호차'+(b.regional?' 광역 · 정원 24명':b.express?' 직행 · 정원 18명':'')+' · 탑승 '+(b.riders||0)+'명');
       });
       Object.keys(busMesh).forEach(function (id) { if (!seen[id]) { busMesh[id].visible = false; if (labelEls.bus[id]) {labelEls.bus[id].remove();delete labelEls.bus[id];} } else if (labelEls.bus[id]) labelEls.bus[id].style.display = ''; });
@@ -637,16 +643,27 @@
       camera.position.set(cx + dir.x * 300, dir.y * 300, cz + dir.z * 300);
       camera.lookAt(cx, 0, cz);
       camera.updateMatrixWorld();
-      var inv = camera.matrixWorldInverse, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      var fb = bounds; // 마을(화면 틀)만 맞춘다 — 둘레는 풀밭이 이어진다
-      [fb.minX, fb.maxX].forEach(function (x) { [fb.minZ, fb.maxZ].forEach(function (z) { [0, nodes.N?21:8].forEach(function (y) {
+      // 맞춤(2026-10-27 시각 위계): 정류장들(화면 틀)의 경계를 사방 같은 화면 여백(PAD px)으로. 이름표가 아래에 붙으니 아래만 조금 더.
+      // 시계·운행 조작(opts.reserved) 밑에 정류장이 깔리면 위쪽 여백만 늘린다
+      var inv = camera.matrixWorldInverse, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, fb = frameBox || bounds, pts = [];
+      [fb.minX, fb.maxX].forEach(function (x) { [fb.minZ, fb.maxZ].forEach(function (z) { [0, 2].forEach(function (y) {
         var v = new T.Vector3(x, y, z).applyMatrix4(inv);
         minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
       }); }); });
-      var vw = maxX - minX, vh = maxY - minY, aspect = wdt / hgt, mx = (minX + maxX) / 2, my = (minY + maxY) / 2;
-      if (vw / vh > aspect) vh = vw / aspect; else vw = vh * aspect;
-      camera.left = mx - vw / 2; camera.right = mx + vw / 2; camera.top = my + vh / 2; camera.bottom = my - vh / 2;
-      camera.updateProjectionMatrix();
+      Object.keys(nodes).forEach(function (id) { pts.push(new T.Vector3(nodes[id].x, 2, nodes[id].z).applyMatrix4(inv)); });
+      var vw = Math.max(1, maxX - minX), vh = Math.max(1, maxY - minY), PAD = Math.min(64, Math.max(44, Math.min(wdt, hgt) * 0.08)), top = PAD, bottom = PAD + 18; // 노선 끝 번호 원이 정류장 밖으로 약 35px 나오므로 44px 이상
+      var areas = opts.reserved ? opts.reserved() : [], cr = container.getBoundingClientRect();
+      function place() {
+        var aw = Math.max(1, wdt - 2 * PAD), ah = Math.max(1, hgt - top - bottom), s = Math.min(aw / vw, ah / vh);
+        var cxp = PAD + aw / 2, cyp = top + ah / 2, mx = (minX + maxX) / 2, my = (minY + maxY) / 2;
+        camera.left = mx - cxp / s; camera.right = camera.left + wdt / s; camera.top = my + cyp / s; camera.bottom = camera.top - hgt / s;
+        camera.updateProjectionMatrix();
+        return function (v) { return { left: (v.x - camera.left) * s + cr.left, top: (camera.top - v.y) * s + cr.top }; };
+      }
+      for (var tries = 0; tries < 12; tries++) {
+        var at = place(), hit = pts.some(function (v) { var p = at(v); return areas.some(function (a) { return p.left > a.left - 24 && p.left < a.right + 24 && p.top > a.top - 24 && p.top < a.bottom + 40; }); });
+        if (!hit) break; top += 18;
+      }
       dirty = true;
     }
 
@@ -700,7 +717,7 @@
       kind: '3d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
       zoneInfo: function () { return Object.keys(zoneGroups).map(function (id) { return { id: id, model: !!zoneGroups[id].userData.model, offset: {x:zoneGroups[id].position.x-wp(id).x,z:zoneGroups[id].position.z-wp(id).z} }; }); },
       busInfo: function () { return Object.keys(busMesh).filter(function (id) { return busMesh[id].visible; }).map(function (id) { var u = busMesh[id].userData; return { id: Number(id), model: !!u.model, color: u.color || null }; }); },
-      setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
+      refit: function () { fit(); }, setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },
       show: function (v) { container.hidden = !v; if (v) { fit(); dirty = true; frame(); } },
       dispose: function () { renderer.dispose(); },

@@ -17,11 +17,40 @@
   UI.planLease=function(){if(!S.leaseLimit(st()))return null;changed();var b=S.lease(st());P.message=b.id+'호차를 이번 단계에 임차했어요 · 임차료 '+app().won(st().config.finance.lease.fee)+'(쉬어도 듦, 단계가 끝나면 자동 반납). 노선으로 끌어 놓으세요.';return b;};
   UI.planUnlease=function(id){var b=st().draft.buses.filter(function(x){return x.id===id;})[0];if(!b||!b.leased||b.routeNum!=null)return false;changed();S.unlease(st(),id);P.message=id+'호차를 반납했어요. 이번 단계 임차료가 들지 않아요.';return true;};
   UI.planEditing=function(){return P.editing;};
-  // 노선 철거(지도에서 선을 두 번 누르기): 확인창 없이 바로, 실린 버스는 대기로. 되돌리기 한 번으로 노선·버스 모두 복구
-  function demolish(num){var r=S.routeByNum(st(),num);if(!r||P.preview)return false;var ids=assigned(num).map(function(b){return b.id;});
-    changed();S.deleteRoute(st(),num);if(P.editing===num)P.editing=null;P.anchor=null;
-    P.message=num+'번 노선을 철거했어요'+(ids.length?' · '+ids.join('·')+'호차는 대기로':'')+'. 잘못 지웠다면 ↶ 되돌리기를 누르세요.';render('#btn-undo');return true;}
-  UI.planDemolish=demolish;
+  /* 구간 없애기(지도에서 노선 선을 두 번 누르기, 2026-10-27 사용자 지시): 누른 두 정류장 사이 길만 지운다. 확인창 없이, 되돌리기 한 번으로 복구.
+   *  · 순환: 그 구간에서 열려 왕복 노선이 된다(누른 구간 다음 정류장에서 시작)
+   *  · 끝 구간: 끝 정류장이 빠져 노선이 짧아진다(버스 그대로)
+   *  · 가운데 구간: 두 노선으로 나뉜다 — 앞쪽이 번호·버스를 갖고, 뒤쪽은 빈 노선 칸(정류장·버스 없음)이나 새 번호로. 칸이 없으면 짧은 쪽을 지운다
+   *  · 두 정류장뿐인 노선: 노선이 없어지고 실린 버스는 대기로 */
+  function part(nodes,stops){var s=stops.slice();s[0]=true;s[s.length-1]=true;return {nodes:nodes.slice(),stops:s};}
+  function cutSegment(num,i){
+    var s=st(),r=S.routeByNum(s,num);if(!r||P.preview||r.nodes[i+1]==null)return false;
+    var name=function(id){return app().nodeName(id);},seg=name(r.nodes[i])+'–'+name(r.nodes[i+1]),ids=assigned(num).map(function(b){return b.id;});
+    changed();P.anchor=null;
+    if(G.isLoop(r)){var ring=r.nodes.slice(0,-1),rs=r.stops.slice(0,-1),k=i+1,opened=part(ring.slice(k).concat(ring.slice(0,k)),rs.slice(k).concat(rs.slice(0,k)));
+      r.nodes=opened.nodes;r.stops=opened.stops;P.message=seg+' 구간을 없애 '+num+'번 순환을 풀었어요. ';}
+    else{
+      var left=r.nodes.length>i+1?part(r.nodes.slice(0,i+1),r.stops.slice(0,i+1)):null,right=part(r.nodes.slice(i+1),r.stops.slice(i+1));
+      var L=left&&left.nodes.length>=2,Rt=right.nodes.length>=2;
+      if(!L&&!Rt){S.deleteRoute(s,num);if(P.editing===num)P.editing=null;P.message=seg+' 구간을 없애 '+num+'번 노선이 없어졌어요'+(ids.length?' · '+ids.join('·')+'호차는 대기로':'')+'. ';}
+      else if(!L||!Rt){var keep=L?left:right;r.nodes=keep.nodes;r.stops=keep.stops;P.message=seg+' 구간을 없앴어요 · '+num+'번은 '+routeText(r)+'. ';}
+      else{
+        r.nodes=left.nodes;r.stops=left.stops;
+        var slot=s.draft.routes.filter(function(x){return x!==r&&!x.nodes.length&&!assigned(x.num).length&&S.routeFits(s,x.num,right);})[0],nr=null;
+        if(slot){slot.nodes=right.nodes;slot.stops=right.stops;nr=slot;}else nr=S.addRoute(s,right);
+        if(nr){nr.autoPlaced=true;P.message=seg+' 구간을 없애 두 노선으로 나눴어요 · '+num+'번 '+routeText(r)+' / '+nr.num+'번 '+routeText(nr)+'(운행 대기 — 버스를 옮겨 주세요). ';}
+        else{if(right.nodes.length>left.nodes.length){r.nodes=right.nodes;r.stops=right.stops;}
+          P.message=seg+' 구간을 없앴어요 · 노선 한도(최대 '+S.routeLimit(s)+'개)라 짧은 쪽은 지우고 '+num+'번 '+routeText(r)+'만 남겼어요. ';}
+      }
+    }
+    P.message+='잘못 지웠다면 ↶ 되돌리기를 누르세요.';render('#btn-undo');return true;
+  }
+  UI.planCutSegment=cutSegment;
+  // 노선 초기화(2026-10-27 사용자 지시): 노선을 모두 지우고 버스를 전부 대기로, 빈 1번 노선 하나로 다시 시작. 확인창 없이, 되돌리기 한 번으로 복구
+  function resetRoutes(){var s=st();if(P.preview)return false;var n=s.draft.buses.filter(function(b){return b.routeNum!=null;}).length;
+    changed();s.draft.routes=[];s.draft.buses.forEach(function(b){b.routeNum=null;});var r=S.addRoute(s,{nodes:[],stops:[]});
+    P.editing=r?r.num:null;P.anchor=null;P.pickerOpen=null;P.message='노선을 모두 지웠어요'+(n?' · 버스 '+n+'대는 대기로':'')+'. 잘못 눌렀다면 ↶ 되돌리기를 누르세요.';render('#btn-undo');return true;}
+  UI.planReset=resetRoutes;
   function unassigned(){return st().draft.routes.filter(function(r){return !assigned(r.num).length;});}
   function snapshot(){return JSON.stringify({draft:st().draft,owned:st().owned,fourthPhase:st().fourthPhase,goal:st().goal,goalHistory:st().goalHistory,lastRec:st().lastRec,editing:P.editing,anchor:P.anchor});}
   function changed(){
@@ -131,7 +160,9 @@
     back.addEventListener('pointerdown',function(e){if(e.pointerType==='touch')tap={x:e.clientX,y:e.clientY,id:e.pointerId};});
     back.addEventListener('pointercancel',function(){tap=null;});
     back.addEventListener('pointerup',function(e){var t=tap;tap=null;if(!t||t.id!==e.pointerId||Math.hypot(e.clientX-t.x,e.clientY-t.y)>7||back.disabled)return;P.ignoreUndoClickUntil=performance.now()+700;undo();});
-    sec.appendChild(back);var list=el('div',{'class':'route-tabs'});
+    sec.appendChild(back);
+    var reset=btn('노선 초기화','btn-reset-routes',resetRoutes);reset.disabled=P.preview||!st().draft.routes.some(function(r){return r.nodes.length;})&&!st().draft.buses.some(function(b){return b.routeNum!=null;});
+    reset.setAttribute('aria-label','노선 모두 지우기 — 버스는 대기로, 되돌리기로 복구');sec.appendChild(reset);var list=el('div',{'class':'route-tabs'});
     S.routesInOrder(st()).forEach(function(r){var b=btn(r.num+'번'+(S.stopLimit(st(),r.num)===2?' 광역':S.stopLimit(st(),r.num)===3?' 직행':'')+(G.isLoop(r)?' 순환':'')+(!assigned(r.num).length?(r.nodes.length>=2?' · 운행 대기':' · 미배정'):''),'route-'+r.num,function(){P.editing=r.num;P.anchor=null;P.preview=false;P.message='정류장을 잇거나 선 중간을 당겨 보세요.';render();},'route-tab');
       b.setAttribute('aria-pressed',String(P.editing===r.num));b.style.borderLeft='5px solid '+app().routeStyle(r.num).color;list.appendChild(b);});
     var add=btn('+ 새 노선','btn-new-route',function(){startRoute();render('.next-stop');});add.disabled=st().draft.routes.length>=S.routeLimit(st());list.appendChild(add);sec.appendChild(list);sec.appendChild(el('p',{'class':'note'},'이번 단계: 노선 최대 '+S.routeLimit(st())+'개 · 버스 '+st().owned+'대'));var r=active();
@@ -153,7 +184,7 @@
         var b=btn(app().nodeName(id),'stop-'+i,function(){P.anchor=i;P.message=app().nodeName(id)+' 다음에 추가할 곳을 고르세요.';render('#stop-'+i);},'stop-anchor');
         b.setAttribute('aria-pressed',String(P.anchor===i));li.appendChild(b);var del=btn('×','remove-stop-'+i,function(){removeAt(r,i);},'btn-ghost');del.setAttribute('aria-label',app().nodeName(id)+' 정류장 제거');li.appendChild(del);ol.appendChild(li);});c.appendChild(ol);
       // 순서 바꾸기·경유지 편집은 정류장이 세 곳 이상일 때 의미가 있어 그때만 안내한다
-      if(ns.length>=3)c.appendChild(el('p',{id:'edit-tips','class':'note'},'↕ 손잡이를 끌면 정류장 순서가 바뀌어요. 지도에서는 정류장을 끌어 교체하거나 선 중간을 당겨 경유지를 추가하세요. 선을 두 번 누르면 노선을 철거해요. 잘못 고쳤다면 되돌리기를 누르세요.'));
+      if(ns.length>=3)c.appendChild(el('p',{id:'edit-tips','class':'note'},'↕ 손잡이를 끌면 정류장 순서가 바뀌어요. 지도에서는 정류장을 끌어 교체하거나 선 중간을 당겨 경유지를 추가하세요. 선을 두 번 누르면 그 구간(두 정류장 사이 길)만 없어져요. 잘못 고쳤다면 되돌리기를 누르세요.'));
       if(G.isLoop(r))c.appendChild(el('p',{'class':'note'},'마지막 정류장에서 '+PB.Narrative.josa(app().nodeName(r.nodes[0]),'으로')+' 돌아와요.'));
       if(r.nodes.length){
         var origin=r.nodes[P.anchor==null?0:P.anchor],needs={};
@@ -278,7 +309,7 @@
     var depart=btn('이 노선으로 출발','btn-depart',function(){if(S.validate(s).length)return;departCheck();},'btn-primary btn-lg');depart.disabled=errors.length>0||P.busy;
     var foot=el('div',{id:'depart-bar','class':'depart-bar'});foot.appendChild(depart);panel.appendChild(foot);
     App.onNodeClick=function(id){if(P.preview){P.message='AI 제안을 적용하거나 내 노선으로 돌아온 뒤 편집하세요.';render();return;}insert(id);};
-    App.onLink=function(from,to){if(!P.preview)link(from,to);};App.onRouteDouble=function(num){demolish(num);};App.onRouteClick=function(num,index){if(P.preview)return;P.editing=num;P.anchor=index;P.message='이 구간에 추가할 정류장을 누르세요.';render();};
+    App.onLink=function(from,to){if(!P.preview)link(from,to);};App.onRouteDouble=function(num,index){cutSegment(num,index);};App.onRouteClick=function(num,index){if(P.preview)return;P.editing=num;P.anchor=index;P.message='이 구간에 추가할 정류장을 누르세요.';render();};
     // 출발 버튼은 스크롤 영역 밖 아래 줄에 둔다 — 내용을 덮지 않는다(편집할 때 스크롤 위치 유지)
     var bodyWrap=el('div',{'class':'panel-body'});while(panel.firstChild&&panel.firstChild!==foot)bodyWrap.appendChild(panel.firstChild);panel.insertBefore(bodyWrap,foot);bodyWrap.scrollTop=P.scroll||0;
     P.baseline=snapshot();var r=active();return{selectable:P.preview?[]:nextStops(),selected:P.preview?[]:(r?r.nodes:[]),activeRoute:P.editing,preview:P.preview&&P.rec?P.rec.plan:null};

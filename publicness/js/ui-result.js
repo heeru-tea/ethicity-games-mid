@@ -33,7 +33,7 @@
     var data=PB.Narrative.residentResult(rd,r,App.s.current.result.passengers,App.s.config.bus.window);
     var li=el('li',{'data-resident':rd.id}),card=el('details',{'class':'resident-card'}),head=el('summary');
     var face=el('span',{'class':'resident-face '+rd.id,'aria-hidden':'true'});
-    face.appendChild(el('img',{src:'assets/art/'+(['yuna','daeun'].indexOf(rd.id)>=0?'interlude-cheer.webp':'portrait-'+rd.id+'-calm.webp'),alt:'',loading:'lazy'}));
+    face.appendChild(el('img',{src:'assets/art/portrait-'+rd.id+'-calm.webp',alt:'',loading:'lazy'}));
     head.appendChild(face);var words=el('span',{'class':'resident-identity'});words.appendChild(el('strong',null,rd.name));
     words.appendChild(el('span',{'class':'resident-state '+(r.satisfied?'complete':'incomplete')},(r.satisfied?'✓ 만족':'○ 불만족')));words.appendChild(el('span',{'class':'resident-reason'},r.satisfied?'필요한 이동을 기준 안에 마쳤어요.':(r.reasons||[]).map(function(x){return x.text;}).join(' ')||data.reason));head.appendChild(words);
     head.appendChild(el('span',{'class':'resident-expand','aria-hidden':'true'},'＋'));card.appendChild(head);

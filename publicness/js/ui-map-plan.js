@@ -16,7 +16,7 @@
   function drawn(){var g=S.graph(app().s);return S.routesInOrder(app().s).filter(function(r){return r.nodes.length>=2&&r.nodes.every(function(n){return g.has(n);});});}
   function hintSeen(){try{return root.localStorage.getItem(HINT_KEY)==='1';}catch(e){return false;}}
   function markHint(){try{root.localStorage.setItem(HINT_KEY,'1');}catch(e){/* 이번 창에서만 */}var h=document.querySelector('#depot-hint');if(h)h.remove();}
-  function why(id,num){return id===7?'7호차는 5번 직행 전용이에요.':id===9?'9호차는 6번 광역 전용이에요.':num===6?'6번 광역에는 9호차만 배정할 수 있어요.':'이 버스는 해당 노선에 배정할 수 없어요.';}
+  function why(id,num){return id===7?'7호차는 5번 직행 전용이에요.':id===9?'9호차는 6번 광역 전용이에요.':num===6?'6번 광역에는 9호차만 배정할 수 있어요.':num===5?'5번 직행에는 7호차만 배정할 수 있어요.':'이 버스는 해당 노선에 배정할 수 없어요.';}
   // 배치 전후 대수·배차 간격·비용 변화(운영+연료, 기본 수요 기준 시각표). 같은 버스를 옮기면 원래 노선 비용이 빠진다
   function gap(num,n){var h=PB.UI.Econ.headway(app().s,num,n);return h==null?'':app().duration(h);}
   function change(num,d){var n=busesOn(num).length,m=n+d;return num+'번 '+n+'→'+m+'대'+(m?' · 간격 '+(n?gap(num,n)+' → ':'')+gap(num,m):' · 운행 대기');}
@@ -127,18 +127,26 @@
   // 노선마다 고정 위치에 ‘버스 ×N’ — 선 위 구간 중앙들 중 정류장·다른 표시·인물에서 가장 먼 곳(움직이는 버스를 쫓지 않아도 됨)
   function positionBadges(){
     var layer=document.querySelector('#route-buses');if(!layer||!app().view)return;
+    if(app().net){var caps=app().net.caps();drawn().forEach(function(r){var el=layer.querySelector('[data-num="'+r.num+'"]'),c=caps.filter(function(x){return x.num===r.num&&x.start;})[0];if(!el)return;el.hidden=!c;if(c){el.style.left=c.x+'px';el.style.top=c.y+'px';}});return;}
     var v=app().view,placed=[],avoid=[];
     S.graph(app().s).nodes.forEach(function(id){var n=app().nodeXY(id);avoid.push(v.project(n.x,n.y));});
     document.querySelectorAll('#map-people .map-person').forEach(function(f){avoid.push({left:parseFloat(f.style.left)+19,top:parseFloat(f.style.top)+19});});
     var segs=segments();
-    drawn().forEach(function(r){var el=layer.querySelector('[data-num="'+r.num+'"]');if(!el)return;var best=null,score=-1;
+    // 표시는 선 ‘옆’에 둔다(2026-10-27) — 선 위를 덮으면 그 구간을 두 번 눌러 없애거나 경유지를 당길 자리가 사라진다(짧은 구간은 정류장 반경과 겹쳐 아예 못 누름).
+    // 선에서 표시 크기만큼 수직으로 비켜 놓고, 정류장·인물·다른 표시·(자기 노선의 다른 구간 포함) 다른 선에서 가장 먼 쪽을 고른다
+    drawn().forEach(function(r){var el=layer.querySelector('[data-num="'+r.num+'"]');if(!el)return;var best=null,score=-1,hw=el.offsetWidth/2||50,hh=el.offsetHeight/2||18;
       for(var i=1;i<r.nodes.length;i++)[0.5,0.3,0.7,0.2,0.8].forEach(function(f){
         var a=app().nodeXY(r.nodes[i-1]),b=app().nodeXY(r.nodes[i]),o=v.laneOffset?v.laneOffset(r.nodes[i-1],r.nodes[i],r.num):{dx:0,dy:0};
-        var p=v.project(a.x+(b.x-a.x)*f+o.dx/110,a.y+(b.y-a.y)*f+o.dy/110),m=Infinity;
-        avoid.forEach(function(q){m=Math.min(m,Math.hypot(q.left-p.left,q.top-p.top));});placed.forEach(function(q){m=Math.min(m,Math.hypot(q.left-p.left,q.top-p.top)*0.8);});
-        // 교차점·겹친 구간에는 두지 않는다(표시가 어느 노선 것인지 헷갈리지 않게)
-        nearest(segs,p.left,p.top).forEach(function(x){if(x.num!==r.num)m=Math.min(m,x.d*1.5);});
-        if(m>score+0.5){score=m;best=p;}
+        var p=v.project(a.x+(b.x-a.x)*f+o.dx/110,a.y+(b.y-a.y)*f+o.dy/110),P=v.project(a.x+o.dx/110,a.y+o.dy/110),Q=v.project(b.x+o.dx/110,b.y+o.dy/110);
+        var dx=Q.left-P.left,dy=Q.top-P.top,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,gap=hw*Math.abs(nx)+hh*Math.abs(ny)+8;
+        [1,-1].forEach(function(side){
+          var c={left:p.left+nx*gap*side,top:p.top+ny*gap*side},m=Infinity;
+          avoid.forEach(function(q){m=Math.min(m,Math.hypot(q.left-c.left,q.top-c.top));});placed.forEach(function(q){m=Math.min(m,Math.hypot(q.left-c.left,q.top-c.top)*0.8);});
+          segs.forEach(function(sg){if(sg.p.left===P.left&&sg.p.top===P.top&&sg.q.left===Q.left&&sg.q.top===Q.top)return;
+            var ex=sg.q.left-sg.p.left,ey=sg.q.top-sg.p.top,l=ex*ex+ey*ey,tt=l?Math.max(0,Math.min(1,((c.left-sg.p.left)*ex+(c.top-sg.p.top)*ey)/l)):0;
+            m=Math.min(m,Math.hypot(c.left-sg.p.left-tt*ex,c.top-sg.p.top-tt*ey)*1.5);});
+          if(m>score+0.5){score=m;best=c;}
+        });
       });
       if(best){placed.push(best);el.style.left=best.left+'px';el.style.top=best.top+'px';}
     });
@@ -146,8 +154,14 @@
   function positionPeople(){
     if(!app()||!app().s||document.body.dataset.screen!=='plan')return;
     var layer=document.querySelector('#map-people');if(!layer)return;
-    var grouped={};PB.Demand.residents(app().s.config,app().s.phase).forEach(function(rd){var el=document.querySelector('#resident-map-'+rd.id);if(!el)return;var n=app().nodeXY(rd.o),p=app().view.project(n.x,n.y),i=grouped[rd.o]||0;grouped[rd.o]=i+1;el.style.left=(p.left+i*38-18)+'px';el.style.top=(p.top-62)+'px';});
     positionBadges();
+    // 인물 얼굴 자리는 지도 네트워크층이 이름표보다 먼저 정한다(net.facePos) — 이름표·번호 원·노선 선과 겹치지 않게. 층이 없을 때만 아래 방식
+    if(app().net){PB.Demand.residents(app().s.config,app().s.phase).forEach(function(rd){var el=document.querySelector('#resident-map-'+rd.id),q=app().net.facePos(rd.id);if(el&&q){el.style.left=q.x+'px';el.style.top=q.y+'px';}});}
+    else{
+    var taken=(app().net?app().net.rects():[]).concat([].map.call(document.querySelectorAll('#route-buses .route-bus:not([hidden])'),function(b){var r=b.getBoundingClientRect(),s=document.querySelector('#stage').getBoundingClientRect();return {x:r.left-s.left,y:r.top-s.top,w:r.width,h:r.height};})),F=40;
+    PB.Demand.residents(app().s.config,app().s.phase).forEach(function(rd){var el=document.querySelector('#resident-map-'+rd.id);if(!el)return;var n=app().nodeXY(rd.o),p=app().view.project(n.x,n.y),best=null;
+      [[-F/2,-F-14],[-F-10,-F-6],[10,-F-6],[-F-16,-F/2],[16,-F/2],[-F/2,18]].some(function(o){var r={x:p.left+o[0],y:p.top+o[1],w:F,h:F};if(taken.some(function(q){return r.x<q.x+q.w&&q.x<r.x+r.w&&r.y<q.y+q.h&&q.y<r.y+r.h;}))return false;best=r;return true;});
+      if(!best)best={x:p.left-F/2,y:p.top-F-14,w:F,h:F};taken.push(best);el.style.left=best.x+'px';el.style.top=best.y+'px';});}
     if(drag&&drag.target&&drag.target.kind==='route'&&document.querySelector('#drop-highlight').dataset.num)highlight(drag.target.num);
     var svg=document.querySelector('#resident-destination');svg.textContent='';if(!state.person)return;
     var rd=PB.Demand.residents(app().s.config,app().s.phase).filter(function(r){return r.id===state.person;})[0];if(!rd)return;
@@ -193,9 +207,9 @@
         var pick=on[on.length-1].id;state.bus=pick;state.from=r.num;redraw();var nb=document.querySelector('#route-bus-'+r.num);if(nb)nb.focus({preventScroll:true});
         say(r.num+'번의 '+pick+'호차를 골랐어요. 다른 노선을 누르면 옮기고, ‘대기로 돌리기’로 회수해요.');});
       b.className='route-bus'+(on.length?'':' idle');b.dataset.num=r.num;b.style.setProperty('--route',color);
-      b.appendChild(App.el('span',{'class':'route-num'},String(r.num)));b.appendChild(sprite());
-      if(on.length)b.appendChild(App.el('span',{'class':'route-count'},'×'+on.length));
-      else{var w=App.el('span',{'class':'route-idle'});w.appendChild(App.el('b',null,'운행 대기'));w.appendChild(App.el('small',null,'버스를 옮겨 주세요'));b.appendChild(w);}
+      // 지도 네트워크층의 노선 시작 번호 원 자리에 겹쳐 놓는다(번호 원 + 옆에 운행 버스 수, 0이면 점선 테두리 = 운행 대기)
+      var numEl=b.appendChild(App.el('span',{'class':'route-num'},String(r.num)));if(PB.MapNetwork&&PB.MapNetwork.luminance(color)>0.35)numEl.style.color='#1A1D24';/* 밝은 노선색(노랑·연보라)엔 어두운 숫자 */
+      b.appendChild(App.el('span',{'class':'route-count'},String(on.length)));
       b.setAttribute('aria-pressed',String(state.from===r.num));
       b.setAttribute('aria-label',r.num+'번 노선 '+(on.length?'버스 '+on.length+'대 ('+on.map(function(x){return x.id+'호차';}).join(', ')+')':'운행 대기 — 버스를 옮겨 주세요')+(state.bus!=null&&state.from!==r.num?' · 눌러서 '+state.bus+'호차 보내기':on.length?' · 눌러서 한 대 고르기':''));
       b.title=b.getAttribute('aria-label');
@@ -214,7 +228,7 @@
     var bar=App.el('div',{id:'plan-toolbar','aria-label':'노선 설계 도구'}),routes=panel.querySelector('.route-tabs');
     routes.querySelectorAll('.route-tab').forEach(function(t){t.dataset.num=t.id.replace('route-','');});
     routes.addEventListener('click',function(e){var chip=e.target.closest('.route-tab');if(chip&&state.bus!=null){e.preventDefault();e.stopImmediatePropagation();assign(Number(chip.dataset.num));}},true);
-    var primary=App.el('div',{'class':'map-tools-row'});primary.appendChild(routes);primary.appendChild(panel.querySelector('#btn-undo'));bar.appendChild(primary);
+    var primary=App.el('div',{'class':'map-tools-row'});primary.appendChild(routes);primary.appendChild(panel.querySelector('#btn-undo'));primary.appendChild(panel.querySelector('#btn-reset-routes'));bar.appendChild(primary);
     bar.appendChild(depot(App));
     if(PB.UI.Econ)bar.appendChild(PB.UI.Econ.planPanel(App.s,{editing:PB.UI.planEditing(),get econOpen(){return state.econOpen;},set econOpen(v){state.econOpen=v;}}));
     var actions=App.el('div',{'class':'map-tools-row'}),text=button('plan-text-toggle',state.text?'텍스트 닫기':'텍스트로 편집',function(){state.text=!state.text;redraw();}),ai=button('plan-ai-toggle','AI 제안',function(){state.ai=!state.ai;redraw();});
@@ -227,8 +241,9 @@
     var people=App.el('div',{id:'map-people','aria-label':'주요 인물'});PB.Demand.residents(App.s.config,App.s.phase).forEach(function(rd){
       var face=button('resident-map-'+rd.id,'',function(){state.person=state.person===rd.id?null:rd.id;redraw();});face.className='map-person resident-face '+rd.id;
       face.setAttribute('aria-label',rd.name+' · '+App.nodeName(rd.o)+'에서 '+App.nodeName(rd.d)+'까지');face.setAttribute('aria-pressed',String(state.person===rd.id));
-      face.appendChild(App.el('img',{src:'assets/art/'+(['yuna','daeun'].indexOf(rd.id)>=0?'interlude-cheer.webp':'portrait-'+rd.id+'-calm.webp'),alt:''}));face.appendChild(App.el('span',{'class':'map-person-name'},rd.name));people.appendChild(face);
+      face.appendChild(App.el('img',{src:'assets/art/portrait-'+rd.id+'-calm.webp',alt:''}));face.title=face.getAttribute('aria-label');/* 지도엔 얼굴만 — 이름은 툴팁·aria-label(배지 체계 정리) */people.appendChild(face);
     });stage.appendChild(people);var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.id='resident-destination';svg.setAttribute('aria-hidden','true');stage.appendChild(svg);
+    if(App.net)App.net.setFaces(PB.Demand.residents(App.s.config,App.s.phase).map(function(rd){return {id:rd.id,node:rd.o,size:40};}));
     badges(App,stage);
     var routeClick=App.onRouteClick;App.onRouteClick=function(num,index){if(!assign(num))routeClick(num,index);};
     requestAnimationFrame(positionPeople);return result;

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>이번 정류장은… — AI 마을버스 운영단</title>
 <meta name="description" content="AI 자율주행 마을버스를 위탁 운영하며 누구의 이동을 책임질지 고르는 공공성 시뮬레이션 게임">
+<link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-screen="title">
@@ -44,6 +45,7 @@
   <span id="top-balance" class="balance"></span>
   <span id="top-deficit" class="deficit-count" hidden></span>
   <span class="top-actions">
+    <button type="button" class="btn btn-ghost" id="btn-panel-toggle" hidden onclick="PB.App.setPanelCollapsed(!document.body.classList.contains('panel-collapsed'))">패널 접기</button>
     <button type="button" class="btn btn-ghost" id="btn-view-toggle" hidden>지도·텍스트 보기</button>
     <button type="button" class="btn btn-ghost" id="btn-settings" aria-haspopup="dialog">설정</button>
     <button type="button" class="btn btn-ghost" id="btn-help" aria-haspopup="dialog">도움말</button>
@@ -94,7 +96,7 @@
   <h3>어떻게 하나요?</h3>
   <ul>
     <li>정류장 두 곳 이상을 이어 노선을 만들면 대기 버스 1대가 바로 운행해요. 지도 아래 대기 버스를 노선으로 끌어 놓으면 증차, 노선 위 ‘버스 ×N’을 대기로 끌면 회수, 다른 노선에 놓으면 이동이에요(누르고 고르기·키보드로도 돼요). 같은 노선의 버스는 자동으로 간격을 두고 출발해요. AI 제안은 지도에서 미리 보고 적용할 수 있어요.</li>
-    <li>지도에서 정류장을 누르거나 드래그해서 자유롭게 연결해요. 선 중간을 정류장으로 당기면 경유지가 추가되고, 선을 두 번 누르면(더블클릭·두 번 탭) 노선을 철거해요(↶ 되돌리기로 복구). 시작점으로 연결하면 순환하고, 열린 노선은 왕복해요.</li>
+    <li>지도에서 정류장을 누르거나 드래그해서 자유롭게 연결해요. 선 중간을 정류장으로 당기면 경유지가 추가되고, 선을 두 번 누르면(더블클릭·두 번 탭) 그 구간(두 정류장 사이 길)만 없어져요(↶ 되돌리기로 복구). 시작점으로 연결하면 순환하고, 열린 노선은 왕복해요.</li>
     <li>두 노선이 <b>모두 정차하는</b> 정류장에서만 한 번 갈아탈 수 있어요. 지도에서 선이 겹치기만 하는 곳은 환승 정류장이 아니에요.</li>
     <li>출발하면 운행이 끝날 때까지 계획을 바꿀 수 없어요. 결과를 보고 다음 단계에서 고쳐요.</li>
   </ul>
@@ -170,6 +172,7 @@
 <script src="js/ui-transition.js"></script>
 <script src="js/ui-ending.js"></script>
 <script src="js/cutscene.js"></script>
+<script src="js/map-network.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

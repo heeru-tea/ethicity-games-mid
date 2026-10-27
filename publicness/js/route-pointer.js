@@ -1,5 +1,5 @@
 /* A gesture commits on pointerup only. Pointer cancellation leaves the plan unchanged.
- * 같은 노선 선을 DOUBLE_MS 안에 두 번 누르면(마우스 더블클릭·터치 두 번 탭, 거리 DOUBLE_PX 이내) 두 번째는 onRouteDouble로 간다. */
+ * 같은 노선의 같은 구간을 DOUBLE_MS 안에 두 번 누르면(마우스 더블클릭·터치 두 번 탭, 거리 DOUBLE_PX 이내) 두 번째는 onRouteDouble(노선, 구간 번호)로 간다. */
 (function(root){
   'use strict';
   function attach(surface,pick,opts){
@@ -24,8 +24,8 @@
       var now=e.timeStamp,tap=lastTap;lastTap=null;
       if(g.moved){if(to&&opts.onLink)opts.onLink(g.from,to);}else if(g.from.node&&opts.onNode)opts.onNode(g.from.node);
       else if(g.from.route!=null){
-        if(tap&&tap.route===g.from.route&&now-tap.t<DOUBLE_MS&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<DOUBLE_PX&&opts.onRouteDouble){opts.onRouteDouble(g.from.route);return;}
-        lastTap={route:g.from.route,t:now,x:e.clientX,y:e.clientY};if(opts.onRoute)opts.onRoute(g.from.route,g.from.index);
+        if(tap&&tap.route===g.from.route&&tap.index===g.from.index&&now-tap.t<DOUBLE_MS&&Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<DOUBLE_PX&&opts.onRouteDouble){opts.onRouteDouble(g.from.route,g.from.index);return;}
+        lastTap={route:g.from.route,index:g.from.index,t:now,x:e.clientX,y:e.clientY};if(opts.onRoute)opts.onRoute(g.from.route,g.from.index);
       }
     });
     surface.addEventListener('pointercancel',function(){clear();suppress=true;});surface.addEventListener('lostpointercapture',function(){if(gesture){clear();suppress=true;}});

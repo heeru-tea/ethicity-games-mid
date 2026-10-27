@@ -9,7 +9,7 @@ const buses=p=>p.evaluate(()=>PB.App.s.draft.buses.map(b=>b.routeNum));
 // 보존 검사: 버스 수 = 보유 대수, 대기 표시 숫자 = 쉬는 버스 수, 노선 표시 ×N 합 + 대기 = 전체
 async function conserve(p,label){
  const r=await p.evaluate(()=>{const s=PB.App.s,rest=s.draft.buses.filter(b=>b.routeNum==null).length,shown=Number((document.querySelector('#depot-count')||{}).textContent.replace('대','')),
-  badge=[...document.querySelectorAll('.route-bus')].reduce((a,b)=>a+Number(((b.querySelector('.route-count')||{}).textContent||'×0').slice(1)),0),onDrawn=s.draft.buses.filter(b=>b.routeNum!=null&&document.querySelector('#route-bus-'+b.routeNum)).length;
+  badge=[...document.querySelectorAll('.route-bus')].reduce((a,b)=>a+Number((b.querySelector('.route-count')||{}).textContent||0),0),onDrawn=s.draft.buses.filter(b=>b.routeNum!=null&&document.querySelector('#route-bus-'+b.routeNum)).length;
   return {n:s.draft.buses.length,owned:s.owned,rest,shown,badge,onDrawn,neg:s.draft.buses.some(b=>b.routeNum!=null&&b.routeNum<0)};});
  assert.equal(r.n,r.owned,label+': 버스 수 = 보유');assert.equal(r.shown,r.rest,label+': 대기 숫자');assert.equal(r.badge,r.onDrawn,label+': ×N 합');assert.ok(r.rest>=0&&!r.neg,label+': 음수 없음');
  return r;
@@ -74,7 +74,7 @@ try{for(const view of (process.env.VIEWS||'2d,3d').split(',')){
  // 다른 노선으로 이동: 2번의 2호차 → 1번 선 위
  s=await dragTo(page,'#route-bus-2',await linePoint(page,1,0,.2,-15));assert.equal(s.hl,'1');assert.match(s.label,/놓으면 1번 1→2대 .*2번 1→0대 · 운행 대기/);
  assert.deepEqual(await buses(page),[1,1]);await conserve(page,'이동');
- assert.ok(await page.locator('#route-bus-2.idle').count(),'마지막 버스가 떠난 노선은 남고 운행 대기');assert.match(await page.locator('#route-bus-2').innerText(),/운행 대기/);
+ assert.ok(await page.locator('#route-bus-2.idle').count(),'마지막 버스가 떠난 노선은 남고 운행 대기');assert.match(await page.locator('#route-bus-2').getAttribute('aria-label'),/운행 대기/);assert.equal(await page.locator('#route-bus-2 .route-count').innerText(),'0');
  assert.equal(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,2).nodes.length),2,'노선 유지');
  assert.match(await page.locator('#depot-count').innerText(),/^0대$/);assert.ok(await page.locator('.depot-empty').count());
 
@@ -151,8 +151,9 @@ try{for(const view of (process.env.VIEWS||'2d,3d').split(',')){
   assert.equal(res.hl,'1');assert.deepEqual(res.buses,[1,1],'터치 끌기로 증차');
   assert.equal(await page.evaluate(()=>scrollY),sy,'끌기 중 스크롤 없음');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'가로 넘침 없음');
-  const bb=await page.locator('#route-bus-1').boundingBox(),sp=await page.locator('#route-bus-1 .bus-sprite').boundingBox();
-  assert.ok(sp.x>=bb.x&&sp.x+sp.width<=bb.x+bb.width&&sp.y>=bb.y&&sp.y+sp.height<=bb.y+bb.height,'그림이 누르는 영역 안');
+  // 노선 손잡이(번호 원 + 버스 수)는 손가락용 판정 여유(::before)까지 약 44px
+  const hit=await page.locator('#route-bus-1').evaluate(e=>{const r=e.getBoundingClientRect(),b=getComputedStyle(e,'::before');return {w:r.width-2*parseFloat(b.left),h:r.height-2*parseFloat(b.top)};});
+  assert.ok(hit.w>=44&&hit.h>=40,'손잡이 누르는 영역 '+JSON.stringify(hit));
   await page.screenshot({path:`publicness/tests/_shot-bus-depot-375-${view}.png`});
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS bus-depot 375 touch',view);
  }

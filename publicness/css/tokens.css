@@ -1,0 +1,16 @@
+/* 시각 토큰(2026-10-27 지도 시각 위계 정리) — 색·선 굵기·배지·글자 크기를 한곳에.
+ * 노선 색 --route-1…6은 config.js ui.routeColors가 원본이고 앱이 시작할 때 여기 변수로 넣는다(아래 값은 시작 전 기본값).
+ * 의미 색은 노선 색과 겹치지 않는다: 파랑 = 누를 수 있는 것, 주황 = 주의, 빨강 = 위험(위험 상태에만). */
+:root {
+  --route-1: #1E2638; --route-2: #F2E14C; --route-3: #2C9BC9; --route-4: #0E6B53; --route-5: #C9A3D6; --route-6: #5A3F1E;
+  --sem-action: #2563EB;   /* 누를 수 있는 것·선택 */
+  --sem-caution: #E8890C;  /* 주의(대기 증가 등) */
+  --sem-caution-ink: #9A5200;
+  --sem-danger: #D62828;   /* 위험(기준 초과·만차·계약 위험) */
+  --fs-label: 12px;        /* 지도 이름표·배지 */
+  --fs-body: 15px;         /* 본문·버튼 */
+  --fs-title: 20px;        /* 제목 */
+  --map-label-bg: rgba(255, 255, 255, .94);
+  --map-label-ink: #1A1D24;
+  --map-casing: #FFFFFF;
+}

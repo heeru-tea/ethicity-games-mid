@@ -18,13 +18,16 @@
   function create(svg, opts) {
     opts = opts || {};
     var nodes = {}, layers = {}, routeSegs = {}, reduced = false, currentRoutes = [];
-    ['terrain', 'roads', 'routes', 'stops', 'badges', 'buses'].forEach(function (k) { layers[k] = el('g', { 'class': 'layer-' + k }, svg); });
+    ['terrain', 'roads', 'routes', 'stops', 'badges'].forEach(function (k) { layers[k] = el('g', { 'class': 'layer-' + k }, svg); });
+    // 버스는 지도 네트워크층(노선 선) 위에 보여야 해서 같은 좌표계(viewBox)의 맨 위 SVG에 따로 그린다(2026-10-27)
+    var top = el('svg', { 'class': 'stage-svg stage-svg-buses', 'aria-hidden': 'false' }); svg.parentNode.appendChild(top);
+    layers.buses = el('g', { 'class': 'layer-buses' }, top);
 
     function px(n) { return { x: n.x * U, y: n.y * U }; }
 
     // 지도 위에 겹쳐 놓인 시계(opts.reserved) 밑에 정류장·이름이 깔리면 위쪽 여백을 늘려 지도를 아래로 비킨다
     var baseBox = null, extraTop = 0;
-    function applyBox() { svg.setAttribute('viewBox', [baseBox.x, baseBox.y - extraTop, baseBox.w, baseBox.h + extraTop].join(' ')); }
+    function applyBox() { var vb = [baseBox.x, baseBox.y - extraTop, baseBox.w, baseBox.h + extraTop].join(' '); svg.setAttribute('viewBox', vb); top.setAttribute('viewBox', vb); }
     function underReserved(area) {
       var r = svg.getBoundingClientRect();
       return Object.keys(nodes).some(function (id) {
@@ -148,14 +151,15 @@
       buses.forEach(function (b) {
         var g = el('g', { 'class': 'bus-g', 'data-bus': b.id }, layers.buses);
         var x = b.x * U + (b.dx || 0), y = b.y * U + (b.dy || 0);
-        el('rect', { x: x - 13, y: y - 9, width: 26, height: 18, rx: 4, fill: b.color }, g);
-        var t = el('text', { x: x, y: y + 4, 'text-anchor': 'middle' }, g);
-        t.textContent = b.regional?'광'+b.id:b.express?'직'+b.id:b.id;
-        g.setAttribute('aria-label',b.id+'호차'+(b.regional?' 광역 · 정원 24명':b.express?' 직행 · 정원 18명':'')+' · 탑승 '+(b.riders||0)+'명');
-        if(b.riders>0){
-          el('rect',{x:x-23,y:y-36,width:46,height:22,rx:5,fill:'#fff',stroke:'#1A1D24'},g);
-          var count=el('text',{x:x,y:y-20,'text-anchor':'middle','class':'rider-count','data-riders':b.riders},g);count.textContent=(b.names&&b.names.length?b.names.map(function(n){return '['+n+']';}).join(' ')+' ':'')+b.riders+'명';
-        }
+        // 버스 = 작은 버스 모양(몸체 흰색 — 직행 7호차는 자두색, 띠는 노선색). 번호·인원 숫자 대신 정원 대비 차오르는 막대, 숫자는 마우스를 올렸을 때(title)
+        var cap = b.regional ? 24 : b.express ? 18 : 12, fill = Math.min(1, (b.riders || 0) / cap), label = b.id + '호차' + (b.regional ? ' 광역 · 정원 24명' : b.express ? ' 직행 · 정원 18명' : '') + ' · 탑승 ' + (b.riders || 0) + '/' + cap + '명' + (b.names && b.names.length ? ' (' + b.names.join('·') + ')' : '');
+        el('rect', { x: x - 14, y: y - 9, width: 28, height: 18, rx: 5, fill: b.express ? '#4B2E5C' : '#fff', stroke: '#1A1D24', 'stroke-width': 1.5 }, g);
+        el('rect', { x: x - 14, y: y + 1, width: 28, height: 5, fill: b.color }, g);
+        el('rect', { x: x - 10, y: y - 6, width: 20, height: 5, rx: 1.5, fill: '#9FB7CC' }, g);
+        el('rect', { x: x - 14, y: y - 17, width: 28, height: 5, rx: 2.5, fill: '#fff', stroke: '#1A1D24', 'stroke-width': 1 }, g);
+        el('rect', { x: x - 14, y: y - 17, width: 28 * fill, height: 5, rx: 2.5, fill: '#1A1D24', 'class': 'rider-count', 'data-riders': b.riders || 0 }, g);
+        el('title', {}, g).textContent = label;
+        g.setAttribute('aria-label', label);
       });
     }
 
@@ -192,7 +196,7 @@
       kind: '2d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
       setBuses: setBuses, setWaiting: setWaiting, flash: flash, project: project, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },
-      show: function (v) { svg.style.display = v ? '' : 'none'; if (v) fitReserved(); },
+      show: function (v) { svg.style.display = v ? '' : 'none'; top.style.display = v ? '' : 'none'; if (v) fitReserved(); },
       dispose: function () { svg.innerHTML = ''; }
     };
   }
