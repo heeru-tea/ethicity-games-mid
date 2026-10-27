@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>데이터 러너: 끊어진 도시</title>
+<meta name="description" content="AI 학습 데이터를 직접 골라 모으며 데이터 관리의 책임을 경험하는 3레인 러너 게임">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main id="app">
+  <section id="screen-title" class="screen">
+    <div class="title-wrap">
+      <p class="title-kicker">윤리시티 · 데이터 관리 편</p>
+      <h1>데이터 러너<span>끊어진 도시</span></h1>
+      <p class="title-lead">비가 오면 도시의 AI가 길을 잃는다. 무엇을 가져와 다시 이을지는 러너가 정한다.</p>
+      <button id="btn-start" class="btn btn-primary" type="button">시작하기</button>
+    </div>
+  </section>
+  <section id="screen-story" class="screen" hidden></section>
+  <section id="screen-briefing" class="screen" hidden></section>
+  <section id="screen-run" class="screen" hidden>
+    <div id="run-stage"></div>
+    <div id="hud">
+      <div id="hud-bag" class="hud-bag" aria-label="가방"><span class="hud-bag-icon" aria-hidden="true"></span><b>0/0</b></div>
+      <div id="hud-progress" class="hud-progress" aria-hidden="true"><i></i></div>
+      <button id="btn-mute" class="hud-btn" type="button" aria-label="소리 끄기">♪</button>
+    </div>
+    <p id="run-hint" class="run-hint" hidden></p>
+  </section>
+  <section id="screen-inspect" class="screen" hidden></section>
+  <section id="screen-supervisor" class="screen" hidden></section>
+  <section id="screen-result" class="screen" hidden></section>
+  <section id="screen-prep" class="screen" hidden></section>
+  <section id="screen-outro" class="screen" hidden></section>
+</main>
+<script src="vendor/three.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/rng.js"></script>
+<script src="missions/cast.js"></script>
+<script src="missions/tutorial.js"></script>
+<script src="missions/m1.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
