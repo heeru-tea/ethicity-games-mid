@@ -14,7 +14,7 @@
 | 파일 | 역할 |
 |---|---|
 | `js/config.js` | 손맛·판정 수치 한 곳 |
-| `missions/*.js` | 임무 데이터(장면·조합·카드 수·대사) — 2~4 임무는 여기에 파일 추가 |
+| `missions/*.js` | 임무 데이터(장면·조합·카드 수·대사) — 2~4 임무는 여기에 파일 추가. `prologue.js` = 러너 프로필·독백 |
 | `js/judge.js` · `stream.js` · `catch.js` · `input.js` | 순수 모듈(판정·코스·잡기·입력 분류), node로 단위 테스트 |
 | `js/cardart.js` | 카드·아이콘·단서·결과 컷을 Canvas로 생성(같은 화풍 원칙, 지하차도 금지) |
 | `js/run3d.js` | three.js 달리기(r149, `vendor/`) — `step/peek/setPaused/finishNow/debugTake` 테스트 훅 |

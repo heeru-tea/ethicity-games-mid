@@ -12,7 +12,14 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
   try {
     const tut = await page.evaluate(() => DR.Missions.tutorial);
     await page.locator('#btn-start').click();
-    assert.ok(await visible('story'), 'story after start');
+    // 프롤로그: 러너 프로필 + 독백
+    assert.ok(await visible('profile'), 'profile after start');
+    const pro = await page.evaluate(() => DR.Prologue);
+    assert.ok((await page.locator('#screen-profile').innerText()).includes(pro.lines[0]), 'first monologue line');
+    assert.ok((await page.locator('#screen-profile .profile-card').innerText()).includes('러너 자격 시험'), 'profile card');
+    const nLines = pro.lines.length;
+    for (let i = 0; i < nLines; i++) await page.locator('#screen-profile .mono').click();
+    assert.ok(await visible('story'), 'story after prologue');
     assert.match(await page.locator('#screen-story').innerText(), new RegExp(tut.story.intro[0].text.slice(0, 8)));
     await page.locator('#btn-skip').click();
 

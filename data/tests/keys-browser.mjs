@@ -21,7 +21,8 @@ import { openGame } from './browser.mjs';
   const { browser, page, errors } = await openGame();
   try {
     await page.locator('#btn-start').click();
-    await page.locator('#btn-skip').click();
+    await page.locator('#btn-skip').click(); // 프롤로그
+    await page.locator('#btn-skip').click(); // 튜토리얼 대화
     await page.locator('#btn-run').click();
     await page.waitForFunction(() => DR.Run.peek().running, null, { timeout: 8000 });
     await page.evaluate(() => { DR.App.debugFill({ dog: 8 }); DR.Run.finishNow(); });

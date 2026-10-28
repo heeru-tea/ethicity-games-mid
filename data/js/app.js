@@ -1,12 +1,12 @@
 /*
  * 흐름 상태 기계 — 화면(section) 전환과 임무 진행.
- * 튜토리얼: 대화 → 브리핑 → 달리기 → 결과(실패면 다시) → 시험관 → 1 임무
+ * 튜토리얼: 프롤로그(프로필·독백) → 대화 → 브리핑 → 달리기 → 결과(실패면 다시) → 시험관 → 1 임무
  * 1 임무: 대화 → 브리핑 → 달리기 → 검수 → 감독관 → 결과 → (실패) 보충 → … → 선배 → 마무리
  */
 (function (root) {
   'use strict';
 
-  var SCREENS = ['title', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'result', 'prep', 'outro'];
+  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'result', 'prep', 'outro'];
   var DR = root.DR;
 
   // 화면을 바꿀 때 포커스를 풀어 둔다 — 연타한 Space/Enter가 다음 화면 버튼을 눌러 브리핑·결과를 건너뛰지 않게
@@ -46,8 +46,10 @@
   function startTutorial() {
     var m = DR.Missions.tutorial;
     App.state = { mission: 'tutorial', bag: [], supplements: 0, firstTry: null, seed: seedFor(m) };
-    DR.UI.dialogue(m.story.intro, function () {
-      DR.UI.briefing(m, tutorialRun);
+    DR.UI.prologue(DR.Prologue, function () {
+      DR.UI.dialogue(m.story.intro, function () {
+        DR.UI.briefing(m, tutorialRun);
+      });
     });
   }
 

@@ -125,6 +125,46 @@
     root.DR.App.go('result');
   }
 
+  // 프롤로그: 러너 프로필 카드 + 독백이 한 줄씩 떠오른다(이름표 없는 기울인 글씨)
+  function prologue(data, done) {
+    var screen = document.getElementById('screen-profile');
+    var i = 0, finished = false;
+    var list = el('div', { class: 'mono', role: 'log', 'aria-live': 'polite' });
+    var skip = el('button', { id: 'btn-skip', class: 'btn btn-ghost skip', type: 'button', text: '건너뛰기' });
+    var rows = data.profile.map(function (p) { return el('div', { class: 'profile-row' }, [el('dt', { text: p.label }), el('dd', { text: p.value })]); });
+    screen.innerHTML = '';
+    screen.appendChild(skip);
+    screen.appendChild(el('div', { class: 'page prologue' }, [
+      el('div', { class: 'profile-card' }, [
+        portrait('runner', 88),
+        el('div', { class: 'profile-body' }, [el('p', { class: 'kicker', text: '러너 프로필' }), el('dl', {}, rows)])
+      ]),
+      list,
+      el('p', { class: 'dialog-hint', text: '눌러서 넘기기' })
+    ]));
+    function show() {
+      Array.prototype.forEach.call(list.children, function (p) { p.classList.add('past'); });
+      list.appendChild(el('p', { class: 'mono-line', text: data.lines[i] }));
+    }
+    function finish() {
+      if (finished) return;
+      finished = true;
+      root.removeEventListener('keydown', onKey);
+      screen.innerHTML = '';
+      done();
+    }
+    function next() { root.DR.Sfx.play('ui'); if (++i >= data.lines.length) finish(); else show(); }
+    function onKey(e) {
+      if (e.target && e.target.tagName === 'BUTTON') return;
+      if (e.code === 'Space' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!e.repeat) next(); }
+    }
+    list.addEventListener('click', next);
+    skip.addEventListener('click', function () { root.DR.Sfx.play('ui'); finish(); });
+    root.addEventListener('keydown', onKey);
+    root.DR.App.go('profile');
+    show();
+  }
+
   // 마무리 안내(기획서 §4.7) — 대화 뒤 안내 카드
   function outro(lines, done) {
     dialogue(lines, function () {
@@ -150,4 +190,5 @@
   root.DR.UI.briefing = briefing;
   root.DR.UI.tutorialResult = tutorialResult;
   root.DR.UI.outro = outro;
+  root.DR.UI.prologue = prologue;
 })(window);
