@@ -10,7 +10,7 @@ try {
     const std = (c) => { const d = px(c); let s = 0, s2 = 0; const n = d.length / 4; for (let i = 0; i < d.length; i += 4) { const v = (d[i] + d[i + 1] + d[i + 2]) / 3; s += v; s2 += v * v; } return Math.sqrt(s2 / n - (s / n) ** 2); };
     const lowerMean = (c) => { const d = px(c), w = c.width, h = c.height; let r = 0, g = 0, b = 0, n = 0; for (let y = Math.floor(h * 2 / 3); y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } return [r / n, g / n, b / n]; };
     const out = { bad: [], sizes: [] };
-    const ids = [...Object.keys(M.m1.cardTypes), ...M.m1.ambiguous.map((a) => a.id)];
+    const ids = [...Object.keys(M.m1.cardTypes), ...M.m1.ambiguous.map((a) => a.id), ...M.m1.fakes.map((f) => f.id)];
     for (const id of ids) { const c = A.card(M.m1, id, 0, 256); out.sizes.push(c.width + 'x' + c.height); if (std(c) <= 10) out.bad.push(id); }
     for (const id of Object.keys(M.tutorial.cardTypes)) { const c = A.card(M.tutorial, id, 0, 256); if (std(c) <= 10) out.bad.push(id); }
     out.variantDiffers = A.card(M.m1, 'day_deep', 0, 256).toDataURL() !== A.card(M.m1, 'day_deep', 1, 256).toDataURL();
@@ -38,6 +38,7 @@ try {
     for (const id of ids) add(A.card(M.m1, id, 0, 256), id);
     for (const id of ['day_deep', 'night_wet']) add(A.card(M.m1, id, 1, 256), id + ' v1');
     add(A.thumb(A.card(M.m1, 'night_neon', 0, 256), 24), 'thumb neon');
+    for (const f of M.m1.fakes) add(A.thumb(A.card(M.m1, f.id, 0, 256), 24), 'thumb ' + f.id);
     for (const id of Object.keys(M.tutorial.cardTypes)) add(A.card(M.tutorial, id, 0, 256), id);
     for (const n of icons) add(A.icon(n, 64), n);
     for (const q of M.m1.ambiguous) q.clues.forEach((_, i) => add(A.clue(M.m1, q.id, i, 256), q.id + ' clue' + i));

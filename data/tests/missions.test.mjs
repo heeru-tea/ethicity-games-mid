@@ -65,3 +65,47 @@ test('rng is deterministic', () => {
   const a = Rng.create(5), b = Rng.create(5);
   assert.equal(a.next(), b.next());
 });
+
+// 1 임무 가짜(spec §4)
+const Cards = require('../js/cards.js');
+const { judge } = require('../js/judge.js');
+const bagOf = (counts) => Object.entries(counts).flatMap(([key, n]) => Array.from({ length: n }, (_, i) => ({ id: key + i, key })));
+const ALL2 = { day_deep: 2, day_shallow: 2, day_wet: 2, day_dry: 2, night_wet: 2, night_neon: 2, night_deep: 2, night_shallow: 2, night_muddy: 2 };
+
+test('m1 fakes are well-formed', () => {
+  assert.deepEqual(m1.fakes.map((f) => f.id), ['f_pool', 'f_fountain', 'f_fridge']);
+  for (const f of m1.fakes) {
+    assert.ok(m1.cardTypes[f.label], f.id);
+    assert.ok(f.truth === null || m1.cardTypes[f.truth], f.id);
+    assert.ok(f.count >= 1 && f.name && f.art, f.id);
+    assert.match(f.line, /^우리가 넣은 데이터에 .+\.$/, f.id);
+  }
+});
+
+test('m1 fake scenes', () => {
+  const at = (id) => Cards.scenesForLabel(m1, m1.fakes.find((f) => f.id === id).label);
+  assert.deepEqual(at('f_pool'), ['S1']);
+  assert.deepEqual(at('f_fountain'), ['S1']);
+  assert.deepEqual(at('f_fridge'), ['S3', 'S4']);
+});
+
+test('m1 passes in 30 cards avoiding fakes, fails with two', () => {
+  const bag = bagOf({ ...ALL2, day_deep: 5, day_shallow: 5, day_wet: 3, day_dry: 3, night_wet: 6 });
+  assert.equal(bag.length, 30);
+  assert.equal(judge(m1, bag, cfg).allPass, true);
+  const two = bag.slice(2).concat([{ id: 'x1', fakeId: 'f_fridge' }, { id: 'x2', fakeId: 'f_fridge' }]);
+  assert.deepEqual(judge(m1, two, cfg).scenes.map((s) => s.pass), [true, true, false, false]);
+});
+
+test('m1 outcomeText has three kinds and chains to m2', () => {
+  for (const k of ['pass', 'inconvenience', 'danger']) assert.ok(m1.outcomeText[k], k);
+  assert.equal(m1.next, 'm2');
+});
+
+test('m1 bot says it labelled everything', () => {
+  assert.ok(m1.story.intro.some((l) => l.who === 'bot' && /이름표/.test(l.text)));
+});
+
+test('no forbidden copy in fake lines', () => {
+  assert.ok(!/지하차도|%|AI가 틀렸|당신이 실패/.test(JSON.stringify(m1.fakes)));
+});

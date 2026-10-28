@@ -26,7 +26,7 @@
 
   function artOf(mission, id) {
     if (mission.cardTypes[id]) return mission.cardTypes[id].art;
-    var a = (mission.ambiguous || []).filter(function (q) { return q.id === id; })[0];
+    var a = (mission.ambiguous || []).concat(mission.fakes || []).filter(function (q) { return q.id === id; })[0];
     if (!a) throw new Error('알 수 없는 카드: ' + id);
     return a.art;
   }
@@ -218,6 +218,90 @@
     drawWater(g, S, o, r, road, lights);
   }
 
+  /* ---------- 도로가 아닌 장소(1 임무 가짜) — 도로와 같은 하늘·건물 붓, 바닥만 다르다 ---------- */
+  function drawPlace(c, o, seed) {
+    var S = c.width, g = c.getContext('2d'), r = rng(seed);
+    drawSky(g, S, o, r);
+    drawBuildings(g, S, o, r, 'street');
+    g.fillStyle = '#d9d2c3';
+    g.fillRect(0, S * HZ, S, S * (1 - HZ));
+    if (o.place === 'pool') drawPool(g, S, r);
+    else drawFountain(g, S, r);
+  }
+
+  // 수영장: 파란 물 + 흰 타일 테두리 + 빨강·흰 레인 줄 + 사다리
+  function drawPool(g, S, r) {
+    var poly = [[S * 0.2, S * (HZ + 0.06)], [S * 0.8, S * (HZ + 0.06)], [S * 1.05, S], [S * -0.05, S]];
+    pathPoly(g, poly);
+    g.fillStyle = '#f4f6f8'; g.fill();
+    var inner = [[S * 0.24, S * (HZ + 0.09)], [S * 0.76, S * (HZ + 0.09)], [S * 0.97, S * 0.97], [S * 0.03, S * 0.97]];
+    pathPoly(g, inner);
+    g.fillStyle = '#29a3e0'; g.fill();
+    g.save(); pathPoly(g, inner); g.clip();
+    // 바닥 타일 줄
+    g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = 1;
+    for (var t = 0; t < 8; t++) { var yy = S * (HZ + 0.09) + (S * (0.97 - HZ - 0.09)) * (t / 8) * (t / 8 + 0.3); g.beginPath(); g.moveTo(0, yy); g.lineTo(S, yy); g.stroke(); }
+    // 레인 줄(빨강·흰 구슬)
+    for (var l = 1; l < 5; l++) {
+      var x0 = S * (0.24 + 0.52 * l / 5), x1 = S * (0.03 + 0.94 * l / 5);
+      for (var k = 0; k < 14; k++) {
+        var f = k / 14, x = x0 + (x1 - x0) * f, y = S * (HZ + 0.09) + S * (0.88 - HZ) * f;
+        g.fillStyle = k % 2 ? '#ffffff' : '#e8434a';
+        g.beginPath(); g.arc(x, y, 1.5 + f * 4, 0, 7); g.fill();
+      }
+    }
+    g.fillStyle = 'rgba(255,255,255,.25)';
+    for (var w = 0; w < 6; w++) { g.beginPath(); g.ellipse(r.next() * S, S * (0.6 + r.next() * 0.35), S * 0.06, S * 0.01, 0, 0, 7); g.fill(); }
+    g.restore();
+    // 사다리(오른쪽 앞)
+    g.strokeStyle = '#c9d2db'; g.lineWidth = S * 0.018; g.lineCap = 'round';
+    [0.78, 0.86].forEach(function (fx) { g.beginPath(); g.moveTo(S * fx, S * 0.62); g.quadraticCurveTo(S * fx, S * 0.56, S * (fx + 0.04), S * 0.56); g.moveTo(S * fx, S * 0.62); g.lineTo(S * fx, S * 0.8); g.stroke(); });
+    g.lineWidth = S * 0.01;
+    for (var rr = 0; rr < 3; rr++) { g.beginPath(); g.moveTo(S * 0.78, S * (0.67 + rr * 0.05)); g.lineTo(S * 0.86, S * (0.67 + rr * 0.05)); g.stroke(); }
+  }
+
+  // 분수 광장: 보도블록 + 둥근 돌 수반 + 위로 솟는 물줄기
+  function drawFountain(g, S, r) {
+    g.strokeStyle = 'rgba(120,105,85,.35)'; g.lineWidth = 1;
+    for (var y = S * HZ; y < S; y += S * 0.05) { g.beginPath(); g.moveTo(0, y); g.lineTo(S, y); g.stroke(); }
+    var cx = S * 0.5, cy = S * 0.74, rx = S * 0.38, ry = S * 0.13;
+    g.fillStyle = '#9a9488'; g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, 7); g.fill();
+    g.fillStyle = '#5fa8d8'; g.beginPath(); g.ellipse(cx, cy, rx * 0.88, ry * 0.8, 0, 0, 7); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.3)';
+    for (var w = 0; w < 5; w++) { g.beginPath(); g.ellipse(cx + (r.next() - 0.5) * rx, cy + (r.next() - 0.5) * ry, S * 0.05, S * 0.008, 0, 0, 7); g.fill(); }
+    // 가운데 기둥과 물줄기
+    g.fillStyle = '#b5ae9f'; g.fillRect(cx - S * 0.03, cy - S * 0.12, S * 0.06, S * 0.12);
+    g.strokeStyle = 'rgba(235,248,255,.95)'; g.lineWidth = S * 0.014; g.lineCap = 'round';
+    for (var j = -3; j <= 3; j++) {
+      g.beginPath(); g.moveTo(cx, cy - S * 0.12);
+      g.quadraticCurveTo(cx + j * S * 0.05, cy - S * 0.42, cx + j * S * 0.1, cy - S * 0.02);
+      g.stroke();
+    }
+    g.fillStyle = 'rgba(235,248,255,.95)'; g.beginPath(); g.arc(cx, cy - S * 0.3, S * 0.035, 0, 7); g.fill();
+  }
+
+  /* ---------- 물건 하나(가짜·2 임무) — 동물 그림과 같은 단색 판 ---------- */
+  function drawObject(c, o, seed) {
+    var S = c.width, g = c.getContext('2d'), r = rng(seed);
+    g.fillStyle = pick(r, ['#f3e6d3', '#dfe9f3', '#efe0ea']); g.fillRect(0, 0, S, S);
+    g.fillStyle = 'rgba(0,0,0,.06)'; g.fillRect(0, S * 0.78, S, S * 0.22);
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(S * 0.5, S * 0.9, S * 0.26, S * 0.04, 0, 0, 7); g.fill();
+    if (o.object === 'fridge') drawFridge(g, S, r);
+  }
+
+  function drawFridge(g, S, r) {
+    var body = pick(r, ['#f7f7f4', '#dfe5ea', '#cfe8dc']);
+    var x = S * 0.3, y = S * 0.08, w = S * 0.4, h = S * 0.82;
+    g.fillStyle = body; roundRect(g, x, y, w, h, S * 0.04); g.fill();
+    g.strokeStyle = 'rgba(40,50,60,.45)'; g.lineWidth = 2; roundRect(g, x, y, w, h, S * 0.04); g.stroke();
+    g.beginPath(); g.moveTo(x, y + h * 0.36); g.lineTo(x + w, y + h * 0.36); g.stroke();
+    g.fillStyle = '#5b6470';
+    g.fillRect(x + w * 0.08, y + h * 0.12, S * 0.025, h * 0.16);
+    g.fillRect(x + w * 0.08, y + h * 0.44, S * 0.025, h * 0.24);
+    // 자석 메모
+    g.fillStyle = pick(r, ['#ffd166', '#ef767a', '#7bdff2']); g.fillRect(x + w * 0.55, y + h * 0.5, w * 0.25, w * 0.25);
+  }
+
   /* ---------- 동물(튜토리얼) ---------- */
   function drawAnimal(c, o, seed) {
     var S = c.width, g = c.getContext('2d'), r = rng(seed);
@@ -251,6 +335,8 @@
     return cached(mission.id + '|' + id + '|' + variant + '|' + size, function () {
       var o = artOf(mission, id), c = canvas(size), seed = hash(id) + variant * 7919;
       if (o.animal) drawAnimal(c, o, seed);
+      else if (o.place === 'pool' || o.place === 'fountain') drawPlace(c, o, seed);
+      else if (o.object) drawObject(c, o, seed);
       else drawRoad(c, Object.assign({}, o, { place: PLACES[(hash(id) + variant) % PLACES.length] }), seed);
       return c;
     });

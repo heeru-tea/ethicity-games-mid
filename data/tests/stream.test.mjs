@@ -63,11 +63,12 @@ test('course length matches run time', () => {
 
 test('supplement focuses on missing keys', () => {
   const s = build(m1, cfg, { seed: 3, focusKeys: ['night_shallow', 'night_muddy'] });
-  const cs = cards(s);
+  const cs = cards(s).filter((i) => !i.fakeId);
   assert.equal(cs.length, 12);
   assert.ok(cs.filter((i) => ['night_shallow', 'night_muddy'].includes(i.key)).length >= 8);
   for (const k of ['night_shallow', 'night_muddy']) assert.ok(cs.filter((i) => i.key === k).length >= 4, k);
   assert.equal(cs.filter((i) => i.ambiguousId).length, 0);
+  assert.equal(cards(s).filter((i) => i.fakeId).length, 1);
   assert.equal(s.length, m1.supplementSeconds * cfg.baseSpeed);
 });
 

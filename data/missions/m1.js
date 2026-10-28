@@ -3,12 +3,14 @@
  * danger:true = 침수 조합(빠지면 침수를 '안전'으로 통과시키는 위험 실패),
  * danger:false = 정상 조합(빠지면 멀쩡한 길을 막는 불편 실패).
  * boundary:true = 경계 조합 — 일반 드문 카드로도, 올바르게 분류한 "?" 카드(2장 몫)로도 채워진다.
+ * fakes = 그림과 이름표가 안 맞는 가짜(도로 사진이 아닌 것, spec §4). label = 붙은 이름표(카드 종류 key),
+ * truth = 진짜 종류(없으면 null). 한 장면에 2장 이상 쌓이면 그 장면이 오염된다(config.fakeLimit).
  */
 (function (root) {
   'use strict';
 
   var m1 = {
-    id: 'm1', title: '침수 판별 AI', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 1101, fires: 6,
+    id: 'm1', title: '침수 판별 AI', next: 'm2', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 1101, fires: 6,
     labelOptions: [
       { id: 'flood_deep', text: '침수(깊음)' },
       { id: 'flood_shallow', text: '침수(얕음)' },
@@ -46,6 +48,15 @@
           { type: 'log', text: '청소차 운행 기록: 10:05 이 도로 물청소' }
         ] }
     ],
+    fakes: [
+      { id: 'f_pool', name: '수영장', label: 'day_deep', truth: null, count: 2, art: { place: 'pool', time: 'day' },
+        line: "우리가 넣은 데이터에 수영장 사진이 '깊은 침수'로 섞여 들어갔다." },
+      { id: 'f_fountain', name: '분수 광장', label: 'day_shallow', truth: null, count: 2, art: { place: 'fountain', time: 'day' },
+        line: "우리가 넣은 데이터에 분수 광장 사진이 '얕은 침수'로 섞여 들어갔다." },
+      { id: 'f_fridge', name: '냉장고', label: 'night_wet', truth: null, count: 2, art: { object: 'fridge' },
+        line: "우리가 넣은 데이터에 냉장고 사진이 '비에 젖은 밤 도로'로 섞여 들어갔다." }
+    ],
+    outcomeText: { pass: '제대로 판단했다', inconvenience: '멀쩡한 길을 막았다 · 불편', danger: '잠긴 길을 통과시켰다 · 위험' },
     counts: {
       day_deep: 11, day_shallow: 9, day_wet: 4, day_dry: 4, night_wet: 6,
       night_neon: 3, night_deep: 3, night_shallow: 3, night_muddy: 3
@@ -97,7 +108,7 @@
     story: {
       intro: [
         { who: 'supervisor', text: '올여름 비는 처음 보는 규모야. 침수 판별 AI가 따라가지 못하고 있어.' },
-        { who: 'bot', text: '삐빅! 침수 사진 3,000장 확보! 임무 완료!' },
+        { who: 'bot', text: '삐빅! 침수 사진 3,000장 확보! 이름표도 제가 다 붙였어요! 임무 완료!' },
         { who: 'guide', text: '수거봇 데이터로 복구한 결과입니다. 밤의 젖은 도로 열두 곳을 침수로 판정해 통행을 막았습니다.' },
         { who: 'supervisor', text: '3,000장 대부분이 낮의 물웅덩이 사진이네. 멀쩡한 길이 막혔어.' },
         { who: 'guide', text: '추가 경보. 데이터 세계에 정체불명의 불꽃이 관측됩니다. 러너를 노리는 방해 세력으로 추정됩니다.' },
