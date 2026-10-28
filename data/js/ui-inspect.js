@@ -165,11 +165,13 @@
   }
 
   /* ---------- 보충 준비 ---------- */
+  // 정리한 뒤 모자란 조합이 없으면(가짜만 빼면 되는 경우) 달리지 않고 다시 제출 — done(bag, { resubmit: true }), spec §3.5
   function supplementPrep(mission, result, bag, done) {
     var screen = document.getElementById('screen-prep');
     var need = Math.min(DR.config.supplementFreeSlots, mission.bag);
     function render() {
-      var free = mission.bag - bag.length, lack = Math.max(0, need - free);
+      var resubmit = Object.keys(DR.Judge.shortfall(mission, bag, DR.config)).length === 0;
+      var free = mission.bag - bag.length, lack = resubmit ? 0 : Math.max(0, need - free);
       screen.innerHTML = '';
       var failed = el('ul', { class: 'failed' });
       result.scenes.forEach(function (s) {
@@ -177,15 +179,17 @@
         var sc = mission.scenes.filter(function (x) { return x.id === s.id; })[0];
         failed.appendChild(el('li', { text: sc.title }));
       });
-      var go = el('button', { id: 'btn-supplement', class: 'btn btn-primary', type: 'button', text: '보충 달리기 출발' });
+      var go = el('button', { id: 'btn-supplement', class: 'btn btn-primary', type: 'button', text: resubmit ? '다시 제출' : '보충 달리기 출발' });
       go.disabled = lack > 0;
-      go.addEventListener('click', function () { DR.Sfx.unlock(); DR.Sfx.play('ui'); done(bag); });
+      go.addEventListener('click', function () { DR.Sfx.unlock(); DR.Sfx.play('ui'); done(bag, { resubmit: resubmit }); });
+      var note = resubmit ? '모자란 카드는 없다. 가방을 정리했으면 다시 제출하자.'
+        : '이번엔 그 장면에 필요한 카드가 더 자주 나온다. 가방 칸은 그대로라서, 출발하려면 ' + need + '칸 이상 비어 있어야 한다.';
       screen.appendChild(el('div', { class: 'page' }, [
         el('p', { class: 'kicker', text: '보충 달리기 준비' }),
         el('h2', { text: '놓친 장면' }),
         failed,
-        el('p', { class: 'note', text: '이번엔 그 장면에 필요한 카드가 더 자주 나온다. 가방 칸은 그대로라서, 출발하려면 ' + need + '칸 이상 비어 있어야 한다.' }),
-        el('p', { id: 'prep-need', class: 'notice', text: lack > 0 ? lack + '칸 더 비워야 해요.' : '출발할 수 있어요.' }),
+        el('p', { class: 'note', text: note }),
+        resubmit ? null : el('p', { id: 'prep-need', class: 'notice', text: lack > 0 ? lack + '칸 더 비워야 해요.' : '출발할 수 있어요.' }),
         bagGrid(mission, bag, 'prep-grid', { onRemove: function (card) { bag.splice(bag.indexOf(card), 1); render(); } }),
         el('div', { class: 'actions' }, [go])
       ]));

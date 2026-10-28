@@ -3,6 +3,7 @@
 ## 지금 상태 (2026-10-28)
 - **첫 버전 = 튜토리얼 + 1 임무(침수 판별 AI) 전체 흐름 완성**, 브랜치 `data`(origin/data), 워크트리 `D:\Works\ethicity-games-mid-data`. main 병합은 **팀 피드백 뒤 따로 결정**(팀원은 data 브랜치를 받아 `data/index.html` 더블클릭).
 - 성공 기준(사용자): **팀원이 돌려 보고 "재밌다"**. 그래서 달리기 손맛이 최우선.
+- **가짜 카드(1 임무부터, 튜토리얼 제외)**: 그림과 이름표가 안 맞는 카드(수영장·분수 광장·냉장고). 한 장면에 2장 이상이면 오염 → 실패(`config.fakeLimit`). 달리는 중엔 알림 없음(첫 가짜에만 안내 한 줄). 보충 준비에서 모자란 조합이 없으면 달리지 않고 "다시 제출". 설계 `docs/specs/2026-10-28-data-runner-fakes-m2-design.md` · 계획 `docs/plans/2026-10-28-data-runner-fakes-m2.md`(1부 = Task 1~5 완료, 2부 = 2 임무).
 - 문서: 기획서 `data-runner-plan.md`(무엇을) · 설계 `docs/specs/2026-10-27-data-runner-v1-design.md`(어떻게, 기획서와 다른 점) · 계획 `docs/plans/2026-10-28-data-runner-v1.md`.
 
 ## 기획서와 달라진 점(사용자 결정 — 재논의 금지)
@@ -16,6 +17,7 @@
 |---|---|
 | `js/config.js` | 손맛·판정 수치 한 곳 |
 | `missions/*.js` | 임무 데이터(장면·조합·카드 수·대사) — 2~4 임무는 여기에 파일 추가. `prologue.js` = 러너 프로필·독백 |
+| `js/cards.js` | 카드의 진짜 종류·붙은 이름표·아이콘(가짜·이름표 고치기의 단일 출처) |
 | `js/judge.js` · `stream.js` · `catch.js` · `input.js` | 순수 모듈(판정·코스·잡기·입력 분류), node로 단위 테스트 |
 | `js/cardart.js` | 카드·아이콘·단서·결과 컷을 Canvas로 생성(같은 화풍 원칙, 지하차도 금지) |
 | `js/run3d.js` | three.js 달리기(r149, `vendor/`) — `step/peek/setPaused/finishNow/debugTake` 테스트 훅 |
@@ -25,8 +27,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (59)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (boot·cardart·fire·keys·m1·run·touch·tutorial, 1366·375·390 터치) — `file://`로 엶
+- 단위: `node --test "data/tests/*.test.mjs"` (88)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (boot·cardart·fakes·fire·keys·m1·run·touch·tutorial, 1366·375·390 터치) — `file://`로 엶
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(모든 그림 시트), `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 

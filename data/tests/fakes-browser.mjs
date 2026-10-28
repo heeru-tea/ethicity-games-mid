@@ -76,4 +76,90 @@ const nextFake = (n) => `const fs = items.filter(i => i.kind==='card' && i.fakeI
   } finally { await browser.close(); }
 }
 
+// ---------- 검수·결과·보충(spec §3.3·§3.5) ----------
+const ALL2 = { day_deep: 2, day_shallow: 2, day_wet: 2, day_dry: 2, night_wet: 2, night_neon: 2, night_deep: 2, night_shallow: 2, night_muddy: 2 };
+const POOL = "우리가 넣은 데이터에 수영장 사진이 '깊은 침수'로 섞여 들어갔다.";
+const FOUNTAIN = "우리가 넣은 데이터에 분수 광장 사진이 '얕은 침수'로 섞여 들어갔다.";
+async function toInspect(page, counts) {
+  await page.locator('#btn-skip').click();
+  await page.locator('#btn-run').click();
+  await page.waitForFunction(() => DR.Run.peek().running, null, { timeout: 8000 });
+  await page.evaluate((c) => { DR.App.debugFill(c); DR.Run.finishNow(); }, counts);
+  await page.locator('#screen-inspect').waitFor({ state: 'visible', timeout: 4000 });
+}
+async function readResults(page) {
+  const out = [];
+  while (await page.locator('#screen-result .result-scene').count()) {
+    const s = page.locator('#screen-result .result-scene');
+    out.push({ scene: await s.getAttribute('data-scene'), outcome: await s.getAttribute('data-outcome'), contam: await page.locator('#screen-result p.contam').allInnerTexts() });
+    await page.locator('#btn-next').click();
+  }
+  return out;
+}
+// 빈칸 2칸만 남는 28장: 흔한 카드 + 수영장 1 + 분수 1
+const FULL = { ...ALL2, day_deep: 5, day_shallow: 5, night_wet: 4, f_pool: 1, f_fountain: 1 };
+
+for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 }]) {
+  // contaminated scene → resubmit without run
+  const { browser, page, errors } = await openGame({ viewport, query: '?start=m1' });
+  try {
+    await toInspect(page, FULL);
+    assert.equal(await page.locator('#inspect-scenes [data-scene="S1"] img').count(), 12, 'S1 shows its cards and both fakes');
+    await page.locator('#btn-submit').click();
+    await page.locator('#btn-confirm').click();
+    const res = await readResults(page);
+    assert.deepEqual(res.map((r) => r.outcome), ['inconvenience', 'pass', 'pass', 'pass']);
+    assert.deepEqual(res[0].contam, [POOL, FOUNTAIN]);
+    assert.deepEqual(res[1].contam, []);
+    // 보충 준비: 모자란 조합 없음 → 다시 제출(빈칸 조건 없음)
+    assert.ok(await page.locator('#screen-prep').isVisible(), 'prep');
+    assert.equal((await page.locator('#btn-supplement').innerText()).trim(), '다시 제출');
+    assert.ok(await page.locator('#btn-supplement').isEnabled(), 'no slot condition');
+    for (const k of ['f_pool', 'f_fountain']) await page.locator('#prep-grid .bag-card[data-key="' + k + '"] .btn-remove').click();
+    await page.locator('#btn-supplement').click();
+    assert.ok(await page.locator('#screen-supervisor').isVisible(), 'straight to supervisor');
+    assert.equal(await page.evaluate(() => DR.Run.peek().running), false, 'no run');
+    await page.locator('#btn-confirm').click();
+    assert.ok((await readResults(page)).every((r) => r.outcome === 'pass'), 'all pass after resubmit');
+    assert.equal(await page.evaluate(() => DR.App.state.supplements), 1);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
+// resubmit still counts: 다시 제출로 보충을 다 쓰면 마무리로
+{
+  const { browser, page, errors } = await openGame({ query: '?start=m1' });
+  try {
+    await toInspect(page, FULL);
+    await page.locator('#btn-submit').click();
+    await page.locator('#btn-confirm').click();
+    for (let n = 0; n < 2; n++) {
+      await readResults(page);
+      assert.equal((await page.locator('#btn-supplement').innerText()).trim(), '다시 제출');
+      await page.locator('#btn-supplement').click();
+      await page.locator('#btn-confirm').click();
+    }
+    await readResults(page);
+    assert.equal(await page.evaluate(() => DR.App.state.supplements), 2);
+    assert.ok(await page.locator('#screen-story').isVisible(), 'senior after max supplements');
+    assert.equal(await page.locator('#screen-prep').isVisible(), false);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
+// needs run when short: 모자란 조합이 있으면 기존 보충 달리기
+{
+  const { browser, page, errors } = await openGame({ query: '?start=m1' });
+  try {
+    await toInspect(page, { ...ALL2, day_deep: 0, f_pool: 2 });
+    await page.locator('#btn-submit').click();
+    await page.locator('#btn-confirm').click();
+    const res = await readResults(page);
+    assert.equal(res[0].outcome, 'danger');
+    assert.deepEqual(res[0].contam, [POOL]);
+    assert.equal((await page.locator('#btn-supplement').innerText()).trim(), '보충 달리기 출발');
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
 console.log('PASS fakes');

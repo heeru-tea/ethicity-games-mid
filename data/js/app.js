@@ -116,8 +116,10 @@
   // 보충: 빠진 조합에 모자란 장 수만큼(여유 포함) 그 카드가 나오는 짧은 코스. 이미 모은 가방은 그대로.
   // 부족분은 보충 준비에서 플레이어가 카드를 뺀 뒤의 가방으로 센다.
   function prepSupplement(m, r) {
-    DR.UI.supplementPrep(m, r, App.state.bag, function (bag) {
+    DR.UI.supplementPrep(m, r, App.state.bag, function (bag, opts) {
       App.state.supplements++;
+      // 모자란 조합이 없으면(가짜만 뺀 경우) 달리지 않고 다시 제출 — 보충 1회로 센다
+      if (opts && opts.resubmit) { App.state.bag = bag; askSupervisor(m); return; }
       var short = DR.Judge.shortfall(m, bag, DR.config);
       var course = DR.Stream.build(m, DR.config, { seed: App.state.seed + App.state.supplements, focusCounts: short });
       runCourse(m, course, bag, function (fresh) {

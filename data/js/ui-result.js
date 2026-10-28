@@ -8,6 +8,7 @@
   var DR = root.DR;
   function el() { return DR.UI.el.apply(null, arguments); }
 
+  // 칩 문구는 임무마다 mission.outcomeText로 덮어쓴다(없으면 이 기본 문구)
   var OUTCOME = {
     pass: { text: '제대로 판단했다', cls: 'ok' },
     inconvenience: { text: '멀쩡한 길을 막았다 · 불편', cls: 'warn' },
@@ -28,10 +29,13 @@
         el('p', { class: 'kicker', text: '결과 · ' + (i + 1) + '/' + judged.scenes.length + ' 장면' }),
         el('h2', { text: s.title }),
         el('img', { class: 'result-art', src: DR.CardArt.scene(mission, s.id, outcome, 480).toDataURL(), alt: s.title }),
-        el('p', { class: 'chip chip-' + OUTCOME[outcome].cls, text: OUTCOME[outcome].text }),
+        el('p', { class: 'chip chip-' + OUTCOME[outcome].cls, text: (mission.outcomeText && mission.outcomeText[outcome]) || OUTCOME[outcome].text }),
         el('p', { class: 'lead', text: r.pass ? s.passLine : s.cuts[r.failKind] })
       ];
       r.missing.forEach(function (id) { parts.push(el('p', { class: 'missing', text: byCombo[id].missingLine })); });
+      (r.contaminated || []).forEach(function (src) {
+        parts.push(el('p', { class: 'missing contam', text: DR.Judge.contaminationLine(mission, src) }));
+      });
       if (outcome === 'danger') parts.push(DR.UI.line({ who: 'supervisor', text: mission.story.responsibility }));
       if (last) {
         if (judged.mislabeled.length) parts.push(el('p', { class: 'missing', text: '설명표를 다르게 붙인 "?" 카드 ' + judged.mislabeled.length + '장은 어느 장면의 데이터도 되지 못했다.' }));
