@@ -117,3 +117,50 @@ test('tutorial practice fires come late in the course', () => {
 test('supplement run has one fire', () => {
   assert.equal(fires(build(m1, cfg, { seed: 5, focusCounts: { night_shallow: 2 } })).length, 1);
 });
+
+// 가짜 카드(spec §3.4) — Task 3 전이라 테스트 안에서 m1에 가짜를 덮어 쓴다
+const m1F = { ...m1, fakes: [{ id: 'f_a', label: 'day_deep', truth: null, count: 2 }, { id: 'f_b', label: 'night_wet', truth: null, count: 2 }] };
+const fakesOf = (course) => course.items.filter((i) => i.kind === 'card' && i.fakeId);
+
+test('fake counts match mission', () => {
+  for (const seed of [1101, 3, 77]) {
+    const f = fakesOf(build(m1F, cfg, { seed }));
+    for (const d of m1F.fakes) assert.equal(f.filter((i) => i.fakeId === d.id).length, d.count, d.id + ' seed ' + seed);
+  }
+});
+
+test('no fake in the first 15%', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const course = build(m1F, cfg, { seed });
+    for (const f of fakesOf(course)) assert.ok(f.z >= course.length * 0.15, 'seed ' + seed + ' z ' + f.z);
+  }
+});
+
+test('no wall right before a fake', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const course = build(m1F, cfg, { seed });
+    for (const f of fakesOf(course)) {
+      const wall = course.items.find((w) => w.kind === 'wall' && w.lane === f.lane && w.z < f.z && f.z - w.z <= cfg.rareWallGap);
+      assert.equal(wall, undefined, 'seed ' + seed);
+    }
+  }
+});
+
+test('same seed same course with fakes', () => {
+  assert.deepEqual(build(m1F, cfg, { seed: 9 }), build(m1F, cfg, { seed: 9 }));
+});
+
+test('supplement has one fake', () => {
+  for (const seed of [4, 5]) {
+    const f = fakesOf(build(m1F, cfg, { seed, focusCounts: { night_deep: 2 } }));
+    assert.equal(f.length, 1);
+    assert.equal(f[0].fakeId, m1F.fakes[seed % 2].id);
+  }
+});
+
+test('missions without fakes unchanged', () => {
+  const plain = { ...m1, fakes: undefined };
+  const n = Object.values(m1.counts).reduce((a, b) => a + b, 0) + m1.ambiguous.length;
+  assert.equal(cards(build(plain, cfg, { seed: 1101 })).length, n);
+  assert.equal(fakesOf(build(tutorial, cfg, { seed: 7 })).length, 0);
+});
