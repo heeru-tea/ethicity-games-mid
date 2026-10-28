@@ -9,7 +9,7 @@
   function el() { return DR.UI.el.apply(null, arguments); }
 
   function variantOf(card) { return parseInt(String(card.id).replace(/\D/g, ''), 10) % 3 || 0; }
-  function cardId(card) { return card.key || card.ambiguousId; }
+  function cardId(card) { return DR.Cards.artId(card); }
   function ambDef(mission, id) { return mission.ambiguous.filter(function (a) { return a.id === id; })[0]; }
   function labelText(mission, id) { var o = mission.labelOptions.filter(function (x) { return x.id === id; })[0]; return o ? o.text : ''; }
 
@@ -32,10 +32,12 @@
     return A.thumb(A.card(mission, cardId(card), variantOf(card), 192), 24).toDataURL();
   }
 
-  function iconsOf(mission, card) {
-    if (card.key) return mission.cardTypes[card.key].icons;
-    var q = ambDef(mission, card.ambiguousId);
-    return card.assigned ? [q.icons[0], card.assigned] : q.icons;
+  function iconsOf(mission, card) { return DR.Cards.iconsOf(mission, card); }
+
+  // 장면별 모아 보기: "?" 카드는 붙인 설명표대로의 key, 나머지는 붙은 이름표를 쓰는 장면(AI가 보는 그대로, spec §3.5)
+  function inScene(mission, card, scene, keys) {
+    if (card.ambiguousId) { var k = effectiveKey(mission, card); return !!(k && keys[k]); }
+    return DR.Cards.scenesForLabel(mission, DR.Cards.currentLabel(mission, card)).indexOf(scene.id) >= 0;
   }
 
   function iconRow(mission, card) {
@@ -62,7 +64,7 @@
       if (opts.onOpen) open.addEventListener('click', function () { opts.onOpen(card); });
       var rm = el('button', { class: 'btn-remove', type: 'button', text: '빼기', 'aria-label': '가방에서 빼기' });
       rm.addEventListener('click', function () { DR.Sfx.play('ui'); opts.onRemove(card); });
-      grid.appendChild(el('div', { class: 'bag-card' + (amb ? ' ambiguous' : '') + (amb && card.assigned === undefined ? ' undecided' : ''), 'data-id': card.id, 'data-key': card.key || card.ambiguousId }, [open, rm]));
+      grid.appendChild(el('div', { class: 'bag-card' + (amb ? ' ambiguous' : '') + (amb && card.assigned === undefined ? ' undecided' : ''), 'data-id': card.id, 'data-key': card.key || card.ambiguousId || card.fakeId }, [open, rm]));
     });
     return grid;
   }
@@ -83,8 +85,7 @@
         s.combos.forEach(function (c) { c.keys.forEach(function (k) { keys[k] = true; }); });
         var row = el('div', { class: 'scene-thumbs' });
         bag.forEach(function (card) {
-          var k = effectiveKey(mission, card);
-          if (k && keys[k]) row.appendChild(el('img', { src: thumbUrl(mission, card), alt: '' }));
+          if (inScene(mission, card, s, keys)) row.appendChild(el('img', { src: thumbUrl(mission, card), alt: '' }));
         });
         if (!row.childNodes.length) row.appendChild(el('span', { class: 'empty', text: '이 장면에 해당하는 카드가 보이지 않는다' }));
         scenes.appendChild(el('section', { class: 'scene-sum', 'data-scene': s.id }, [el('h3', { text: s.title }), row]));

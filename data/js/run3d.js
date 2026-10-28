@@ -23,12 +23,12 @@
   }
 
   function cardTexture(mission, item) {
-    var id = item.key || item.ambiguousId;
+    var C = root.DR.Cards, id = C.artId(item);
     var variant = parseInt(item.uid.slice(1), 10) % 3;
     var k = id + '|' + variant;
     if (S.cardTex[k]) return S.cardTex[k];
     var A = root.DR.CardArt;
-    var icons = item.key ? mission.cardTypes[item.key].icons : mission.ambiguous.filter(function (a) { return a.id === item.ambiguousId; })[0].icons;
+    var icons = C.iconsOf(mission, item);
     var t = canvasTex(200, 270, function (g, w, h) {
       g.fillStyle = '#f4f1ff'; roundRect(g, 0, 0, w, h, 18); g.fill();
       g.drawImage(A.thumb(A.card(mission, id, variant, 192), 24), 10, 10, 180, 180);
@@ -203,7 +203,9 @@
   function take(item, perfect) {
     S.taken.add(item.uid);
     var g = { uid: item.uid };
-    if (item.key) g.key = item.key; else g.ambiguousId = item.ambiguousId;
+    if (item.key) g.key = item.key;
+    else if (item.fakeId) g.fakeId = item.fakeId;
+    else g.ambiguousId = item.ambiguousId;
     S.grabbed.push(g);
     if (perfect) { S.perfects++; burst(item); root.DR.Sfx.play('perfect'); } else root.DR.Sfx.play('grab');
     var m = S.meshes[item.uid];
@@ -269,6 +271,14 @@
       if (!S.fireHintShown) { S.fireHintShown = true; showHint('불꽃! 레인을 바꿔 피하기', 2); }
     }
     S.warning = warn;
+    // 첫 가짜 카드가 판정 구간 가까이 오면 한 번만 안내(맞다/틀리다는 알리지 않는다, spec §3.4)
+    if (!S.fakeHintShown) {
+      var fakeDist = Math.max(speed, cfg().baseSpeed) * cfg().catchLead * 2;
+      for (var q = 0; q < items.length; q++) {
+        var fc = items[q], qd = fc.z - S.z;
+        if (fc.kind === 'card' && fc.fakeId && qd > 0 && qd <= fakeDist) { S.fakeHintShown = true; showHint('그림이랑 이름표가 맞는지 봐!', 2.5); break; }
+      }
+    }
     var r = S.grabber.update({ now: S.t, items: items, runnerZ: S.z, speed: speed, lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, taken: S.taken });
     if (r && r.item) take(r.item, r.perfect);
     else if (r && r.full) root.DR.Sfx.play('full');
@@ -430,7 +440,7 @@
       startBag: (opts.bag || []).length, bagMax: opts.bagMax,
       t: 0, z: 0, lane: 1, x: 0, camX: 0, slowedUntil: 0, shakeUntil: 0,
       taken: new Set(), hitWalls: new Set(), hitFires: new Set(), grabbed: [], hits: 0, perfects: 0,
-      hp: cfg().hp, invulnUntil: 0, warning: null, fireHintShown: false, knockedOut: false, hintUntil: 3,
+      hp: cfg().hp, invulnUntil: 0, warning: null, fireHintShown: false, fakeHintShown: false, knockedOut: false, hintUntil: 3,
       meshes: {}, flying: [], bursts: [], cardTex: {}, disposables: [],
       running: true, paused: false, hidden: false, last: null, aspect: 1, hintAt: false
     };
@@ -498,7 +508,7 @@
     },
     peek: function () {
       if (!S) return { running: false };
-      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, running: S.running, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning };
+      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, running: S.running, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning, fakeHintShown: S.fakeHintShown };
     }
   };
 

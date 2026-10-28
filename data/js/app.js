@@ -24,7 +24,9 @@
   // 달리기에서 잡은 카드 → 판정용 가방 항목
   function toBag(grabbed) {
     return grabbed.map(function (g) {
-      return g.key ? { id: g.uid, key: g.key } : { id: g.uid, ambiguousId: g.ambiguousId, assigned: undefined };
+      if (g.key) return { id: g.uid, key: g.key };
+      if (g.fakeId) return { id: g.uid, fakeId: g.fakeId };
+      return { id: g.uid, ambiguousId: g.ambiguousId, assigned: undefined };
     });
   }
 
@@ -140,7 +142,7 @@
       var need = counts[id];
       for (var i = 0; i < items.length && need > 0; i++) {
         var it = items[i];
-        if (it.kind === 'card' && (it.key === id || it.ambiguousId === id) && !DR.Run.isTaken(it.uid)) {
+        if (it.kind === 'card' && (it.key === id || it.ambiguousId === id || it.fakeId === id) && !DR.Run.isTaken(it.uid)) {
           DR.Run.debugTake(it.uid); need--;
         }
       }
