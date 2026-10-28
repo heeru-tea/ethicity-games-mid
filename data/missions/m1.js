@@ -8,7 +8,7 @@
   'use strict';
 
   var m1 = {
-    id: 'm1', title: '침수 판별 AI', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 1101,
+    id: 'm1', title: '침수 판별 AI', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 1101, fires: 6,
     labelOptions: [
       { id: 'flood_deep', text: '침수(깊음)' },
       { id: 'flood_shallow', text: '침수(얕음)' },
@@ -100,6 +100,7 @@
         { who: 'bot', text: '삐빅! 침수 사진 3,000장 확보! 임무 완료!' },
         { who: 'guide', text: '수거봇 데이터로 복구한 결과입니다. 밤의 젖은 도로 열두 곳을 침수로 판정해 통행을 막았습니다.' },
         { who: 'supervisor', text: '3,000장 대부분이 낮의 물웅덩이 사진이네. 멀쩡한 길이 막혔어.' },
+        { who: 'guide', text: '추가 경보. 데이터 세계에 정체불명의 불꽃이 관측됩니다. 러너를 노리는 방해 세력으로 추정됩니다.' },
         { who: 'peer', text: '나도 오늘 자격 딴 동기야. 같이 가자! 이번엔 제대로 모아 보자.' },
         { who: 'supervisor', text: '러너, 출동. 무엇을 가져올지는 너희가 판단해. 넣을지는 내가 승인하고.' }
       ],

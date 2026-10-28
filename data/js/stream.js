@@ -2,6 +2,7 @@
  * 코스 생성(기획서 §4.2·§7.3) — 같은 seed면 같은 코스.
  * 카드를 섞어 "줄"(같은 z)마다 1~2장씩 놓고, 드문 카드("?" 포함)는 같은 레인 바로 앞에 노이즈 벽을 둔다.
  * 벽은 그 밖에도 줄 사이에 듬성듬성(카드 수의 약 15%). 한 줄을 세 레인 모두 막는 일은 없다.
+ * 불꽃(mission.fires개, 보충은 1개)은 벽·카드와 떨어진 줄 사이에 한 번에 하나씩 — 피할 빈 레인이 늘 있다.
  * 보충: 짧은 코스. focusCounts(부족한 장 수)가 있으면 key마다 부족분 × 1.5장 + 흔한 카드 4장,
  * focusKeys만 있으면 카드 12장 중 8장을 그 key로 고르게 채운다.
  */
@@ -9,7 +10,7 @@
   'use strict';
 
   var START_SECONDS = 3, END_SECONDS = 1.5;
-  var SUPPLEMENT_CARDS = 12, SUPPLEMENT_FOCUS = 8, SUPPLEMENT_SPARE = 1.5, SUPPLEMENT_COMMON = 4, EXTRA_WALL_RATE = 0.15;
+  var SUPPLEMENT_CARDS = 12, SUPPLEMENT_FOCUS = 8, SUPPLEMENT_SPARE = 1.5, SUPPLEMENT_COMMON = 4, SUPPLEMENT_FIRES = 1, EXTRA_WALL_RATE = 0.15, FIRE_CLEAR = 4;
 
   function rngApi() {
     if (root.DR && root.DR.Rng) return root.DR.Rng;
@@ -94,10 +95,23 @@
       items.push({ kind: 'wall', lane: Math.floor(rng.next() * 3), z: (rows[gi].z + rows[gi + 1].z) / 2 });
     }
 
+    // 불꽃(방해 세력): 남은 줄 사이 중 벽·카드와 떨어진 곳에, 한 번에 하나씩(간격 3초 이상)
+    var fireCount = focus ? SUPPLEMENT_FIRES : (mission.fires || 0);
+    var fireFrom = length * (mission.fireFrom || 0), fireZs = [];
+    gaps.slice(extra).forEach(function (gi) {
+      if (fireZs.length >= fireCount) return;
+      var z = (rows[gi].z + rows[gi + 1].z) / 2, lane = Math.floor(rng.next() * 3);
+      if (z < fireFrom) return;
+      if (fireZs.some(function (fz) { return Math.abs(fz - z) < cfg.baseSpeed * 3; })) return;
+      if (items.some(function (it) { return Math.abs(it.z - z) < FIRE_CLEAR && (it.kind === 'wall' || it.lane === lane); })) return;
+      fireZs.push(z);
+      items.push({ kind: 'fire', lane: lane, z: z });
+    });
+
     items.sort(function (a, b) { return a.z - b.z || a.lane - b.lane; });
-    var nc = 0, nw = 0;
+    var nc = 0, nw = 0, nf = 0;
     items = items.map(function (it) {
-      var o = { uid: it.kind === 'card' ? 'c' + (nc++) : 'w' + (nw++), kind: it.kind };
+      var o = { uid: it.kind === 'card' ? 'c' + (nc++) : it.kind === 'fire' ? 'f' + (nf++) : 'w' + (nw++), kind: it.kind };
       if (it.key) o.key = it.key;
       if (it.ambiguousId) o.ambiguousId = it.ambiguousId;
       o.lane = it.lane; o.z = it.z;

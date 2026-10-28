@@ -138,6 +138,18 @@
       g.add(frame); g.add(face);
       g.userData = { frame: frame, face: face };
       g.position.set(laneX(item.lane), 1.45, -item.z);
+    } else if (item.kind === 'fire') {
+      var core = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 12), new THREE.MeshBasicMaterial({ color: 0xff7a2f }));
+      var glow = new THREE.Mesh(new THREE.SphereGeometry(1.1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffd24a, transparent: true, opacity: 0.4 }));
+      var trail = new THREE.Mesh(new THREE.ConeGeometry(0.55, 2.4, 12), new THREE.MeshBasicMaterial({ color: 0xff3d2e, transparent: true, opacity: 0.55 }));
+      trail.rotation.x = -Math.PI / 2; trail.position.z = -1.4;
+      g.add(core); g.add(glow); g.add(trail);
+      var mark = new THREE.Mesh(new THREE.PlaneGeometry(cfg().laneWidth * 0.9, 8), new THREE.MeshBasicMaterial({ color: 0xff3d4f, transparent: true, opacity: 0 }));
+      mark.rotation.x = -Math.PI / 2;
+      mark.position.set(laneX(item.lane), 0.03, -item.z);
+      S.view.scene.add(mark);
+      g.userData = { glow: glow, mark: mark };
+      g.position.set(laneX(item.lane), 1.1, -item.z);
     } else {
       var wall = new THREE.Mesh(new THREE.BoxGeometry(cfg().laneWidth * 0.92, 1.5, 0.25), new THREE.MeshBasicMaterial({ map: S.view.wallTex, transparent: true, opacity: 0.92 }));
       g.add(wall);
@@ -150,6 +162,7 @@
   function removeMesh(uid) {
     var m = S.meshes[uid];
     if (!m) return;
+    if (m.userData.mark) { S.view.scene.remove(m.userData.mark); m.userData.mark.geometry.dispose(); m.userData.mark.material.dispose(); }
     S.view.scene.remove(m);
     m.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
     delete S.meshes[uid];
@@ -168,6 +181,15 @@
     if (el) el.textContent = bagCount() + '/' + S.bagMax;
     var box = document.getElementById('hud-bag');
     if (box) box.classList.toggle('full', bagCount() >= S.bagMax);
+    var hpBox = document.getElementById('hud-hp');
+    if (hpBox) {
+      if (hpBox.children.length !== cfg().hp) {
+        hpBox.innerHTML = '';
+        for (var h = 0; h < cfg().hp; h++) { var sp = document.createElement('span'); sp.className = 'heart'; hpBox.appendChild(sp); }
+      }
+      Array.prototype.forEach.call(hpBox.children, function (el, k) { el.classList.toggle('on', k < S.hp); });
+      hpBox.setAttribute('aria-label', 'HP ' + S.hp + '/' + cfg().hp);
+    }
     var p = document.querySelector('#hud-progress i');
     if (p) p.style.width = Math.min(100, (S.z / S.course.length) * 100) + '%';
   }
@@ -199,6 +221,19 @@
     S.bursts.push({ pts: pts, vel: vel, t: 0 });
   }
 
+  // 불꽃(방해 세력): 감속·흔들림·HP-1, 잠깐 무적. HP 0이면 연결이 끊긴다.
+  function hitFire(f) {
+    S.hitFires.add(f.uid);
+    if (S.t < S.invulnUntil) return;
+    S.hp--;
+    S.slowedUntil = S.t + cfg().wallSlow.seconds;
+    S.shakeUntil = S.t + 0.45;
+    S.invulnUntil = S.t + cfg().fire.invuln;
+    root.DR.Sfx.play('burn');
+    updateHud();
+    if (S.hp <= 0) { S.knockedOut = true; end(); }
+  }
+
   function hitWall(w) {
     S.hitWalls.add(w.uid);
     S.hits++;
@@ -220,11 +255,24 @@
     for (var i = 0; i < items.length; i++) {
       var w = items[i];
       if (w.kind === 'wall' && w.lane === S.lane && w.z > prevZ && w.z <= S.z && !S.hitWalls.has(w.uid)) hitWall(w);
+      else if (w.kind === 'fire' && w.lane === S.lane && w.z > prevZ && w.z <= S.z && !S.hitFires.has(w.uid)) hitFire(w);
     }
+    if (!S.running) return;
+    // 경고: 다음 불꽃이 경고 거리 안에 들어오면(레인 무관) 띠·경고음, 첫 불꽃엔 안내 한 줄
+    var warnDist = Math.max(speed, cfg().baseSpeed) * cfg().fire.warn, warn = null;
+    for (var j = 0; j < items.length; j++) {
+      var f = items[j], fd = f.z - S.z;
+      if (f.kind === 'fire' && fd > 0 && fd <= warnDist) { warn = f.uid; break; }
+    }
+    if (warn && warn !== S.warning) {
+      root.DR.Sfx.play('warn');
+      if (!S.fireHintShown) { S.fireHintShown = true; showHint('불꽃! 레인을 바꿔 피하기', 2); }
+    }
+    S.warning = warn;
     var r = S.grabber.update({ now: S.t, items: items, runnerZ: S.z, speed: speed, lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, taken: S.taken });
     if (r && r.item) take(r.item, r.perfect);
     else if (r && r.full) root.DR.Sfx.play('full');
-    if (S.hintAt && S.t > 3) hideHint();
+    if (S.hintAt && S.t > S.hintUntil) hideHint();
     animate(dt, speed);
     updateHud();
     if (S.z >= S.course.length) end();
@@ -242,6 +290,7 @@
     v.limbs.la.rotation.x = sw * 0.9; v.limbs.ra.rotation.x = -sw * 0.9;
     v.limbs.ll.rotation.x = -sw * 0.8; v.limbs.rl.rotation.x = sw * 0.8;
     v.runner.position.y = Math.abs(sw) * 0.08;
+    v.runner.visible = !(S.t < S.invulnUntil && Math.floor(S.t * 12) % 2);
     // 카메라(관성 추종 + 충돌 흔들림)
     var portrait = S.aspect < 1;
     S.camX += (S.x * 0.75 - S.camX) * Math.min(1, dt * 6);
@@ -280,6 +329,15 @@
       if (!m || S.taken.has(it.uid)) continue;
       // 러너를 지나친 것은 카메라 앞을 가리지 않게 숨긴다(카드는 늦게 잡기 여유가 끝날 때까지 보인다)
       m.visible = d > (it.kind === 'card' ? -c.baseSpeed * c.catchLate : -0.8);
+      if (it.kind === 'fire') {
+        var lead = Math.max(0, d) / Math.max(speed, 1);
+        m.position.z = -(it.z + c.fire.speed * lead);
+        m.userData.glow.scale.setScalar(1 + 0.15 * Math.sin(S.t * 20));
+        var warnOn = d > 0 && d <= Math.max(speed, c.baseSpeed) * c.fire.warn;
+        m.userData.mark.material.opacity = warnOn ? 0.55 + 0.3 * Math.sin(S.t * 16) : 0;
+        m.userData.mark.visible = m.visible;
+        continue;
+      }
       if (it.kind !== 'card') continue;
       var active = root.DR.Catch.phase(it, S.z, speed, c) === 'active';
       var mine = active && it.lane === S.lane;
@@ -334,13 +392,14 @@
     render();
   }
 
-  function showHint() {
+  function showHint(text, seconds) {
     var el = document.getElementById('run-hint');
     if (!el) return;
     var coarse = root.matchMedia && root.matchMedia('(pointer: coarse)').matches;
-    el.textContent = coarse ? '좌우로 밀어 레인 이동 · 화면을 톡 눌러 잡기' : '←/→ 레인 이동 · Space 잡기';
+    el.textContent = text || (coarse ? '좌우로 밀어 레인 이동 · 화면을 톡 눌러 잡기' : '←/→ 레인 이동 · Space 잡기');
     el.hidden = false;
     S.hintAt = true;
+    S.hintUntil = S.t + (seconds || 3);
   }
   function hideHint() {
     var el = document.getElementById('run-hint');
@@ -359,7 +418,7 @@
     if (!S || !S.running) return;
     S.running = false;
     hideHint();
-    var res = { grabbed: S.grabbed.slice(), hits: S.hits, perfects: S.perfects };
+    var res = { grabbed: S.grabbed.slice(), hits: S.hits, perfects: S.perfects, knockedOut: !!S.knockedOut };
     if (S.onEnd) S.onEnd(res);
   }
 
@@ -370,7 +429,8 @@
       container: container, mission: opts.mission, course: opts.course, onEnd: opts.onEnd,
       startBag: (opts.bag || []).length, bagMax: opts.bagMax,
       t: 0, z: 0, lane: 1, x: 0, camX: 0, slowedUntil: 0, shakeUntil: 0,
-      taken: new Set(), hitWalls: new Set(), grabbed: [], hits: 0, perfects: 0,
+      taken: new Set(), hitWalls: new Set(), hitFires: new Set(), grabbed: [], hits: 0, perfects: 0,
+      hp: cfg().hp, invulnUntil: 0, warning: null, fireHintShown: false, knockedOut: false, hintUntil: 3,
       meshes: {}, flying: [], bursts: [], cardTex: {}, disposables: [],
       running: true, paused: false, hidden: false, last: null, aspect: 1, hintAt: false
     };
@@ -428,6 +488,7 @@
     course: function () { return S ? S.course : null; },
     isTaken: function (uid) { return !!(S && S.taken.has(uid)); },
     // 테스트용: 코스의 카드를 잡은 것으로 처리
+    debugSetHp: function (n) { if (S) { S.hp = n; updateHud(); } },
     debugTake: function (uid) {
       if (!S || S.taken.has(uid)) return false;
       var it = S.course.items.filter(function (i) { return i.uid === uid; })[0];
@@ -437,7 +498,7 @@
     },
     peek: function () {
       if (!S) return { running: false };
-      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, running: S.running, slowedUntil: S.slowedUntil, paused: S.paused };
+      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, running: S.running, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning };
     }
   };
 

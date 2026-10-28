@@ -6,7 +6,7 @@
   'use strict';
 
   var tutorial = {
-    id: 'tutorial', title: '러너 자격 시험', bag: 10, runSeconds: 45, seed: 7,
+    id: 'tutorial', title: '러너 자격 시험', bag: 10, runSeconds: 45, seed: 7, fires: 2, fireFrom: 0.55,
     labelOptions: [],
     cardTypes: {
       dog: { icons: ['dog'], art: { animal: 'dog' } },

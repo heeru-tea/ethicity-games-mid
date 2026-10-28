@@ -6,7 +6,7 @@
 (function (root) {
   'use strict';
 
-  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'result', 'prep', 'outro'];
+  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'result', 'prep', 'knockout', 'outro'];
   var DR = root.DR;
 
   // 화면을 바꿀 때 포커스를 풀어 둔다 — 연타한 Space/Enter가 다음 화면 버튼을 눌러 브리핑·결과를 건너뛰지 않게
@@ -37,7 +37,12 @@
       onEnd: function (r) {
         root.__runResult = r;
         // 화면 전환은 다음 틱에(달리기 루프 안에서 장면을 치우지 않게)
-        setTimeout(function () { DR.Run.stop(); onDone(toBag(r.grabbed)); }, 0);
+        setTimeout(function () {
+          DR.Run.stop();
+          // 불꽃에 HP를 다 잃으면 같은 코스를 처음부터(그 판에 잡은 카드는 비움, 시작 가방은 그대로)
+          if (r.knockedOut) DR.UI.knockout(function () { runCourse(m, course, bag, onDone); });
+          else onDone(toBag(r.grabbed));
+        }, 0);
       }
     });
   }

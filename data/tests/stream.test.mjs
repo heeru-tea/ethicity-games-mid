@@ -90,3 +90,30 @@ test('common-only bag can pass after one perfect supplement', () => {
   assert.equal(judge(m1, after, cfg).allPass, true);
   assert.equal(s.length, m1.supplementSeconds * cfg.baseSpeed);
 });
+
+// 불꽃(방해 세력) — 한 번에 하나, 빈 레인 보장, 카드와 겹치지 않음
+const fires = (course) => course.items.filter((i) => i.kind === 'fire');
+
+test('fire count follows mission and fires are spaced apart', () => {
+  assert.equal(fires(c).length, m1.fires);
+  const zs = fires(c).map((f) => f.z);
+  for (let i = 1; i < zs.length; i++) assert.ok(zs[i] - zs[i - 1] >= cfg.baseSpeed * 3, 'one fire at a time');
+});
+
+test('a free lane always exists when a fire arrives (no walls near a fire)', () => {
+  for (const f of fires(c)) assert.ok(!c.items.some((w) => w.kind === 'wall' && Math.abs(w.z - f.z) < 4), f.uid);
+});
+
+test('fires never sit on a card in their lane', () => {
+  for (const f of fires(c)) assert.ok(!cards(c).some((k) => k.lane === f.lane && Math.abs(k.z - f.z) < 4), f.uid);
+});
+
+test('tutorial practice fires come late in the course', () => {
+  const t = build(tutorial, cfg, { seed: tutorial.seed });
+  assert.equal(fires(t).length, tutorial.fires);
+  for (const f of fires(t)) assert.ok(f.z >= t.length * tutorial.fireFrom, f.uid);
+});
+
+test('supplement run has one fire', () => {
+  assert.equal(fires(build(m1, cfg, { seed: 5, focusCounts: { night_shallow: 2 } })).length, 1);
+});

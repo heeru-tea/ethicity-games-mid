@@ -13,7 +13,9 @@
     catchLate: 0.12,        // s — 닿은 직후에도 이만큼은 잡힌다(닿는 순간 누르는 손 버릇)
     perfectWindow: 0.08,    // s — 닿는 순간 ± 이 안이면 퍼펙트(연출만)
     grabBuffer: 0.15,       // s — 잡기 입력을 이만큼 들고 있는다(레인 이동 직전·직후 허용)
-    wallSlow: { factor: 0.5, seconds: 1 },
+    wallSlow: { factor: 0.5, seconds: 1 },  // 벽·불꽃 충돌 감속
+    hp: 3,                  // 불꽃에 이만큼 맞으면 연결이 끊겨 그 달리기를 처음부터
+    fire: { warn: 1.2, speed: 14, invuln: 1 },  // 경고 s · 날아오는 속도 m/s · 맞은 뒤 무적 s
     rareWallGap: 6,         // m — 드문 카드 앞 벽까지 최대 거리
     swipeMin: 30,           // px
     maxDt: 0.05,            // s — 프레임 간격 상한(탭 전환 뒤 건너뛰기 방지)

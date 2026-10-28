@@ -53,5 +53,22 @@
     show();
   }
 
+  // 불꽃에 HP를 다 잃었을 때 — 같은 코스를 처음부터 다시
+  function knockout(onRetry) {
+    var screen = document.getElementById('screen-knockout');
+    screen.innerHTML = '';
+    var btn = el('button', { id: 'btn-rerun', class: 'btn btn-primary', type: 'button', text: '다시 달리기' });
+    btn.addEventListener('click', function () { DR.Sfx.unlock(); DR.Sfx.play('ui'); onRetry(); });
+    screen.appendChild(el('div', { class: 'page page-center' }, [
+      el('p', { class: 'kicker', text: '데이터 세계' }),
+      el('h2', { text: '러너 연결이 끊겼다' }),
+      el('p', { class: 'lead', text: '불꽃에 너무 많이 맞았다. 같은 코스를 처음부터 다시 달린다. 이번 판에 잡은 카드는 비워진다.' }),
+      DR.UI.line({ who: 'supervisor', text: '괜찮아, 다시 접속하자. 불꽃은 빨간 경고가 뜬 레인을 피하면 돼.' }),
+      el('div', { class: 'actions' }, [btn])
+    ]));
+    DR.App.go('knockout');
+  }
+
   root.DR.UI.result = result;
+  root.DR.UI.knockout = knockout;
 })(window);

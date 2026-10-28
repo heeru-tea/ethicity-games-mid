@@ -143,3 +143,9 @@ body { overflow: hidden; word-break: keep-all; }
 @keyframes mono-in { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) { .mono-line { animation: none; } }
 @media (max-width: 420px) { .profile-card { flex-direction: column; align-items: flex-start; } }
+
+/* HP 하트(불꽃) */
+.hud-hp { display: flex; gap: 4px; }
+.hud-hp .heart { width: 22px; height: 20px; background: rgba(255,255,255,.18);
+  clip-path: path('M11 19 L2 9.5 A5 5 0 0 1 11 3.5 A5 5 0 0 1 20 9.5 Z'); }
+.hud-hp .heart.on { background: var(--pink); }
