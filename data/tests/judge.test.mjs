@@ -95,3 +95,78 @@ test('shortfall lists missing cards per key (shared key takes the larger need)',
   assert.deepEqual(shortfall(m1, bagOf({ ...ALL2, night_shallow: 1, night_muddy: 0 }), cfg), { night_shallow: 1, night_muddy: 2 });
   assert.deepEqual(shortfall(m1, bagOf(ALL2), cfg), {});
 });
+
+// 가짜 카드(spec §3.3) — Task 3 전이라 m1에 가짜를 테스트 안에서 덮어 쓴다
+const { contaminationLines } = require('../js/judge.js');
+const m1F = { ...m1, fakes: [
+  { id: 'f_pool', label: 'day_deep', truth: null, count: 2, line: 'POOL' },
+  { id: 'f_fountain', label: 'day_shallow', truth: null, count: 2, line: 'FOUNTAIN' },
+  { id: 'f_fridge', label: 'night_wet', truth: null, count: 2, line: 'FRIDGE' }
+] };
+const fk = (id, n) => Array.from({ length: n }, (_, i) => ({ id: id + i, fakeId: id }));
+
+test('one fake is harmless', () => {
+  const r = judge(m1F, bagOf(ALL2).concat(fk('f_pool', 1)), cfg);
+  assert.equal(r.allPass, true);
+  assert.deepEqual(r.scenes[0].contaminated, []);
+});
+
+test('two fakes contaminate the scene of their label', () => {
+  const s1 = judge(m1F, bagOf(ALL2).concat(fk('f_pool', 2)), cfg).scenes[0];
+  assert.equal(s1.pass, false);
+  assert.equal(s1.failKind, 'inconvenience');
+  assert.deepEqual(s1.contaminated, ['f_pool']);
+  assert.deepEqual(s1.missing, []);
+});
+
+test('fakes of different kinds add up per scene', () => {
+  const s1 = judge(m1F, bagOf(ALL2).concat(fk('f_pool', 1), fk('f_fountain', 1)), cfg).scenes[0];
+  assert.equal(s1.pass, false);
+  assert.deepEqual(s1.contaminated, ['f_pool', 'f_fountain']);
+});
+
+test('fridge contaminates S3 and S4', () => {
+  const r = judge(m1F, bagOf(ALL2).concat(fk('f_fridge', 2)), cfg);
+  assert.deepEqual(r.scenes.map((s) => s.pass), [true, true, false, false]);
+});
+
+test('fakes fill no combo', () => {
+  const s1 = judge(m1F, bagOf({ ...ALL2, day_deep: 0 }).concat(fk('f_pool', 2)), cfg).scenes[0];
+  assert.ok(s1.missing.includes('S1_day_deep'));
+});
+
+test('hazard fake is danger in every scene of its label', () => {
+  const mB = {
+    labels: [{ id: 'can', text: '캔' }, { id: 'battery', text: '건전지' }],
+    cardTypes: { can_drink: { label: 'can', name: '음료 캔' }, can_tin: { label: 'can', name: '통조림 캔' }, battery_aa: { label: 'battery', name: '건전지', hazard: true } },
+    fakes: [{ id: 'f_battery', label: 'can', truth: 'battery_aa', count: 3, line: 'BAT' }],
+    scenes: [
+      { id: 'S1', combos: [{ id: 'S1_c', keys: ['can_drink'], need: 2, danger: false }, { id: 'S1_t', keys: ['can_tin'], need: 2, danger: false }] },
+      { id: 'S4', combos: [{ id: 'S4_b', keys: ['battery_aa'], need: 2, danger: true }, { id: 'S4_c', keys: ['can_drink'], need: 2, danger: false }] }
+    ]
+  };
+  const bag = bagOf({ can_drink: 2, can_tin: 2, battery_aa: 2 }).concat(fk('f_battery', 2));
+  const r = judge(mB, bag, cfg);
+  assert.deepEqual(r.scenes.map((s) => s.failKind), ['danger', 'danger']);
+  assert.deepEqual(contaminationLines(mB, r), ['BAT']);
+  const fixed = bagOf({ can_drink: 2, can_tin: 2 }).concat(fk('f_battery', 2).map((c) => ({ ...c, label: 'battery' })));
+  assert.equal(judge(mB, fixed, cfg).allPass, true);
+  const mis = judge(mB, bagOf({ can_drink: 4, can_tin: 2, battery_aa: 2 }).map((c, i) => (i < 2 ? { ...c, label: 'battery' } : c)), cfg);
+  assert.deepEqual(contaminationLines(mB, mis), ["우리가 넣은 데이터에 음료 캔 사진이 '건전지'로 들어갔다."]);
+});
+
+test('ambiguous mislabel is still not a fake', () => {
+  const r = judge(m1F, bagOf({ ...ALL2, night_neon: 0 }).concat([q('q_neon', 'flood_deep')]), cfg);
+  assert.deepEqual(r.mislabeled, ['q_neon']);
+  assert.deepEqual(r.scenes[2].contaminated, []);
+});
+
+test('contaminationLines in scene order without repeats', () => {
+  const r = judge(m1F, bagOf(ALL2).concat(fk('f_fridge', 2), fk('f_pool', 2)), cfg);
+  assert.deepEqual(contaminationLines(m1F, r), ['POOL', 'FRIDGE']);
+});
+
+test('shortfall ignores fakes', () => {
+  const { shortfall } = require('../js/judge.js');
+  assert.deepEqual(shortfall(m1F, bagOf({ ...ALL2, day_deep: 0 }).concat(fk('f_pool', 2)), cfg), { day_deep: 2 });
+});

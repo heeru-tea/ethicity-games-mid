@@ -20,6 +20,7 @@
     swipeMin: 30,           // px
     maxDt: 0.05,            // s — 프레임 간격 상한(탭 전환 뒤 건너뛰기 방지)
     ambiguousWeight: 2,     // 올바르게 분류한 "?" 카드는 2장 몫
+    fakeLimit: 2,           // 한 장면에 이름표가 틀린 카드가 이만큼 쌓이면 오염(실패)
     maxSupplements: 2,
     supplementFreeSlots: 6,
     randomSeed: false       // true면 시작할 때마다 코스가 바뀐다
