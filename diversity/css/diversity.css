@@ -1,0 +1,219 @@
+/*
+ * 다양성 게임 전용 스타일 — 모두 .game-diversity 아래에 둔다.
+ * 색·글꼴·창·버튼은 공통 팩 runtime/common.css(--ee-*, .ee-*)를 그대로 쓰고 다시 정의하지 않는다.
+ */
+.game-diversity {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--ee-paper);
+  font-size: 17px;
+  line-height: 1.7;
+  --dv-hud-h: 72px;
+  --dv-line: #b3c19c;
+  --dv-mute: #4d6b5f;
+  word-break: keep-all; /* 한글은 어절 단위로 줄바꿈 */
+}
+/* 공통 .ee-badge 등은 display를 직접 정해서 hidden 속성이 먹지 않는다 */
+.game-diversity [hidden] { display: none !important; }
+
+/* ── 읽기 도우미 ── */
+.game-diversity .dv-sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.game-diversity .dv-skip {
+  position: absolute; left: 16px; top: -64px; z-index: 70;
+  padding: 8px 16px; background: var(--ee-cream); color: var(--ee-ink); border: 3px solid var(--ee-ink);
+}
+.game-diversity .dv-skip:focus { top: 8px; }
+.game-diversity [tabindex="-1"]:focus { outline: none; }
+
+/* ── 상단 HUD ── */
+.game-diversity .dv-hud {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  min-height: var(--dv-hud-h);
+  padding: 8px 16px;
+  background: var(--ee-cream);
+  border-bottom: 3px solid var(--ee-ink);
+}
+.game-diversity .dv-hud-where { margin: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; }
+.game-diversity .dv-hud-place { color: var(--ee-green); }
+.game-diversity .dv-steps { display: flex; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.game-diversity .dv-steps li {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border: 3px solid var(--dv-line); border-radius: 50%;
+  background: var(--ee-cream); font-size: 14px; color: var(--dv-mute);
+}
+.game-diversity .dv-steps li.done { background: var(--ee-green); border-color: var(--ee-green); color: var(--ee-cream); }
+.game-diversity .dv-steps li.now { background: var(--ee-gold); border-color: var(--ee-ink); color: var(--ee-ink); font-weight: 700; }
+.game-diversity .dv-menu-btn { flex: 0 0 auto; }
+
+/* ── 본문 배치: 넓은 화면은 무대 | 패널, 좁은 화면은 무대 위·패널 아래 ── */
+.game-diversity .dv-main {
+  display: grid; gap: 16px;
+  max-width: 1440px; margin: 0 auto; padding: 16px;
+}
+.game-diversity .dv-stage-wrap { display: flex; justify-content: center; }
+.game-diversity .dv-stage {
+  display: block; width: min(100%, calc(40dvh * 16 / 9)); height: auto; aspect-ratio: 16 / 9;
+  border: 3px solid var(--ee-ink); border-radius: 4px; background: var(--ee-ink);
+  image-rendering: pixelated;
+}
+.game-diversity .dv-panel { min-width: 0; outline: none; }
+.game-diversity .dv-main[data-layout="doc"] .dv-stage-wrap { display: none; }
+.game-diversity .dv-main[data-layout="doc"] .dv-panel { width: 100%; max-width: 880px; margin: 0 auto; }
+
+@media (min-width: 1100px) {
+  .game-diversity .dv-main[data-layout="scene"] { grid-template-columns: minmax(0, 3fr) minmax(400px, 2fr); align-items: start; }
+  .game-diversity .dv-main[data-layout="scene"] .dv-stage-wrap { position: sticky; top: calc(var(--dv-hud-h) + 16px); }
+  .game-diversity .dv-main[data-layout="scene"] .dv-stage { width: 100%; }
+}
+
+/* ── 카드 ── */
+.game-diversity .dv-card > * { margin: 0 0 16px; }
+.game-diversity .dv-card > :last-child { margin-bottom: 0; }
+.game-diversity .dv-eyebrow { font-size: 14px; color: var(--dv-mute); letter-spacing: .02em; margin-bottom: 4px !important; }
+.game-diversity .dv-title { font-size: 26px; line-height: 1.4; }
+.game-diversity .dv-lead { font-size: 19px; }
+.game-diversity .dv-small { font-size: 14px; color: var(--dv-mute); }
+.game-diversity .dv-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.game-diversity .dv-issue { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.game-diversity .dv-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; align-items: center; margin-top: 24px !important; }
+.game-diversity .dv-actions > .dv-small { margin-right: auto; }
+.game-diversity .dv-label { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; margin: 0 0 8px; }
+.game-diversity .dv-block { margin: 16px 0; }
+.game-diversity .dv-block > :last-child { margin-bottom: 0; }
+
+/* ── 표지 ── */
+.game-diversity .dv-logo { font-size: 40px; line-height: 1.25; margin-bottom: 16px; }
+.game-diversity .dv-logo-sub { display: block; font-size: 24px; color: var(--ee-green); margin-top: 8px; }
+.game-diversity .dv-question { margin-left: 24px !important; }
+.game-diversity .dv-facts summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.game-diversity .dv-facts summary:focus-visible { outline: 3px solid #b47f35; outline-offset: 3px; }
+.game-diversity .dv-facts ul { margin: 8px 0 0; padding-left: 24px; }
+
+/* ── 대화 ── */
+.game-diversity .dv-talk { display: flex; gap: 24px; align-items: flex-start; }
+.game-diversity .dv-face { flex: 0 0 auto; width: 112px; height: 112px; display: grid; place-items: center; background: var(--ee-cream); border: 3px solid var(--ee-ink); border-radius: 4px; overflow: hidden; }
+.game-diversity .dv-portrait { width: 100%; height: 100%; image-rendering: pixelated; }
+.game-diversity .dv-talk-sm .dv-face { width: 80px; height: 80px; }
+.game-diversity .dv-bubble { flex: 1 1 auto; min-width: 0; margin: 0; }
+.game-diversity .dv-bubble > p:last-child, .game-diversity .dv-bubble > h3 + p { margin-bottom: 0; }
+.game-diversity .dv-bubble .ee-speaker { margin-top: 0; }
+.game-diversity .dv-line { min-height: 3.5em; margin: 0; }
+.game-diversity .dv-talk-sm .dv-bubble { font-size: 18px; }
+
+/* ── 사건 카드 ── */
+.game-diversity .dv-request { margin: 0; padding: 12px 16px; background: var(--ee-cream); border: 3px solid var(--dv-line); border-radius: 4px; }
+.game-diversity .dv-request blockquote { margin: 0; font-size: 19px; }
+.game-diversity .dv-output { margin: 0; padding: 16px; border: 3px dashed var(--ee-blue); border-radius: 4px; background: #eef6f4; }
+.game-diversity .dv-output-text { margin: 0; font-size: 20px; font-weight: 700; text-align: center; padding: 16px 8px; }
+.game-diversity .dv-quotes { list-style: none; padding: 0; display: grid; gap: 12px; }
+.game-diversity .dv-quote { border-left: 6px solid var(--ee-sage); padding: 4px 0 4px 16px; }
+.game-diversity .dv-quote .ee-speaker { margin-bottom: 4px; }
+.game-diversity .dv-quote p { margin: 0; }
+.game-diversity .dv-ask { font-size: 18px; }
+
+/* ── 심의 규칙·정보 ── */
+.game-diversity .dv-rules { padding-left: 28px; display: grid; gap: 8px; }
+.game-diversity .dv-info { list-style: none; padding: 0; display: grid; gap: 16px; }
+.game-diversity .dv-info li { padding: 12px 16px; background: var(--ee-cream); border: 3px solid var(--dv-line); border-radius: 4px; }
+.game-diversity .dv-info p { margin: 0; }
+
+/* ── 선택지 ── */
+.game-diversity .dv-choices { display: grid; gap: 12px; }
+.game-diversity .dv-choice { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; }
+.game-diversity .dv-choice:not(:has(.dv-letter)) { grid-template-columns: 1fr auto; }
+.game-diversity .dv-letter { font-weight: 700; min-width: 1.6em; }
+.game-diversity .dv-choice-body { display: grid; gap: 4px; }
+.game-diversity .dv-choice-text { font-weight: 700; }
+.game-diversity .dv-choice-detail { font-size: 15px; color: var(--dv-mute); }
+.game-diversity .dv-first { justify-self: start; margin-top: 4px; }
+.game-diversity .dv-picked { visibility: hidden; font-size: 14px; font-weight: 700; color: var(--ee-green); white-space: nowrap; }
+.game-diversity .dv-choice[aria-pressed="true"] .dv-picked { visibility: visible; }
+.game-diversity .dv-mine { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+
+/* ── 결과·보고서 ── */
+.game-diversity .dv-path { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; }
+.game-diversity .dv-path dt { font-weight: 700; color: var(--dv-mute); }
+.game-diversity .dv-path dd { margin: 0; }
+.game-diversity .dv-table-scroll { overflow-x: auto; }
+.game-diversity .dv-table { width: 100%; border-collapse: collapse; background: var(--ee-cream); }
+.game-diversity .dv-table caption { text-align: left; font-weight: 700; padding-bottom: 8px; }
+.game-diversity .dv-table th, .game-diversity .dv-table td { border: 2px solid var(--dv-line); padding: 8px 12px; text-align: left; vertical-align: top; }
+.game-diversity .dv-table thead th { background: #e6edda; white-space: nowrap; }
+.game-diversity .dv-table th[scope="row"], .game-diversity .dv-table .ee-badge { white-space: nowrap; }
+.game-diversity .dv-report h3 { font-size: 18px; margin: 24px 0 8px; }
+.game-diversity .dv-charter { display: grid; gap: 4px; }
+.game-diversity .dv-charter dt { font-weight: 700; margin-top: 12px; }
+.game-diversity .dv-charter dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.game-diversity .dv-charter .dv-empty { color: var(--dv-mute); }
+.game-diversity .dv-checks { margin: 0; padding-left: 24px; }
+
+/* ── 쓰기 칸 ── */
+.game-diversity .dv-fields { display: grid; gap: 16px; }
+.game-diversity .dv-field { display: grid; gap: 4px; }
+.game-diversity .dv-field .dv-small { margin: 0; }
+.game-diversity .dv-article { font-weight: 700; font-size: 18px; }
+.game-diversity .dv-textarea {
+  width: 100%; resize: vertical; font: inherit; font-size: 17px; line-height: 1.6;
+  color: var(--ee-ink); background: var(--ee-cream);
+  border: 3px solid #9fae87; border-radius: 4px; padding: 12px;
+}
+.game-diversity .dv-textarea:focus-visible { outline: 3px solid #b47f35; outline-offset: 3px; border-color: var(--ee-ink); }
+
+/* ── 메뉴·확인 창·알림 ── */
+.game-diversity .dv-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(41, 75, 64, .55); }
+.game-diversity .dv-overlay[hidden] { display: none; }
+.game-diversity .dv-sheet { width: min(100%, 480px); max-height: 90dvh; overflow: auto; }
+.game-diversity .dv-sheet h2 { margin: 0 0 16px; font-size: 22px; }
+.game-diversity .dv-setting { margin: 0 0 16px; border: 2px solid var(--dv-line); border-radius: 4px; padding: 8px 12px; }
+.game-diversity .dv-setting legend { font-weight: 700; padding: 0 4px; }
+.game-diversity .dv-setting label, .game-diversity .dv-check { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.game-diversity .dv-check { border: 0; padding: 0 4px; }
+.game-diversity .dv-setting input { width: 20px; height: 20px; accent-color: var(--ee-green); }
+.game-diversity .dv-setting input:focus-visible { outline: 3px solid #b47f35; outline-offset: 3px; }
+.game-diversity .dv-menu-actions { display: grid; gap: 8px; margin-bottom: 8px; }
+.game-diversity .dv-row { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+.game-diversity .dv-toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 60; margin: 0; max-width: calc(100% - 32px); }
+.game-diversity .dv-toast[hidden] { display: none; }
+
+/* ── 좁은 화면 ── */
+@media (max-width: 760px) {
+  .game-diversity { --dv-hud-h: 64px; }
+  .game-diversity .dv-main { padding: 12px; gap: 12px; }
+  .game-diversity .dv-title { font-size: 22px; }
+  .game-diversity .dv-logo { font-size: 32px; }
+  .game-diversity .dv-logo-sub { font-size: 20px; }
+  .game-diversity .dv-stage { width: min(100%, calc(32dvh * 16 / 9)); }
+}
+@media (max-width: 650px) {
+  .game-diversity .dv-talk { flex-direction: column; gap: 28px; }
+  .game-diversity .dv-face, .game-diversity .dv-talk-sm .dv-face { width: 72px; height: 72px; }
+  .game-diversity .dv-question { margin-left: 0 !important; margin-top: 28px !important; }
+  .game-diversity .dv-steps li { width: 26px; height: 26px; font-size: 12px; border-width: 2px; }
+  .game-diversity .dv-steps { gap: 4px; }
+}
+@media (max-width: 430px) {
+  .game-diversity { font-size: 16px; }
+  .game-diversity .dv-hud { gap: 8px; padding: 8px 12px; flex-wrap: nowrap; }
+  .game-diversity .dv-hud-place { display: none; }
+  .game-diversity .dv-actions { justify-content: stretch; }
+  .game-diversity .dv-actions > .ee-button { flex: 1 1 100%; }
+  .game-diversity .dv-actions > .dv-small { flex: 1 1 100%; }
+  .game-diversity .dv-choice { gap: 8px; }
+  .game-diversity .dv-picked { grid-column: 1 / -1; display: none; }
+  .game-diversity .dv-choice[aria-pressed="true"] .dv-picked { display: block; }
+  .game-diversity .dv-path { grid-template-columns: 1fr; gap: 0; }
+  .game-diversity .dv-path dd { margin-bottom: 8px; }
+}
+
+/* ── 인쇄: 결과 보고서만 ── */
+@media print {
+  .game-diversity { background: #fff; }
+  .game-diversity .dv-hud, .game-diversity .dv-stage-wrap, .game-diversity .dv-actions,
+  .game-diversity .dv-overlay, .game-diversity .dv-toast, .game-diversity .dv-skip { display: none !important; }
+  .game-diversity .dv-main { display: block; padding: 0; max-width: none; }
+  .game-diversity .dv-card { border: 0; padding: 0; }
+}
