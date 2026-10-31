@@ -239,7 +239,8 @@
     if (v.setDrivingSegments) v.setDrivingSegments(s.current && (s.stage === 'run' || s.stage === 'result')
       ? s.current.result.timelines.reduce(function (out, tl) { return out.concat(tl.segments.filter(function (seg) { return seg.deadhead; })); }, []) : []);
     document.querySelector('#stage').classList.toggle('previewing',!!opts.preview);
-    document.querySelector('#stage').dataset.caption=opts.preview?'AI 제안 미리보기 · 적용 전':'정류장을 연결해 나만의 노선을 만드세요';
+    // 지도 왼쪽 위 안내는 노선이 하나라도 생기면 숨긴다(2026-11-01: 텍스트 모드에서 기차역 이름표와 겹쳤다)
+    document.querySelector('#stage').dataset.caption=opts.preview?'AI 제안 미리보기 · 적용 전':s.draft.routes.some(function(r){return r.nodes.length>=2;})?'':'정류장을 연결해 나만의 노선을 만드세요';
     v.setSelectable(opts.selectable || []);
     v.setSelected(opts.selected || []);
     if (!opts.keepBuses) {
