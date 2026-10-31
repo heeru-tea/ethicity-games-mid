@@ -41,14 +41,16 @@
         set: function (v) { wDesc.set.call(this, /\.webp$/.test(String(v)) ? String(v).replace(/[^/]+\.webp$/, '__missing__.webp') : v); } });
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'sound': // 소리 장치 흉내: 수신음이 몇 번 났는지 센다
-      window.__beeps = 0;
+      window.__plays = [];
+      HTMLMediaElement.prototype.play = function () { window.__plays.push(String(this.src)); return Promise.resolve(); };
+      Object.defineProperty(window, '__beeps', { configurable: true, get: function () { return window.__plays.filter(function (s) { return /paper\.wav$/.test(s); }).length; } });
       var noop = function () {};
       var param = function () { return { setValueAtTime: noop, linearRampToValueAtTime: noop, exponentialRampToValueAtTime: noop, value: 0 }; };
       var Fake = function () { this.currentTime = 0; this.state = 'running'; this.destination = {}; };
       Fake.prototype.createOscillator = function () { return { type: '', frequency: param(), connect: function (n) { return n; }, start: function () { window.__beeps++; }, stop: noop }; };
       Fake.prototype.createGain = function () { return { gain: param(), connect: function (n) { return n; } }; };
       Fake.prototype.resume = function () { return Promise.resolve(); };
-      window.AudioContext = Fake; window.webkitAudioContext = Fake;
+      window.AudioContext = Fake; window.webkitAudioContext = Fake; // 옛 합성음 흉내(남겨 둠)
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'no-sprites': // 캐릭터 시트를 못 불러오는 환경 흉내
       var srcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');

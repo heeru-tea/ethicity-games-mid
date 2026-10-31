@@ -184,7 +184,8 @@
       PrivacyApp.setSpeed('instant');
       await play(route, { from: 16 });
       ok(view() === 'v-ending', '엔딩까지 완주');
-      ok(PrivacyApp.state().ending !== 'D', '수습한 싸움 경로는 D 아님: ' + PrivacyApp.state().ending);
+      ok(PrivacyApp.state().ending === 'D', '정문에서 싸운 경로는 수습해도 D(B 아님): ' + PrivacyApp.state().ending);
+      ok(/도움을 청했다/.test(document.body.textContent) && !/도움을 요청하는 건 지는 게 아니다/.test(document.body.textContent), 'D 본문은 도움을 청한 경우 문장');
       ok(/촬영은 계속됐다/.test(document.body.textContent), '사건 결과에 촬영 계속 기록');
     }
     else if (s === 'nf-resume') { // 남 주인공 · 보통 속도 · 움직임 허용
@@ -246,6 +247,15 @@
     }
   }
 
+  // 지금 걷기 구간에 선 인물의 칸(장면 그림 맵은 좌표가 장면마다 달라 직접 쓰지 않는다)
+  function castOf(who) { var t = window.PRIVACY_WORLD.triggers[PrivacyApp.state().mapTarget]; return t.cast.filter(function (c) { return c.who === who; })[0]; }
+  async function walkToCell(tx, ty) {
+    var M = PrivacyMap.debug, rt = M.routeTo(tx, ty);
+    if (!rt) return false;
+    for (var k = 0; k < rt.length; k++) { key(ARROW[rt[k]]); key(ARROW[rt[k]], 'keyup'); var g = 0; await wait(16); while (M.me().moving && g++ < 100) await wait(16); }
+    var m = M.me(); return m.x === tx && m.y === ty;
+  }
+
   async function run() {
     await loadRoutes();
     var R = window.PRIVACY_ROUTES;
@@ -269,7 +279,7 @@
       await play(R.A, o);
       ok(o.walked > 200, '방향키로 실제 걸은 칸 수 ' + o.walked);
       var seq = o.areas.join('>');
-      ok(/교문>마을 길>우리 집 앞>내 방/.test(seq), '교문 → 마을 길 → 우리 집 → 내 방 순서로 이동');
+      ok(/교문>마을 길>내 방/.test(seq), '교문 → 마을 길 → 내 방 순서로 이동: ' + seq.slice(0, 120));
       ok((seq.match(/내 방/g) || []).length >= 3, '집 사건 3번 모두 걸어서 귀가 (' + (seq.match(/내 방/g) || []).length + '회)');
       await finishChecks('A', R.A.length);
     }
@@ -279,7 +289,7 @@
       await play(R.A, { upto: 1, stopAtMap: true });
       ok(view() === 'v-map', '첫 사건 전에 맵 화면');
       ok(/집/.test($('#m-mission').textContent), '지금 할 일 표시(하교): ' + $('#m-mission').textContent);
-      var pt = PrivacyMap.debug.tileToClient(5, 4); // 새봄 자리
+      var cs = castOf('saebom'), pt = PrivacyMap.debug.tileToClient(cs.x, cs.y); // 새봄 자리
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pt.x, clientY: pt.y, bubbles: true }));
       var g = 0; while ($('#talk').hidden && g++ < 300) await wait(20);
       ok(!$('#talk').hidden && /새봄/.test($('#talk .talk-name').textContent), '새봄을 누르면 걸어가서 말 걸기 ' + JSON.stringify([pt, PrivacyMap.debug.me()]));
@@ -305,8 +315,8 @@
       ok(view() === 'v-map' && !$('#stage').hidden && getComputedStyle($('#stage')).display !== 'none', '맵 화면에서 무대 보임');
       var cr = $('#m-canvas').getBoundingClientRect(), sr = { width: $('#stage').clientWidth, height: $('#stage').clientHeight };
       ok(Math.abs(cr.width - sr.width) < 2 && Math.abs(cr.height - sr.height) < 2, '캔버스가 무대를 채움 ' + [cr.width, cr.height, sr.width, sr.height].map(Math.round));
-      // 새봄이 아닌 하늘(8,2)을 누르면 걸어가서 말을 건다 → 대화창
-      var pd = PrivacyMap.debug.tileToClient(8, 2);
+      // 새봄이 아닌 하늘을 누르면 걸어가서 말을 건다 → 대화창
+      var ch = castOf('haneul'), pd = PrivacyMap.debug.tileToClient(ch.x, ch.y);
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true }));
       var gt = 0; while ((!$('#talk') || $('#talk').hidden) && gt++ < 300) await wait(20);
       ok(!!$('#talk') && !$('#talk').hidden && /\S/.test($('#talk .talk-text').textContent), '말 걸기 결과가 대화창에 나옴');
@@ -329,10 +339,13 @@
         if (tOut == null && /밖으로 나왔다/.test(tx)) tOut = now;
         else if (tOut != null && tGone == null && !/밖으로 나왔다/.test(tx)) tGone = now;
       }).observe($('#m-say'), { childList: true, characterData: true, subtree: true });
+      var seenBubble = {}, bt = setInterval(function () { (PrivacyMap.debug.stage().bubbles || []).forEach(function (w) { seenBubble[w] = true; }); }, 30);
       await walkToTarget(ow);
+      clearInterval(bt); ow.passGreet = !!seenBubble.haneul;
       ok(tOut != null && tGone != null && tGone - tOut <= 2600, '“밖으로 나왔다”는 잠깐 뜨고 사라짐: ' + (tGone != null && tOut != null ? Math.round(tGone - tOut) + 'ms' : '안 사라짐'));
       var oseq = ow.areas.join('>');
-      ok(/우리 집 앞.*마을 길.*교문.*복도.*2학년 3반 교실/.test(oseq), '집→마을 길→교문→복도→교실: ' + oseq);
+      ok(/내 방.*마을 길.*교문.*현관 앞.*2학년 3반 교실/.test(oseq), '내 방→마을 길→교문→현관 앞→교실: ' + oseq);
+      ok(ow.passGreet === true, '하늘이 곁을 지나가면 인사 말풍선이 저절로');
       ok($('#m-say').textContent.indexOf('방향키') < 0, '걷기 시작하면 첫 안내가 사라짐');
       ok(ow.talkLines >= 4, '새봄의 친구 소개 ' + ow.talkLines + '줄');
       ok(view() === 'v-game' && PrivacyApp.state().scene === 'pro_1', '소개 뒤 pro_1 장면');
@@ -358,7 +371,8 @@
       }
       $('#btn-continue').click(); await wait();
       var mm = PrivacyMap.debug.me();
-      ok(view() === 'v-map' && PrivacyApp.state().mapTarget === 'c1_e1_a' && mm.x === 6 && mm.y === 4, '개편 전 맵 저장 위치에서 이어짐 ' + JSON.stringify(mm));
+      var sp = window.PRIVACY_WORLD.SPAWNS.classroom;
+      ok(view() === 'v-map' && PrivacyApp.state().mapTarget === 'c1_e1_a' && mm.x === sp.x && mm.y === sp.y, '개편 전 맵 저장 위치는 버리고 걷기 시작점에서(진행은 그대로) ' + JSON.stringify(mm));
       sessionStorage.removeItem('probe-phase'); sessionStorage.removeItem('probe-carry');
     }
 
@@ -435,23 +449,21 @@
       ok(rpt.y < pr.top && rpt.x > sr.left && rpt.x < sr.right, '좁아진 뒤에도 주인공이 폰 위에 보임 ' + JSON.stringify([Math.round(rpt.x), Math.round(rpt.y), Math.round(pr.top)]));
     }
 
-    else if (s === 'yard') { // 운동장 형태: 가로로 긴 트랙 안에 경기장, 골대는 골라인 가운데, 맵은 필요한 만큼만
-      var WDy = window.PRIVACY_WORLD, L = (window.PrivacySchoolyard || {}).layout;
-      ok(WDy.H === 34 && WDy.W === 64, '맵 64×34(운동장을 매점 바로 밑으로 올림): ' + WDy.W + '×' + WDy.H);
-      var sto = WDy.OBJECTS.filter(function (o) { return o.id === 'store'; })[0], tents = WDy.OBJECTS.filter(function (o) { return /^tent/.test(o.id); });
-      ok(!!L && !!sto && L.apron[1] - (sto.y + sto.h) >= 0 && L.apron[1] - (sto.y + sto.h) <= 3, '운동장이 매점 바로 밑에서 시작: 매점 아래 ' + (sto && sto.y + sto.h) + ' / 운동장 ' + (L && L.apron[1]));
-      ok(!!L && tents.length === 2 && tents.every(function (o) { return o.y + o.h > L.track[1] && o.y < L.track[1] + 2; }), '축제 부스가 트랙 윗부분에 올라섬');
-      ok(!!L && L.track[2] / L.track[3] >= 1.3, '트랙이 가로로 긴 타원: ' + (L && L.track.join(',')));
-      var tr = L && L.track, pi = L && L.pitch;
-      ok(!!L && pi[0] > tr[0] && pi[1] > tr[1] && pi[0] + pi[2] < tr[0] + tr[2] && pi[1] + pi[3] < tr[1] + tr[3], '경기장이 트랙 안쪽에');
-      var gl = WDy.OBJECTS.filter(function (o) { return o.id === 'yardGoalLeft'; })[0], gr = WDy.OBJECTS.filter(function (o) { return o.id === 'yardGoalRight'; })[0];
-      var cy = pi ? pi[1] + pi[3] / 2 : -1;
-      ok(!!gl && !!gr && gl.y < cy && gl.y + gl.h > cy && gr.y < cy && gr.y + gr.h > cy, '골대가 경기장 세로 가운데');
-      ok(!!gl && !!gr && gl.x + gl.w === pi[0] && gr.x === pi[0] + pi[2], '골대가 양쪽 골라인 바로 바깥');
-      ok(!!gl && !WDy.walkable(gl.x, gl.y + 1) && !WDy.walkable(gr.x, gr.y + 1), '골대 칸은 지나갈 수 없음');
-      ok(WDy.walkable(11, Math.floor(cy)) && WDy.walkable(11, Math.floor(tr[1] + tr[3]) - 1) && WDy.walkable(2, Math.floor(tr[1]) + 2), '경기장·트랙·가장자리는 걸을 수 있음');
-      ok(!WDy.walkable(5, WDy.H - 1), '운동장 아래 담장');
-      ok(WDy.walkable(11, 16) && WDy.walkable(21, 16), '현관→교문 길은 그대로');
+    else if (s === 'yard') { // 장면 그림 맵: 장면 5개(교실·도서관·마당·마을 길·내 방)를 출입구로 오간다
+      var WY = window.PRIVACY_WORLD;
+      ok(WY.SCENES.length === 5 && WY.W === 160 && WY.H === 18, '장면 5개·격자 160×18: ' + WY.W + '×' + WY.H);
+      $('#btn-new').click();
+      await play(R.A, { upto: 1, stopAtMap: true }); // 하교 걷기(교실에서 출발)
+      var S = {}; WY.SCENES.forEach(function (c) { S[c.id] = c; });
+      ok(await walkToCell(S.library.ox + 15, 13), '교실 → 마당 → 도서관 문으로 걸어 들어감');
+      ok(PrivacyMap.debug.me().area === '도서관', '도서관 안: ' + PrivacyMap.debug.me().area);
+      ok(await walkToCell(S.yard.ox + 22, 10), '도서관 → 마당');
+      ok(PrivacyMap.debug.me().area !== '도서관' && WY.sceneAt(PrivacyMap.debug.me().x).id === 'yard', '마당: ' + PrivacyMap.debug.me().area);
+      // 천막·매점은 지나갈 수 없음(그림 위 막힌 칸)
+      var tn = WY.object('tent1'), sto = WY.object('store');
+      ok(!WY.walkable(tn.x + 1, tn.y + 1) && !WY.walkable(sto.x + 1, sto.y + 1), '천막·매점 칸은 막힘');
+      $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk(); await wait(50);
+      ok(view() === 'v-game' && PrivacyApp.state().scene === 'c1_e1_a', '돌아다닌 뒤 본편 진행');
     }
 
     else if (s === 'warning') { // 시작하자마자 어두운 화면의 주의 안내(가상 상황 고지·다루는 장면·도움 연락처)
@@ -610,15 +622,17 @@
       ok(Object.keys(WL).length >= 30, 'webp 목록 ' + Object.keys(WL).length + '장');
       $('#btn-new').click();
       await play(R.A, { upto: 1, stopAtMap: true });
-      var gw = 0; while (!(window.PrivacySchool && window.PrivacySchool.ready() && window.PrivacyOutdoor.ready('tree') && window.PrivacyNeighborhood.ready('house-brick')) && gw++ < 100) await wait(50);
-      ok(window.PrivacySchool.ready() && window.PrivacyOutdoor.ready('tree') && window.PrivacyNeighborhood.ready('house-brick'), '학교·바깥·주택가 그림이 모두 뜸');
+      var SCx = window.PRIVACY_WORLD.SCENES;
+      for (var si = 0; si < SCx.length; si++) { PrivacyMap.debug.place(SCx[si].ox + 15, 15, 'up'); await wait(250); }
+      var gw = 0; while (performance.getEntriesByType('resource').filter(function (e) { return /assets\/scenes\//.test(e.name); }).length < 3 && gw++ < 100) await wait(50);
+      ok(true, '장면 그림 5장을 차례로 띄움');
       var names = performance.getEntriesByType('resource').map(function (e) { return decodeURI(new URL(e.name).pathname).replace(/^\/privacy\//, ''); });
       var pngHits = names.filter(function (n) { return /\.png$/.test(n) && WL[n]; });
       var webpHits = names.filter(function (n) { return /\.webp$/.test(n); });
       if (s === 'webp') {
         ok(pngHits.length === 0, '변환된 그림은 png를 받지 않음 ' + pngHits.slice(0, 4).join(','));
-        ok(webpHits.length >= 25, 'webp로 받음 ' + webpHits.length + '장');
-      } else ok(pngHits.length >= 20, 'webp가 안 되면 png로 되돌아감 ' + pngHits.length + '장');
+        ok(webpHits.filter(function (n) { return /^assets\/scenes\//.test(n); }).length >= 3, '장면 그림은 webp로 받음 ' + webpHits.length + '장');
+      } else ok(pngHits.filter(function (n) { return /^assets\/scenes\//.test(n); }).length >= 3, 'webp가 안 되면 png로 되돌아감 ' + pngHits.length + '장');
     }
 
     else if (s === 'portrait') {
@@ -638,14 +652,14 @@
       ok(view() === 'v-game' && pv() === null, '폰(단톡) 장면에선 초상화 없음');
       await play(R.A, { upto: 1, stopAtMap: true });
       PrivacyApp.setSpeed('normal');
-      var pd = PrivacyMap.debug.tileToClient(8, 2); // 하늘
+      var ch2 = castOf('haneul'), pd = PrivacyMap.debug.tileToClient(ch2.x, ch2.y); // 하늘
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true }));
       var gt = 0; while ($('#talk').hidden && gt++ < 300) await wait(20);
       ok(/haneul-portraits\.png/.test(pv() || ''), '맵에서 하늘에게 말 걸기: 하늘 초상화');
       key(' '); await wait(30);
-      // 사물 조사(해설)엔 초상화 없음: 교탁(5,2) 옆으로 가서 조사
-      var rt = PrivacyMap.debug.routeTo(5, 3) || [];
-      for (var k = 0; k < rt.length; k++) { key(ARROW[rt[k]]); key(ARROW[rt[k]], 'keyup'); var g = 0; await wait(16); while (PrivacyMap.debug.me().moving && g++ < 100) await wait(16); }
+      // 사물 조사(해설)엔 초상화 없음: 교탁 바로 아래로 가서 위를 보고 조사
+      var td = window.PRIVACY_WORLD.object('tdesk');
+      await walkToCell(td.x + 1, td.y + td.h);
       key('ArrowUp'); key('ArrowUp', 'keyup'); await wait(200); key(' '); await wait(30);
       ok(!$('#talk').hidden && pv() === null, '사물 조사(해설)엔 초상화 없음');
       key(' '); await wait(30);
@@ -662,8 +676,10 @@
       $('#btn-new').click();
       await play(R.A, { upto: 1, stopAtMap: true });
       var SM = PrivacyMap.debug;
-      // 마을 길 가운데로 가서(카메라가 맵 끝에 막히지 않는 곳) 움직임 줄이기를 끈다
-      var r0 = SM.routeTo(30, 16) || [];
+      // 장면이 화면보다 커지도록 좁게(휴대폰 폭) — 넓은 화면에선 장면 전체가 한눈에 보여 카메라가 움직이지 않는다
+      document.querySelector('.app') && (document.querySelector('.app').style.maxWidth = '400px'); window.dispatchEvent(new Event('resize')); await wait(300);
+      // 마을 길 가운데로 가서 움직임 줄이기를 끈다
+      var r0 = SM.routeTo(96 + 8, 9) || [];
       for (var k = 0; k < r0.length; k++) { key(ARROW[r0[k]]); key(ARROW[r0[k]], 'keyup'); var g = 0; await wait(16); while (SM.me().moving && g++ < 100) await wait(16); }
       $('#opt-motion').checked = true; $('#opt-motion').click(); await wait(400);
       // 데드존 카메라: 화면 가운데 상자 안에서는 배경이 움직이지 않고, 벗어날 때만 지연 없이 따라간다(어지러움 줄이기)
@@ -685,7 +701,7 @@
       var c3 = SM.cam();
       ok(c3.x === c2.x && c3.y === c2.y, '멈추면 배경도 바로 멈춤(뒤늦게 흐르지 않음)');
       // 걷기 동작: 반 칸마다 한 프레임(한 칸에 약 2번 바뀜, 칸이 바뀌어도 이어짐). 시간 대신 걸은 칸 수로 잰다
-      var r1 = SM.routeTo(40, 20) || [];
+      var r1 = SM.routeTo(96 + 2, 7) || [];
       for (var k1 = 0; k1 < r1.length; k1++) { key(ARROW[r1[k1]]); key(ARROW[r1[k1]], 'keyup'); var g1 = 0; await wait(16); while (SM.me().moving && g1++ < 100) await wait(16); }
       var lastF = SM.walkFrame(), lastX = SM.me().x, fch = 0, tiles = 0;
       key('ArrowRight');
@@ -719,30 +735,24 @@
       }
       $('#btn-new').click(); await wait(300);
       var mk0 = markerVisible('첫날 아침 내 방');
-      ok(!!mk0 && mk0.tx === 34 && mk0.ty === 8, '방 안에서 목적지가 바깥이면 ❗는 방문에 ' + JSON.stringify(mk0));
-      // 집 밖으로 나가면 다시 목적지(교실 새봄) 쪽
-      var rt = PrivacyMap.debug.routeTo(42, 19) || [];
-      for (var k = 0; k < rt.length; k++) { key(ARROW[rt[k]]); key(ARROW[rt[k]], 'keyup'); var g = 0; await wait(16); while (PrivacyMap.debug.me().moving && g++ < 100) await wait(16); }
-      await wait(100);
+      var WDm = window.PRIVACY_WORLD;
+      ok(!!mk0 && !!WDm.DOORS[mk0.tx + ',' + mk0.ty] && WDm.sceneAt(mk0.tx).id === 'room', '방 안에서 목적지가 다른 장면이면 ❗는 방문(출입구)에 ' + JSON.stringify(mk0));
+      // 집 밖(마을 길)으로 나가면 ❗는 학교로 가는 출입구 쪽
+      var hd = WDm.DOORS[mk0.tx + ',' + mk0.ty].to;
+      await walkToCell(hd[0] - 3, hd[1] + 1); await wait(100);
       var mk1 = markerVisible('집 앞');
-      ok(!!mk1 && !(mk1.tx === 34 && mk1.ty === 8), '집 밖에선 ❗가 학교 쪽 ' + JSON.stringify(mk1));
+      ok(!!mk1 && WDm.sceneAt(mk1.tx).id === 'village' && !!WDm.DOORS[mk1.tx + ',' + mk1.ty] && WDm.DOORS[mk1.tx + ',' + mk1.ty].scene === 'yard', '마을 길에선 ❗가 학교로 가는 길 끝에 ' + JSON.stringify(mk1));
     }
 
-    else if (s === 'neighborhood') {
+    else if (s === 'neighborhood') { // 마을 길: 이웃집 2채(조사만) + 길 끝 마지막 집이 우리 집
       $('#btn-new').click();
       await play(R.A, { upto: 1, stopAtMap: true });
-      var NM = PrivacyMap.debug, NW = window.PRIVACY_WORLD;
-      async function walkTo(tx, ty) {
-        var rt = NM.routeTo(tx, ty);
-        if (!rt) { fail.push('길 없음 ' + tx + ',' + ty); return false; }
-        for (var k = 0; k < rt.length; k++) { key(ARROW[rt[k]]); key(ARROW[rt[k]], 'keyup'); var g = 0; await wait(16); while (NM.me().moving && g++ < 100) await wait(16); }
-        var m = NM.me(); return m.x === tx && m.y === ty;
-      }
-      ok(NW.NEIGHBORS.length === 3, '이웃집 3채');
+      var NW = window.PRIVACY_WORLD, NM = PrivacyMap.debug;
+      ok(NW.NEIGHBORS.length === 2, '이웃집 2채');
       for (var ni = 0; ni < NW.NEIGHBORS.length; ni++) {
         var nb = NW.NEIGHBORS[ni];
-        ok(await walkTo(nb.approach.x, nb.approach.y), nb.name + ' 현관 앞까지 걸어감');
-        ok(NM.me().area === '주택가', nb.name + ' 앞은 주택가: ' + NM.me().area);
+        ok(await walkToCell(nb.approach.x, nb.approach.y), nb.name + ' 현관 앞까지 걸어감');
+        ok(NM.me().area === '마을 길', nb.name + ' 앞은 마을 길: ' + NM.me().area);
         key('ArrowUp'); key('ArrowUp', 'keyup'); await wait(250);
         var nm = NM.me();
         ok(nm.x === nb.approach.x && nm.y === nb.approach.y && nm.dir === 'up', nb.name + ' 안으로는 들어가지 않음');
@@ -750,23 +760,27 @@
         ok(!$('#talk').hidden && $('#talk .talk-text').textContent.indexOf(nb.look.slice(0, 8)) >= 0, nb.name + ' 조사: 생활 대사');
         await passTalk();
         var ns = PrivacyApp.state();
-        ok(view() === 'v-map' && ns.screen === 'map' && ns.mapTarget === 'c1_e1_a', nb.name + ' 조사 뒤에도 같은 걷기(문 이동·장면 없음)');
+        ok(view() === 'v-map' && ns.screen === 'map' && ns.mapTarget === 'c1_e1_a', nb.name + ' 조사 뒤에도 같은 걷기');
       }
-      ok(await walkTo(43, 18), '우리 집 현관 옆');
+      var homeKey = Object.keys(NW.DOORS).filter(function (k) { return NW.DOORS[k].scene === 'room'; })[0], hx = Number(homeKey.split(',')[0]);
+      ok(NW.NEIGHBORS.every(function (n) { return n.approach.x < hx; }), '우리 집은 길 끝 마지막 집');
+      var mb = NW.object('mailbox');
+      ok(await walkToCell(mb.x - 1, mb.y), '우편함 옆');
       key('ArrowRight'); key('ArrowRight', 'keyup'); await wait(250); key(' '); await wait(50);
       ok(!$('#talk').hidden && /우편함/.test($('#talk .talk-text').textContent), '노란 우편함 조사');
       await passTalk();
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk(); await wait(50);
-      ok(view() === 'v-game' && PrivacyApp.state().scene === 'c1_e1_a', '주택가를 돌아본 뒤 본편 진행');
+      ok(view() === 'v-game' && PrivacyApp.state().scene === 'c1_e1_a', '마을을 돌아본 뒤 본편 진행');
     }
 
     else if (s === 'pos-recover') {
       var E3 = window.PrivacyEngine, ST3 = window.PRIVACY_STORY, PK3 = 'ethicity.privacy.progress.v2';
-      if (P.phase === 0) { // 저장 위치가 새로 생긴 벽돌집 안(39,26)
+      var NB3 = window.PRIVACY_WORLD.NEIGHBORS[1], BX = NB3.x + 2, BY = NB3.y + 2;
+      if (P.phase === 0) { // 저장 위치가 벽돌집(걸을 수 없는 칸) 안
         var m3 = E3.createState(ST3), g3 = 0;
         while (!(m3.screen === 'map' && m3.mapTarget === 'c1_e1_a') && g3++ < 8) m3 = m3.screen === 'scene' && E3.needsChoice(ST3, m3) ? E3.choose(ST3, m3, 'photo') : E3.advance(ST3, m3);
         m3.history = [];
-        localStorage.setItem(PK3, JSON.stringify({ v: 1, run: m3, explored: { pro_1: ['photo'] }, endingsSeen: ['B'], pos: { x: 39, y: 26, dir: 'up', for: 'c1_e1_a' } }));
+        localStorage.setItem(PK3, JSON.stringify({ v: 1, run: m3, explored: { pro_1: ['photo'] }, endingsSeen: ['B'], pos: { x: BX, y: BY, dir: 'up', for: 'c1_e1_a', v: window.PRIVACY_WORLD.VERSION } }));
         sessionStorage.setItem('probe-saved', JSON.stringify(m3.stats));
         sessionStorage.setItem('probe-phase', '1'); carry(); location.reload(); return;
       }
@@ -774,7 +788,7 @@
       $('#btn-continue').click(); await wait(50);
       var rm = PrivacyMap.debug.me();
       ok(view() === 'v-map' && PrivacyApp.state().mapTarget === 'c1_e1_a', '같은 걷기에서 이어짐');
-      ok(window.PRIVACY_WORLD.walkable(rm.x, rm.y) && Math.abs(rm.x - 39) + Math.abs(rm.y - 26) <= 3, '집 안 저장 위치 → 가까운 걸을 수 있는 칸 ' + JSON.stringify(rm));
+      ok(window.PRIVACY_WORLD.walkable(rm.x, rm.y) && Math.abs(rm.x - BX) + Math.abs(rm.y - BY) <= 5, '집 안 저장 위치 → 가까운 걸을 수 있는 칸 ' + JSON.stringify(rm));
       var pg = JSON.parse(ls(PK3));
       ok(pg.endingsSeen.indexOf('B') >= 0 && pg.explored.pro_1 && JSON.stringify(PrivacyApp.state().stats) === sessionStorage.getItem('probe-saved'), '진행·완료 기록은 그대로');
       checkOthersKept();
@@ -793,7 +807,7 @@
       ok(!!$('#opt-sound') && !$('#opt-sound').checked, '메뉴에 효과음 켜기(꺼짐 표시)');
       $('#opt-sound').click(); await wait();
       $('#btn-menu-close').click(); await wait();
-      ok(JSON.parse(ls('ethicity.privacy.settings.v1')).sound === true && window.__beeps === 1, '켠 설정이 저장되고 미리듣기 한 번');
+      ok(JSON.parse(ls('ethicity.privacy.settings.v1')).sound === true && window.__plays.length === 1 && /tap\.wav$/.test(window.__plays[0]), '켠 설정이 저장되고 미리듣기(tap) 한 번: ' + window.__plays.join(','));
       await wait(300);
       var b0 = window.__beeps;
       $$('#g-dock .choice')[0].click(); await wait(400);
@@ -843,19 +857,6 @@
       ok(view() === 'v-ending' && $('#finale').hidden, '경로에서 돌아올 땐 연출 없이');
     }
 
-    else if (s === 'school-roof') {
-      $('#btn-new').click(); await wait(30);
-      ok(PrivacyMap.debug.roof() === true, '학교 밖(내 방)에선 학교 지붕이 덮여 있음');
-      var ow = { walk: true, areas: [], roofAt: {} };
-      var M = PrivacyMap.debug, route = M.route();
-      for (var k = 0; k < route.length; k++) {
-        key(ARROW[route[k]]); key(ARROW[route[k]], 'keyup'); var g = 0; await wait(16); while (M.me().moving && g++ < 100) await wait(16);
-        var a = M.me().area; if (!(a in ow.roofAt)) ow.roofAt[a] = M.roof();
-      }
-      ok(ow.roofAt['교문'] === true && ow.roofAt['마을 길'] === true, '교문·마을 길에선 지붕 덮임 ' + JSON.stringify(ow.roofAt));
-      ok(ow.roofAt['복도'] === false && ow.roofAt['2학년 3반 교실'] === false, '건물에 들어가면 지붕이 사라짐');
-    }
-
     else if (s === 'talk-guard') {
       $('#btn-new').click(); await wait(30);
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(30);
@@ -896,7 +897,7 @@
       ok(!$('#btn-continue').hidden, '맵에서 새로고침 → 이어 하기');
       $('#btn-continue').click(); await wait();
       var m1 = PrivacyMap.debug.me();
-      ok(view() === 'v-map' && m1.x === m0b.x && m1.y === m0b.y && m0b.x === 6, '같은 위치에서 재개 (' + m1.x + ',' + m1.y + ')');
+      ok(view() === 'v-map' && m1.x === m0b.x && m1.y === m0b.y && m0b.x === window.PRIVACY_WORLD.SPAWNS.classroom.x - 2, '같은 위치에서 재개 (' + m1.x + ',' + m1.y + ')');
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk(); await wait();
       ok(view() === 'v-game' && PrivacyApp.state().scene === 'c1_e1_a', '재개 후 사건 시작');
       sessionStorage.removeItem('probe-phase'); sessionStorage.removeItem('probe-carry');

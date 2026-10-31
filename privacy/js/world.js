@@ -1,11 +1,15 @@
 /*
  * 「공유한 순간」 맵 데이터 + 길찾기(순수 로직, 브라우저·Node 겸용)
  * ------------------------------------------------------------
- * 맵: 솔빛학교(교실·도서관·복도·매점 앞·마당 축제 부스) → 교문 → 마을 길 → 우리 집(내 방) → 큰길의 이웃집
- * 좌표는 타일 단위(x: 왼→오, y: 위→아래). 그림은 app/map.js가 그린다.
+ * 2026-10-31 맵 개편(docs/specs/2026-10-31-scene-map-design.md): 타일맵 → **장면 그림 5장**.
+ *   장면 = 그림 1장(논리 1280×720)을 40px 칸 32×18로 나눈 방. 장면 5개를 가로로 이어 붙인 한 격자(160×18)에서 걷고,
+ *   장면 사이는 출입구 칸(DOORS)을 밟으면 건너편 장면의 도착 칸으로 옮겨진다(길찾기도 이 문을 따라 장면을 넘는다).
+ *   교실(0~31) · 도서관(32~63) · 학교 마당(64~95) · 마을 길(96~127) · 내 방(128~159)
+ *   그림의 가구·문은 그림 그대로 — 여기선 막힌 칸(BLOCK 사각형)과 조사 지점(OBJECTS)만 정한다.
+ * 좌표는 칸 단위(x: 왼→오, y: 위→아래, 장면 안 좌표 + 장면 시작 x). 그림은 map.js가 그린다.
  *
  * ▸ 사건 트리거(triggers): 사건의 첫 장면 id → 맵에서 그 장면을 여는 조건
- *   { time, mission, target:{ npc:'saebom' } 또는 { obj:'bed' }, spawn?:'gate'|'classroom', tint?, cast:[{who,x,y,dir,pose?}] }
+ *   { time, mission, target:{ npc:'saebom' } 또는 { obj:'bed' }, spawn?, tint?, cast:[{who,x,y,dir,pose?}] }
  *   - spawn이 있으면 그 위치에서 시작(다음 날 등교 등). 없으면 직전 위치에서 이어 걷는다.
  *   - 대상(❗)에게 말을 걸거나 조사하면 해당 장면이 열린다.
  * ▸ idle: ❗가 아닌 인물에게 말 걸 때 한 줄(조건은 story.js와 같은 문법, 위에서부터 첫 일치)
@@ -14,162 +18,159 @@
 (function (root) {
   'use strict';
 
-  // 2026-10-31 플레이테스트: 쓰지 않던 운동장 아래 절반·마을 남쪽을 잘라 64×34 → 56×23.
-  // 마당은 x1~13·y11~21(매점·부스 천막·교문만), 교문은 현관(10·11,10)에서 8칸(14,16~17), 마을은 왼쪽으로 8칸 당겨 교문 바로 밖에서 시작.
-  var VERSION = 2; // 지도 좌표 판(저장된 맵 위치가 이 판과 다르면 버리고 장면 시작점에서 다시)
-  var W = 56, H = 23;
-  var GATE = { x: 14, y: 16 }; // 교문(마당 오른쪽 담장) 두 칸: (14,16)·(14,17). 기둥은 그 위·아래 칸
+  var VERSION = 3; // 지도 좌표 판(저장된 맵 위치가 이 판과 다르면 버리고 장면 시작점에서 다시)
+  var SW = 32, SH = 18, CELL = 40; // 장면 하나 = 32×18칸, 칸 = 논리 40px(1280×720)
+  var BG = '../shared/ethicity-elementary-common-v1/backgrounds/';
+  // rects: 막힌 칸 [x, y, w, h](장면 안 좌표). 나머지는 걸을 수 있다. open: 막힌 사각형 안에서 다시 여는 칸
+  var SCENES = [
+    { id: 'classroom', name: '2학년 3반 교실', img: BG + 'classroom.png', rects: [
+      [0, 0, 32, 5], [0, 5, 9, 1], [14, 5, 4, 1], [22, 5, 10, 1], // 앞 벽(칠판 아래 바닥만 열림)
+      [0, 0, 1, 18], [31, 0, 1, 18], [0, 6, 2, 4], [30, 6, 2, 4],  // 옆 벽
+      [2, 5, 7, 3], [0, 7, 3, 3], [14, 4, 4, 3],                   // 선생님 책상·책 탁자·교탁
+      [25, 3, 5, 4], [29, 5, 2, 3],                                // 컴퓨터 책상·의자·화분
+      [0, 10, 7, 1], [0, 13, 7, 1], [25, 10, 6, 1], [25, 13, 6, 1], // 학생 책상 윗면(의자 줄은 앉을 수 있게 열어 둠)
+      [0, 10, 1, 6]
+    ] },
+    { id: 'library', name: '도서관', img: BG + 'library.png', rects: [
+      [0, 0, 32, 5], [0, 0, 2, 15], [30, 0, 2, 15], [1, 9, 2, 4], [29, 9, 2, 4], // 책장 벽
+      [2, 4, 8, 4],                                                            // 대출 데스크
+      [24, 3, 5, 4],                                                           // 공용 PC 자리·화분·키오스크
+      [2, 12, 6, 4], [24, 12, 6, 4],                                           // 책 읽는 탁자
+      [0, 15, 8, 3], [24, 15, 8, 3], [0, 16, 14, 2], [18, 16, 14, 2]           // 아래 벽(가운데 문간만 열림)
+    ] },
+    { id: 'yard', name: '학교 마당', img: 'assets/scenes/yard.png', rects: [
+      [0, 0, 32, 1], [0, 1, 15, 4], [18, 1, 14, 3], [18, 4, 7, 1], [28, 4, 4, 2], // 건물·덤불(현관·도서관 문 칸은 아래에서 다시 엶)
+      [13, 5, 2, 1], [24, 5, 1, 1],
+      [0, 5, 3, 5], [0, 10, 2, 7], [29, 6, 3, 8], [30, 14, 2, 4],                 // 나무
+      [6, 10, 8, 4],                                                              // 축제 천막 2개(앞 줄 14는 서는 자리)
+      [20, 12, 4, 3],                                                             // 매점 가판대
+      [3, 14, 4, 2], [25, 14, 4, 2], [1, 13, 2, 3], [28, 13, 2, 3],               // 벤치·꽃밭
+      [0, 15, 14, 3], [18, 15, 14, 3]                                             // 아래 덤불·교문 기둥(가운데 길만 열림)
+    ], open: [[6, 4], [7, 4], [8, 4], [25, 4], [26, 4], [27, 4], [15, 1], [16, 1], [17, 1], [15, 2], [16, 2], [17, 2], [15, 3], [16, 3], [17, 3], [15, 4], [16, 4], [17, 4]] },
+    { id: 'village', name: '마을 길', img: 'assets/scenes/village.png', road: true },
+    { id: 'room', name: '내 방', img: 'assets/scenes/room.png', rects: [
+      [0, 0, 32, 7], [0, 7, 3, 5], [0, 12, 2, 3], [0, 15, 1, 3], [30, 7, 2, 6], [31, 13, 1, 5], // 벽
+      [2, 4, 7, 8],                          // 침대
+      [22, 5, 7, 5],                         // 컴퓨터 책상·의자
+      [28, 6, 3, 6],                         // 책꽂이
+      [28, 13, 4, 5],                        // 팬더 인형
+      [0, 17, 14, 1], [18, 17, 14, 1]        // 아래(문 매트만 열림)
+    ] }
+  ];
+  var W = SW * SCENES.length, H = SH;
+  SCENES.forEach(function (s, i) { s.ox = i * SW; });
+  var S = {}; SCENES.forEach(function (s) { S[s.id] = s; });
+  function P(scene, x, y, dir, extra) { var p = { x: S[scene].ox + x, y: y }; if (dir) p.dir = dir; if (extra) for (var k in extra) p[k] = extra[k]; return p; }
+  function who(w, scene, x, y, dir, extra) { var p = P(scene, x, y, dir, extra); p.who = w; return p; }
+
   var grid = [];
   var y, x;
-  for (y = 0; y < H; y++) { grid.push([]); for (x = 0; x < W; x++) grid[y].push('g'); }
-  function rect(x0, y0, w, h, ch) {
-    for (var yy = y0; yy < y0 + h; yy++) for (var xx = x0; xx < x0 + w; xx++) grid[yy][xx] = ch;
-  }
-  function at(xx, yy, ch) { grid[yy][xx] = ch; }
-
-  /* 타일 종류: 통행 가능 여부와 임시 색(스프라이트가 없을 때) */
-  var TILES = {
-    '#': { walk: false, name: '벽' },
-    'c': { walk: true, name: '교실 바닥' },
-    'l': { walk: true, name: '도서관 바닥' },
-    'h': { walk: true, name: '복도' },
-    'd': { walk: true, name: '문' },
-    'g': { walk: true, name: '풀밭' },
-    'p': { walk: true, name: '흙길' },
-    'y': { walk: true, name: '운동장' },
-    'f': { walk: false, name: '울타리' },
-    'T': { walk: false, name: '나무' },
-    'w': { walk: false, name: '연못' },
-    'H': { walk: false, name: '집 벽' },
-    'o': { walk: true, name: '우리 집 문' },
-    'r': { walk: true, name: '방 바닥' },
-    'x': { walk: true, name: '방문' },
-    'e': { walk: false, name: '생울타리' }
-  };
-
-  /* ── 지형 ───────────────────────── */
-  rect(22, 0, W - 22, 11, 'T');             // 학교 오른쪽 위 숲(방은 이 안에 따로 있음)
-  // 학교 건물
-  rect(0, 0, 22, 11, '#');
-  rect(1, 1, 10, 6, 'c');                   // 2학년 3반 교실
-  rect(12, 1, 9, 6, 'l');                   // 도서관
-  rect(1, 8, 20, 2, 'h');                   // 복도
-  at(8, 7, 'd'); at(15, 7, 'd');            // 교실·도서관 문
-  at(10, 10, 'd'); at(11, 10, 'd');         // 건물 현관
-  // 마당(울타리 안): 매점 앞 · 현관 → 교문 길 · 아래쪽 부스 천막 줄
-  rect(1, 11, 13, 11, 'y');
-  rect(0, 11, 1, 12, 'f'); rect(0, 22, 15, 1, 'f'); rect(14, 11, 1, 12, 'f'); rect(22, 0, 1, 11, 'f');
-  rect(10, 11, 2, 5, 'p'); rect(10, 16, 4, 2, 'p');   // 현관 → 교문 길(8칸)
-  rect(1, 12, 7, 3, 'p');                   // 매점 앞
-  at(GATE.x, GATE.y, 'd'); at(GATE.x, GATE.y + 1, 'd'); // 교문
-  // 마을: 교문 → 마을 길(연못·벤치 쉼터) → 우리 집 → 큰길의 이웃집 3채. 북쪽은 숲, 동·남쪽 끝은 낮은 생울타리
-  rect(22, 11, W - 22, 1, 'T');            // 숲 가장자리(학교 건물 바로 밑 x15~21은 잔디)
-  rect(W - 1, 12, 1, H - 12, 'e'); rect(15, H - 1, W - 15, 1, 'e');
-  rect(15, 16, 18, 2, 'p');                 // 마을 길
-  rect(19, 19, 4, 2, 'w');                  // 연못
-  rect(31, 18, 2, 2, 'p');                  // 우리 집 앞에서 아래로 꺾어
-  rect(31, 20, W - 32, 2, 'p');             // 큰길(동쪽, 이웃집 앞)
-  rect(40, 19, 1, 1, 'p');                  // 세이지 지붕 집 진입로
-  rect(46, 19, 1, 1, 'p');                  // 벽돌집 진입로
-  rect(52, 19, 1, 1, 'p');                  // 2층집 진입로
-  [[17, 13], [21, 12], [25, 13], [30, 12], [16, 20], [37, 12], [39, 13], [45, 12], [50, 13], [53, 12], [26, 20]].forEach(function (p) { at(p[0], p[1], 'T'); });
-  // 우리 집(바깥)
-  rect(33, 13, 5, 5, 'H');
-  rect(32, 16, 1, 3, 'p');
-  rect(32, 18, 3, 1, 'p'); // 마을 길에서 현관 계단까지
-  rect(33, 19, 2, 1, 'p'); // 현관에서 나와 큰길로
-  at(34, 18, 'o');
-  // 내 방(숲 속 따로 떨어진 실내 — 문으로만 오간다)
-  rect(30, 2, 10, 7, '#');
-  rect(31, 3, 8, 5, 'r');
-  at(34, 8, 'x');
-
-  /* 문 이동: 이 칸에 들어서면 다른 칸으로 옮겨진다 */
-  var DOORS = {
-    '34,18': { to: [34, 7], dir: 'up', label: '집 안으로' },
-    '34,8': { to: [34, 19], dir: 'down', label: '밖으로' }
-  };
-
-  /* 구역 이름(화면 위 표시용) */
-  var AREAS = [
-    { name: '2학년 3반 교실', x: 1, y: 1, w: 10, h: 6 },
-    { name: '도서관', x: 12, y: 1, w: 9, h: 6 },
-    { name: '복도', x: 1, y: 7, w: 20, h: 4 },
-    { name: '매점 앞', x: 1, y: 11, w: 8, h: 6 },
-    { name: '마당 축제 부스', x: 1, y: 18, w: 13, h: 4 },
-    { name: '교문', x: 11, y: 15, w: 5, h: 3 },
-    { name: '마을 길', x: 15, y: 12, w: 16, h: 10 },
-    { name: '우리 집 앞', x: 31, y: 12, w: 7, h: 10 },
-    { name: '주택가', x: 38, y: 12, w: W - 39, h: 10 },
-    { name: '내 방', x: 31, y: 3, w: 8, h: 5 },
-    { name: '마당', x: 1, y: 11, w: 13, h: 11 }
-  ];
-
-  /* ── 가구·사물 (w×h = 바닥을 차지하는 칸, 0이면 벽에 걸림) ── */
-  var OBJECTS = [
-    { id: 'board', name: '칠판', x: 3, y: 0, w: 5, h: 1, icon: '📋', wall: true, look: '칠판: “축제 D-day · 2학년 3반 레트로 사진관 📸”' },
-    { id: 'notice', name: '게시판', x: 1, y: 0, w: 2, h: 1, icon: '📌', wall: true, look: '게시판: 축제 부스 배치도. 우리 반은 마당 왼쪽 천막이다.' },
-    { id: 'tdesk', name: '교탁', x: 5, y: 2, w: 2, h: 1, icon: '🗂', look: '교탁 위에 출석부와 분필이 놓여 있다.' },
-    { id: 'desk1', name: '책상', x: 2, y: 3, w: 1, h: 1, icon: '▭' }, { id: 'desk2', name: '책상', x: 4, y: 3, w: 1, h: 1, icon: '▭' },
-    { id: 'desk3', name: '책상', x: 7, y: 3, w: 1, h: 1, icon: '▭' }, { id: 'desk4', name: '책상', x: 9, y: 3, w: 1, h: 1, icon: '▭' },
-    { id: 'desk5', name: '책상', x: 2, y: 5, w: 1, h: 1, icon: '▭' }, { id: 'desk6', name: '책상', x: 4, y: 5, w: 1, h: 1, icon: '▭' },
-    { id: 'desk7', name: '민준이 책상', x: 7, y: 5, w: 1, h: 1, icon: '▭' }, { id: 'desk8', name: '내 책상', x: 9, y: 5, w: 1, h: 1, icon: '▭', look: '내 책상. 축제 소품 상자가 올려져 있다.' },
-    { id: 'locker', name: '사물함', x: 10, y: 1, w: 1, h: 2, icon: '🗄', look: '내 사물함. 축제 소품이 들어 있다.' },
-    { id: 'shelf', name: '책장', x: 12, y: 1, w: 9, h: 1, icon: '📚', look: '도서관 책장. ‘개인정보, 어디까지 괜찮을까?’라는 책이 눈에 띈다.' },
-    { id: 'pc1', name: '공용 PC 1번', x: 13, y: 4, w: 1, h: 1, icon: '🖥', look: '공용 PC 1번. 꺼져 있다.' },
-    { id: 'pc2', name: '공용 PC 2번', x: 15, y: 4, w: 1, h: 1, icon: '🖥', look: '공용 PC 2번. 검색 전용이라고 붙어 있다.' },
-    { id: 'pc3', name: '공용 PC 3번', x: 17, y: 4, w: 1, h: 1, icon: '🖥', label: '3', look: '공용 PC 3번.' },
-    { id: 'store', name: '학교 매점', x: 2, y: 14, w: 4, h: 1, icon: '🧃', look: '매점. 오늘은 컵떡볶이가 제일 잘 팔린다.' },
-    { id: 'tent1', name: '레트로 사진관 천막', x: 2, y: 20, w: 3, h: 1, icon: '⛺', look: '우리 반 부스 ‘레트로 사진관’. 1컷 500원.' },
-    { id: 'tent2', name: '옆 반 천막', x: 6, y: 20, w: 3, h: 1, icon: '⛺', look: '옆 반 부스. 솜사탕 냄새가 난다.' },
-    { id: 'sign', name: '안내 표지판', x: 16, y: 15, w: 1, h: 1, icon: '🪧', look: '← 솔빛학교 · 우리 집 →' },
-    { id: 'bench', name: '벤치', x: 24, y: 14, w: 2, h: 1, icon: '🪑', look: '마을 벤치. 집까지 조금만 더 가면 된다.' },
-    { id: 'lamp', name: '가로등', x: 29, y: 15, w: 1, h: 1, icon: '💡', look: '가로등이 막 켜졌다.' },
-    { id: 'bed', name: '침대', x: 31, y: 3, w: 1, h: 2, icon: '🛏', look: '내 침대. 아직 잘 시간은 아니다.' },
-    { id: 'mypc', name: '내 책상 컴퓨터', x: 36, y: 3, w: 2, h: 1, icon: '💻', look: '내 책상과 컴퓨터.' },
-    { id: 'mybook', name: '책꽂이', x: 38, y: 5, w: 1, h: 1, icon: '📚', look: '교과서와 만화책이 섞여 꽂혀 있다.' },
-    { id: 'plush', name: '큰 팬더 인형', x: 37, y: 6, w: 2, h: 2, icon: '🧸', look: '구석에 앉은 커다란 팬더 인형. 푹신한 배에 기대면 잠이 올 것 같다.' },
-    { id: 'mailbox', name: '노란 우편함', x: 36, y: 18, w: 1, h: 1, icon: '📮', art: 'mailbox', look: '노란 우편함. 여기가 우리 집이다.' }
-  ];
-
-  /* 이웃집: 바깥 그림과 조사만(들어갈 수 없음, ❗·문 이동 없음). footprint = 막히는 칸, approach = 현관 앞 진입로 */
-  var NEIGHBORS = [
-    { id: 'nb_sage', name: '세이지 지붕 집', art: 'house-sage', x: 39, y: 16, w: 5, h: 3, drawW: 5, approach: { x: 40, y: 19 },
-      look: '화분에 막 물을 준 듯 흙이 젖어 있다. 저녁 준비하는 냄새가 난다.' },
-    { id: 'nb_brick', name: '벽돌집', art: 'house-brick', x: 45, y: 16, w: 5, h: 3, drawW: 5, approach: { x: 46, y: 19 },
-      look: '현관 앞에 자전거가 세워져 있다. 안에서 텔레비전 소리가 작게 들린다.' },
-    { id: 'nb_balcony', name: '발코니 2층집', art: 'house-balcony', x: 51, y: 16, w: 5, h: 3, drawW: 4.6, approach: { x: 52, y: 19 },
-      look: '발코니에 수건이 널려 있다. 위층에서 누군가 피아노를 연습한다.' }
-  ];
-  NEIGHBORS.forEach(function (n) {
-    OBJECTS.push({ id: n.id, name: n.name, x: n.x, y: n.y, w: n.w, h: n.h, icon: '🏠', art: n.art, drawW: n.drawW, look: n.look });
+  for (y = 0; y < H; y++) { grid.push([]); for (x = 0; x < W; x++) grid[y].push('.'); }
+  // 마을 길: 그림의 대각선 길(왼쪽 가운데 → 오른쪽 아래)을 위·아래 가장자리 점으로 정한 띠 + 집 앞 계단
+  function lerp(pts, v) { for (var i = 1; i < pts.length; i++) if (v <= pts[i][0]) { var a = pts[i - 1], b = pts[i]; return a[1] + (b[1] - a[1]) * (v - a[0]) / (b[0] - a[0]); } return pts[pts.length - 1][1]; }
+  var ROAD_TOP = [[0, 5.2], [5, 6.2], [8, 6.8], [12, 8.4], [15, 9.6], [20, 11], [24, 12.6], [28, 13.6], [32, 14.4]];
+  var ROAD_BOTTOM = [[0, 9.6], [4, 10.3], [8, 11.1], [12, 12.1], [16, 13.1], [20, 14.3], [24, 15.5], [28, 16.6], [32, 17.5]];
+  SCENES.forEach(function (s) {
+    var r, i, j;
+    if (s.road) {
+      for (j = 0; j < SH; j++) for (i = 0; i < SW; i++) {
+        var cy = j + 0.5, top = lerp(ROAD_TOP, i + 0.5) - 0.2, bot = lerp(ROAD_BOTTOM, i + 0.5) + 0.1;
+        grid[j][s.ox + i] = cy >= top && cy <= bot ? '.' : '#';
+      }
+      [[6, 6], [7, 6], [15, 9], [16, 9], [24, 12], [25, 12], [24, 11], [25, 11]].forEach(function (c) { grid[c[1]][s.ox + c[0]] = '.'; }); // 집 앞 계단·우리 집 현관
+      [[18, 13], [26, 12], [26, 13]].forEach(function (c) { grid[c[1]][s.ox + c[0]] = '#'; }); // 가로등 기둥·우편함
+      return;
+    }
+    s.rects.forEach(function (rc) { for (j = rc[1]; j < rc[1] + rc[3]; j++) for (i = rc[0]; i < rc[0] + rc[2]; i++) grid[j][s.ox + i] = '#'; });
+    (s.open || []).forEach(function (c) { grid[c[1]][s.ox + c[0]] = '.'; });
   });
 
-  /* 실내(내 방): 밖에 있을 땐 숲으로 가려 그리고, ❗는 집 문에 띄운다 */
-  var INDOOR = { x: 30, y: 2, w: 10, h: 7, entrance: { x: 34, y: 18 }, exit: { x: 34, y: 8 } }; // entrance=집 현관(밖), exit=방문(안)
+  var TILES = { '#': { walk: false, name: '막힘' }, '.': { walk: true, name: '바닥' } };
+
+  /* 출입구: 이 칸에 들어서면 다른 장면의 칸으로 옮겨진다 */
+  var DOORS = {};
+  function door(cells, scene, to, dir, label) { cells.forEach(function (c) { DOORS[(S[c[0]].ox + c[1]) + ',' + c[2]] = { to: [S[scene].ox + to[0], to[1]], dir: dir, label: label, scene: scene }; }); }
+  door([['classroom', 15, 17], ['classroom', 16, 17]], 'yard', [7, 5], 'down', '마당으로');
+  door([['yard', 6, 4], ['yard', 7, 4], ['yard', 8, 4]], 'classroom', [15, 16], 'up', '교실로');
+  door([['library', 14, 17], ['library', 15, 17], ['library', 16, 17], ['library', 17, 17]], 'yard', [26, 5], 'down', '마당으로');
+  door([['yard', 25, 4], ['yard', 26, 4], ['yard', 27, 4]], 'library', [15, 16], 'up', '도서관으로');
+  door([['yard', 14, 17], ['yard', 15, 17], ['yard', 16, 17], ['yard', 17, 17]], 'village', [1, 7], 'right', '교문 밖으로');
+  door([['village', 0, 6], ['village', 0, 7], ['village', 0, 8], ['village', 0, 9]], 'yard', [15, 16], 'up', '학교로');
+  door([['village', 24, 11], ['village', 25, 11]], 'room', [15, 16], 'up', '집 안으로');
+  door([['room', 14, 17], ['room', 15, 17], ['room', 16, 17], ['room', 17, 17]], 'village', [24, 12], 'down', '밖으로');
+
+  /* 구역 이름(화면 위 표시용): 장면 이름, 마당만 조금 나눔 */
+  function areaName(xx, yy) {
+    var s = sceneAt(xx);
+    if (!s) return '';
+    if (s.id === 'yard') {
+      var lx = xx - s.ox;
+      if (yy <= 7 && lx <= 12) return '현관 앞';
+      if (yy >= 15 && lx >= 13 && lx <= 18) return '교문';
+      if (lx >= 18 && yy >= 11) return '매점 앞';
+      if (lx <= 14 && yy >= 9) return '축제 부스';
+    }
+    return s.name;
+  }
+  function sceneAt(xx) { return SCENES[Math.floor(xx / SW)] || null; }
+
+  /* ── 조사 지점(그림 위 사각형, w×h칸) — 그림을 따로 붙이지 않는다. wall:true면 막지 않음(벽에 걸린 것) ── */
+  function ob(id, name, scene, x0, y0, w, h, look, extra) {
+    var o = { id: id, name: name, x: S[scene].ox + x0, y: y0, w: w, h: h, look: look };
+    if (extra) for (var k in extra) o[k] = extra[k];
+    return o;
+  }
+  var OBJECTS = [
+    ob('board', '칠판', 'classroom', 10, 4, 12, 1, '칠판: “축제 D-day · 2학년 3반 레트로 사진관 📸”', { wall: true }),
+    ob('tdesk', '교탁', 'classroom', 14, 4, 4, 3, '교탁 위에 출석부와 분필이 놓여 있다.'),
+    ob('tdesk2', '선생님 책상', 'classroom', 2, 5, 7, 3, '담임 선생님 책상. 축제 부스 배치도가 펼쳐져 있다. 우리 반은 마당 왼쪽 천막이다.'),
+    ob('desk7', '민준이 책상', 'classroom', 28, 10, 3, 1, '민준이 책상. 만들다 만 소품이 가지런히 놓여 있다.'),
+    ob('desk8', '내 책상', 'classroom', 25, 13, 3, 1, '내 책상. 축제 소품 상자가 올려져 있다.'),
+    ob('shelf', '전시 책장', 'library', 13, 4, 6, 1, '‘개인정보, 어디까지 괜찮을까?’라는 책이 앞에 놓여 있다.', { wall: true }),
+    ob('libdesk', '대출 데스크', 'library', 2, 4, 8, 4, '사서 선생님 자리. 지금은 비어 있다.'),
+    ob('pc3', '공용 PC 3번', 'library', 24, 3, 5, 4, '공용 PC 3번. 검색과 출력용이다.', { label: '3' }),
+    ob('notice', '게시판', 'yard', 18, 1, 3, 4, '게시판: 솔빛축제 부스 배치도와 일정표가 붙어 있다.', { wall: true }),
+    ob('tent1', '레트로 사진관 천막', 'yard', 6, 10, 4, 4, '우리 반 부스 ‘레트로 사진관’. 1컷 500원.'),
+    ob('tent2', '옆 반 천막', 'yard', 10, 10, 4, 4, '옆 반 부스. 솜사탕 냄새가 난다.'),
+    ob('store', '학교 매점', 'yard', 20, 12, 4, 3, '매점. 오늘은 컵떡볶이가 제일 잘 팔린다.'),
+    ob('lamp', '가로등', 'village', 18, 13, 1, 1, '가로등이 막 켜졌다.'),
+    ob('mailbox', '노란 우편함', 'village', 26, 12, 1, 2, '노란 우편함. 여기가 우리 집이다.'),
+    ob('bed', '침대', 'room', 2, 4, 7, 8, '내 침대. 아직 잘 시간은 아니다.'),
+    ob('mypc', '내 책상 컴퓨터', 'room', 22, 5, 7, 5, '내 책상과 컴퓨터.'),
+    ob('mybook', '책꽂이', 'room', 28, 6, 3, 6, '교과서와 만화책이 섞여 꽂혀 있다.'),
+    ob('plush', '큰 팬더 인형', 'room', 28, 13, 4, 5, '구석에 앉은 커다란 팬더 인형. 푹신한 배에 기대면 잠이 올 것 같다.')
+  ];
+
+  /* 이웃집: 조사만(들어갈 수 없음). approach = 현관 앞 계단 칸 */
+  var NEIGHBORS = [
+    { id: 'nb_sage', name: '세이지 지붕 집', scene: 'village', x: S.village.ox + 4, y: 1, w: 7, h: 5, approach: P('village', 6, 6),
+      look: '화분에 막 물을 준 듯 흙이 젖어 있다. 저녁 준비하는 냄새가 난다.' },
+    { id: 'nb_brick', name: '벽돌집', scene: 'village', x: S.village.ox + 13, y: 3, w: 8, h: 6, approach: P('village', 15, 9),
+      look: '현관 앞에 화분이 놓여 있다. 안에서 텔레비전 소리가 작게 들린다.' }
+  ];
+  NEIGHBORS.forEach(function (n) { OBJECTS.push({ id: n.id, name: n.name, x: n.x, y: n.y, w: n.w, h: n.h, look: n.look, wall: true }); });
 
   var SPAWNS = {
-    classroom: { x: 8, y: 6, dir: 'up' },
-    gate: { x: 13, y: 16, dir: 'left' },  // 교문 안쪽(현관까지 8칸)
-    home: { x: 32, y: 4, dir: 'down' },   // 내 방 침대 옆(아침에 일어난 자리)
-    road: { x: 25, y: 16, dir: 'right' }, // 마을 길 가운데
-    hall: { x: 10, y: 9, dir: 'down' },   // 복도, 현관 앞
-    yard: { x: 9, y: 21, dir: 'right' }   // 마당 축제 부스 앞
+    classroom: P('classroom', 15, 15, 'down'), // 하교: 교실 뒷문 쪽
+    gate: P('yard', 15, 15, 'up'),             // 등교: 교문 안쪽
+    home: P('room', 10, 12, 'down'),           // 내 방 침대 옆(아침에 일어난 자리)
+    road: P('village', 12, 10, 'right'),       // 마을 길 가운데
+    hall: P('yard', 7, 6, 'down'),             // 현관 앞
+    yard: P('yard', 14, 13, 'right')           // 마당 축제 부스 옆
   };
 
   /* ── 사건 트리거 ─────────────────── */
-  var schoolDay = function (extra) {
-    return [
-      { who: 'saebom', x: 5, y: 4, dir: 'down' }, { who: 'haneul', x: 8, y: 2, dir: 'left' },
-      { who: 'jiho', x: 3, y: 1, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'up' }
-    ].filter(function (c) { return !extra || extra.indexOf(c.who) < 0; });
-  };
+  var classmates = [
+    who('saebom', 'classroom', 12, 8, 'down'), who('haneul', 'classroom', 19, 9, 'left'),
+    who('jiho', 'classroom', 26, 11, 'up'), who('minjun', 'classroom', 29, 11, 'up')
+  ];
+  var schoolDay = function (extra) { return classmates.filter(function (c) { return !extra || extra.indexOf(c.who) < 0; }); };
   var TRIGGERS = {
-    // 등교 오프닝: 내 방에서 일어나 교실까지 걷는다. 길에서 만난 친구는 castLines로 자기소개, 교실에서 새봄이가 반 친구를 소개한다.
+    // 등교 오프닝: 내 방에서 일어나 교실까지 걷는다. 길에서 만난 친구는 castLines로 자기소개(지나가면 저절로 한 번), 교실에서 새봄이가 반 친구를 소개한다.
     pro_1: { time: 'D-4 · 아침', mission: '학교 가기 — 2학년 3반 교실까지', target: { npc: 'saebom' }, spawn: 'home', tint: 'day',
       hint: '방향키·WASD 또는 화면을 눌러 걸어요',
-      cast: [{ who: 'saebom', x: 5, y: 4, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'left' },
-        { who: 'haneul', x: 17, y: 15, dir: 'down' }, { who: 'jiho', x: 12, y: 9, dir: 'down' }],
+      cast: [who('saebom', 'classroom', 12, 8, 'down'), who('minjun', 'classroom', 29, 11, 'up'),
+        who('haneul', 'yard', 17, 11, 'left'), who('jiho', 'yard', 11, 6, 'down')],
       castLines: {
         haneul: '어, 왔냐? 이번 축제 때 사진 진짜 많이 찍자 ㅋㅋ 다 올려야지!',
         jiho: '안녕… 나 꾸미기 담당이야. 반짝이 스티커 잔뜩 사 왔어.'
@@ -182,33 +183,33 @@
         { who: 'saebom', text: '오는 길에 하늘이랑 지호도 봤지? 우리 반 다 같이 잘해 보자!' }
       ] },
     c1_e1_a: { time: 'D-4 · 하교', mission: '집에 가기 — 마을 길 끝 우리 집, 내 방 침대', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
-      cast: [{ who: 'saebom', x: 5, y: 4, dir: 'down' }, { who: 'haneul', x: 8, y: 2, dir: 'left' }],
+      cast: [who('saebom', 'classroom', 12, 8, 'down'), who('haneul', 'classroom', 19, 9, 'left')],
       greet: '저녁을 먹고 침대에 눕자 휴대폰이 울렸다.' },
     c1_e2_a: { time: 'D-3 · 방과 후', mission: '교실에서 엎드려 자는 민준이 살펴보기', target: { npc: 'minjun' }, spawn: 'gate', tint: 'day',
-      cast: [{ who: 'minjun', x: 7, y: 6, dir: 'up', pose: 'sleep' }, { who: 'haneul', x: 6, y: 6, dir: 'right' },
-        { who: 'saebom', x: 6, y: 1, dir: 'down' }, { who: 'jiho', x: 2, y: 1, dir: 'down' }] },
+      cast: [who('minjun', 'classroom', 29, 11, 'up', { pose: 'sleep' }), who('haneul', 'classroom', 27, 12, 'right'),
+        who('saebom', 'classroom', 12, 8, 'down'), who('jiho', 'classroom', 10, 9, 'down')] },
     c1_e3_a: { time: 'D-2 · 하교 시간', mission: '집에 가서 쉬기 — 교문을 지나 마을 길 끝 우리 집으로', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
-      cast: [{ who: 'saebom', x: 15, y: 8, dir: 'down' }, { who: 'haneul', x: 4, y: 15, dir: 'down' }, { who: 'minjun', x: 7, y: 21, dir: 'up' }],
+      cast: [who('saebom', 'classroom', 20, 8, 'down'), who('haneul', 'yard', 19, 8, 'down'), who('minjun', 'yard', 11, 14, 'up')],
       enterLine: '하루 종일 부스를 꾸몄더니 피곤하다. 침대에 눕자 휴대폰이 울렸다.' },
     c2_e4_a: { time: 'D-1 · 오후', mission: '매점 앞에서 손짓하는 하늘이에게 가기', target: { npc: 'haneul' }, spawn: 'gate', tint: 'day',
-      cast: [{ who: 'haneul', x: 4, y: 15, dir: 'right' }, { who: 'jiho', x: 3, y: 21, dir: 'up' },
-        { who: 'minjun', x: 7, y: 21, dir: 'up' }, { who: 'saebom', x: 6, y: 9, dir: 'down' }] },
+      cast: [who('haneul', 'yard', 19, 14, 'left'), who('jiho', 'yard', 8, 14, 'up'),
+        who('minjun', 'yard', 11, 14, 'up'), who('saebom', 'classroom', 12, 8, 'down')] },
     c2_e5_a: { time: 'D-1 · 저녁', mission: '집에 가서 부스 안내문 쓰기 — 내 방 컴퓨터', target: { obj: 'mypc' }, spawn: 'road', tint: 'night',
-      cast: [{ who: 'jiho', x: 3, y: 21, dir: 'up' }, { who: 'minjun', x: 7, y: 21, dir: 'up' }] },
+      cast: [who('jiho', 'yard', 8, 14, 'up'), who('minjun', 'yard', 11, 14, 'up')] },
     c2_e6_a: { time: '축제 당일 · 아침', mission: '도서관 공용 PC 3번에서 안내문 출력하기', target: { obj: 'pc3' }, spawn: 'gate', tint: 'day',
-      cast: [{ who: 'friend', x: 18, y: 5, dir: 'left' }, { who: 'saebom', x: 3, y: 21, dir: 'up' }, { who: 'jiho', x: 4, y: 21, dir: 'up' }] },
+      cast: [who('friend', 'library', 23, 8, 'right'), who('saebom', 'yard', 8, 14, 'up'), who('jiho', 'yard', 9, 14, 'up')] },
     c3_e7_a: { time: '축제 당일 · 오후', mission: '마당 부스 옆 하늘이네에게 가기', target: { npc: 'haneul' }, spawn: 'hall', tint: 'day',
-      cast: [{ who: 'haneul', x: 11, y: 21, dir: 'left' }, { who: 'friend', x: 12, y: 21, dir: 'left' },
-        { who: 'minjun', x: 9, y: 6, dir: 'up' }, { who: 'saebom', x: 3, y: 21, dir: 'up' }, { who: 'jiho', x: 7, y: 21, dir: 'up' }] },
+      cast: [who('haneul', 'yard', 15, 13, 'left'), who('friend', 'yard', 16, 13, 'left'),
+        who('minjun', 'classroom', 29, 11, 'up'), who('saebom', 'yard', 8, 14, 'up'), who('jiho', 'yard', 11, 14, 'up')] },
     c3_e8_a: { time: '축제 당일 · 저녁', mission: '집에 가서 쉬기 — 내 방 컴퓨터', target: { obj: 'mypc' }, spawn: 'yard', tint: 'evening',
-      cast: [{ who: 'haneul', x: 11, y: 21, dir: 'left' }, { who: 'teacher', x: 12, y: 15, dir: 'down' }],
+      cast: [who('haneul', 'yard', 15, 13, 'left'), who('teacher', 'yard', 16, 8, 'down')],
       castLines: { teacher: '고생 많았어. 이제 집에 가서 푹 쉬렴.' } }, // 축제가 끝난 저녁
     c3_e9_a: { time: '축제 다음 날 · 오전', mission: '교실 내 자리에 앉기', target: { obj: 'desk8' }, spawn: 'gate', tint: 'day',
       greet: '자리에 앉자 휴대폰 알림이 연달아 울렸다.',
       skipIf: 'e8_confrontation=fight', // 싸움 경로는 이미 다음 날 교실·상담실 장면을 거쳤다 → 걷기 생략
       cast: schoolDay() },
     ep_1: { time: '다음 주 월요일', mission: '교실에서 담임 선생님께 가기', target: { npc: 'teacher' }, spawn: 'gate', tint: 'day',
-      cast: [{ who: 'teacher', x: 6, y: 1, dir: 'down' }].concat(schoolDay()) }
+      cast: [who('teacher', 'classroom', 17, 7, 'down')].concat(schoolDay()) }
   };
 
   /* ── 장면 무대 ─────────────────────
@@ -220,50 +221,46 @@
    *   - 폰 장면에서 같은 공간 친구가 보낸 메시지는 원문 대신 '📱…'만 머리 위에 뜬다(개인톡을 소리 내 말한 것처럼 보이지 않게)
    */
   var PLACES = {
-    classroom: { name: '2학년 3반 교실', me: { x: 8, y: 6, dir: 'up' } },
-    room: { name: '내 방', me: { x: 32, y: 4, dir: 'down' } },
-    road: { name: '마을 길', me: { x: 25, y: 16, dir: 'right' } },
-    gate: { name: '교문', me: { x: 13, y: 16, dir: 'left' } },
-    store: { name: '매점 앞', me: { x: 5, y: 15, dir: 'left' } },
-    library: { name: '도서관', me: { x: 17, y: 5, dir: 'up' } },
-    hall: { name: '복도', me: { x: 10, y: 9, dir: 'down' } },
-    booth: { name: '마당 축제 부스', me: { x: 10, y: 21, dir: 'right' } }
+    classroom: { name: '2학년 3반 교실', me: P('classroom', 15, 12, 'up') },
+    room: { name: '내 방', me: P('room', 12, 12, 'down') },
+    road: { name: '마을 길', me: P('village', 12, 10, 'right') },
+    gate: { name: '교문', me: P('yard', 15, 15, 'up') },
+    store: { name: '매점 앞', me: P('yard', 18, 14, 'right') },
+    library: { name: '도서관', me: P('library', 26, 7, 'up') },
+    hall: { name: '현관 앞', me: P('yard', 7, 7, 'right') }, // 복도는 없앴다(설계 결정) — 현관 앞에서
+    booth: { name: '마당 축제 부스', me: P('yard', 14, 13, 'right') }
   };
-  var classmates = [
-    { who: 'saebom', x: 5, y: 4, dir: 'down' }, { who: 'haneul', x: 8, y: 2, dir: 'left' },
-    { who: 'jiho', x: 3, y: 1, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'left' }
-  ];
   function only(list, whos) { return list.filter(function (c) { return whos.indexOf(c.who) >= 0; }); }
-  var ATDESK = { x: 36, y: 4, dir: 'up' }; // 내 방 책상 컴퓨터 앞
-  var BOOTH = [{ who: 'haneul', x: 11, y: 21, dir: 'left' }, { who: 'friend', x: 12, y: 21, dir: 'left' },
-    { who: 'saebom', x: 3, y: 21, dir: 'up' }, { who: 'jiho', x: 7, y: 21, dir: 'up' }];
+  var ATDESK = P('room', 25, 10, 'up'); // 내 방 책상 컴퓨터 앞
+  var BOOTH = [who('haneul', 'yard', 15, 13, 'left'), who('friend', 'yard', 16, 13, 'left'),
+    who('saebom', 'yard', 8, 14, 'up'), who('jiho', 'yard', 11, 14, 'up')];
 
   var STAGES = {
-    pro_1: { place: 'classroom', tint: 'day', card: '방과 후 · 오후 5:30 — 축제 준비 중', me: { x: 5, y: 5, dir: 'up' }, cast: classmates,
+    pro_1: { place: 'classroom', tint: 'day', card: '방과 후 · 오후 5:30 — 축제 준비 중', me: P('classroom', 15, 10, 'up'), cast: classmates,
       bubbles: [{ on: '다 올린다', who: 'jiho', text: '…' }, { on: '넌 뭐 할래', who: 'saebom', text: '👀' }] },
     c1_e1_a: { place: 'room', tint: 'evening', cast: [] },
     c1_e1_b: { place: 'room', tint: 'evening', cast: [] },
-    c1_e2_a: { place: 'classroom', tint: 'day', me: { x: 8, y: 6, dir: 'left' },
-      cast: [{ who: 'minjun', x: 7, y: 6, dir: 'up', pose: 'sleep' }, { who: 'haneul', x: 6, y: 6, dir: 'right' },
-        { who: 'saebom', x: 6, y: 1, dir: 'down' }, { who: 'jiho', x: 2, y: 1, dir: 'down' }] },
+    c1_e2_a: { place: 'classroom', tint: 'day', me: P('classroom', 30, 12, 'left'),
+      cast: [who('minjun', 'classroom', 29, 11, 'up', { pose: 'sleep' }), who('haneul', 'classroom', 27, 12, 'right'),
+        who('saebom', 'classroom', 12, 8, 'down'), who('jiho', 'classroom', 10, 9, 'down')] },
     c1_e2_b: { place: 'room', tint: 'night', card: '그날 밤 · 내 방', cast: [] },
     c1_e2_d: { place: 'road', tint: 'day', card: 'D-2 아침 · 등굣길', cast: [] },
     c1_e3_a: { place: 'room', tint: 'night', cast: [] },
-    c1_e3_b: { place: 'gate', tint: 'day', card: 'D-1 아침 · 교문 앞', cast: [{ who: 'saebom', x: 12, y: 15, dir: 'down' }] },
+    c1_e3_b: { place: 'gate', tint: 'day', card: 'D-1 아침 · 교문 앞', cast: [who('saebom', 'yard', 16, 14, 'left')] },
     c1_e3_ask: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'jiho']),
       bubbles: [{ on: '고마워. 내가 정한 만큼만', who: 'jiho', text: '🙂' }] },
     c1_e3_anon: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'jiho', 'haneul']),
       bubbles: [{ on: '역할 바꿨어', who: 'jiho', text: '😌' }] },
     c1_e3_cap: { place: 'classroom', tint: 'day', card: 'D-1 점심 · 교실', cast: only(classmates, ['saebom', 'jiho', 'haneul']),
       bubbles: [{ on: '…화나. 아무한테도', who: 'jiho', text: '💢' }] },
-    c2_e4_a: { place: 'store', tint: 'evening', cast: [{ who: 'haneul', x: 4, y: 15, dir: 'right' }],
+    c2_e4_a: { place: 'store', tint: 'evening', cast: [who('haneul', 'yard', 19, 14, 'left')],
       bubbles: [{ on: '누가 만든 거래', who: 'haneul', text: '이거 봐 ㅋㅋ' }, { on: '나 보낸 거 지울게', who: 'haneul', text: '…' }] },
     c2_e4_b: { place: 'road', tint: 'evening', card: '그날 저녁 · 집에 가는 길', cast: [] },
     c2_e5_a: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
     c2_e5_b: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
-    c2_e6_a: { place: 'library', tint: 'day', cast: [{ who: 'friend', x: 18, y: 5, dir: 'left' }] },
-    c2_e6_b: { place: 'library', tint: 'day', cast: [{ who: 'friend', x: 18, y: 5, dir: 'left' }] },
-    c2_e6_c: { place: 'hall', tint: 'day', card: '1교시 뒤 · 복도', cast: [{ who: 'haneul', x: 12, y: 8, dir: 'down' }],
+    c2_e6_a: { place: 'library', tint: 'day', cast: [who('friend', 'library', 23, 8, 'right')] },
+    c2_e6_b: { place: 'library', tint: 'day', cast: [who('friend', 'library', 23, 8, 'right')] },
+    c2_e6_c: { place: 'hall', tint: 'day', card: '1교시 뒤 · 현관 앞', cast: [who('haneul', 'yard', 8, 7, 'left')],
       bubbles: [{ on: '아까 진짜 고마웠어', who: 'haneul', text: '🙏' }, { on: '다음부터는 진짜 그러지 마라', who: 'haneul', text: '😠' }] },
     c3_e7_a: { place: 'booth', tint: 'day', cast: BOOTH,
       bubbles: [{ on: '해 해', who: 'friend', text: 'ㅋㅋㅋ' }, { on: '다음은 내 차례다', who: 'haneul', text: '👀' }] },
@@ -278,13 +275,13 @@
     c3_e8_f: { place: 'classroom', tint: 'day', card: '축제 다음 날 · 아침', cast: classmates },
     c3_e8_g: { place: 'classroom', tint: 'day', cast: classmates },
     c3_e8_i: { place: 'classroom', tint: 'day', cast: classmates },
-    c3_e8_h: { place: 'hall', tint: 'day', card: '상담실 앞', cast: [] },
+    c3_e8_h: { place: 'classroom', tint: 'day', card: '상담실', cast: [] },
     c3_e9_a: { place: 'classroom', tint: 'day', cast: classmates,
       bubbles: [{ on: '다들 퍼 가 주세요', who: 'jiho', text: '…!' }, { on: '당하고만 있으면 안 돼', who: 'saebom', text: '😤' }] },
     c3_e9_b: { place: 'classroom', tint: 'day', card: '점심시간 · 교실', cast: only(classmates, ['saebom', 'jiho']),
       bubbles: [{ on: '그냥 넘어가면 억울한데', who: 'saebom', text: '😣' }] },
-    ep_1: { place: 'classroom', tint: 'day', me: { x: 7, y: 2, dir: 'left' },
-      cast: [{ who: 'teacher', x: 6, y: 1, dir: 'down' }].concat(classmates) }
+    ep_1: { place: 'classroom', tint: 'day', me: P('classroom', 16, 9, 'up'),
+      cast: [who('teacher', 'classroom', 17, 7, 'down')].concat(classmates) }
   };
 
   /* ── ❗가 아닌 인물에게 말 걸 때 ─────── */
@@ -380,20 +377,9 @@
     }
     return null;
   }
-  function areaName(xx, yy) {
-    for (var i = 0; i < AREAS.length; i++) {
-      var a = AREAS[i];
-      if (xx >= a.x && xx < a.x + a.w && yy >= a.y && yy < a.y + a.h) return a.name;
-    }
-    return '';
-  }
-
   var WORLD = {
-    W: W, H: H, VERSION: VERSION, GATE: GATE, grid: grid,
-    POND: { x: 18.9, y: 21.1, w: 4.2, h: 2.2 },               // 연못 그림(격자 w = 19~22, 19~20줄)
-    CRITTERS: [{ name: 'rabbit', x: 31, y: 14 }, { name: 'squirrel', x: 38, y: 14 }], // 우리 집 양옆 잔디(그림만)
-    TILES: TILES, DOORS: DOORS, OBJECTS: OBJECTS, SPAWNS: SPAWNS, INDOOR: INDOOR,
-    indoor: function (xx, yy) { return xx >= INDOOR.x && xx < INDOOR.x + INDOOR.w && yy >= INDOOR.y && yy < INDOOR.y + INDOOR.h; },
+    W: W, H: H, VERSION: VERSION, SW: SW, SH: SH, CELL: CELL, SCENES: SCENES, sceneAt: sceneAt, grid: grid,
+    TILES: TILES, DOORS: DOORS, OBJECTS: OBJECTS, SPAWNS: SPAWNS,
     triggers: TRIGGERS, idle: IDLE, DIRS: DIRS, PLACES: PLACES, STAGES: STAGES,
     tile: tile, objectAt: objectAt, walkable: walkable, stepFrom: stepFrom,
     findPath: findPath, adjacentTo: adjacentTo, areaName: areaName, nearestWalkable: nearestWalkable, NEIGHBORS: NEIGHBORS,
