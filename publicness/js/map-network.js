@@ -27,7 +27,7 @@
     var svg = svgEl('svg', { 'class': 'net-svg net-status-svg' }); layer.appendChild(svg);
     var labels = document.createElement('div'); labels.className = 'net-labels'; layer.appendChild(labels);
     stage.appendChild(layer);
-    var st = { nodes: {}, routes: [], waiting: {}, selected: [], selectable: [], show: true, faces: [] }, placed = [], flashT = {}, facePos = {};
+    var st = { nodes: {}, routes: [], waiting: {}, selected: [], selectable: [], show: true, faces: [], newNodes: [], newAt: 0 }, placed = [], flashT = {}, facePos = {};
 
     function project(x, y) { var v = getView(); return v.project(x, y); }
     function lanePoint(a, b, num, f) {
@@ -62,6 +62,8 @@
       Object.keys(st.nodes).forEach(function (id) {
         var n = st.nodes[id], p = project(n.x, n.y), sel = st.selected.indexOf(id) >= 0, can = !st.selectable.length || st.selectable.indexOf(id) >= 0 || sel;
         var g = svgEl('g', { 'class': 'net-stop' + (sel ? ' selected' : '') + (can ? '' : ' muted') + (flashT[id] && performance.now() - flashT[id] < 900 ? ' flash' : ''), 'data-node': id }, gStop);
+        // 이번 단계에 새로 생긴 정류장(2026-11-01): 처음 2.6초 강조 고리(지도 배너와 함께), 이름표엔 ‘새 정류장’ 배지
+        if (st.newNodes.indexOf(id) >= 0 && performance.now() - st.newAt < 2600) svgEl('circle', { 'class': 'new-ring', cx: p.left, cy: p.top, r: T.stop + 10 }, g);
         svgEl('circle', { cx: p.left, cy: p.top, r: T.stop }, g);
         (at[id] || []).forEach(function (c, k, all) {
           var ang = -Math.PI / 2 + (k - (all.length - 1) / 2) * 0.62, R = T.stop + 3.5;
@@ -108,6 +110,7 @@
         P[id] = project(n.x, n.y);
         el.className = 'net-label'; el.dataset.node = id;
         el.appendChild(document.createElement('span')).textContent = n.name;
+        if (st.newNodes.indexOf(id) >= 0) { var nb = document.createElement('span'); nb.className = 'net-new'; nb.textContent = '새 정류장'; el.appendChild(nb); el.classList.add('is-new'); }
         if (st.showWait && wait > 0) {
           var w = document.createElement('span'); w.className = 'net-wait' + (wait >= T.waitDanger ? ' danger' : wait >= T.waitCaution ? ' caution' : '');
           w.textContent = '👤 ' + wait; w.title = n.name + ' 대기 ' + wait + '명'; el.appendChild(w); el.dataset.wait = wait;
@@ -185,7 +188,11 @@
       flash: function (id) { flashT[id] = performance.now(); redraw(); root.setTimeout(redraw, 950); },
       setFaces: function (list) { st.faces = list || []; redraw(); },
       facePos: function (id) { return facePos[id] || null; },
-      setOptions: function (o) { if ('showWait' in o) st.showWait = !!o.showWait; if ('show' in o) st.show = !!o.show; redraw(); },
+      setOptions: function (o) {
+        if ('showWait' in o) st.showWait = !!o.showWait; if ('show' in o) st.show = !!o.show;
+        if ('newNodes' in o) { var was = st.newNodes.join(), at = o.newAt || 0; st.newNodes = o.newNodes || []; if (was !== st.newNodes.join() || at !== st.newAt) { st.newAt = at; var left = 2700 - (performance.now() - at); if (st.newNodes.length && left > 0) root.setTimeout(redraw, left); } }
+        redraw();
+      },
       redraw: redraw, draw: draw,
       rects: function () { return placed.slice(); },
       caps: function () { return (st.caps || []).slice(); }

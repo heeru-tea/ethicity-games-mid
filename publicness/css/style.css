@@ -460,7 +460,7 @@ body[data-screen="plan"]:not(.plan-text-open) #panel { display:none; }
 body[data-screen="plan"].plan-text-open .game { grid-template-columns:minmax(0,1fr) minmax(300px,370px); }
 body[data-screen="plan"] #text-routes, body[data-screen="plan"] #no3d-note { display:none; }
 #plan-toolbar { max-width:1050px; margin:0 auto; padding:12px 0; }
-body:not([data-screen="plan"]) #plan-toolbar,body:not([data-screen="plan"]) #map-people,body:not([data-screen="plan"]) #route-buses,body:not([data-screen="plan"]) #drop-highlight,body:not([data-screen="plan"]) #resident-destination,body:not([data-screen="plan"]) #plan-ai-popover { display:none; }
+body:not([data-screen="plan"]) #plan-toolbar,body:not([data-screen="plan"]):not([data-screen="run"]) #map-people,body:not([data-screen="plan"]) #route-buses,body:not([data-screen="plan"]) #drop-highlight,body:not([data-screen="plan"]) #resident-destination,body:not([data-screen="plan"]) #plan-ai-popover { display:none; }
 .map-tools-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; }
 .map-tools-row .route-tabs { flex:1; margin:0; }
 .map-tools-row #btn-depart { width:auto; margin-left:auto; min-height:44px; font-size:16px; padding:8px 16px; }

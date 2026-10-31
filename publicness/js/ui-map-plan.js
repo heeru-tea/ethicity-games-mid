@@ -153,7 +153,7 @@
     });
   }
   function positionPeople(){
-    if(!app()||!app().s||document.body.dataset.screen!=='plan')return;
+    var scr=document.body.dataset.screen;if(!app()||!app().s||(scr!=='plan'&&scr!=='run'))return;
     var layer=document.querySelector('#map-people');if(!layer)return;
     positionBadges();
     // 인물 얼굴 자리는 지도 네트워크층이 이름표보다 먼저 정한다(net.facePos) — 이름표·번호 원·노선 선과 겹치지 않게. 층이 없을 때만 아래 방식
@@ -164,7 +164,7 @@
       [[-F/2,-F-14],[-F-10,-F-6],[10,-F-6],[-F-16,-F/2],[16,-F/2],[-F/2,18]].some(function(o){var r={x:p.left+o[0],y:p.top+o[1],w:F,h:F};if(taken.some(function(q){return r.x<q.x+q.w&&q.x<r.x+r.w&&r.y<q.y+q.h&&q.y<r.y+r.h;}))return false;best=r;return true;});
       if(!best)best={x:p.left-F/2,y:p.top-F-14,w:F,h:F};taken.push(best);el.style.left=best.x+'px';el.style.top=best.y+'px';});}
     if(drag&&drag.target&&drag.target.kind==='route'&&document.querySelector('#drop-highlight').dataset.num)highlight(drag.target.num);
-    var svg=document.querySelector('#resident-destination');svg.textContent='';if(!state.person)return;
+    var svg=document.querySelector('#resident-destination');if(!svg)return;svg.textContent='';if(!state.person)return;
     var rd=PB.Demand.residents(app().s.config,app().s.phase).filter(function(r){return r.id===state.person;})[0];if(!rd)return;
     var a=app().nodeXY(rd.o),b=app().nodeXY(rd.d),p=app().view.project(a.x,a.y),q=app().view.project(b.x,b.y),line=document.createElementNS('http://www.w3.org/2000/svg','line');
     [['x1',p.left],['y1',p.top],['x2',q.left],['y2',q.top]].forEach(function(k){line.setAttribute(k[0],k[1]);});svg.appendChild(line);
@@ -249,16 +249,23 @@
     document.querySelector('#screen-game').appendChild(pop);document.body.classList.toggle('ai-open',!!state.ai);
     // 좁은 화면 시트는 지도 아래 빈 곳만큼만 올라온다(제안 노선이 시트에 덜 가리게). 자리가 260px보다 적으면 CSS 기본(화면 46%)
     if(state.ai&&root.innerWidth<=850)root.requestAnimationFrame(function(){var sb=document.querySelector('#stage').getBoundingClientRect().bottom,room=Math.floor(root.innerHeight-sb-8);pop.style.maxHeight=room>=260?room+'px':'';});
-    var people=App.el('div',{id:'map-people','aria-label':'주요 인물'});PB.Demand.residents(App.s.config,App.s.phase).forEach(function(rd){
-      var face=button('resident-map-'+rd.id,'',function(){state.person=state.person===rd.id?null:rd.id;redraw();});face.className='map-person resident-face '+rd.id;
-      face.setAttribute('aria-label',rd.name+' · '+App.nodeName(rd.o)+'에서 '+App.nodeName(rd.d)+'까지');face.setAttribute('aria-pressed',String(state.person===rd.id));
-      face.appendChild(App.el('img',{src:'assets/art/portrait-'+rd.id+'-calm.webp',alt:''}));face.title=face.getAttribute('aria-label');/* 지도엔 얼굴만 — 이름은 툴팁·aria-label(배지 체계 정리) */people.appendChild(face);
-    });stage.appendChild(people);var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.id='resident-destination';svg.setAttribute('aria-hidden','true');stage.appendChild(svg);
+    mapPeople(App,stage);var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.id='resident-destination';svg.setAttribute('aria-hidden','true');stage.appendChild(svg);
     if(App.net)App.net.setFaces(PB.Demand.residents(App.s.config,App.s.phase).map(function(rd){return {id:rd.id,node:rd.o,size:40};}));
     badges(App,stage);
     var routeClick=App.onRouteClick;App.onRouteClick=function(num,index){if(!assign(num))routeClick(num,index);};
     requestAnimationFrame(positionPeople);return result;
   };
+  // 지도 위 인물 얼굴(출발 정류장 옆). 계획 화면이 만들고, 운행 화면으로 바로 이어 볼 때(새로고침 등) 없으면 인물 HUD가 다시 만든다
+  function mapPeople(App,stage){
+    var old=document.getElementById('map-people');if(old)old.remove();
+    var people=App.el('div',{id:'map-people','aria-label':'주요 인물'});PB.Demand.residents(App.s.config,App.s.phase).forEach(function(rd){
+      // 얼굴을 누르면 인물 HUD 칩과 같이 그 사람의 경로를 굵게(ui-hud.js) — 운행 중에도 그대로 쓴다
+      var face=button('resident-map-'+rd.id,'',function(){if(PB.Hud)PB.Hud.toggle(rd.id);});face.className='map-person resident-face '+rd.id;
+      face.setAttribute('aria-label',rd.name+' · '+App.nodeName(rd.o)+'에서 '+App.nodeName(rd.d)+'까지');face.setAttribute('aria-pressed',String(!!PB.Hud&&PB.Hud.selected()===rd.id));
+      face.appendChild(App.el('img',{src:'assets/art/portrait-'+rd.id+'-calm.webp',alt:''}));face.title=face.getAttribute('aria-label');/* 지도엔 얼굴만 — 이름은 툴팁·aria-label(배지 체계 정리) */people.appendChild(face);
+    });stage.appendChild(people);people.dataset.phase=App.s.phase;
+  }
+  PB.UI.mapPeople=function(App){mapPeople(App,document.querySelector('#stage'));requestAnimationFrame(positionPeople);};
   // AI 패널 닫기: 미리 보기 중이었으면 지도도 내 노선으로(제안은 남아 있어 다시 열면 그대로). 닫은 뒤 초점은 ‘AI 제안’ 버튼으로
   function closeAi(){state.ai=false;if(PB.UI.planSetPreview)PB.UI.planSetPreview(false);redraw();var t=document.querySelector('#plan-ai-toggle');if(t)t.focus({preventScroll:true});}
   // ‘적용하고 고치기’를 누르면 패널을 먼저 닫는다(적용 후 다시 그릴 때 닫힌 채로) — 알림은 ui-plan applyRec
@@ -269,7 +276,7 @@
     var wasAi=state.ai;state.bus=null;state.from=null;state.person=null;state.ai=false;if(wasAi){closeAi();return;}redraw();
   });
   root.addEventListener('blur',function(){if(drag){end();say('끌기를 취소했어요. 바뀐 것은 없어요.');}});
-  root.addEventListener('resize',function(){if(document.body.dataset.screen==='plan')positionPeople();});
+  root.addEventListener('resize',function(){var scr=document.body.dataset.screen;if(scr==='plan'||scr==='run')positionPeople();});
   root.setInterval(positionPeople,150);
   PB.UI.busDrop={targetAt:targetAt,distances:distances};// 테스트용(놓을 곳 판정)
 })(window);
