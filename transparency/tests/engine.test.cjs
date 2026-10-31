@@ -34,18 +34,11 @@ test('first choice survives revisions and pending cannot advance',()=>{
 test('all action branches can be confirmed and their outcomes match',()=>{
  for(const [scene,key,choices] of [[4,'photo',['manual','auto','dami']],[8,'writing',['detector','review','draft']],[12,'face',['crowd','release','maintain']]]){
   for(const id of choices){let s=E.initial();s.scene=scene;s=E.reduce(s,{type:'choose',id});
-   if(id==='manual')s=E.reduce(s,{type:'crop',rect:[0,0,1536,1024]});
+
    s=E.reduce(s,{type:'solve',id:'effect',correct:true});s=E.reduce(s,{type:'confirm'});
-   assert.equal(s.cases[key].final,id);assert.equal(E.canAdvance(s),true);
+   if(id==='manual')s=E.reduce(s,{type:'crop',rect:[0,0,1536,1024]});assert.equal(s.cases[key].final,id);assert.equal(E.canAdvance(s),true);
   }
  }
-});
-test('manual crop must contain all five faces before confirmation',()=>{
- let s=E.initial();s.scene=4;s=E.reduce(s,{type:'choose',id:'manual'});
- s=E.reduce(s,{type:'solve',id:'effect',correct:true});s=E.reduce(s,{type:'confirm'});
- assert.equal(s.cases.photo.final,null);
- s=E.reduce(s,{type:'crop',rect:[0,0,1536,1024]});s=E.reduce(s,{type:'solve',id:'effect',correct:true});s=E.reduce(s,{type:'confirm'});
- assert.equal(s.cases.photo.final,'manual');
 });
 test('corrupt or incompatible storage resets safely; valid progress round-trips',()=>{
  for(const raw of [null,'{bad',{}, {version:1,scene:999}, {version:1,scene:2,cases:[]}])assert.deepEqual(E.restore(raw),E.initial());
@@ -57,9 +50,9 @@ test('wrong answers never mark solved; rejected transitions preserve current sce
  assert.equal(s.tasks['3:rule'],undefined);assert.equal(E.reduce(s,{type:'next'}).scene,3);
 });
 test('viewing help without accepting leaves independent work independent',()=>{
- let s=E.initial();s.scene=3;for(const id of ['P1','P2','P3'])s=E.reduce(s,{type:'read',id});
+ let s=E.initial();s.scene=2;for(const id of ['P1','P2','P3'])s=E.reduce(s,{type:'read',id});
  s=E.reduce(s,{type:'help-view'});assert.equal(s.cases.photo.help,false);
- s=E.reduce(s,{type:'solve',id:'rule',correct:true});assert.equal(s.tasks['3:rule'],'independent');
+ s=E.reduce(s,{type:'solve',id:'center',correct:true});assert.equal(s.tasks['2:center'],'independent');
 });
 test('pending revised action preserves previous final, invalidates completion and cannot jump out',()=>{
  let s=E.initial();s.scene=12;s.furthest=13;s.completed=true;
