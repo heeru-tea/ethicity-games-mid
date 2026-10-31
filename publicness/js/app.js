@@ -127,9 +127,9 @@
     var a = App.view && App.view.contentAspect && App.view.contentAspect();
     if (!a || (screen !== 'plan' && screen !== 'run')) return;
     var col = st.parentNode, cs = getComputedStyle(col), W = col.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), availH = st.offsetHeight;
-    var P = Math.min(64, Math.max(44, Math.min(W, availH) * 0.08)), need = (W - 2 * P) / a + 2 * P + 18, H, Wst = W;
+    var P = Math.min(80, Math.max(54, Math.min(W, availH) * 0.1)), need = (W - 2 * P) / a + 2 * P + 24, H, Wst = W;
     if (need <= availH) H = Math.max(200, need);
-    else { H = availH; Wst = Math.min(W, (H - 2 * P - 18) * a + 2 * P + 40); }
+    else { H = availH; Wst = Math.min(W, (H - 2 * P - 24) * a + 2 * P + 40); }
     st.style.height = Math.round(H) + 'px'; st.style.maxWidth = Math.round(Wst) + 'px';
   };
   // 오른쪽 패널 접기(운행·결과 지도 화면): 접으면 지도가 전체 폭. 기억은 이 브라우저에만(실패해도 그냥 펼침)
@@ -436,7 +436,7 @@
 
     var controls={onCamera:function(){if(App.net)App.net.redraw();},onNode:onNode,canEdit:function(){return App.s&&App.s.stage==='plan';},onLink:function(a,b){if(App.onLink)App.onLink(a,b);},onRoute:function(n,i){if(App.onRouteClick)App.onRouteClick(n,i);},onRouteDouble:function(n,i){if(App.onRouteDouble)App.onRouteDouble(n,i);},
       // 지도 위 시계 영역 — 2D 지도는 이 영역 밑에 정류장이 깔리지 않도록 화면을 비켜 그린다
-      reserved:function(){return ['#map-clock','#run-controls'].map(function(id){return $(id);}).filter(function(c){return c&&c.getClientRects().length;}).map(function(c){return c.getBoundingClientRect();});}};
+      reserved:function(){return [];}};
     App.map2d = PB.Map2D.create($('#stage-svg'), controls);
     // 시각 토큰을 CSS 변수로(노선 색·지도 크기) — 화면 CSS와 지도 오버레이가 같은 값을 쓴다
     cfg.ui.routeColors.forEach(function (c, i) { document.documentElement.style.setProperty('--route-' + (i + 1), c); });
@@ -452,7 +452,7 @@
       } else { note3d.hidden = false; note3d.textContent = '이 기기에서는 3D 화면을 쓸 수 없어 지도로 보여 드려요. 모든 기능은 그대로예요.'; }
     } else if (!want3d) { note3d.hidden = false; note3d.textContent = '지도 보기로 시작했어요.'; }
     // 네트워크·상태층(map-network.js): 지금 보이는 뷰의 장면·노선·대기·선택을 받아 같은 그림 체계로 그린다
-    App.net = PB.MapNetwork.create($('#stage'), function () { return App.view; }, { reserved: function () { return controls.reserved(); }, tokens: function () { var m = cfg.ui.map, w = cfg.ui.wait; return { line: m.line, lineActive: m.lineActive, casing: m.casing, stop: m.stop, cap: m.cap, waitCaution: w.caution, waitDanger: w.danger }; } });
+    App.net = PB.MapNetwork.create($('#stage'), function () { return App.view; }, { onLayout: function () { if (PB.UI.placeRunNotices) PB.UI.placeRunNotices(); }, reserved: function () { return controls.reserved(); }, tokens: function () { var m = cfg.ui.map, w = cfg.ui.wait; return { line: m.line, lineActive: m.lineActive, casing: m.casing, stop: m.stop, cap: m.cap, waitCaution: w.caution, waitDanger: w.danger }; } });
     [App.map2d, App.view3d].forEach(function (v) {
       if (!v) return;
       ['setScene', 'setRoutes', 'setWaiting', 'setSelected', 'setSelectable', 'flash'].forEach(function (fn) {

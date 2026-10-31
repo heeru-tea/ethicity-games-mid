@@ -35,7 +35,14 @@
         baseBox = { x: from.x + (end.x - from.x) * e, y: from.y + (end.y - from.y) * e, w: from.w + (end.w - from.w) * e, h: from.h + (end.h - from.h) * e }; applyBox(); if (opts.onCamera) opts.onCamera();
         if (k < 1) root.requestAnimationFrame(step); else { baseBox = end; boxAnim = false; fitReserved(); if (opts.onCamera) opts.onCamera(); } })();
     }
-    function applyBox() { var vb = [baseBox.x, baseBox.y - extraTop, baseBox.w, baseBox.h + extraTop].join(' '); svg.setAttribute('viewBox', vb); top.setAttribute('viewBox', vb); }
+    function applyBox() {
+      var r = svg.getBoundingClientRect(), pad = Math.min(80, Math.max(54, Math.min(r.width, r.height) * .1));
+      // Keep a screen-pixel gutter even when a late-stage map spans many units.
+      var scale = Math.min(Math.max(1, r.width - pad * 2) / baseBox.w, Math.max(1, r.height - pad * 2) / (baseBox.h + extraTop));
+      var gutter = r.width && r.height ? pad / scale : 0;
+      var vb = [baseBox.x - gutter, baseBox.y - extraTop - gutter, baseBox.w + gutter * 2, baseBox.h + extraTop + gutter * 2].join(' ');
+      svg.setAttribute('viewBox', vb); top.setAttribute('viewBox', vb);
+    }
     function underReserved(area) {
       var r = svg.getBoundingClientRect();
       return Object.keys(nodes).some(function (id) {

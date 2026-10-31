@@ -7,7 +7,7 @@
 (function (root) {
   'use strict';
   var K = 10;               // 지도 1칸 → 3D 10
-  var BUS_SCALE = 1.5;      // 버스 크기(정류장 미니어처 ×1.6과 비슷하게)
+  var BUS_SCALE = 0.85;     // 좁힌 왕복 도로의 차선 안에 들어오는 크기
   var PX = 110;             // SVG 1칸 = 110px (버스 차선 오프셋 변환용)
   var LANE = 2.4;           // 같은 길을 지나는 노선 사이 간격(3D) — 버스 폭(1.52×BUS_SCALE≈2.3)보다 넓게 해 버스가 겹치지 않게
   var CAMERA_ELEVATION = 55; // 지면 기준 고도각: 건물 옆면과 노선 가독성의 절충
@@ -734,7 +734,7 @@
         minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
       }); }); });
       Object.keys(nodes).forEach(function (id) { pts.push(new T.Vector3(nodes[id].x, 2, nodes[id].z).applyMatrix4(inv)); });
-      var vw = Math.max(1, maxX - minX), vh = Math.max(1, maxY - minY), PAD = Math.min(64, Math.max(44, Math.min(wdt, hgt) * 0.08)), top = PAD, bottom = PAD + 18; // 노선 끝 번호 원이 정류장 밖으로 약 35px 나오므로 44px 이상
+      var vw = Math.max(1, maxX - minX), vh = Math.max(1, maxY - minY), PAD = Math.min(80, Math.max(54, Math.min(wdt, hgt) * 0.1)), top = PAD, bottom = PAD + 24;
       var areas = opts.reserved ? opts.reserved() : [], cr = container.getBoundingClientRect(), target = null, start = camStart;
       function place() {
         var aw = Math.max(1, wdt - 2 * PAD), ah = Math.max(1, hgt - top - bottom), s = Math.min(aw / vw, ah / vh);

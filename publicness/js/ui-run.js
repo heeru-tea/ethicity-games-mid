@@ -124,6 +124,7 @@
     root.clearInterval(R.timer);
     if (R.raf) root.cancelAnimationFrame(R.raf);
     R.done = true;
+    document.querySelectorAll('#stage-overlay .bubble').forEach(function (b) { b.remove(); });
     clearAlerts();
   }
 
@@ -155,7 +156,6 @@
     }
     if (reached) holdAt(App, stopAt);
     else updatePreview(App, tf, cp);
-    placeAlerts(App);
     if (tf >= W && !R.finishing) {
       R.finishing = true;
       clearAlerts();
@@ -231,15 +231,57 @@
   }
   function placeAlerts(App) {
     var layer = $('#stage-overlay'); if (!layer || !App.view || !App.view.project) return;
-    Array.prototype.slice.call(layer.querySelectorAll('.run-alert')).forEach(function (box) {
+    var occupied = App.net ? App.net.rects() : [], W = layer.clientWidth, H = layer.clientHeight;
+    layer.querySelectorAll('.notice-leader').forEach(function (e) { e.remove(); });
+    function overlaps(a, b) { return a.x < b.x + b.w + 5 && b.x < a.x + a.w + 5 && a.y < b.y + b.h + 5 && b.y < a.y + a.h + 5; }
+    Array.prototype.slice.call(layer.querySelectorAll('.run-alert,.bubble')).forEach(function (box) {
       var xy = App.nodeXY(box.dataset.node), p = App.view.project(xy.x, xy.y);
-      box.style.left = p.left + 'px'; box.style.top = p.top + 'px';
+      var alert = box.classList.contains('run-alert'), label = alert ? box.querySelector('.run-alert-label') : box;
+      var w = label.offsetWidth, h = label.offsetHeight, candidates = [], best = null, score = Infinity;
+      function add(x, y) { candidates.push({ x: Math.max(8, Math.min(W - w - 8, x)), y: Math.max(8, Math.min(H - h - 8, y)), w: w, h: h }); }
+      add(p.left - w / 2, p.top - h - 38); add(p.left - w / 2, p.top + 38);
+      add(p.left + 38, p.top - h / 2); add(p.left - w - 38, p.top - h / 2);
+      for (var y = 8; y <= H - h - 8; y += 8) for (var x = 8; x <= W - w - 8; x += 8) add(x, y);
+      candidates.forEach(function (r) {
+        if (occupied.some(function (q) { return overlaps(r, q); })) return;
+        var d = Math.pow(r.x + w / 2 - p.left, 2) + Math.pow(r.y + h / 2 - p.top, 2);
+        if (d < score) { best = r; score = d; }
+      });
+      // A crowded small map can run out of space. Keep the message readable in
+      // the adjacent notice tray instead of covering a stop or another message.
+      var tray = $('#map-notice-overflow');
+      if (!best) {
+        if (!tray) { tray = el('div', { id: 'map-notice-overflow', 'class': 'map-notice-overflow' }); $('#stage').after(tray); }
+        var item = box._overflow;
+        if (!item) { item = el('div'); tray.appendChild(item); box._overflow = item; }
+        item.textContent = App.nodeName(box.dataset.node) + ' · ' + label.textContent;
+        label.style.visibility = 'hidden';
+      } else {
+        if (box._overflow) { box._overflow.remove(); box._overflow = null; }
+        label.style.visibility = '';
+        occupied.push(best);
+        label.style.left = (best.x - (alert ? p.left : 0)) + 'px';
+        label.style.top = (best.y - (alert ? p.top : 0)) + 'px';
+        var bx = Math.max(best.x, Math.min(p.left, best.x + w)), by = Math.max(best.y, Math.min(p.top, best.y + h));
+        var line = el('span', { 'class': 'notice-leader' });
+        line.style.left = p.left + 'px'; line.style.top = p.top + 'px';
+        line.style.width = Math.hypot(bx - p.left, by - p.top) + 'px';
+        line.style.transform = 'rotate(' + Math.atan2(by - p.top, bx - p.left) + 'rad)';
+        layer.insertBefore(line, layer.firstChild);
+      }
+      if (alert) { box.style.left = p.left + 'px'; box.style.top = p.top + 'px'; }
     });
+    var tray = $('#map-notice-overflow');
+    if (tray) { Array.prototype.slice.call(tray.children).forEach(function (item) {
+      if (!Array.prototype.some.call(layer.querySelectorAll('.run-alert,.bubble'), function (box) { return box._overflow === item; })) item.remove();
+    }); if (!tray.children.length) tray.remove(); }
   }
+  UI.placeRunNotices = function () { placeAlerts(app()); };
   function clearAlerts() {
     if (R) { R.alerts = []; R.alertKey = ''; }
     var layer = $('#stage-overlay');
     if (layer) Array.prototype.slice.call(layer.querySelectorAll('.run-alert')).forEach(function (n) { n.remove(); });
+    placeAlerts(app());
   }
   function setStatus(text) { var st = $('#run-status'); if (st) st.textContent = text; }
 
@@ -402,8 +444,9 @@
     b.appendChild(document.createTextNode(it.bubble.text));
     b.style.left = Math.max(115, Math.min(layer.clientWidth - 115, p.left)) + 'px'; b.style.top = Math.max(100, p.top) + 'px';
     layer.appendChild(b);
+    placeAlerts(App);
     // 배속이 빨라도 말풍선은 같은 실제 시간(4.5초) 동안 남는다
-    root.setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 4500);
+    root.setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); placeAlerts(app()); }, 4500);
   }
 
   // 지금 보이는 배속: 멈춤·감속 중이면 1×, ‘다음 결정까지’ 중이면 ⏭, 아니면 고른 배속

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/scores.css">
+<link rel="stylesheet" href="css/minimal.css">
 </head>
 <body data-screen="title">
 <a class="skip-link" href="#panel">오른쪽 안내로 건너뛰기</a>
@@ -55,11 +56,8 @@
 
 <main id="screen-game" class="game">
   <div class="stage-col">
-    <div id="stage" class="stage" aria-label="마을 지도">
+    <div class="map-toolbar" aria-label="지도 시간과 운행 조작">
       <div id="run-controls" role="group" aria-label="운행 시간 조작"></div>
-      <svg id="stage-svg" class="stage-svg" role="img" aria-label="마을 도로와 버스 노선 지도"></svg>
-      <div id="stage-3d" class="stage-3d" hidden></div>
-      <div id="stage-overlay" class="stage-overlay" aria-hidden="true"></div>
       <div id="map-clock" class="map-clock" aria-label="마을의 시간">
         <div><span id="top-clock" class="clock">05:00</span><span id="clock-period">계획 중</span></div>
         <svg class="day-track" viewBox="0 0 144 40" aria-hidden="true">
@@ -71,6 +69,11 @@
         </svg>
         <div class="day-endpoints"><span>05:00</span><span>23:00</span></div>
       </div>
+    </div>
+    <div id="stage" class="stage" aria-label="마을 지도">
+      <svg id="stage-svg" class="stage-svg" role="img" aria-label="마을 도로와 버스 노선 지도"></svg>
+      <div id="stage-3d" class="stage-3d" hidden></div>
+      <div id="stage-overlay" class="stage-overlay" aria-hidden="true"></div>
     </div>
     <p id="no3d-note" class="note" hidden></p>
     <details id="text-routes" class="text-routes">
@@ -167,6 +170,7 @@
 <script src="assets/models/zones.js"></script>
 <script src="assets/models/env.js"></script>
 <script src="js/view3d.js"></script>
+<script src="js/route-edit.js"></script>
 <script src="js/ui-plan.js"></script>
 <script src="js/ui-map-plan.js"></script>
 <script src="js/run-pace.js"></script>
@@ -179,5 +183,7 @@
 <script src="js/cutscene.js"></script>
 <script src="js/map-network.js"></script>
 <script src="js/app.js"></script>
+<script src="js/route-drag.js"></script>
+<script src="js/minimal-ui.js"></script>
 </body>
 </html>

@@ -67,7 +67,9 @@
           var ang = -Math.PI / 2 + (k - (all.length - 1) / 2) * 0.62, R = T.stop + 3.5;
           svgEl('circle', { 'class': 'tick', cx: p.left + Math.cos(ang) * R, cy: p.top + Math.sin(ang) * R, r: 3.2, fill: c }, g);
         });
-        placed.push({ x: p.left - T.stop - 7, y: p.top - T.stop - 7, w: (T.stop + 7) * 2, h: (T.stop + 7) * 2, kind: 'stop', id: id });
+        var reserve=T.stop+7,session=root.PB.App&&root.PB.App.s;
+        if(root.MINIMAL_UI&&!document.body.classList.contains('minimal-text')&&session&&session.config.finance.service.stops.some(function(c){return c.id===id&&c.fromPhase<=session.phase;}))reserve=Math.max(reserve,34);
+        placed.push({ x: p.left - reserve, y: p.top - reserve, w: reserve * 2, h: reserve * 2, kind: 'stop', id: id });
       });
       // 노선 끝 번호 원(정류장 바깥쪽으로 비켜). 시작 쪽 옆에 운행 버스 수
       var caps = [];
@@ -149,6 +151,7 @@
         if (far) { var bx = Math.max(best.x, Math.min(p.left, best.x + lw)), by = Math.max(best.y, Math.min(p.top, best.y + lh)); svgEl('line', { 'class': 'leader', x1: p.left, y1: p.top, x2: bx, y2: by }, gLead); }
         placed.push({ x: best.x, y: best.y, w: lw, h: lh, kind: 'label', id: id });
       });
+      if (opts.onLayout) opts.onLayout();
     }
     var queued = false;
     function redraw() { if (queued) return; queued = true; root.requestAnimationFrame(function () { queued = false; draw(); }); }

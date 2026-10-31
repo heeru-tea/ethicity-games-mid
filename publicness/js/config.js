@@ -152,7 +152,7 @@
       map: { line: 7, lineActive: 11, casing: 2.5, stop: 9, cap: 10 }, // 지도 px: 노선 굵기·선택 노선·흰 테두리·정류장 마커 반지름·번호 원 반지름
       wait: { caution: 10, danger: 20 } // 정류장 대기 pill: 10명 이상 주의(주황), 20명 이상 위험(빨강)
     },
-    playback: { msPerMinute: 209 } // 1× = 엔진 1단위당 209ms(하루 약 25초). 2026-10-27 사용자 지시로 이전 167에서 0.8배 속도
+    playback: { msPerMinute: 261.25 } // 이전 209ms 대비 이동 속도 0.8배. 1× 하루 약 31초, 2× 약 16초.
   };
 
   root.PB = root.PB || {};

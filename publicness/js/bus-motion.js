@@ -4,7 +4,7 @@
  */
 (function (root) {
   'use strict';
-  var ROAD = { lane: 0.22, halfWidth: 0.37, turn: 0.52, junction: 0.68 };
+  var ROAD = { lane: 0.11, halfWidth: 0.19, turn: 0.28, junction: 0.32 };
   function clamp(v) { return Math.max(0, Math.min(1, v)); }
   function dir(a, b) { var d = Math.hypot(b.x - a.x, b.y - a.y); return { x: (b.x - a.x) / d, y: (b.y - a.y) / d }; }
   function offset(p, d, along, side) { return { x: p.x + d.x * along - d.y * side, y: p.y + d.y * along + d.x * side }; }
@@ -42,7 +42,9 @@
       var r=clearance[s.from], side=Math.min(ROAD.lane,r*.6,clearance[s.to]*.6), endSide=side;
       var p0=connected?prev.end:offset(a,d,-r,side), p3=offset(a,d,r,side);
       var reversing=incoming.x*d.x+incoming.y*d.y<-.8;
-      var reach=r*(reversing?2:1.1);
+      // A semicircular turnaround scales with lane separation. Using the
+      // approach length here makes a narrow lane into a pinched hairpin.
+      var reach=reversing?side*4/3:r*1.1;
       var points=[p0,offset(p0,incoming,reach,0),offset(p3,d,-reach,0),p3];
       var end=offset(b,d,-clearance[s.to],endSide), table=[{u:0,length:0}], length=0, last=p0;
       for(var j=1;j<=48;j++) { var p=curve(points,j/48); length+=Math.hypot(p.x-last.x,p.y-last.y); table.push({u:j/48,length:length}); last=p; }

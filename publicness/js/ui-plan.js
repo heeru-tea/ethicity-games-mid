@@ -17,6 +17,38 @@
   UI.planLease=function(){if(!S.leaseLimit(st()))return null;changed();var b=S.lease(st());P.message=b.id+'호차를 이번 단계에 임차했어요 · 임차료 '+app().won(st().config.finance.lease.fee)+'(쉬어도 듦, 단계가 끝나면 자동 반납). 노선으로 끌어 놓으세요.';return b;};
   UI.planUnlease=function(id){var b=st().draft.buses.filter(function(x){return x.id===id;})[0];if(!b||!b.leased||b.routeNum!=null)return false;changed();S.unlease(st(),id);P.message=id+'호차를 반납했어요. 이번 단계 임차료가 들지 않아요.';return true;};
   UI.planEditing=function(){return P.editing;};
+  UI.routeEdit={
+    enabled:function(){return st()&&st().stage==='plan'&&!P.preview&&!P.busy;},
+    active:function(){return active();},
+    begin:function(mode){var r=active();if(!r||!this.enabled())return null;return {num:r.num,mode:mode,route:PB.RouteEdit.copy(r),original:PB.RouteEdit.copy(r),base:snapshot(),startId:r.nodes[mode.end==='head'?0:r.nodes.length-1]};},
+    valid:function(r){return S.routeFits(st(),r.num,r)&&(r.nodes.length<2||!G.validateRoute(S.graph(st()),r).length);},
+    choose:function(end){var r=active();if(!r)return;P.mapSegment=null;P.mapEnd={num:r.num,end:end};P.message=app().nodeName(r.nodes[end==='head'?0:r.nodes.length-1])+' 쪽 끝을 골랐어요.';render();},
+    end:function(id){var r=active();return PB.RouteEdit.end(r,id,function(n){var p=app().nodeXY(n),q=app().view.project(p.x,p.y);return{x:q.left,y:q.top};},P.mapEnd&&P.mapEnd.num===r.num?P.mapEnd.end:null);},
+    mode:function(id){var r=active();return P.mapSegment&&P.mapSegment.num===r.num&&P.mapSegment.index<r.nodes.length-1?{index:P.mapSegment.index}:{end:this.end(id)};},
+    preview:function(tx){
+      var s=JSON.parse(JSON.stringify(st())),before=JSON.parse(JSON.stringify(st())),r=S.routeByNum(s,tx.num);
+      // Cached graphs contain methods; JSON copies must rebuild them on the copies.
+      delete s._g;delete before._g;
+      r.nodes=tx.route.nodes.slice();r.stops=tx.route.stops.slice();if(tx.original.nodes.length<2)S.autoPlace(s,r.num);
+      var E=UI.Econ,count=function(q){return q.draft.buses.filter(function(b){return b.routeNum===tx.num;}).length;};
+      return {km:E.routeKm(s,tx.num),before:E.plan(before).k.total,after:E.plan(s).k.total,headwayBefore:E.headway(before,tx.num,count(before)),headwayAfter:E.headway(s,tx.num,count(s))};
+    },
+    commit:function(tx){
+      if(!this.enabled()||snapshot()!==tx.base||!this.valid(tx.route)||JSON.stringify(tx.route)===JSON.stringify(tx.original))return false;
+      var r=S.routeByNum(st(),tx.num);changed();r.nodes=tx.route.nodes.slice();r.stops=tx.route.stops.slice();
+      if(tx.original.nodes.length<2)S.autoPlace(st(),r.num);
+      P.anchor=null;P.mapEnd=null;P.mapSegment=null;
+      P.message=tx.mode.index!=null?app().nodeName(tx.last)+' 정류장을 사이에 넣었어요.':app().nodeName(tx.startId||r.nodes[0])+' 쪽 끝에 '+app().nodeName(tx.last||r.nodes[r.nodes.length-1])+(r.nodes.length<tx.original.nodes.length?'까지 줄였어요.':'을 이었어요.');
+      render();return true;
+    }
+  };
+  function mapInsert(id){
+    var r=active();if(!r||r.nodes.length<2||G.isLoop(r)){insert(id);return;}
+    if(id===r.nodes[0]||id===r.nodes[r.nodes.length-1]){UI.routeEdit.choose(id===r.nodes[0]?'head':'tail');return;}
+    if(r.nodes.indexOf(id)>=0){insert(id);return;}
+    var tx=UI.routeEdit.begin(UI.routeEdit.mode(id));if(!tx)return;tx.route=PB.RouteEdit.visit(tx.route,tx.mode,id);tx.last=id;
+    if(!UI.routeEdit.commit(tx)){P.message=S.routeRule(st(),r.num);render();}
+  }
   /* 구간 없애기(지도에서 노선 선을 두 번 누르기, 2026-10-27 사용자 지시): 누른 두 정류장 사이 길만 지운다. 확인창 없이, 되돌리기 한 번으로 복구.
    *  · 순환: 그 구간에서 열려 왕복 노선이 된다(누른 구간 다음 정류장에서 시작)
    *  · 끝 구간: 끝 정류장이 빠져 노선이 짧아진다(버스 그대로)
@@ -54,12 +86,13 @@
   function unassigned(){return st().draft.routes.filter(function(r){return !assigned(r.num).length;});}
   function snapshot(){return JSON.stringify({draft:st().draft,owned:st().owned,fourthPhase:st().fourthPhase,goal:st().goal,goalHistory:st().goalHistory,lastRec:st().lastRec,editing:P.editing,anchor:P.anchor});}
   function changed(){
+    P.mapSegment=null;P.mapEnd=null;
     if(P.baseline&&P.history[P.history.length-1]!==P.baseline){P.history.push(P.baseline);if(P.history.length>20)P.history.shift();}
     P.preview=false;P.rec=null;P.token++;P.busy=false;P.recSeen={};if(st().lastRec)S.markGoalAction(st(),'modify');
   }
   function undo(){if(!P.history.length)return;var old=JSON.parse(P.history.pop());
     ['draft','owned','fourthPhase','goal','goalHistory','lastRec'].forEach(function(k){st()[k]=old[k];});
-    P.editing=old.editing;P.anchor=old.anchor;P.preview=false;P.rec=null;P.busy=false;P.token++;P.recSeen={};
+    P.editing=old.editing;P.anchor=old.anchor;P.mapEnd=null;P.mapSegment=null;P.preview=false;P.rec=null;P.busy=false;P.token++;P.recSeen={};
     P.message='방금 편집을 되돌렸어요.';render('#btn-undo');
   }
   function moveStop(r,from,to){
@@ -163,7 +196,7 @@
     sec.appendChild(back);
     var reset=btn('노선 초기화','btn-reset-routes',resetRoutes);reset.disabled=P.preview||!st().draft.routes.some(function(r){return r.nodes.length;})&&!st().draft.buses.some(function(b){return b.routeNum!=null;});
     reset.setAttribute('aria-label','노선 모두 지우기 — 버스는 대기로, 되돌리기로 복구');sec.appendChild(reset);var list=el('div',{'class':'route-tabs'});
-    S.routesInOrder(st()).forEach(function(r){var b=btn(r.num+'번'+(S.stopLimit(st(),r.num)===2?' 광역':S.stopLimit(st(),r.num)===3?' 직행':'')+(G.isLoop(r)?' 순환':'')+(!assigned(r.num).length?(r.nodes.length>=2?' · 운행 대기':' · 미배정'):''),'route-'+r.num,function(){P.editing=r.num;P.anchor=null;P.preview=false;P.message='정류장을 잇거나 선 중간을 당겨 보세요.';render();},'route-tab');
+    S.routesInOrder(st()).forEach(function(r){var b=btn(r.num+'번'+(S.stopLimit(st(),r.num)===2?' 광역':S.stopLimit(st(),r.num)===3?' 직행':'')+(G.isLoop(r)?' 순환':'')+(!assigned(r.num).length?(r.nodes.length>=2?' · 운행 대기':' · 미배정'):''),'route-'+r.num,function(){P.editing=r.num;P.anchor=null;P.mapSegment=null;P.mapEnd=null;P.preview=false;P.message='정류장을 잇거나 선 중간을 당겨 보세요.';render();},'route-tab');
       b.setAttribute('aria-pressed',String(P.editing===r.num));var rc=app().routeStyle(r.num).color;b.style.setProperty('--route',rc);b.classList.add('route-color');if(PB.MapNetwork&&PB.MapNetwork.luminance(rc)>0.35)b.classList.add('light');list.appendChild(b);});
     var add=btn('+ 새 노선','btn-new-route',function(){startRoute();render('.next-stop');});add.disabled=st().draft.routes.length>=S.routeLimit(st());list.appendChild(add);sec.appendChild(list);sec.appendChild(el('p',{'class':'note'},'이번 단계: 노선 최대 '+S.routeLimit(st())+'개 · 버스 '+st().owned+'대'));var r=active();
     if(r){var c=el('div',{'class':'route-card editing','data-num':r.num}),ok=!G.validateRoute(S.graph(st()),r).length;
@@ -308,8 +341,8 @@
     var missing=unassigned();if(missing.length)panel.appendChild(el('p',{id:'unassigned-warning','class':'callout warn'},missing.map(function(r){return r.num+'번';}).join(', ')+' 노선은 버스 미배정으로 운행하지 않아요.'));
     var depart=btn('이 노선으로 출발','btn-depart',function(){if(S.validate(s).length)return;departCheck();},'btn-primary btn-lg');depart.disabled=errors.length>0||P.busy;
     var foot=el('div',{id:'depart-bar','class':'depart-bar'});foot.appendChild(depart);panel.appendChild(foot);
-    App.onNodeClick=function(id){if(P.preview){P.message='AI 제안을 적용하거나 내 노선으로 돌아온 뒤 편집하세요.';render();return;}insert(id);};
-    App.onLink=function(from,to){if(!P.preview)link(from,to);};App.onRouteDouble=function(num,index){cutSegment(num,index);};App.onRouteClick=function(num,index){if(P.preview)return;P.editing=num;P.anchor=index;P.message='이 구간에 추가할 정류장을 누르세요.';render();};
+    App.onNodeClick=function(id){if(P.preview){P.message='AI 제안을 적용하거나 내 노선으로 돌아온 뒤 편집하세요.';render();return;}mapInsert(id);};
+    App.onLink=function(from,to){if(!P.preview)link(from,to);};App.onRouteDouble=function(num,index){cutSegment(num,index);};App.onRouteClick=function(num,index){if(P.preview)return;P.editing=num;P.anchor=index;P.mapEnd=null;P.mapSegment={num:num,index:index};P.message='이 구간에 추가할 정류장을 누르세요.';render();};
     // 출발 버튼은 스크롤 영역 밖 아래 줄에 둔다 — 내용을 덮지 않는다(편집할 때 스크롤 위치 유지)
     var bodyWrap=el('div',{'class':'panel-body'});while(panel.firstChild&&panel.firstChild!==foot)bodyWrap.appendChild(panel.firstChild);panel.insertBefore(bodyWrap,foot);bodyWrap.scrollTop=P.scroll||0;
     P.baseline=snapshot();var r=active();return{selectable:P.preview?[]:nextStops(),selected:P.preview?[]:(r?r.nodes:[]),activeRoute:P.editing,preview:P.preview&&P.rec?P.rec.plan:null};

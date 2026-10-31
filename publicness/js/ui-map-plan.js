@@ -127,7 +127,7 @@
   // 노선마다 고정 위치에 ‘버스 ×N’ — 선 위 구간 중앙들 중 정류장·다른 표시·인물에서 가장 먼 곳(움직이는 버스를 쫓지 않아도 됨)
   function positionBadges(){
     var layer=document.querySelector('#route-buses');if(!layer||!app().view)return;
-    if(app().net){var caps=app().net.caps();drawn().forEach(function(r){var el=layer.querySelector('[data-num="'+r.num+'"]'),c=caps.filter(function(x){return x.num===r.num&&x.start;})[0];if(!el)return;el.hidden=!c;if(c){el.style.left=c.x+'px';el.style.top=c.y+'px';}});return;}
+    /* Place chips beside route segments, away from the endpoint handles. */
     var v=app().view,placed=[],avoid=[];
     S.graph(app().s).nodes.forEach(function(id){var n=app().nodeXY(id);avoid.push(v.project(n.x,n.y));});
     document.querySelectorAll('#map-people .map-person').forEach(function(f){avoid.push({left:parseFloat(f.style.left)+19,top:parseFloat(f.style.top)+19});});
@@ -140,8 +140,9 @@
         var p=v.project(a.x+(b.x-a.x)*f+o.dx/110,a.y+(b.y-a.y)*f+o.dy/110),P=v.project(a.x+o.dx/110,a.y+o.dy/110),Q=v.project(b.x+o.dx/110,b.y+o.dy/110);
         var dx=Q.left-P.left,dy=Q.top-P.top,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,gap=hw*Math.abs(nx)+hh*Math.abs(ny)+8;
         [1,-1].forEach(function(side){
-          var c={left:p.left+nx*gap*side,top:p.top+ny*gap*side},m=Infinity;
-          avoid.forEach(function(q){m=Math.min(m,Math.hypot(q.left-c.left,q.top-c.top));});placed.forEach(function(q){m=Math.min(m,Math.hypot(q.left-c.left,q.top-c.top)*0.8);});
+          var c={left:Math.max(hw+8,Math.min(layer.clientWidth-hw-8,p.left+nx*gap*side)),top:Math.max(hh+8,Math.min(layer.clientHeight-hh-8,p.top+ny*gap*side))},m=Infinity;
+          avoid.forEach(function(q){m=Math.min(m,Math.hypot(Math.max(0,Math.abs(q.left-c.left)-hw),Math.max(0,Math.abs(q.top-c.top)-hh)));});placed.forEach(function(q){m=Math.min(m,Math.hypot(q.left-c.left,q.top-c.top)*0.8);});
+          if(app().net)app().net.rects().forEach(function(q){var dx=Math.max(0,q.x-c.left-hw,c.left-hw-q.x-q.w),dy=Math.max(0,q.y-c.top-hh,c.top-hh-q.y-q.h);m=Math.min(m,Math.hypot(dx,dy));});
           segs.forEach(function(sg){if(sg.p.left===P.left&&sg.p.top===P.top&&sg.q.left===Q.left&&sg.q.top===Q.top)return;
             var ex=sg.q.left-sg.p.left,ey=sg.q.top-sg.p.top,l=ex*ex+ey*ey,tt=l?Math.max(0,Math.min(1,((c.left-sg.p.left)*ex+(c.top-sg.p.top)*ey)/l)):0;
             m=Math.min(m,Math.hypot(c.left-sg.p.left-tt*ex,c.top-sg.p.top-tt*ey)*1.5);});

@@ -31,7 +31,7 @@ test('terminal turnaround moves along a curve instead of rotating in place',()=>
   const poses=Array.from({length:161},(_,i)=>M.sample(c,6+i*.025));
   const corner=poses.find(p=>Math.abs(Math.sin(p.heading))>.8);
   assert.ok(corner,'turn passes through a sideways heading');
-  assert.ok(gap(corner,poses[0])>.1,'body moves while changing direction');
+  assert.ok(gap(corner,poses[0])>M.road.lane*.5,'body moves relative to lane width while changing direction');
   for(let i=1;i<poses.length;i++) assert.ok(angle(poses[i].heading,poses[i-1].heading)<.55,'no instant 180 flip');
   assert.ok(M.sample(c,3).y>0 && M.sample(c,9).y<0,'opposite directions use opposite lanes');
 });

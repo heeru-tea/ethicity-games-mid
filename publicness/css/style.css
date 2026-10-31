@@ -662,3 +662,29 @@ body[data-screen="plan"] #stage, body[data-screen="run"] #stage { margin-inline:
 .route-tab.route-color.light { color: #1A1D24; }
 .route-tab.route-color:hover { filter: brightness(1.06); }
 .route-tab.route-color[aria-pressed="true"] { box-shadow: 0 0 0 3px #fff, 0 0 0 5px #1A1D24; }
+
+/* 시계와 조작부는 지도의 형제 영역: 시설을 덮지 않는다. */
+.map-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin:0 0 10px; }
+.map-toolbar #map-clock { position:static; order:-1; width:auto; padding:0; border:0; background:none; }
+.map-toolbar #map-clock .clock { font-size:24px; }
+.map-toolbar .day-track, .map-toolbar .day-endpoints { display:none; }
+.map-toolbar #run-controls { position:static; padding:2px; box-shadow:none; border:1px solid var(--border); border-radius:10px; }
+body[data-screen="run"] .stage { height:min(66vh, 650px); }
+#stage-overlay { z-index:10; }
+#stage-overlay .bubble { transform:none; width:max-content; max-width:min(220px, calc(100% - 16px)); background:#fff; line-height:1.5; }
+#stage-overlay .run-alert-label { transform:none; white-space:normal; width:max-content; max-width:210px; }
+.notice-leader { position:absolute; height:1px; background:var(--sem-caution-ink); transform-origin:0 50%; opacity:.65; }
+.map-notice-overflow { display:grid; gap:6px; margin-top:8px; font-size:13px; }
+.map-notice-overflow > div { padding:6px 10px; border-left:3px solid var(--sem-caution); background:var(--surface); }
+#route-edit-layer { position:absolute; inset:0; z-index:9; pointer-events:none; }
+#route-edit-canvas { position:absolute; inset:0; pointer-events:none; }
+.route-end-handle { position:absolute; transform:translate(-50%,-50%); width:56px; height:56px; min-height:56px; padding:0; border:0; background:none; border-radius:50%; pointer-events:auto; touch-action:none; cursor:grab; }
+.route-end-handle::after { content:''; position:absolute; inset:14px; border:3px solid var(--handle-color); border-radius:50%; box-shadow:0 0 0 2px #fff; }
+.route-end-handle:focus-visible { outline:2px solid var(--accent); }
+#route-edit-tooltip { position:absolute; max-width:min(340px,calc(100% - 12px)); padding:7px 10px; border-radius:8px; background:#fff; color:var(--text); box-shadow:0 2px 8px #0003; font-size:12px; line-height:1.5; }
+#stage { touch-action:none; }
+.route-bus { transform:translate(-50%,-50%); }
+@media(max-width:700px) {
+  .map-toolbar #run-controls { margin-left:auto; }
+  body[data-screen="run"] .stage { height:56dvh; min-height:380px; }
+}
