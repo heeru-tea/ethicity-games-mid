@@ -308,9 +308,10 @@
   function expected(s, plan) { return expectedRun(s, plan).metrics; }
 
   // 이번 단계 실제 운행(기본 수요 + 이 세션의 사건). 같은 계획이면 언제 다시 계산해도 같은 결과
+  function runRequests(s, ev) { return Demand.sortReqs(Demand.base(s.config, s.phase, s.seed).concat(Demand.extra(s.config, s.phase, ev))); }
   function computeRun(s, plan) {
     var g = graph(s), ev = s.events[s.phase - 1];
-    var requests = Demand.sortReqs(Demand.base(s.config, s.phase, s.seed).concat(Demand.extra(s.config, s.phase, ev)));
+    var requests = runRequests(s, ev);
     var adjustments=(s.emergencyLog||[]).filter(function(a){return a.phase===s.phase&&a.busId!=null;});
     var result = Sim.run({ g: g, config: s.config, phase: s.phase, plan: plan, requests: requests, event: ev, adjustments:adjustments });
     var baseline=adjustments.length?Metrics.summarize(Sim.run({g:g,config:s.config,phase:s.phase,plan:plan,requests:requests,event:ev}),g,plan,s.config):null;
@@ -333,10 +334,37 @@
     var route=busId==null?null:routeByNum(s,routeNum);
     if(busId!=null&&(!route||!canAssign(s,busId,routeNum)||Graph.validateRoute(graph(s),route).length))return false;
     if(busId!=null&&!s.draft.buses.some(function(b){return b.id===busId;}))return false;
+    // 이미 그 노선을 맡은 버스를 같은 노선으로 ‘옮기면’ 조정권만 쓰고 승객을 내리느라 운행에서 빠진다(2026-11-01 플레이테스트) — 받지 않는다
+    if(busId!=null&&busRouteAt(s,busId,at)===routeNum)return false;
     var departure=s.current.plan,baseline=s.current.baseline||s.current.metrics;
     decisions.push({phase:s.phase,at:at,busId:busId,routeNum:routeNum,route:route?clone(route):null});
     s.current=computeRun(s,departure);s.current.baseline=baseline;
     return true;
+  }
+
+  // 운행 계획의 노선(엔진 사본) → 초안 노선 번호. 초안에 같은 노선이 없으면 null
+  function routeNumOf(s, route) {
+    if (!route) return null;
+    var hit = s.draft.routes.filter(function (r) { return r.nodes.join('|') === route.nodes.join('|') && r.stops.join('|') === route.stops.join('|'); })[0];
+    return hit ? hit.num : null;
+  }
+  // 긴급 조정 시점 at에 버스가 맡은 노선 번호(쉬는 버스는 null). 앞선 조정으로 옮겨 가는 중(승객을 내리는 중)이면 옮겨 갈 노선
+  function busRouteAt(s, busId, at) {
+    var res = s.current && s.current.result; if (!res) return null;
+    var pending = (s.emergencyLog || []).filter(function (a) { return a.phase === s.phase && a.busId === busId && a.at < at; }).pop();
+    if (pending) return pending.routeNum;
+    var tl = res.timelines.filter(function (x) { return x.busId === busId; })[0]; if (!tl) return null;
+    var route = tl.route; (tl.assignments || []).forEach(function (a) { if (a.t <= at) route = a.route; });
+    return routeNumOf(s, route);
+  }
+  // 조정을 미리 계산만 한다(저장·결과는 그대로): 버스가 승객을 내리고 그 노선에 들어가는 시각 starts(엔진 시간, 운행 안에 못 들어가면 null)
+  function emergencyPreview(s, at, busId, routeNum) {
+    var route = routeByNum(s, routeNum); if (!route || !s.current || busId == null) return null;
+    var ev = s.events[s.phase - 1], adj = (s.emergencyLog || []).filter(function (a) { return a.phase === s.phase && a.busId != null; })
+      .concat([{ phase: s.phase, at: at, busId: busId, routeNum: routeNum, route: clone(route) }]);
+    var res = Sim.run({ g: graph(s), config: s.config, phase: s.phase, plan: s.current.plan, requests: runRequests(s, ev), event: ev, adjustments: adj });
+    var tl = res.timelines.filter(function (x) { return x.busId === busId; })[0], a = tl && (tl.assignments || []).filter(function (x) { return x.depart >= at; })[0];
+    return { starts: a ? a.t : null, leaves: a ? a.depart : null, resting: busRouteAt(s, busId, at) == null };
   }
 
   // 주요 인물의 ‘해낸 하루’ 판정 — 출발 전 경고(예상), 결과 화면, 학기 말 누적이 모두 이 함수 하나를 쓴다.
@@ -493,7 +521,7 @@
   }
 
   var api = {
-    emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,
+    emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,

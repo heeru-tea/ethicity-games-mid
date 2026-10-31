@@ -71,6 +71,23 @@
   }
   App.el = el;
 
+  // 짧은 알림(지도 아래쪽 알약, role=status·aria-live) — 빈 문장은 그리지 않는다(2026-11-01: 빈 검은 알약이 뜨던 문제).
+  // priority 알림(예: 긴급 조정 완료)이 떠 있는 동안에는 일반 알림이 덮지 않는다. 같은 문장이 이미 떠 있으면 다시 띄우지 않는다
+  var toastTimer = null, toastLockUntil = 0;
+  App.toast = function (text, opts) {
+    opts = opts || {};
+    var msg = text == null ? '' : String(text).trim(), n = $('#minimal-toast');
+    if (!n) { n = el('div', { id: 'minimal-toast', 'class': 'minimal-toast', role: 'status', 'aria-live': 'polite' }); n.hidden = true; ($('#stage') || document.body).appendChild(n); }
+    if (!msg) return false;
+    var now = Date.now();
+    if (!opts.priority && now < toastLockUntil) return false;
+    if (!n.hidden && n.textContent === msg) return true;
+    if (opts.priority) toastLockUntil = now + (opts.ms || 2600);
+    n.textContent = msg; n.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { n.hidden = true; n.textContent = ''; }, opts.ms || (opts.priority ? 2600 : 2000));
+    return true;
+  };
+
   /* ── 화면 ───────────────────────── */
   App.go = function (screen) {
     if(screen==='reveal'&&App.s&&App.s.transitionStep==='reflect')screen='reflect';

@@ -44,8 +44,15 @@
   function next(){
     if(!active)return;
     if(active.onStage){active.onStage=false;if(!active.cuts.length){finish();return;}draw();$('story-next').focus();return;}
-    if(active.typed<active.text.length){reveal();return;}if(active.index+1>=active.cuts.length){finish();return;}active.index++;draw();
+    // 출력 중일 때만 첫 클릭이 문장을 완성한다. 화면에 문장이 이미 다 보이면(남은 글자가 없거나 문장부호·빈칸뿐) 첫 클릭에 바로 넘어간다(2026-11-01, 모든 컷신)
+    if(typing()){reveal();return;}clear();if(active.index+1>=active.cuts.length){finish();return;}active.index++;draw();
   }
+  function typing(){
+    var a=active;if(!a||a.typed>=a.text.length)return false;
+    var shown=$('story-typed').textContent;if(shown.length>=a.text.length)return false;
+    return /[^\s.,!?…·'"’”)\]]/.test(a.text.slice(Math.max(a.typed,shown.length)));
+  }
+  PB.CutsceneTyping=function(){return typing();};// 테스트용
   // stage = {number,total,name}: optional card shown first. kind 'stage' plays the card alone.
   function play(kind,done,cuts,stage){
     if(active)return;

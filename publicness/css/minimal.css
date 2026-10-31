@@ -1,5 +1,5 @@
 .minimal-switches{display:flex;gap:6px;justify-content:flex-end;padding:4px 12px}.minimal-switches .btn{font-size:12px;padding:6px 10px}
-body:not(.minimal-ui) #minimal-signals,body:not(.minimal-ui) #minimal-toast,.minimal-text #minimal-signals,.minimal-text #minimal-toast{display:none}
+body:not(.minimal-ui) #minimal-signals,.minimal-text #minimal-signals{display:none}
 .minimal-ui:not(.minimal-text) #title-sub,.minimal-ui:not(.minimal-text) #title-en,.minimal-ui:not(.minimal-text) #hook-2,.minimal-ui:not(.minimal-text) #screen-title .note{display:none}
 .minimal-ui:not(.minimal-text) .setting .radio>span{font-size:0}.minimal-ui:not(.minimal-text) .setting .radio b{font-size:16px}
 .minimal-ui:not(.minimal-text)[data-screen=plan] #plan-econ,.minimal-ui:not(.minimal-text) #map-plan-message,.minimal-ui:not(.minimal-text) .depot-cost,.minimal-ui:not(.minimal-text) #depot-hint,.minimal-ui:not(.minimal-text) .depot-empty,.minimal-ui:not(.minimal-text) #depot-h,.minimal-ui:not(.minimal-text) #no3d-note,.minimal-ui:not(.minimal-text) #text-routes,.minimal-ui:not(.minimal-text)[data-screen=run] #panel>:not(#emergency-dialog){display:none!important}
@@ -17,7 +17,8 @@ body:not(.minimal-ui) #minimal-signals,body:not(.minimal-ui) #minimal-toast,.min
 @keyframes minimal-drag{0%,12%{transform:translate(0,0);opacity:0}20%{opacity:1}55%,60%{transform:translate(var(--demo-mid-x),var(--demo-mid-y));opacity:1}86%{transform:translate(var(--demo-x),var(--demo-y));opacity:1}100%{transform:translate(var(--demo-x),var(--demo-y));opacity:0}}
 .minimal-ui:not(.minimal-text)[data-screen=run] .game{grid-template-columns:minmax(0,1fr)}
 .minimal-ui:not(.minimal-text)[data-screen=run] #panel:not(:has(#emergency-dialog)){display:none}
-.minimal-ui:not(.minimal-text) #btn-view-toggle{display:none}.minimal-switches{padding:0;margin-left:auto}
+/* 머리말 보기 버튼은 하나만(2026-11-01): 미니멀 화면은 ‘지도·텍스트 보기’(#minimal-text-toggle), 기본 화면은 3D·지도 전환(#btn-view-toggle) */
+.minimal-ui #btn-view-toggle,body:not(.minimal-ui) #minimal-text-toggle{display:none}.minimal-switches{padding:0;margin-left:auto}
 #minimal-profit{position:static;margin-left:auto;padding:3px 10px;box-shadow:none;background:none}#minimal-profit strong{font-size:26px}#minimal-profit small{font-size:10px}
 .minimal-loss{display:block;color:#b95c1c;margin-top:6px}.minimal-emergency-buses{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.minimal-emergency-buses .btn{padding:6px 10px}.minimal-emergency-buses [aria-pressed=true]{border:2px solid #3d8265}
 .minimal-ui:not(.minimal-text) .route-economy>.note:last-child{display:none}
@@ -27,3 +28,9 @@ body:not(.minimal-ui) #minimal-signals,body:not(.minimal-ui) #minimal-toast,.min
 .minimal-ui:not(.minimal-text).minimal-emergency .game{grid-template-columns:minmax(0,2fr) minmax(280px,1fr)}
 .minimal-ui:not(.minimal-text).minimal-emergency #panel{position:static;max-height:none}
 @media(max-width:700px){.minimal-ui:not(.minimal-text).minimal-emergency{height:auto!important;overflow:auto!important}.minimal-ui:not(.minimal-text).minimal-emergency .game{display:block}.minimal-ui:not(.minimal-text).minimal-emergency #stage{height:34dvh;min-height:240px}.minimal-ui:not(.minimal-text) .topbar{gap:6px}.minimal-ui:not(.minimal-text) .topbar .btn{padding:6px 8px;font-size:12px}}
+/* 2026-11-01 플레이테스트: 금액 표시(노선 없음 안내·운행 중 지금까지+예상)·배차 간격 짧은 꼴·긴급 조정 미리 보기 */
+#minimal-profit.empty{color:var(--text-mute);align-self:center}#minimal-profit.empty small{font-size:13px}
+#minimal-profit .minimal-profit-expected{display:inline;margin-left:8px;font-size:12px;color:var(--text-mute);font-variant-numeric:tabular-nums}
+.minimal-headway.short{padding:3px 5px}
+.emergency-preview{margin:10px 0 4px;padding:8px 10px;border-radius:var(--radius-in);background:var(--accent-soft);color:var(--accent-ink);font-size:14px;font-weight:600}
+.emergency-preview:empty{display:none}

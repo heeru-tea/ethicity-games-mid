@@ -648,7 +648,7 @@ body.panel-collapsed[data-screen="run"] #panel { display: none !important; }
 
 /* 2D 버스층: 네트워크층(z 5) 위 */
 .stage-svg-buses { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 6; pointer-events: none; }
-.net-leaders line { stroke: #1A1D24; stroke-width: 1.2; stroke-dasharray: 2 2; opacity: .7; }
+.net-leaders line { stroke: #1A1D24; stroke-width: 1.5; stroke-linecap: round; opacity: .75; } /* 이름표–정류장 짧은 연결선(2026-11-01) */
 
 /* 지도 틀 너비를 네트워크 비율에 맞춰 줄였을 때 가운데 */
 body[data-screen="plan"] #stage, body[data-screen="run"] #stage { margin-inline: auto; }

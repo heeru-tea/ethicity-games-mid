@@ -38,7 +38,7 @@
       var r=S.routeByNum(st(),tx.num);changed();r.nodes=tx.route.nodes.slice();r.stops=tx.route.stops.slice();
       if(tx.original.nodes.length<2)S.autoPlace(st(),r.num);
       P.anchor=null;P.mapEnd=null;P.mapSegment=null;
-      P.message=tx.mode.index!=null?app().nodeName(tx.last)+' 정류장을 사이에 넣었어요.':app().nodeName(tx.startId||r.nodes[0])+' 쪽 끝에 '+app().nodeName(tx.last||r.nodes[r.nodes.length-1])+(r.nodes.length<tx.original.nodes.length?'까지 줄였어요.':'을 이었어요.');
+      P.message=tx.mode.index!=null?app().nodeName(tx.last)+' 정류장을 사이에 넣었어요.':app().nodeName(tx.startId||r.nodes[0])+' 쪽 끝에 '+(r.nodes.length<tx.original.nodes.length?app().nodeName(tx.last||r.nodes[r.nodes.length-1])+'까지 줄였어요.':PB.Narrative.josa(app().nodeName(tx.last||r.nodes[r.nodes.length-1]),'을를')+' 이었어요.');
       render();return true;
     }
   };
@@ -126,7 +126,8 @@
       }else{P.anchor=r.nodes.indexOf(id);P.message=app().nodeName(id)+' 다음에 추가할 곳을 고르세요.';}
     }else{
       changed();var before=r.nodes.length,at=P.anchor==null?(G.isLoop(r)?r.nodes.length-1:r.nodes.length):P.anchor+1;
-      r.nodes.splice(at,0,id);r.stops.splice(at,0,true);P.anchor=at;P.message=app().nodeName(id)+' 정류장을 연결했어요.';
+      // 첫 정류장만 고른 때는 아직 선이 없다 — ‘연결했어요’ 대신 시작 안내(2026-11-01)
+      r.nodes.splice(at,0,id);r.stops.splice(at,0,true);P.anchor=at;P.message=before===0?app().nodeName(id)+'에서 시작해요. 이어 갈 정류장을 누르세요.':app().nodeName(id)+' 정류장을 연결했어요.';
       // 노선이 처음 완성되는 순간(정류장 2곳) 대기 버스 1대가 운행을 시작한다 — 같은 편집 단계라 되돌리기 한 번에 함께 돌아간다
       if(before<2&&r.nodes.length>=2){var placed=S.autoPlace(st(),r.num);
         if(placed&&placed.busId!=null)P.message+=' '+placed.busId+'호차가 대기에서 나와 '+r.num+'번 운행을 시작해요 · 운영·연료 약 '+app().won(S.busCost(st(),placed.busId,r.num))+'.';
@@ -358,6 +359,8 @@
     if(resting.length)comp.appendChild(el('li',null,'쉬는 버스: '+resting.map(function(b){return b.id+'호차';}).join(', ')));
     body.appendChild(el('h3',null,'운행 구성'));body.appendChild(comp);
     if(!used.length)body.appendChild(el('p',{'class':'callout warn',id:'depart-no-bus'},'운행하는 버스가 없어요. 이대로 출발하면 아무도 버스를 탈 수 없어요.'));
+    // 출발 뒤 바꿀 수 있는 것(도움말·운행 안내와 같은 규칙, 2026-11-01)
+    body.appendChild(el('p',{'class':'note',id:'depart-rule'},s.phase>=3?'출발한 뒤에는 오전·오후 한 번씩 버스 한 대만 옮길 수 있어요. 노선 모양은 다음 단계에서 고쳐요.':'이번 단계는 출발하면 운행이 끝날 때까지 그대로 달려요. 3단계부터는 오전·오후 한 번씩 버스 한 대만 옮길 수 있어요. 노선 모양은 다음 단계에서 고쳐요.'));
     document.querySelector('#confirm-depart').showModal();document.querySelector('#confirm-yes').focus();
   }
   var M=PB.Metrics;
