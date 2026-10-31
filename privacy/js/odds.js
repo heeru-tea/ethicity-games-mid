@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  var ODDS = { A: 1.5, B: 69.8, C: 4.2, D: 24.5 };
+  var ODDS = { A: 9.0, B: 43.0, C: 21.6, D: 26.3 }; // 2026-10-31 엔딩 조건 조정 후(check-story 10만 회)
   root.PRIVACY_ODDS = ODDS;
   if (typeof module !== 'undefined' && module.exports) module.exports = ODDS;
 })(typeof window !== 'undefined' ? window : globalThis);

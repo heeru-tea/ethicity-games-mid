@@ -135,12 +135,14 @@
     }
     return true;
   }
+  var PLAQUES = [[6.2,7.48,'2학년 3반'],[12.7,7.48,'도서관']]; // 문패(map.js 이름표가 이 자리를 피한다)
+  function plaques(tile, cam) { return PLAQUES.map(function (r) { return { x: r[0] * tile - cam.x - 4, y: r[1] * tile - cam.y - tile * 0.18, w: tile * 1.55, h: tile * 0.36 }; }); }
   function details(ctx, tile, cam) {
     [[8.2,0.1,2.45,0.75],[13,0.08,3,0.8],[17.3,0.08,3,0.8],[2,10.06,2.5,0.77],[6,10.06,2.5,0.77],[14,10.06,2.5,0.77],[18,10.06,2.5,0.77]].forEach(function (r) {
       sprite(ctx, 'window', r[0], r[1], r[2], r[3], tile, cam);
     });
     ctx.save(); ctx.font = '600 ' + Math.max(11, Math.round(tile * 0.22)) + 'px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    [[6.2,7.48,'2학년 3반'],[12.7,7.48,'도서관']].forEach(function (r) {
+    PLAQUES.forEach(function (r) {
       var x = r[0] * tile - cam.x, y = r[1] * tile - cam.y;
       ctx.fillStyle = '#416e65'; ctx.fillRect(x - 4, y - tile * 0.18, tile * 1.55, tile * 0.36);
       ctx.fillStyle = '#fff'; ctx.fillText(r[2], x, y);
@@ -168,7 +170,7 @@
       }});
     });
   }
-  window.PrivacySchool = { contains: contains, cell: cell, sprite: sprite, object: object, details: details, exterior: exterior,
+  window.PrivacySchool = { plaques: plaques, contains: contains, cell: cell, sprite: sprite, object: object, details: details, exterior: exterior,
     collectDoors: collectDoors,
     ready: function () { return names.every(function (n) { return !!assets[n]; }); } };
 }());

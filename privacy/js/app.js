@@ -49,7 +49,8 @@
       if (p.explored && typeof p.explored === 'object') progress.explored = p.explored;
       if (Array.isArray(p.endingsSeen)) progress.endingsSeen = p.endingsSeen.filter(function (c) { return typeof c === 'string'; });
       // 맵 위치: 칸 안이면 받아 둔다(새 건물·울타리 안이면 맵이 가장 가까운 걸을 수 있는 칸으로 옮김)
-      if (p.pos && typeof p.pos === 'object' && p.pos.x === (p.pos.x | 0) && p.pos.y === (p.pos.y | 0) &&
+      // 맵 위치는 지금 지도 판(world VERSION)에서 저장한 것만 — 지도를 줄인 뒤 옛 좌표면 버리고 장면 시작점에서 다시(진행은 그대로)
+      if (p.pos && typeof p.pos === 'object' && p.pos.v === window.PRIVACY_WORLD.VERSION && p.pos.x === (p.pos.x | 0) && p.pos.y === (p.pos.y | 0) &&
         p.pos.x >= 0 && p.pos.y >= 0 && p.pos.x < window.PRIVACY_WORLD.W && p.pos.y < window.PRIVACY_WORLD.H) progress.pos = p.pos;
       if (p.run) {
         if (E.isValidState(story, p.run)) progress.run = p.run;
@@ -153,20 +154,28 @@
     return true;
   }
 
+  // '이번 주인공' 칸: 공통 캐릭터 그림이 있으면 그것, 없으면 고른 주인공(온유·다온) 얼굴. 고르면 바로 바뀐다
+  function renderPlayerChip() {
+    var img = $('player-avatar'), face = $('player-face'), look = playerLook(), note = $('player-note');
+    var cast = window.PrivacyCast, hero = look && cast ? cast.LOOK[look] : null;
+    var useFace = !isOfficialAvatar() && hero && cast.paintPortrait(face, 'me', look, 'happy');
+    face.hidden = !useFace; img.hidden = !!useFace;
+    if (useFace) face.setAttribute('aria-label', (look === 'f' ? '다온' : '온유') + ' 얼굴');
+    else { img.src = playerAvatarSrc(); img.alt = isOfficialAvatar() ? '내 캐릭터' : '임시 아바타'; }
+    if (player.source === 'damaged') { note.hidden = false; note.textContent = '공통 캐릭터 정보를 읽지 못해 ‘' + CFG.defaultNickname + '’로 시작해요.' + (look ? '' : ' 위에서 주인공을 골라 주세요.'); }
+    else if (!look) { note.hidden = false; note.textContent = '위에서 주인공을 골라 주세요.'; }
+    else if (player.source === 'default') { note.hidden = false; note.textContent = (look === 'f' ? '다온' : '온유') + '(으)로 시작해요.'; }
+    else note.hidden = true;
+  }
+
   function renderStart() {
     renderLookPick();
     $('player-name').textContent = player.nickname;
     $('player-name').title = player.nickname;
-    var img = $('player-avatar');
-    img.src = playerAvatarSrc();
-    img.alt = isOfficialAvatar() ? '내 캐릭터' : '임시 아바타';
+    renderPlayerChip();
     var nameField = $('name-field');
     nameField.hidden = player.source === 'stored';
     if (!nameField.hidden && document.activeElement !== $('name-input')) $('name-input').value = settings.nickname;
-    var note = $('player-note');
-    if (player.source === 'damaged') { note.hidden = false; note.textContent = '공통 캐릭터 정보를 읽지 못해 기본 아바타와 ‘' + CFG.defaultNickname + '’로 시작해요.'; }
-    else if (player.source === 'default') { note.hidden = false; note.textContent = '공통 캐릭터 정보가 없어 기본 아바타로 시작해요.'; }
-    else note.hidden = true;
 
     var run = progress.run;
     var resumable = run && run.screen !== 'ending';
@@ -643,10 +652,18 @@
 
   /* ── 엔딩 연출(프로스트펑크식): 검은 화면 → 두 문장 → 9개 사건의 내 선택 → 친구들과의 사이 → 엔딩 이름 ── */
   var finaleTimer = null, finaleState = null;
-  function eventDate(eventId) {
-    var id = Object.keys(story.scenes).filter(function (k) { return story.scenes[k].event === eventId; })[0];
-    var sys = (story.scenes[id].lines || []).map(function (l) { return E.normLine(l, story); }).filter(function (l) { return l.who === 'sys'; })[0];
-    return sys ? sys.text.split(' · ')[0] : '';
+  // 날짜 = 그 사건에서 처음 고른 장면의 시각(장면에 시각 줄이 없으면 같은 사건의 앞 장면에서). 예: 고민 대화는 털어놓은 D-2가 아니라 고른 D-1
+  function sceneDate(id) {
+    var sc = story.scenes[id], sys = (sc.lines || []).map(function (l) { return E.normLine(l, story); }).filter(function (l) { return l.who === 'sys'; })[0];
+    if (sys) return sys.text.split(' · ')[0];
+    var m = /^(D-d|축제 당일|축제 다음 날)/.exec((sc.view && sc.view.title || '').replace(/^.* · /, ''));
+    return m ? m[1] : '';
+  }
+  function eventDate(eventId, sceneId) {
+    var ids = Object.keys(story.scenes).filter(function (k) { return story.scenes[k].event === eventId; });
+    var from = sceneId ? ids.indexOf(sceneId) : 0;
+    for (var i = Math.max(0, from); i >= 0; i--) { var d = sceneDate(ids[i]); if (d) return d; }
+    return '';
   }
   function finale(run, end) {
     var box = $('finale');
@@ -670,12 +687,16 @@
     var picks = el('ol', 'finale-choices');
     [1, 2, 3].forEach(function (n) {
       story.chapters[n].events.forEach(function (e) {
-        var h = run.history.filter(function (x) { return story.scenes[x.scene].event === e; })[0];
-        var c = h && (story.scenes[h.scene].choices || []).filter(function (x) { return x.id === h.choice; })[0];
+        // 첫 선택 → 이어진 선택(수습 등)까지 한 줄로: 성찰 수업에서 “처음엔 이랬지만 그다음엔”을 볼 수 있게
+        var hs = run.history.filter(function (x) { return story.scenes[x.scene].event === e; });
+        var texts = hs.map(function (h) {
+          var c = (story.scenes[h.scene].choices || []).filter(function (x) { return x.id === h.choice; })[0];
+          return c ? fill(c.text) : null;
+        }).filter(Boolean);
         var li = add(el('li', 'finale-choice'));
-        li.appendChild(el('span', 'finale-date', eventDate(e)));
+        li.appendChild(el('span', 'finale-date', eventDate(e, hs[0] && hs[0].scene)));
         li.appendChild(el('span', 'finale-ev', story.events[e].title));
-        li.appendChild(el('span', 'finale-pick', c ? fill(c.text) : '—'));
+        li.appendChild(el('span', 'finale-pick', texts.length ? texts.join(' → ') : '—'));
         picks.appendChild(li);
       });
     });
@@ -751,7 +772,10 @@
     $('e-title').textContent = end.title;
     $('e-summary').textContent = end.summary;
     var body = $('e-body'); body.textContent = '';
-    end.body.forEach(function (p) { body.appendChild(el('p', null, fill(p))); });
+    end.body.forEach(function (p) {
+      if (typeof p === 'object' && !E.evalCond(p.if, run)) return; // 조건 줄({ if, text })
+      body.appendChild(el('p', null, fill(typeof p === 'object' ? p.text : p)));
+    });
 
     var evs = $('e-events'); evs.textContent = '';
     [1, 2, 3].forEach(function (n) {
@@ -904,7 +928,7 @@
   /* ── 이벤트 연결 ─────────────────── */
   function bind() {
     Array.prototype.forEach.call(document.querySelectorAll('input[name=look]'), function (r) {
-      r.addEventListener('change', function () { settings.look = r.value; $('look-msg').hidden = true; saveSettings(); });
+      r.addEventListener('change', function () { settings.look = r.value; $('look-msg').hidden = true; saveSettings(); renderPlayerChip(); });
     });
     $('btn-new').addEventListener('click', function () {
       if (needLook()) return;

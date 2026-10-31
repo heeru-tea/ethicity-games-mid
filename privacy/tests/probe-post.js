@@ -1099,7 +1099,7 @@
       if (s === 'shot-talk') { $('#btn-new').click(); await play(R.A, { upto: 1, stopAtMap: true }); var pd = PrivacyMap.debug.tileToClient(8, 2); $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true })); await wait(1500); return; }
       if (s === 'shot-hood' || s === 'shot-gate' || s === 'shot-south' || s === 'shot-edge' || s === 'shot-front' || s === 'shot-house' || s === 'shot-yard' || s === 'shot-booth') { // 주택가·교문 화면 확인용: 그 자리까지 걸어감
         $('#btn-new').click(); await play(R.A, { upto: 1, stopAtMap: true });
-        var dest = { 'shot-hood': [46, 20], 'shot-gate': [24, 16], 'shot-south': [44, 27], 'shot-edge': [58, 30], 'shot-front': [12, 14], 'shot-house': [42, 19], 'shot-yard': [11, 26], 'shot-booth': [15, 21] }[s];
+        var dest = { 'shot-hood': [40, 20], 'shot-gate': [16, 16], 'shot-south': [21, 18], 'shot-edge': [53, 21], 'shot-front': [12, 14], 'shot-house': [34, 19], 'shot-yard': [7, 20], 'shot-booth': [9, 20] }[s]; // 2026-10-31 56×23 지도
         var rr = PrivacyMap.debug.routeTo(dest[0], dest[1]) || [];
         for (var q = 0; q < rr.length; q++) { key(ARROW[rr[q]]); key(ARROW[rr[q]], 'keyup'); await wait(16); while (PrivacyMap.debug.me().moving) await wait(16); }
         await wait(500); return;

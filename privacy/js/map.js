@@ -31,7 +31,7 @@
   var run = null, trig = null, targetId = null;
   var cast = [], blocked = {};
   var me = { x: 0, y: 0, dir: 'down', fx: 0, fy: 0, moving: false, t: 0, from: null, to: null, door: null, frame: 0 };
-  var held = [], path = null, actOnArrive = false, busy = false;
+  var held = [], queued = null, path = null, actOnArrive = false, busy = false;
   var bubbles = [], T = 40, viewW = 0, viewH = 0, cam = { x: 0, y: 0 }, dpr = 1;
   var sprites = {}, lastArea = '', lastLook = null;
   var srcTile = 48; // 월드 표시 단위. 고해상도 시트의 원본 셀 크기와 분리한다.
@@ -150,6 +150,7 @@
     targetId = r.mapTarget;
     trig = WD.triggers[targetId];
     cast = trig.cast.slice();
+    passGreeted = {};
     blocked = {};
     cast.forEach(function (c) { blocked[c.x + ',' + c.y] = true; loadSprite(c.who, 'char_' + c.who + '.png', window.PrivacyCast.walk(c.who)); });
     var look = o.playerLook();
@@ -200,7 +201,7 @@
     var c = $('cut');
     if (!opts.card) { c.hidden = true; return Promise.resolve(); }
     c.textContent = opts.card; c.hidden = false;
-    var ms = o.instant() || o.reduceMotion() ? 0 : 1200;
+    var ms = o.instant() || o.reduceMotion() ? 900 : 1400;
     return new Promise(function (res) { setTimeout(function () { c.hidden = true; res(); }, ms); });
   }
   function clearBubbles() { bubbles = []; }
@@ -223,7 +224,19 @@
     p.forEach(function (d) { cur = WD.stepFrom(cur.x, cur.y, d, {}); });
     place({ x: cur.x, y: cur.y, dir: me.dir });
   }
-  function savePos() { o.savePos({ x: me.x, y: me.y, dir: me.dir, for: targetId }); }
+  function savePos() { o.savePos({ x: me.x, y: me.y, dir: me.dir, for: targetId, v: WD.VERSION }); }
+  // 이 걷기 구간에서 할 말(castLines)이 있는 인물 곁(2칸 안)을 지나가면, 말을 걸지 않아도 머리 위에 한 번 저절로 뜬다
+  // (‘목적지로 바로 가기’로 지나쳐도 오프닝의 하늘이 인사를 놓치지 않게)
+  var passGreeted = {};
+  function greetPassing() {
+    if (!trig || !trig.castLines) return;
+    cast.forEach(function (c) {
+      var line = trig.castLines[c.who];
+      if (!line || passGreeted[c.who] || Math.abs(c.x - me.x) + Math.abs(c.y - me.y) > 2) return;
+      passGreeted[c.who] = true;
+      bubbleFor(c.who, o.fill(line));
+    });
+  }
 
   function dayCard(text) {
     var c = $('cut');
@@ -253,13 +266,15 @@
     savePos();
     updateArea();
     updateHint();
+    greetPassing();
     if (path && path.length) { tryStep(path.shift()) || (path = null); return; }
     if (path && !path.length) {
       path = null;
       if (actOnArrive) { actOnArrive = false; act(); }
       return;
     }
-    if (held.length) tryStep(held[held.length - 1]);
+    if (held.length) { queued = null; tryStep(held[held.length - 1]); }
+    else if (queued) { var q = queued; queued = null; tryStep(q); }
   }
   function updateArea() {
     var a = WD.areaName(me.x, me.y);
@@ -388,9 +403,11 @@
     if (dir) {
       e.preventDefault();
       if (window.PrivacyTalk.isOpen()) { if (busy) return; window.PrivacyTalk.close(); } // 걸으면 대화창은 닫힌다(목적지 인사말은 끝까지)
+      if (e.repeat && held.indexOf(dir) >= 0) return; // 길게 누름은 held로 이어 간다
       path = null; actOnArrive = false;
       if (held.indexOf(dir) < 0) held.push(dir);
-      if (!me.moving && !busy) tryStep(dir);
+      if (!me.moving && !busy) { if (!tryStep(dir)) queued = null; }
+      else queued = dir; // 걷는 중 짧게 누른 키: 지금 칸이 끝나면 한 칸
       return;
     }
     if ((e.key === ' ' || e.key === 'Enter') && tag !== 'BUTTON' && tag !== 'INPUT') { e.preventDefault(); act(); }
@@ -536,7 +553,7 @@
         continue;
       }
       if (!art) { if (!terrain || ch === 'T' || ch === 'f') drawTile(ch, sx, sy); continue; }
-      var base = ch === '#' ? (WD.indoor(x, y) ? 'wall_room' : 'wall_school') : ch === 'd' ? (x === 22 ? 'floor_dirt' : 'door_school') : FLOOR[ch];
+      var base = ch === '#' ? (WD.indoor(x, y) ? 'wall_room' : 'wall_school') : ch === 'd' ? (x === WD.GATE.x ? 'floor_dirt' : 'door_school') : FLOOR[ch];
       if (!terrain) blit(base || 'floor_grass', x, y);
       if (ch === 'T') list.push({ y: y, fn: (function (xx, yy) { return function () {
         var variation = ((xx * 7 + yy * 11) % 3) * 0.08;
@@ -544,9 +561,9 @@
       }; })(x, y) });
       // 옛 높은 철창·교문 타일은 새 담장 그림이 없을 때만(있으면 neighborhood.js가 낮은 담장·열린 교문을 그림)
       if (ch === 'f' && !hood) list.push({ y: y, fn: (function (xx, yy) { return function () { blit('fence', xx, yy); }; })(x, y) });
-      if (ch === 'd' && x === 22 && y === 17 && !hood) list.push({ y: y, fn: function () { blit('gate', 22, 17); } });
+      if (ch === 'd' && x === WD.GATE.x && y === WD.GATE.y + 1 && !hood) list.push({ y: y, fn: function () { blit('gate', WD.GATE.x, WD.GATE.y + 1); } });
     }
-    if (!inside && outdoor) outdoor.draw(ctx, 'pond', 26.9, 21.1, 4.2, 2.2, T, cam);
+    if (!inside && outdoor) outdoor.draw(ctx, 'pond', WD.POND.x, WD.POND.y, WD.POND.w, WD.POND.h, T, cam);
     if (!inside && outdoor && outdoor.collectDecorations) outdoor.collectDecorations(list, ctx, T, cam);
     if (hood) hood.collect(list, ctx, T, cam, { x0: x0, y0: y0, x1: x1, y1: y1 });
     if (inside && room) room.details(ctx, T, cam);
@@ -602,7 +619,9 @@
     });
     list.push({ y: me.fy + 0.01, fn: function () { drawPerson('me', o.playerName(), me.fx, me.fy, me.dir, walkFrame(), null, me.moving); } });
     list.sort(function (a, b) { return a.y - b.y; });
+    tags = [];
     list.forEach(function (d) { d.fn(); });
+    drawTags();
     var tint = mode === 'stage' ? stageInfo.tint : trig.tint;
     if (TINT[tint] && !(WD.areaName(me.x, me.y) === '내 방' && tint === 'day')) { ctx.fillStyle = TINT[tint]; ctx.fillRect(0, 0, viewW, viewH); }
     if (mode === 'walk') drawMarker(t);
@@ -691,16 +710,26 @@
         ctx.fillText(who === 'me' ? '나' : (o.story.characters[who] || {}).initial || '?', sx + T / 2, sy + T * 0.62 + bob);
       }
     }
-    // 이름표(색이 아니라 글자로 구분)
-    var label = name.length > 8 ? name.slice(0, 8) + '…' : name;
+    // 이름표(색이 아니라 글자로 구분) — 내 것은 머리 위, 다른 인물은 발밑. 실제 그리기는 drawTags()에서 겹침을 피해
+    tags.push({ me: who === 'me', label: name.length > 8 ? name.slice(0, 8) + '…' : name, cx: sx + T / 2, y: who === 'me' ? sy - T * 0.52 : sy + T * 0.98 });
+  }
+  var tags = [];
+  function drawTags() {
+    var h = T * 0.34, placed = [];
+    var plaques = window.PrivacySchool && window.PrivacySchool.plaques ? window.PrivacySchool.plaques(T, cam) : [];
+    function hit(r) { return placed.concat(plaques).some(function (q) { return r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h; }); }
     ctx.font = '600 ' + Math.max(11, Math.round(T * 0.26)) + 'px sans-serif';
-    var tw = ctx.measureText(label).width + 8;
-    ctx.fillStyle = who === 'me' ? 'rgba(15,118,110,0.92)' : 'rgba(22,32,31,0.72)';
-    // 내 이름표는 머리 위, 다른 인물은 발밑 — 옆에 붙어 서도 겹치지 않게
-    var ty = who === 'me' ? sy - T * 0.52 : sy + T * 0.98;
-    roundRect(sx + T / 2 - tw / 2, ty, tw, T * 0.34, 4); ctx.fill();
-    ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(label, sx + T / 2, ty + T * 0.17);
+    tags.sort(function (a, b) { return (b.me ? 1 : 0) - (a.me ? 1 : 0); }); // 내 이름표 먼저 자리 잡기
+    tags.forEach(function (t) {
+      var w = ctx.measureText(t.label).width + 8, r = { x: t.cx - w / 2, y: t.y, w: w, h: h };
+      for (var k = 0; k < 3 && hit(r); k++) r.y += (t.me ? -1 : 1) * (h + 2);
+      placed.push(r);
+      ctx.fillStyle = t.me ? 'rgba(15,118,110,0.92)' : 'rgba(22,32,31,0.72)';
+      roundRect(r.x, r.y, w, h, 4); ctx.fill();
+      ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(t.label, t.cx, r.y + h / 2);
+    });
+    tags = [];
   }
   // ❗가 들어갈 수 있는 캔버스 안 영역: 위 HUD(시간·할 일·버튼) 아래, 아래 버튼·안내 문구 위
   var lastMarker = null;
@@ -725,9 +754,12 @@
     // 방 안인데 목적지가 바깥이면 나가는 방문에(어디로 가야 하는지 바로 보이게)
     if (!WD.indoor(b.x, b.y) && WD.indoor(me.x, me.y)) b = { x: WD.INDOOR.exit.x, y: WD.INDOOR.exit.y, w: 1, h: 1 };
     var bob = o.reduceMotion() ? 0 : Math.sin(t / 220) * T * 0.08;
-    var mx = (b.x + b.w / 2) * T - cam.x, my = b.y * T - cam.y - T * (b.who ? 0.95 : 0.35) + bob;
+    var mx = (b.x + b.w / 2) * T - cam.x, my = b.y * T - cam.y - T * (b.who ? 1.15 : 0.55) + bob;
     // 화면 밖이거나 위 안내 상자·아래 버튼에 가리는 자리면, 보이는 띠 안으로 옮기고 방향 화살표를 단다
     var iconSize = Math.max(32, Math.round(T * 0.8)), sa = safeArea();
+    // 내 캐릭터(머리 꼭대기 약 0.65칸 위 ~ 발)와 겹치면 내 머리 위로 비켜 선다
+    var px0 = me.fx * T - cam.x, pTop = (me.fy - 0.65) * T - cam.y, pBot = (me.fy + 1) * T - cam.y;
+    if (Math.abs(mx - (px0 + T / 2)) < (iconSize / 2 + T * 0.35) && my + iconSize / 2 > pTop && my - iconSize / 2 < pBot) my = pTop - iconSize / 2 - 4;
     var tx0 = mx, ty0 = my;
     mx = Math.max(sa.left + iconSize / 2, Math.min(sa.right - iconSize / 2, mx));
     my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - iconSize / 2, my));
@@ -810,7 +842,7 @@
     ctx = canvas.getContext('2d');
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
-    window.addEventListener('blur', function () { held = []; });
+    window.addEventListener('blur', function () { held = []; queued = null; });
     canvas.addEventListener('pointerdown', onPointer);
     window.addEventListener('resize', resize);
     if (window.ResizeObserver) new ResizeObserver(function () { resize(); }).observe(wrap); // 무대 크기가 바뀌어도 캔버스를 맞춘다

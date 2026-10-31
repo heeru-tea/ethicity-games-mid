@@ -51,7 +51,7 @@
   /* ── 담장 구간: 격자의 'f'에서 한 번만 계산(가로·세로 나눔, 교문 기둥 칸 제외) ── */
   var segs = null;
   function isF(x, y) { return WD.tile(x, y) === 'f'; }
-  var GATE = { top: { x: 22, y: 15 }, bottom: { x: 22, y: 18 } };
+  var GATE = { top: { x: WD.GATE.x, y: WD.GATE.y - 1 }, bottom: { x: WD.GATE.x, y: WD.GATE.y + 2 } }; // 교문(world.js GATE) 위·아래 기둥 칸
   function isGatePost(x, y) { return (x === GATE.top.x && y === GATE.top.y) || (x === GATE.bottom.x && y === GATE.bottom.y); }
   function horiz(x, y) { return isF(x - 1, y) || isF(x + 1, y); }
   function buildSegs() {

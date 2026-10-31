@@ -1,0 +1,81 @@
+{
+  "reference": "docs/style-reference-saebom.png",
+  "tool": "built-in image_gen",
+  "characters": {
+    "base": "Use case: illustration-story. Asset: production sprite atlas for Korean elementary school AI ethics RPG, matching STYLE REFERENCE Image 1 (the girl): polished 16-bit pixel art, clearly stepped pixel edges, dark brown outlines, warm colors, cute large heads and compact bodies, consistent pixel scale, no painterly rendering. Produce ONE transparent sprite sheet on a PORTRAIT canvas aspect ratio 4:5. EXACTLY 4 EQUAL COLUMNS and 5 EQUAL ROWS, 20 cells, invisible regular grid, each sprite centered within its own cell with generous 12% cell padding, no overlaps, NO TEXT, NO LABELS, NO GRID LINES, NO SHADOWS, no ground, real transparent background. Rows 1-4 are SAME full-body character with same size and outfit, feet at same relative baseline. Row1 face FRONT/down, row2 face LEFT, row3 face RIGHT, row4 face BACK/up. Four columns in each of rows1-4 are distinct WALK CYCLE frames: left foot forward, feet together, right foot forward, feet together with slight opposite arm swing. In back view show back of head and clothing, NO face. Row5 is four head-and-shoulders DIALOGUE portraits of same character, facing slightly right: col1 calm neutral, col2 cheerful smile, col3 worried eyebrows, col4 explaining with mouth slightly open. These must be 16 separate walk frames plus 4 portrait expressions, not repeated standing clones. Do not add any other sprites or ornaments. Reference character is a style guide, use the character identity specified below.",
+    "individuals": [
+      [
+        "jiho",
+        "Jiho: 12-year-old girl, dark brown hair in a neat low ponytail, navy hooded sweatshirt with subtle cyan sleeve piping, gray trousers, navy and white sneakers, small crossbody bag. Calm thoughtful face, distinct from reference girl."
+      ],
+      [
+        "haneul",
+        "Haneul: 12-year-old boy, short straight black hair with slightly side swept fringe, burgundy windbreaker with subtle light reflective trim, dark cargo shorts over charcoal leggings, dark high top shoes, compact backpack. Energetic open face."
+      ],
+      [
+        "saebom",
+        "Saebom: PRESERVE THE EXACT CHARACTER IDENTITY IN IMAGE 1: elementary girl with short dark chestnut bob, butter-yellow flower hair clip, sage green cardigan over ivory shirt, dusty coral pleated skirt, ivory socks, brown sneakers. Holding a small cream reading notebook; for walk frames hold notebook in one arm to permit movement. Concerned but kind eyes."
+      ],
+      [
+        "onyu",
+        "Onyu: 12-year-old boy, softly wavy dark brown hair, small round glasses, teal sweater vest over pale cream shirt, warm brown trousers, white sneakers, small navy book bag. Quiet friendly face. Distinct from Haneul and reference girl."
+      ],
+      [
+        "daon",
+        "Daon: 12-year-old girl with straight dark chestnut hair in two low short pigtails, lavender zip hoodie, cream T-shirt, indigo trousers, cream sneakers, small burnt orange geometric hair clip, small lilac backpack. Confident curious face. No flower clip and no skirt, distinct from Saebom and Jiho."
+      ],
+      [
+        "teacher",
+        "A friendly adult woman schoolteacher in her late thirties, dark brown shoulder length hair tied low, soft rectangular glasses, dusty blue cardigan over cream blouse, charcoal trousers and brown comfortable shoes, holding a slim green teaching folder. Adult body slightly taller than children but same stylized big-head pixel RPG proportions."
+      ],
+      [
+        "librarian",
+        "A kind adult man school librarian in his forties, short neatly parted brown hair, round glasses, light olive vest over ivory shirt with rolled sleeves, dark slate trousers, brown loafers, holding a small rust-red book. Clearly adult, slightly taller than children, same stylized big-head pixel RPG proportions. No beard, no flower clip."
+      ],
+      [
+        "robot",
+        "A small friendly school AI robot. White rounded square head with navy digital face panel and expressive cyan LED eyes, small sky-blue antenna, white and pale blue compact body, two small articulated arms, small navy feet. Same dark outline and pixel shading scale. WALK rows show little alternating feet, side views look in the correct row direction, back view shows a simple circular battery panel, no face. Portrait expressions are neutral LED eyes, happy crescent LED eyes, worried tilted LED eyes, explaining open-mouth icon and raised arm. NO letters on robot."
+      ]
+    ]
+  },
+  "backgrounds": {
+    "base": "Use case: illustration-story. Asset type: production GAME BACKGROUND for a coherent Korean elementary-school 16-bit pixel RPG, same art style as Image 1 character reference. LANDSCAPE 16:9 scene, slightly elevated top-down three-quarter orthographic cutaway view, no vanishing-point perspective. Warm cream plaster, muted sage green trim, honey-colored wood, dusty terracotta accents, crisp dark warm outlines and visible controlled pixel clusters, clean small palette. NO PEOPLE, NO CHARACTERS, NO LETTERS, NO WORDS, NO UI, NO LABELS, NO WATERMARK. Very important: keep a broad clear walkable area in the central and lower-middle 55% of scene, put major objects at the perimeter, readable space for small sprites. Consistent gentle daylight from upper-left. Fill frame edge-to-edge, no border, no collage. Objects should be legible like usable 2D RPG environment assets, NOT photorealistic, NOT painterly, NOT glossy 3D. Use a classroom-friendly daytime school atmosphere.",
+    "individuals": [
+      [
+        "courtyard",
+        "School central courtyard. School building along upper left, small library building along upper right, both have clear entrances facing courtyard. Pale sand cross-shaped walking paths through soft green lawn. Modest trees and shrubs at outer edges, two wooden benches at lower outer corners, a small noticeboard near upper center. Large unobstructed center path intersection, access at bottom center. Friendly school buildings at top, not a huge city."
+      ],
+      [
+        "classroom",
+        "School classroom cutaway. Cream back wall along upper 22% with large sage chalkboard and a clock without numerals, windows on side walls. Teacher desk at upper left, simple bookshelf and reading notebook desk on left, desktop computer workstation on upper right, pairs of student desks with chairs only along left and right lower edges. Wide open central aisle from bottom-center entrance to chalkboard. Honey-colored wood floor."
+      ],
+      [
+        "library",
+        "School library cutaway. Cream and sage interior, tall bookshelves packed with muted multicolored books across back and side perimeter walls. Librarian checkout desk in upper-left area, self-checkout computer upper-right, two small reading tables with chairs at lower corners, a plant. Wide central wooden floor aisle connects bottom-center entrance to back shelves. No furniture in center walking route."
+      ]
+    ]
+  },
+  "remaining": [
+    [
+      "cafeteria",
+      false,
+      "Use case: illustration-story. Asset type: production GAME BACKGROUND for a coherent Korean elementary-school 16-bit pixel RPG, same art style as Image 1 character reference. LANDSCAPE 16:9 scene, slightly elevated top-down three-quarter orthographic cutaway view, no vanishing-point perspective. Warm cream plaster, muted sage green trim, honey-colored wood, dusty terracotta accents, crisp dark warm outlines and visible controlled pixel clusters, clean small palette. NO PEOPLE, NO CHARACTERS, NO LETTERS, NO WORDS, NO UI, NO LABELS, NO WATERMARK. Very important: keep a broad clear walkable area in the central and lower-middle 55% of scene, put major objects at the perimeter, readable space for small sprites. Consistent gentle daylight from upper-left. Fill frame edge-to-edge, no border, no collage. Objects should be legible like usable 2D RPG environment assets, NOT photorealistic, NOT painterly, NOT glossy 3D. Use a classroom-friendly daytime school atmosphere.\nSCENE: School cafeteria cutaway. Sage and cream walls, pale warm tiled floor, kitchen serving counter across rear with trays and simple covered food pans, handwash sinks at far right, two groups of modest wooden dining tables and chairs only at lower left and lower right edges. Large open central walking aisle, entrance at bottom-center. Clean welcoming school dining room. No text on menus."
+    ],
+    [
+      "nurse",
+      false,
+      "Use case: illustration-story. Asset type: production GAME BACKGROUND for a coherent Korean elementary-school 16-bit pixel RPG, same art style as Image 1 character reference. LANDSCAPE 16:9 scene, slightly elevated top-down three-quarter orthographic cutaway view, no vanishing-point perspective. Warm cream plaster, muted sage green trim, honey-colored wood, dusty terracotta accents, crisp dark warm outlines and visible controlled pixel clusters, clean small palette. NO PEOPLE, NO CHARACTERS, NO LETTERS, NO WORDS, NO UI, NO LABELS, NO WATERMARK. Very important: keep a broad clear walkable area in the central and lower-middle 55% of scene, put major objects at the perimeter, readable space for small sprites. Consistent gentle daylight from upper-left. Fill frame edge-to-edge, no border, no collage. Objects should be legible like usable 2D RPG environment assets, NOT photorealistic, NOT painterly, NOT glossy 3D. Use a classroom-friendly daytime school atmosphere.\nSCENE: School nurse office cutaway. Soft cream and sage walls, warm pale floor. White-sheeted examination bed with sage blanket at upper left side, another bed at upper right side with folded privacy curtain, small medicine cabinet at back center, nurse desk at upper-left corner, sink and first-aid cupboard on right wall, small potted plant. Large unobstructed central walking area and clear entrance at bottom center. Warm non-threatening school health room."
+    ],
+    [
+      "ai_lab",
+      false,
+      "Use case: illustration-story. Asset type: production GAME BACKGROUND for a coherent Korean elementary-school 16-bit pixel RPG, same art style as Image 1 character reference. LANDSCAPE 16:9 scene, slightly elevated top-down three-quarter orthographic cutaway view, no vanishing-point perspective. Warm cream plaster, muted sage green trim, honey-colored wood, dusty terracotta accents, crisp dark warm outlines and visible controlled pixel clusters, clean small palette. NO PEOPLE, NO CHARACTERS, NO LETTERS, NO WORDS, NO UI, NO LABELS, NO WATERMARK. Very important: keep a broad clear walkable area in the central and lower-middle 55% of scene, put major objects at the perimeter, readable space for small sprites. Consistent gentle daylight from upper-left. Fill frame edge-to-edge, no border, no collage. Objects should be legible like usable 2D RPG environment assets, NOT photorealistic, NOT painterly, NOT glossy 3D. Use a classroom-friendly daytime school atmosphere.\nSCENE: School AI practice laboratory cutaway. Warm cream and sage school architecture, honey wood and pale cream floor. Computer workstations along left and right walls with muted teal screens, friendly small white and blue robot charging pedestal centered against back wall, one enclosed navy server cabinet in upper-right corner, small observation table at lower-left, STEM storage cubbies. Soft cyan equipment accents but no neon cyberpunk style. Broad empty center aisle leading from bottom-center entrance to robot station."
+    ],
+    [
+      "props",
+      true,
+      "Use case: illustration-story. Asset: reusable school environment OBJECT sprite sheet matching Image 1 pixel RPG style, crisp stepped pixel-art, dark warm outlines, muted sage, cream, honey wood, brick accents. TRANSPARENT background with real alpha. EXACTLY 16 separate objects arranged in invisible 4 columns x 4 rows with large equal spacing, square canvas, no overlaps, no text, no people, no captions. Each object standalone, elevated three-quarter top-down view consistent with school RPG backgrounds. Row1 left to right: wooden student desk, green-backed school chair, wooden bookcase with colorful books, green classroom chalkboard on stand. Row2: wood desk with desktop computer, open reading notebook, closed book stack, small wooden noticeboard on stand. Row3: leafy school tree, round trimmed shrub, wooden bench, flowering potted plant. Row4: school library checkout desk with monitor, cafeteria tray with meal, school nurse bed with white sheet and sage blanket, white-blue AI robot charging pedestal. Objects centered in each cell and fully visible, transparent padding around each, no terrain, no shadows beyond subtle contact shade inside object. Make these usable game furniture sprites, not a collage or UI."
+    ]
+  ],
+  "processing": "Connected alpha silhouettes extracted, placed into 96x128 walk cells and 256x256 portrait cells; source art retained. UI and short feedback effects authored as pixel coordinates in qa/build-ui.cjs."
+}

@@ -64,6 +64,7 @@
       <div class="title-foot">
         <div class="player-chip" id="player-chip">
           <img id="player-avatar" class="avatar-img" src="assets/avatar-default.svg" alt="임시 아바타" width="36" height="36">
+          <span id="player-face" class="avatar-img avatar-face" role="img" hidden></span>
           <div class="player-text">
             <span class="player-label">이번 주인공</span>
             <span id="player-name" class="player-name"></span>
@@ -81,7 +82,7 @@
             <li>약 15~20분 · 프롤로그 → 3개 장 → 에필로그</li>
             <li>선택 뒤에 정답·오답을 보여 주지 않아요. 결과는 이야기로 돌아와요.</li>
             <li>게임 속 이름·번호·계좌·학교는 모두 가짜예요. 실제 개인정보를 입력하는 곳은 없어요.</li>
-            <li>소리는 꺼진 채로 시작해요(메뉴에서 메시지 수신음을 켤 수 있어요). 방향키·<kbd>Space</kbd>로 걷고 말 걸기, 숫자 키 <kbd>1</kbd>~<kbd>4</kbd>로 고르고 <kbd>Enter</kbd>로 넘겨요.</li>
+            <li>소리는 꺼진 채로 시작해요(메뉴에서 메시지 수신음을 켤 수 있어요). 방향키로 걷고 스페이스 키로 말을 걸어요. 숫자 키 1~4로 고르고 엔터 키로 넘겨요.</li>
           </ul>
         </details>
       </div>
@@ -113,7 +114,7 @@
           <button id="btn-map-act" class="btn" type="button">말 걸기 · 조사하기</button>
           <button id="btn-map-skip" class="btn ghost" type="button">목적지로 바로 가기</button>
         </div>
-        <p class="small mute map-help">방향키·WASD로 걷고 <kbd>Space</kbd>로 말 걸기. 휴대폰·태블릿은 가고 싶은 곳을 누르세요. <span class="ico-quest" role="img" aria-label="노란 느낌표"></span>가 다음 목적지예요.</p>
+        <p class="small mute map-help">방향키나 WASD 키로 걷고 스페이스 키로 말 걸기. 휴대폰·태블릿은 가고 싶은 곳을 누르세요. <span class="ico-quest" role="img" aria-label="노란 느낌표"></span>가 다음 목적지예요.</p>
       </section>
 
       <!-- 2-2. 장면 -->

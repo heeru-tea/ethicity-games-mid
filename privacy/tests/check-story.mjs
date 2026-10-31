@@ -223,7 +223,9 @@ function runRoute(route) {
   const sup = runRoute(swap(['c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#support']));
   if (sup.fail) err('e8 fight→support 경로: ' + sup.fail);
   else {
-    if (sup.s.ending === 'D') err('싸운 뒤 지원을 요청해 수습했는데 엔딩 D');
+    // 2026-10-31 플레이테스트: 정문에서 싸운 경로는 수습해도 B가 아니다(serious 3 → D). D 본문은 도움을 청한 경우 문장이 바뀐다
+    if (sup.s.ending === 'B') err('정문에서 싸웠는데 수습만으로 엔딩 B');
+    if (sup.s.ending === 'D' && !E.evalCond('help>=2', sup.s)) err('싸운 뒤 지원 요청 경로인데 D 본문 분기(help>=2)가 안 맞음');
     if (sup.s.trust.haneul !== base.trust.haneul - 1) err(`영상 확산 감점: 하늘 신뢰 ${base.trust.haneul}→${sup.s.trust.haneul} (−1 기대)`);
     if (sup.s.stats.spread !== base.stats.spread + 1) err(`영상 확산 spread ${base.stats.spread}→${sup.s.stats.spread} (+1 기대)`);
     if (sup.mapBefore9) err('싸움 경로인데 사건 9 전에 교문에서 다시 걷게 됨');
@@ -262,7 +264,7 @@ for (const [id, t] of Object.entries(WORLD.triggers)) {
   for (const w of Object.keys(t.castLines || {})) if (!t.cast.some((c) => c.who === w)) err(id + ': castLines 인물이 cast에 없음 ' + w);
 }
 let prevEnd = null;
-const walkLengths = [];
+const walkLengths = []; let walkTotal = 0;
 for (const id of TRIGGER_ORDER) {
   const tr = WORLD.triggers[id];
   if (!tr) continue;
@@ -294,13 +296,13 @@ for (const id of TRIGGER_ORDER) {
   }
   const path = WORLD.findPath({ x: start.x, y: start.y }, WORLD.adjacentTo({ contains }), blocked);
   if (!path) { err(id + ': 시작 위치에서 대상까지 걸어갈 수 없음'); continue; }
-  walkLengths.push(id + ' ' + path.length + '칸');
+  walkLengths.push(id + ' ' + path.length + '칸'); walkTotal += path.length;
   let cur = { x: start.x, y: start.y }; for (const d of path) cur = WORLD.stepFrom(cur.x, cur.y, d, blocked);
   prevEnd = cur;
 }
 {
   // 집 사건은 교문을 지나 걸어야만 닿는지: 교문 칸을 막으면 길이 없어야 함
-  const gateBlocked = { '22,16': true, '22,17': true };
+  const gateBlocked = { [WORLD.GATE.x + ',' + WORLD.GATE.y]: true, [WORLD.GATE.x + ',' + (WORLD.GATE.y + 1)]: true };
   const bed = WORLD.object('bed');
   const p = WORLD.findPath({ x: 8, y: 6 }, WORLD.adjacentTo({ contains: (x, y) => x === bed.x && y >= bed.y && y < bed.y + bed.h }), gateBlocked);
   if (p) err('교문을 지나지 않고 집에 갈 수 있는 길이 있음');
@@ -308,7 +310,13 @@ for (const id of TRIGGER_ORDER) {
 
 // ── 6d. 주택가·담장 검사 ─────────────────
 {
-  if (WORLD.W < 60 || WORLD.H < 30) err('마을이 확장되지 않음: ' + WORLD.W + '×' + WORLD.H);
+  // 2026-10-31 플레이테스트: 빈 운동장·마을 남쪽을 잘라 56×23. 다시 커지면(빈 땅) 알린다
+  if (WORLD.W > 56 || WORLD.H > 23) err('지도가 다시 커짐(빈 땅 확인): ' + WORLD.W + '×' + WORLD.H);
+  { // 현관(10·11,10)에서 교문까지 8칸 이하(플레이테스트: 18칸을 매번 건넜음)
+    const p = WORLD.findPath({ x: 11, y: 11 }, (x, y) => x === WORLD.GATE.x && (y === WORLD.GATE.y || y === WORLD.GATE.y + 1), {});
+    if (!p || p.length > 8) err('현관에서 교문까지 ' + (p ? p.length : '길 없음') + '칸(8칸 이하여야 함)');
+  }
+  if (WORLD.OBJECTS.some((o) => /^yardGoal/.test(o.id))) err('잘라 낸 운동장 골대가 남아 있음');
   const NB = WORLD.NEIGHBORS || [];
   if (NB.length !== 3) err('이웃집 3채가 아님: ' + NB.length);
   if (new Set(NB.map((n) => n.art)).size !== NB.length) err('같은 집 그림을 복사해 씀');
@@ -330,12 +338,14 @@ for (const id of TRIGGER_ORDER) {
   const mb = WORLD.object('mailbox');
   if (!mb) err('노란 우편함 없음');
   else {
-    if (Math.abs(mb.x - 42) > 3 || Math.abs(mb.y - 18) > 2) err('우편함이 우리 집 현관 근처가 아님');
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1]]) if (!WORLD.walkable(42 + dx, 18 + dy)) err('우리 집 현관 옆 칸이 막힘: ' + (42 + dx) + ',' + (18 + dy));
+    const hd = WORLD.INDOOR.entrance; // 우리 집 현관
+    if (Math.abs(mb.x - hd.x) > 3 || Math.abs(mb.y - hd.y) > 2) err('우편함이 우리 집 현관 근처가 아님');
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1]]) if (!WORLD.walkable(hd.x + dx, hd.y + dy)) err('우리 집 현관 옆 칸이 막힘: ' + (hd.x + dx) + ',' + (hd.y + dy));
   }
   // 교문: 통로 2칸은 열리고 위·아래 기둥 칸은 막힘
-  if (!WORLD.walkable(22, 16) || !WORLD.walkable(22, 17)) err('교문 통로가 막힘');
-  if (WORLD.walkable(22, 15) || WORLD.walkable(22, 18)) err('교문 기둥 칸을 걸을 수 있음');
+  const GX = WORLD.GATE.x, GY = WORLD.GATE.y;
+  if (!WORLD.walkable(GX, GY) || !WORLD.walkable(GX, GY + 1)) err('교문 통로가 막힘');
+  if (WORLD.walkable(GX, GY - 1) || WORLD.walkable(GX, GY + 2)) err('교문 기둥 칸을 걸을 수 있음');
   // 맵 가장자리는 모두 막혀 있다(생울타리·나무·담장)
   for (let x = 0; x < WORLD.W; x++) for (const y of [0, WORLD.H - 1]) if (WORLD.walkable(x, y)) err('맵 가장자리가 열림: ' + x + ',' + y);
   for (let y = 0; y < WORLD.H; y++) for (const x of [0, WORLD.W - 1]) if (WORLD.walkable(x, y)) err('맵 가장자리가 열림: ' + x + ',' + y);
@@ -390,7 +400,7 @@ const lineTotal = sceneIds.reduce((n, id) => n + (story.scenes[id].lines || []).
   + (story.scenes[id].choices || []).reduce((m, c) => m + (c.react || []).length, 0), 0);
 console.log(`장면 ${sceneIds.length}개 · 선택 지점 ${decisionScenes.length}곳 · 선택지 ${choiceTotal}개 · 대사 ${lineTotal}줄 · 사건 ${eventIds.length}개 · 엔딩 ${story.endings.length}종`);
 console.log(`서로 다른 완주 경로: ${totalPaths.toLocaleString()}가지`);
-console.log('맵 이동 거리(최단): ' + walkLengths.join(' · '));
+console.log('맵 이동 거리(최단): ' + walkLengths.join(' · ') + ' · 합계 ' + walkTotal + '칸');
 // 엔딩 연출의 “아무거나 골랐다면 n%”(js/odds.js)가 실제 무작위 완주 비율과 1%p 안에서 맞는지(표본이 충분할 때)
 {
   const ODDS = require('../js/odds.js');

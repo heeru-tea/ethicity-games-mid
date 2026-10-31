@@ -33,8 +33,8 @@
   }
   // Cosmetic only: no entries in world objects, collision, triggers or save data.
   function collectDecorations(list, ctx, tile, cam) {
-    // 우리 집(41~45, 13~17) 왼쪽·오른쪽 잔디
-    [{name:'rabbit',x:39,y:14}, {name:'squirrel',x:46,y:14}].forEach(function (d) {
+    // 우리 집 왼쪽·오른쪽 잔디(좌표 = world.js CRITTERS)
+    window.PRIVACY_WORLD.CRITTERS.forEach(function (d) {
       var a = assets[d.name]; if (!a) return;
       var ratio = a.box[2] / a.box[3], w = Math.min(0.68, 0.68 * ratio), h = w / ratio;
       list.push({y:d.y, fn:function () {
