@@ -1,0 +1,222 @@
+/*
+ * 안전성 게임 전용 스타일 — 모두 .game-safety 아래. 색·글꼴은 공통 토큰(--ee-*)만 쓰고 .ee-* 컴포넌트 모양은 바꾸지 않는다.
+ * 무대는 1280×720 논리 화면을 16:9로 축소. 760px 이하에서는 대화창을 무대 아래로 내린다.
+ */
+.game-safety { margin: 0; background: var(--ee-paper); color: var(--ee-ink); min-height: 100dvh; font-size: 17px; line-height: 1.6; }
+.game-safety *, .game-safety *::before, .game-safety *::after { box-sizing: border-box; }
+.game-safety [hidden] { display: none !important; }
+.game-safety .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.game-safety .skip { position: absolute; left: 8px; top: -60px; z-index: 50; background: var(--ee-cream); padding: 8px 16px; border: 3px solid var(--ee-ink); }
+.game-safety .skip:focus { top: 8px; }
+.game-safety :focus-visible { outline: 3px solid #b47f35; outline-offset: 3px; }
+.game-safety h1, .game-safety h2, .game-safety h3 { line-height: 1.3; margin: 0 0 8px; }
+.game-safety .app { padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.game-safety .boot { text-align: center; padding: 64px 16px; }
+.game-safety .eyebrow { margin: 0 0 4px; font-size: 14px; letter-spacing: 1px; color: var(--ee-green); font-weight: 700; }
+.game-safety .toast { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); z-index: 60; max-width: min(560px, calc(100vw - 32px)); }
+
+/* ── 시작 ── */
+.game-safety .start { max-width: 920px; margin: 0 auto; display: grid; gap: 16px; }
+.game-safety .start-title { font-size: clamp(30px, 5vw, 46px); }
+.game-safety .start-lead { margin: 8px 0 0; font-size: 18px; }
+.game-safety .mission-box p { margin: 4px 0; }
+.game-safety .mission-eyebrow { font-size: 13px; letter-spacing: 3px; color: var(--ee-green); font-weight: 700; }
+.game-safety .mission-title { font-size: 22px; font-weight: 700; }
+.game-safety .pick-field { border: 0; padding: 0; margin: 0; }
+.game-safety .pick-legend { font-weight: 700; font-size: 19px; margin-bottom: 8px; padding: 0; }
+.game-safety .pick-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.game-safety .pick { font: inherit; color: var(--ee-ink); background: var(--ee-cream); border: 3px solid #9fae87; border-radius: 4px; padding: 8px 4px; min-height: 48px; cursor: pointer; display: grid; justify-items: center; gap: 4px; }
+.game-safety .pick canvas { width: 88px; height: 88px; max-width: 100%; height: auto; aspect-ratio: 1; }
+.game-safety .pick[aria-pressed="true"] { background: #e8f0d9; border-color: var(--ee-ink); box-shadow: inset 0 0 0 2px var(--ee-ink); }
+.game-safety .pick[aria-pressed="true"] .pick-name::before { content: '✔ '; }
+.game-safety .pick-name { font-weight: 700; }
+.game-safety .pick-msg { color: #8a3f2e; font-weight: 700; margin: 8px 0 0; }
+.game-safety .start-actions, .game-safety .doc-actions, .game-safety .sheet-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; align-items: center; }
+.game-safety .start-actions .ee-button { min-width: 200px; }
+.game-safety .start-done { justify-self: start; }
+.game-safety .start-guide summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.game-safety .start-guide ul { margin: 0; padding-left: 20px; }
+
+/* ── 탐험 ── */
+.game-safety .play { margin: -8px -8px 0; }
+.game-safety .play-shell { position: relative; width: min(100%, calc((100dvh - 128px) * 16 / 9)); min-width: min(100%, 640px); margin: 0 auto; }
+.game-safety .hud { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 0 0 8px; }
+.game-safety .hud-info { min-width: 0; flex: 1 1 320px; }
+.game-safety .hud-line { margin: 0; font-size: 15px; }
+.game-safety .hud-time { font-weight: 700; }
+.game-safety .hud-step { color: var(--ee-green); font-size: 13px; }
+.game-safety .hud-mission { margin: 2px 0 0; font-size: 18px; font-weight: 700; }
+.game-safety .hud-mission-label { display: inline-block; font-size: 13px; background: var(--ee-gold); border: 2px solid var(--ee-ink); padding: 0 8px; margin-right: 4px; vertical-align: 2px; }
+.game-safety .hud-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.game-safety .hud-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; padding: 3px 8px; }
+.game-safety .hud-btn canvas { width: 24px; height: 24px; }
+.game-safety .stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--ee-ink); border: 3px solid var(--ee-ink); overflow: hidden; touch-action: manipulation; }
+.game-safety .world { display: block; width: 100%; height: 100%; image-rendering: pixelated; cursor: pointer; }
+.game-safety .stage.fade .world { animation: safety-fade 0.26s ease-out; }
+@keyframes safety-fade { from { opacity: 0.2; } to { opacity: 1; } }
+.game-safety .act-btn { position: absolute; right: 12px; bottom: 12px; font-size: 16px; }
+.game-safety .talk { position: absolute; left: 16px; right: 16px; bottom: 16px; display: flex; gap: 24px; align-items: flex-end; z-index: 5; cursor: pointer; }
+.game-safety .talk.narr .talk-speech::before { display: none; }
+.game-safety .talk-face { width: 112px; height: 112px; flex: none; background: var(--ee-cream); border: 3px solid var(--ee-ink); }
+.game-safety .talk-speech { flex: 1; min-width: 0; margin: 0; }
+.game-safety .talk-speech .ee-speaker { margin-bottom: 4px; }
+.game-safety .talk-text { margin: 0; min-height: 3.5em; }
+.game-safety .talk-next { float: right; margin: 4px 0 0 8px; font-size: 15px; }
+
+/* ── 가운데 창 ── */
+.game-safety .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(41, 75, 64, 0.55); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.game-safety .sheet-box, .game-safety .warning-box { width: 100%; max-width: 640px; max-height: calc(100dvh - 32px); overflow: auto; }
+.game-safety .sheet-box.wide { max-width: 900px; }
+.game-safety .sheet-eyebrow { margin: 0; font-size: 14px; font-weight: 700; color: var(--ee-green); letter-spacing: 1px; }
+.game-safety .sheet-title { font-size: 22px; margin: 4px 0 12px; }
+.game-safety .sheet-lead { margin: 0 0 12px; }
+.game-safety .sheet-help { font-size: 15px; color: #4d6a5f; margin: 0 0 8px; }
+.game-safety .sheet-note { margin: 12px 0 0; font-size: 15px; }
+.game-safety .sheet-actions { margin-top: 16px; position: sticky; bottom: -12px; background: var(--ee-cream); padding: 8px 0 4px; }
+.game-safety .sheet-actions a.ee-button { display: inline-flex; align-items: center; text-decoration: none; }
+.game-safety .chapter .sheet-title { font-size: 28px; }
+.game-safety .chapter-text { font-size: 18px; margin: 0; }
+.game-safety .choice-list { display: grid; gap: 8px; }
+.game-safety .choice-list .ee-choice { display: flex; gap: 8px; align-items: flex-start; }
+.game-safety .choice-mark { flex: none; width: 1.4em; height: 1.4em; border: 2px solid var(--ee-ink); display: inline-grid; place-items: center; font-size: 14px; margin-top: 3px; background: var(--ee-cream); }
+.game-safety .choice-num { color: var(--ee-green); font-weight: 700; }
+.game-safety .choice-sub { display: block; font-size: 14px; color: #4d6a5f; margin-top: 2px; }
+.game-safety .choice-why { color: #8a3f2e; font-size: 14px; }
+.game-safety .ee-choice.cant { opacity: 0.6; }
+.game-safety .ee-choice .cost { margin-left: 8px; padding: 0 8px; }
+
+/* 운영 기준 */
+.game-safety .policy-group { margin-bottom: 16px; }
+.game-safety .policy-h { font-size: 19px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.game-safety .policy-n { color: var(--ee-green); }
+.game-safety .policy-first { font-size: 13px; font-weight: 400; }
+.game-safety .policy-desc { margin: 0 0 8px; font-size: 15px; color: #4d6a5f; }
+
+/* 운영 재생 */
+.game-safety .playback-policy { display: inline-block; margin: 0 0 8px; }
+.game-safety .playback-top { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
+.game-safety .playback-top p { margin: 0 0 8px; }
+.game-safety .pgrid { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; margin-bottom: 8px; }
+.game-safety .pcell { display: grid; place-items: center; aspect-ratio: 1; min-width: 0; background: #e6edda; border: 2px solid #c9d3b6; font-size: clamp(9px, 1.6vw, 14px); font-weight: 700; line-height: 1; }
+.game-safety .legend .pcell { display: inline-grid; width: 22px; height: 22px; vertical-align: middle; }
+.game-safety .pcell.st-ontime { background: #cfe0bf; border-color: #8fae86; }
+.game-safety .pcell.st-delayed { background: #f8e3a6; border-color: #c9a23e; }
+.game-safety .pcell.st-worsened { background: #efc2b4; border-color: #a5543f; color: #6b2a1c; }
+.game-safety .pcell.st-missed, .game-safety .pcell.st-late { background: #bf7865; border-color: #6b2a1c; color: #fff9e7; }
+.game-safety .pcell.st-emergency { background: #cde6ea; border-color: #4f9aa7; }
+.game-safety .pcell.rv { box-shadow: inset 0 0 0 2px var(--ee-ink); }
+.game-safety .legend { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; }
+.game-safety .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+.game-safety .metric { background: #fff; border: 3px solid #b3c19c; border-radius: 4px; padding: 8px 12px; }
+.game-safety .metric-head { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.game-safety .metric-head canvas { width: 24px; height: 24px; }
+.game-safety .metric-value { margin: 4px 0 0; font-size: 18px; }
+.game-safety .metric-value strong { font-size: 30px; }
+.game-safety .metric-before { color: #4d6a5f; font-size: 16px; }
+.game-safety .metric-sub { margin: 0; font-size: 14px; color: #4d6a5f; }
+.game-safety .emergency-line { margin: 8px 0; font-size: 15px; }
+.game-safety .notable-wrap summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.game-safety .notable { margin: 0; padding-left: 20px; font-size: 15px; }
+.game-safety .notable .st-missed, .game-safety .notable .st-late, .game-safety .notable .st-worsened { color: #8a3f2e; font-weight: 700; }
+
+/* 오류 보고서 */
+.game-safety .report-doc { background: #fff; border: 3px solid var(--ee-ink); padding: 16px; }
+.game-safety .report-head { display: flex; align-items: center; gap: 8px; font-size: 19px; color: #8a3f2e; border-bottom: 3px solid #bf7865; padding-bottom: 8px; }
+.game-safety .report-head canvas { width: 32px; height: 32px; }
+.game-safety .report-meta { font-size: 14px; color: #4d6a5f; }
+.game-safety .report-box { border: 2px solid #b3c19c; padding: 8px 12px; margin: 8px 0; background: var(--ee-cream); }
+.game-safety .report-box.real { border-color: #bf7865; background: #fbeee8; }
+.game-safety .report-label { margin: 0; font-size: 14px; font-weight: 700; color: var(--ee-green); }
+.game-safety .report-box.real .report-label { color: #8a3f2e; }
+.game-safety .conf { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.game-safety .conf-bar { flex: 1; height: 16px; border: 2px solid var(--ee-ink); background: #fff; }
+.game-safety .conf-fill { display: block; height: 100%; background: var(--ee-blue); }
+.game-safety .conf-num { font-size: 22px; }
+.game-safety .report-quote { font-size: 20px; font-weight: 700; margin: 4px 0; }
+.game-safety .report-detail { font-size: 15px; }
+.game-safety .report-foot { font-size: 13px; color: #4d6a5f; margin: 8px 0 0; }
+
+/* 예산 */
+.game-safety .budget-left { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
+
+/* ── 프로토콜·엔딩 ── */
+.game-safety .doc-view { max-width: 900px; margin: 0 auto; display: grid; gap: 16px; }
+.game-safety .doc-title { font-size: clamp(26px, 4vw, 36px); }
+.game-safety .doc-lead { margin: 0; }
+.game-safety .protocol-doc { background: #fff; border: 4px solid var(--ee-ink); padding: 0 0 16px; }
+.game-safety .pd-head { background: var(--ee-ink); color: var(--ee-cream); padding: 16px 24px; }
+.game-safety .pd-eyebrow { margin: 0; font-size: 13px; }
+.game-safety .pd-title { font-size: 26px; margin: 4px 0 8px; color: var(--ee-cream); }
+.game-safety .pd-tendency { color: var(--ee-ink); }
+.game-safety .pd-sec { padding: 12px 24px 0; }
+.game-safety .pd-h { font-size: 18px; border-bottom: 3px solid var(--ee-sage); padding-bottom: 4px; }
+.game-safety .pd-rows { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+.game-safety .pd-rows dt { font-weight: 700; }
+.game-safety .pd-rows dd { margin: 0; }
+.game-safety .pd-list { margin: 0; padding-left: 20px; }
+.game-safety .table-wrap { overflow-x: auto; }
+.game-safety .pd-table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 15px; }
+.game-safety .pd-table th, .game-safety .pd-table td { border: 2px solid #b3c19c; padding: 6px 8px; text-align: left; vertical-align: top; }
+.game-safety .pd-table thead th { background: #e6edda; }
+.game-safety .pd-table td p { margin: 0 0 4px; }
+.game-safety .pd-note { font-size: 14px; color: #4d6a5f; }
+.game-safety .pd-case-who { font-weight: 700; margin-bottom: 0; }
+.game-safety .pd-closing p { font-weight: 700; }
+.game-safety .pd-q { font-weight: 700; color: var(--ee-green); margin: 8px 0 0; }
+.game-safety .pd-a { margin: 0; white-space: pre-wrap; }
+.game-safety .end-label { margin: 0; font-size: 14px; font-weight: 700; color: var(--ee-green); }
+.game-safety .end-label-note { font-weight: 400; color: #4d6a5f; }
+.game-safety .end-tendency-title { font-size: 26px; font-weight: 700; margin: 0; }
+.game-safety .end-question { font-weight: 700; }
+.game-safety .end-sec h2, .game-safety .end-final h2 { font-size: 22px; }
+.game-safety .end-story, .game-safety .end-path { margin: 0; padding-left: 24px; display: grid; gap: 6px; }
+.game-safety .end-story strong, .game-safety .end-path strong { display: block; color: var(--ee-green); font-size: 15px; }
+.game-safety .reflect-q { margin: 16px 0; }
+.game-safety .reflect-label { display: block; font-weight: 700; margin-bottom: 4px; }
+.game-safety .reflect-hint { margin: 0 0 6px; font-size: 15px; color: #4d6a5f; }
+.game-safety .reflect-input { width: 100%; font: inherit; font-size: 17px; line-height: 1.6; color: var(--ee-ink); background: #fff; border: 3px solid #9fae87; border-radius: 4px; padding: 8px 12px; resize: vertical; }
+.game-safety .reflect-input:focus-visible { border-color: var(--ee-ink); }
+.game-safety .reflect-count { display: block; text-align: right; font-size: 13px; color: #4d6a5f; }
+.game-safety .end-final { display: grid; gap: 12px; }
+.game-safety .end-message p { margin: 4px 0; font-size: 18px; }
+.game-safety .end-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.game-safety .end-cards p { margin: 0; }
+.game-safety .end-card-h { font-weight: 700; color: var(--ee-green); }
+.game-safety .end-last { font-size: 19px; font-weight: 700; text-align: center; margin: 8px 0; }
+.game-safety .end-path-wrap summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.game-safety .image-preview img { display: block; max-width: 100%; max-height: 60dvh; margin: 0 auto 8px; border: 2px solid var(--ee-ink); }
+
+/* ── 좁은 화면(760px 이하): 무대 위 HUD, 무대 아래 대화창 ── */
+@media (max-width: 760px), (orientation: portrait) {
+  .game-safety .play-shell { width: 100%; min-width: 0; }
+  .game-safety .talk { position: static; margin-top: 8px; gap: 12px; }
+  .game-safety .talk-face { width: 72px; height: 72px; }
+  .game-safety .hud-mission { font-size: 16px; }
+}
+@media (max-width: 650px) {
+  .game-safety .app { padding: 12px 16px; }
+  .game-safety .pick-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .game-safety .hud-btn span { font-size: 14px; }
+  .game-safety .talk { flex-direction: column; align-items: stretch; }
+  .game-safety .talk-face { width: 64px; height: 64px; }
+  .game-safety .metrics, .game-safety .end-cards { grid-template-columns: 1fr; }
+  .game-safety .pgrid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+  .game-safety .sheet-box { padding: 8px; }
+  .game-safety .overlay { padding: 8px; }
+  .game-safety .sheet-box, .game-safety .warning-box { max-height: calc(100dvh - 16px); }
+  .game-safety .act-btn { right: 8px; bottom: 8px; font-size: 14px; }
+}
+
+/* 움직임 줄이기(설정 또는 시스템) */
+.game-safety.reduce-motion *, html.reduce-motion .game-safety * { animation: none !important; transition: none !important; }
+
+/* ── 인쇄: 프로토콜만 ── */
+.game-safety .print-area { display: none; }
+@media print {
+  .game-safety { background: #fff; }
+  body.printing > *:not(.print-area) { display: none !important; }
+  body.printing .print-area { display: block; }
+  .game-safety .protocol-doc { border-width: 2px; }
+  .game-safety .pd-sec { break-inside: avoid; }
+  .game-safety .pd-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

@@ -1,0 +1,78 @@
+# 기획 문서·작업 메모는 로컬에만 둔다(다른 게임 폴더와 같은 규칙)
+docs/
+CLAUDE.md
+
+# 검토 도구 실행 결과물
+tests/_shot-*.png
+tests/_*.json
+tests/_*.txt
+
+# ── 비밀 정보: 절대 커밋 금지 ──────────────────────────────
+
+# API 키·환경 변수(fal.ai 등) — 예시 파일만 공유한다
+.env
+.env.*
+!.env.example
+*.env
+
+# 키·인증서·자격 증명 파일
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+*.ppk
+credentials*.json
+service-account*.json
+*-credentials.*
+secrets.*
+secret.*
+*.secret
+*.secrets
+.npmrc
+.netrc
+.htpasswd
+
+# 비밀번호·토큰을 적어 둔 메모
+*password*
+*passwd*
+*token*.txt
+
+# ── 개인정보: 실제 학생·교사·플레이테스트 참여자 자료 ──────────
+# 게임 속 인물은 모두 허구여야 하고, 실제 사람의 자료는 레포에 올리지 않는다
+private/
+personal/
+playtest/
+playtest-*/
+*개인정보*
+*명단*
+*연락처*
+*설문*
+*응답*
+*.xlsx
+*.xls
+*.csv
+*.hwp
+*.hwpx
+
+# 녹음·녹화(참여자 목소리·얼굴이 담길 수 있음)
+*.mp4
+*.mov
+*.m4a
+*.wav
+recordings/
+
+# ── 기타 로컬 파일 ────────────────────────────────────────
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# fal.ai 생성 원본은 로컬에만 — 게임은 tools/art.mjs가 규격에 맞춘 assets/art/*.png만 쓴다
+assets/art/raw/
