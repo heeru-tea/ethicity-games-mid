@@ -193,11 +193,11 @@ try {
     await card.click(); assert.equal(await card.getAttribute('aria-expanded'), 'false'); ok('P1-17 결과 인물 카드 펼치면 −·aria-expanded=true, 접으면 ＋');
     // P0-5: 다음 단계 ‘노선 설계하기’ 직후 빈 알림 없음(미니멀 지도 모드)
     await page.evaluate(() => PB.Minimal.text(false));
-    await page.evaluate(() => { const S = PB.Session, s = PB.App.s; S.nextPhase(s); s.transitionStep = 'changes'; PB.App.go('reveal'); });
-    await page.locator('#btn-begin-plan').waitFor(); await page.locator('#btn-begin-plan').click();
+    // 2026-11-01: ‘노선 설계하기’ 화면 없이 다음 단계 지도 계획으로 바로(App.enterPlan) — 그 직후에도 빈 알림이 없어야 한다
+    await page.evaluate(() => { const S = PB.Session, s = PB.App.s; S.nextPhase(s); PB.App.enterPlan(); });
     const seen = []; for (let i = 0; i < 15; i++) { seen.push(await page.evaluate(() => { const n = document.querySelector('#minimal-toast'); return n.hidden || getComputedStyle(n).display === 'none' ? 'hidden' : JSON.stringify(n.textContent); })); await page.waitForTimeout(100); }
     assert.ok(seen.every(x => x !== '""'), '빈 알림 없음: ' + seen.join(' ')); assert.equal(await page.evaluate(() => PB.App.toast('  ')), false);
-    ok('P0-5 ‘노선 설계하기’ 직후 빈 알림 없음, 빈 문장은 그리지 않음');
+    ok('P0-5 다음 단계 지도 계획 진입 직후 빈 알림 없음, 빈 문장은 그리지 않음');
     assert.deepEqual(page.errors, []); await page.close();
   }
   // P1-13 ‘만차로 남겨짐 N회’ — 정원을 1명으로 줄여 만차를 일부러 만든다(표시 문구만 확인)

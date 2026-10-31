@@ -14,5 +14,7 @@ try{const page=await browser.newPage();page.on('pageerror',e=>console.log('PAGE 
  assert.equal(await page.evaluate(()=>PB.App.s.emergencyLog.length),1);
  await page.locator('#emergency-continue').click();await page.locator('#run-skip').click();await page.locator('#resident-day-results').waitFor();
  assert.equal(await page.evaluate(()=>PB.App.s.history.length),1);assert.equal(await page.evaluate(()=>PB.App.s.emergencyLog.length),2);
- assert.ok(await page.locator('#emergency-report').isVisible());console.log('PASS: next-decision stops twice, one change, saved checkpoint resumes, settlement once');
+ // 결과 화면 기본 보기 ‘이번 운행에서 생긴 일’에 긴급 조정 두 줄(시각), 자세한 비교는 ‘자세히’ 안 #emergency-report(2026-11-01)
+ assert.equal(await page.locator('#result-events li').filter({hasText:'긴급 조정'}).count(),2);
+ await page.locator('#result-details > summary').click();assert.ok(await page.locator('#emergency-report').isVisible());console.log('PASS: next-decision stops twice, one change, saved checkpoint resumes, settlement once');
 }finally{await browser.close();server.close();}

@@ -32,7 +32,10 @@
     if (A.net) A.net.setOptions({ newNodes: a ? a.changes.places.map(function (n) { return n.id; }) : [], newAt: a ? (a.perf || performance.now()) : 0 });
     if (!a) return;
     var fresh = performance.now() - (a.perf || 0) < 4000;
+    if (fresh && !a.unmark) a.unmark = setTimeout(function () { document.querySelectorAll('.depot-bus.is-new, .map-person.is-new').forEach(function (n) { n.classList.remove('is-new'); }); }, Math.max(0, 4000 - (performance.now() - (a.perf || 0))));
     a.changes.newBusIds.forEach(function (id) { var t = $('#bus-token-' + id); if (t) { t.classList.toggle('is-new', fresh); if (fresh) t.setAttribute('data-new', '새 버스'); } });
+    // 새 인물: 출발 정류장 옆 얼굴에 잠깐 고리(얼굴 자체는 지도 얼굴층이 늘 그린다)
+    a.changes.people.forEach(function (r) { var f = $('#resident-map-' + r.id); if (f) f.classList.toggle('is-new', fresh); });
   }
 
   /* ── 1단계 첫 노선 코치 ── */
@@ -118,7 +121,7 @@
     var s = A.s, cfg = s ? s.config : PB.config, F = cfg.finance, rows = [];
     if (s) rows.push(['버스·노선', '이번 단계는 버스 ' + s.owned + '대 · 노선 최대 ' + S.routeLimit(s) + '개로 운영해요. 출발하면 ' + A.clock(0) + '~' + A.clock(cfg.bus.window) + '의 하루 운행이 시작돼요.']);
     rows.push(['기본 지원', '기본 제공 차량 1대마다 ' + A.won(F.basePerBus) + '(보유비 대당 ' + A.won(F.holding) + '의 일부) · 보유비는 쉬어도 들어요.']);
-    rows.push(['공공서비스 수행분', s ? PB.UI.Econ.conditionText(s) : '외곽 마을·병원 — 실제로 달리는 버스가 운행 시간 안에 ' + F.service.minStops + '회 이상 정차하면 곳마다 ' + A.won(F.service.amount)]);
+    rows.push(['공공서비스 수행분', s ? PB.UI.Econ.conditionText(s) : '외곽 마을·병원에 실제로 달리는 버스가 운행 시간 안에 ' + F.service.minStops + '회 이상 정차하면 곳마다 ' + A.won(F.service.amount) + '(승객 수와 무관, 단계 정산 때 지급)']);
     rows.push(['추가 임차', '이번 단계에만 1대 ' + A.won(F.lease.fee) + ', 최대 ' + F.lease.perPhase + '대 · 다음 단계에 자동으로 다시 빌리지 않아요.']);
     if (s) rows.push(['재정 규칙', A.financeRuleText(s)]);
     if (cfg.service && cfg.service.maxWait != null) rows.push(['대기 기준', '한 번 이동에 버스를 ' + A.duration(cfg.service.maxWait) + ' 넘게 기다리면 그날은 세지 않아요.']);

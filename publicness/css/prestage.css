@@ -21,6 +21,8 @@
 .depot-bus.is-new::after { content: attr(data-new); position: absolute; top: -9px; right: -6px; padding: 0 6px; border-radius: 8px; background: var(--sem-action); color: #fff; font-size: 11px; line-height: 1.6; }
 @keyframes new-bus { 50% { box-shadow: 0 0 0 7px #2563eb40; } }
 
+.map-person.is-new { animation: new-face 0.9s ease-in-out 3; box-shadow: 0 0 0 4px var(--sem-action); }
+@keyframes new-face { 50% { box-shadow: 0 0 0 9px #2563eb40; } }
 /* ── 1단계 첫 노선 코치(말풍선 + 손가락) ── */
 .first-coach { position: absolute; z-index: 13; width: min(260px, calc(100% - 16px)); padding: 12px 14px 10px; border-radius: 14px; background: #fff; color: var(--text);
   box-shadow: 0 6px 22px #17233540; border: 2px solid var(--sem-action); }
@@ -28,6 +30,7 @@
 .first-coach .coach-text { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.5; }
 .first-coach .coach-close { margin-top: 6px; padding: 2px 8px; font-size: 13px; }
 .first-coach[data-step="done"] { border-color: var(--ok); }
+@media (max-width: 500px) { .first-coach { width: min(210px, calc(100% - 16px)); padding: 8px 10px 6px; } .first-coach .coach-text { font-size: 15px; } }
 .coach-finger { position: absolute; z-index: 13; width: 0; height: 0; pointer-events: none; }
 .coach-finger svg { position: absolute; left: -6px; top: 4px; filter: drop-shadow(0 2px 2px #0005); animation: coach-press 1.2s ease-in-out infinite; }
 .coach-finger .coach-tap { position: absolute; left: -20px; top: -20px; width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--sem-action); animation: coach-tap 1.2s ease-out infinite; }
@@ -111,6 +114,6 @@
 @media (max-width: 600px) { .result-big { gap: 8px; } .result-stat .stat-value { font-size: 28px; } .think-options { grid-template-columns: 1fr; } .result-next-bar { margin: 16px -16px -24px; padding-inline: 16px; } .result-next-bar .btn { width: 100%; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .net-stop .new-ring, .depot-bus.is-new, .coach-finger svg, .coach-finger .coach-tap, #person-path .pp-line, #person-path .pp-missing, .mini-map .mm-focus, .mini-map .mm-missing { animation: none; }
+  .net-stop .new-ring, .depot-bus.is-new, .map-person.is-new, .coach-finger svg, .coach-finger .coach-tap, #person-path .pp-line, #person-path .pp-missing, .mini-map .mm-focus, .mini-map .mm-missing { animation: none; }
   .coach-finger .coach-tap { opacity: 1; transform: none; }
 }
