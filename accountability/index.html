@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>버섯도감 AI의 네 사람 · 윤리시티 책임성</title>
+<meta name="description" content="윤리시티 · AI 윤리 탐험대 책임성 편. 버섯 판별 앱을 둘러싼 네 역할을 플레이하며 AI 책임을 함께 생각하는 중·고등 수업용 게임">
+<link rel="stylesheet" href="../shared/ethicity-elementary-common-v1/runtime/common.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+<div class="ee-theme game-accountability" id="ga-root">
+  <header class="ga-hud">
+    <div class="ga-brand"><span class="ga-series">윤리시티 · AI 윤리 탐험대</span><b>책임성 · 버섯도감 AI의 네 사람</b></div>
+    <div class="ga-hud-right">
+      <span class="ee-badge ga-player" id="ga-player" hidden></span>
+      <div class="ga-pips" id="ga-pips" aria-label="진행 단계"></div>
+      <button class="ga-tool" id="ga-sound" type="button" aria-pressed="false" aria-label="효과음 켜기"></button>
+      <button class="ga-tool" id="ga-motion" type="button" aria-pressed="false" aria-label="움직임 줄이기"></button>
+    </div>
+  </header>
+  <main id="ga-stage" aria-live="polite">
+    <div class="ee-panel ga-loading">공통 자산을 불러오는 중입니다…</div>
+  </main>
+</div>
+<script src="../shared/ethicity-elementary-common-v1/runtime/manifest.js"></script>
+<script src="../shared/ethicity-elementary-common-v1/runtime/common.js"></script>
+<script>window.ACCOUNTABILITY_COMMON_BASE = '../shared/ethicity-elementary-common-v1';</script>
+<script src="game.js"></script>
+</body>
+</html>
