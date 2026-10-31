@@ -36,7 +36,9 @@
     face.appendChild(el('img',{src:'assets/art/portrait-'+rd.id+'-calm.webp',alt:'',loading:'lazy'}));
     head.appendChild(face);var words=el('span',{'class':'resident-identity'});words.appendChild(el('strong',null,rd.name));
     words.appendChild(el('span',{'class':'resident-state '+(r.satisfied?'complete':'incomplete')},(r.satisfied?'✓ 만족':'○ 불만족')));words.appendChild(el('span',{'class':'resident-reason'},r.satisfied?'필요한 이동을 기준 안에 마쳤어요.':(r.reasons||[]).map(function(x){return x.text;}).join(' ')||data.reason));head.appendChild(words);
-    head.appendChild(el('span',{'class':'resident-expand','aria-hidden':'true'},'＋'));card.appendChild(head);
+    // 펼침 표시(2026-11-01): 펼치면 ＋ → −, aria-expanded도 함께
+    var mark=el('span',{'class':'resident-expand','aria-hidden':'true'},'＋');head.appendChild(mark);head.setAttribute('aria-expanded','false');card.appendChild(head);
+    card.addEventListener('toggle',function(){mark.textContent=card.open?'−':'＋';head.setAttribute('aria-expanded',String(card.open));});
     var body=el('div',{'class':'resident-journey'});
     data.legs.forEach(function(leg){body.appendChild(el('p',{'class':'journey-leg'},(leg.state==='도착'?'✓ ':leg.state==='미도착'?'✕ ':'— ')+App.nodeName(leg.o)+' → '+App.nodeName(leg.d)+' · '+leg.state));});
     if(data.reason)body.appendChild(el('p',{'class':'journey-reason'},data.reason));
@@ -77,7 +79,7 @@
     if(!row)return null;
     if(f.rule==='balance-streak'){
       if(row.deficit)lines.push('이번 단계 회차 수지 '+App.won(row.total)+' — 적자예요.'+(row.balance>=0?' 모아 둔 잔액('+App.won(row.balance)+')으로 메웠어요.':''));
-      if(f.end&&f.end.cause==='contract'&&f.end.phase===h.phase){lines.push('누적 잔액이 '+f.limit+'번 연속 0원 미만('+App.won(row.balance)+')이라 운영 계약이 종료돼요. 이번 단계 결과와 정산을 확인한 뒤 종료 화면으로 넘어가요.');warn=true;}
+      if(f.end&&f.end.cause==='contract'&&f.end.phase===h.phase){lines.push('누적 잔액이 '+f.limit+'회 연속 0원 미만('+App.won(row.balance)+')이라 운영 계약이 종료돼요. 이번 단계 결과와 정산을 확인한 뒤 종료 화면으로 넘어가요.');warn=true;}
       else if(row.balance<0){lines.push('누적 잔액 '+App.won(row.balance)+' — 다음 단계를 마칠 때도 0원 미만이면 운영 계약이 종료됩니다.');warn=true;}
     }else if(f.low)lines.push('보유 잔액 '+App.won(f.balance)+'. 기본 모드는 재정을 학기 말에 평가해요. 마지막 단계가 끝난 뒤 잔액이 0원 미만이면 파산으로 끝나요.');
     if(!lines.length)return null;

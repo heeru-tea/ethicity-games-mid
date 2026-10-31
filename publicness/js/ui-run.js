@@ -204,7 +204,9 @@
         var name = App.nodeName(n.node);
         return n.kind === 'full' ? { node: n.node, kind: 'full', text: name + ' 만차 · ' + n.bus + '호차에 ' + n.n + '명 못 탐' } : { node: n.node, kind: 'wait', text: name + ' 대기 ' + n.n + '명' };
       }));
-      setStatus('⏸ ' + App.clock(stopAt.t) + ' 멈춤 — ' + R.alerts.map(function (a) { return a.text; }).join(', ') + '. ▶ 재개하면 ' + App.speed + '배속, ⏭ 누르면 다음 결정까지 빨리 가요.');
+      // 멈춘 이유를 맨 앞에(예: ‘대기 10명 이상 · 밀집 주거지 12명’)
+      var why = stopAt.items.map(function (n) { return n.kind === 'full' ? '만차 · ' + App.nodeName(n.node) + ' ' + n.bus + '호차에 ' + n.n + '명 못 탐' : '대기 ' + P.ALERT_WAIT + '명 이상 · ' + App.nodeName(n.node) + ' ' + n.n + '명'; }).join(', ');
+      setStatus(why + ' · ' + App.clock(stopAt.t) + ' 멈춤. ▶ 재개하면 ' + App.speed + '배속, ⏭ 누르면 ' + nextLabel(R.s) + ' 빨리 가요.');
     }
     syncControls();
   }
@@ -450,7 +452,7 @@
     var c = liveCounts(m), rows = [
       ['생긴 이동 요청', c.requests + '건'], ['목적지 도착', c.arrived + '건'],
       ['지금 버스 안', c.riding + '명'], ['지금 정류장 대기', c.waiting + '명' + (c.top ? ' · 가장 많은 곳 ' + app().nodeName(c.top.node) + ' ' + c.top.n + '명' : '')],
-      ['노선이 없어 떠나지 못함', c.noLink + '건'], ['만차로 남겨짐', c.fulls ? c.fulls + '번 · ' + c.left + '명' : '없음']
+      ['노선이 없어 떠나지 못함', c.noLink + '건'], ['만차로 남겨짐', c.fulls ? c.fulls + '회 · ' + c.left + '명' : '없음']
     ];
     var dl = box.querySelector('dl'); dl.textContent = '';
     rows.forEach(function (r) { dl.appendChild(el('dt', null, r[0])); dl.appendChild(el('dd', null, r[1])); });
@@ -534,7 +536,7 @@
     if (!R || R.done || R.finishing) return;
     if (R.pendingEmergency != null) { focusEmergency(); return; }
     release(); R.mode = 'next';
-    setStatus('⏭ 다음 결정까지 빨리 가는 중…');
+    setStatus('⏭ ' + nextLabel(R.s) + ' 빨리 가는 중…');
     syncControls();
   }
 
@@ -578,7 +580,8 @@
     SPEEDS.forEach(function (speed) {
       speeds.appendChild(el('button', { type: 'button', id: 'speed-' + speed, 'class': 'btn', 'aria-pressed': String((App.speed || 1) === speed), title: '하루를 ' + Math.round(dayMs / speed / 1000) + '초에 보기', onclick: function () { tick(); setSpeed(speed); } }, speed + '×'));
     });
-    speeds.appendChild(iconLabel(el('button', { type: 'button', id: 'run-next', 'class': 'btn', 'aria-pressed': 'false', title: '다음 긴급 조정이나 만차·대기 ' + P.ALERT_WAIT + '명 이상 같은 사건까지 빨리 가기', onclick: nextDecision }), '⏭', '다음 결정까지'));
+    // 긴급 조정이 없는 1·2단계는 결정할 게 없으니 ‘다음 사건까지’(만차·대기 사건에서만 멈춤)
+    speeds.appendChild(iconLabel(el('button', { type: 'button', id: 'run-next', 'class': 'btn', 'aria-pressed': 'false', title: hasEmergency(s) ? '다음 긴급 조정이나 만차·대기 ' + P.ALERT_WAIT + '명 이상 같은 사건까지 빨리 가기' : '만차·대기 ' + P.ALERT_WAIT + '명 이상 같은 다음 사건까지 빨리 가기', onclick: nextDecision }), '⏭', nextLabel(s)));
     speeds.appendChild(iconLabel(el('button',{type:'button',id:'run-skip','class':'btn',title:'끝까지 건너뛰기',onclick:skipToEnd}),'⏩','끝까지 건너뛰기'));
     speeds.appendChild(iconLabel(el('button', { type: 'button', id: 'run-sound', 'class': 'btn', 'aria-pressed': String(App.sound), title: '효과음 켜기/끄기', onclick: function () { App.setSound(!App.sound); if (App.sound) App.sfx('person'); } }), App.sound ? '🔊' : '🔇', '소리'));
     panel.appendChild(el('p', { id: 'run-status', 'class': 'h-small', role: 'status' }, '운행 시작'));

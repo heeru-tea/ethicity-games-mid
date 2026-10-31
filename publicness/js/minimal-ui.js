@@ -20,16 +20,32 @@
  function signals(){
   var layer=$('#minimal-signals'),s=PB.App.s;if(!layer)return;layer.replaceChildren();var oldProfit=$('#minimal-profit');if(oldProfit)oldProfit.remove();
   if(!root.MINIMAL_UI||full||!s||!['plan','run'].includes(document.body.dataset.screen))return;
-  var E=PB.UI.Econ,expected=E.plan(s),k=expected.k,profit=el('div','minimal-profit');profit.dataset.profit=k.total;
-  profit.classList.toggle('negative',k.total<0);profit.title='이번 단계 예상 수지 · 기본 수요 기준 · '+PB.App.won(k.total);profit.setAttribute('aria-label',profit.title);
-  profit.id='minimal-profit';profit.append(el('small',null,'예상'),el('strong',null,(k.total>0?'+':'')+Math.round(k.total).toLocaleString('ko-KR')));$('.map-toolbar').append(profit);
+  var E=PB.UI.Econ,expected=E.plan(s),k=expected.k,profit=el('div','minimal-profit');profit.dataset.profit=k.total;profit.id='minimal-profit';
+  /* 금액 표시(2026-11-01): 노선이 없으면 숫자 대신 흐린 안내 / 운행 중에는 ‘지금까지’(운임·비용이 들어오는 대로, UI.Econ.live) + 옆에 작게 ‘예상’ */
+  var sign=function(n){n=Math.round(n);return (n>0?'+':'')+n.toLocaleString('ko-KR');},run=s.stage==='run'&&s.current&&s.current.result&&PB.UI.runState&&PB.UI.runState(),live=run&&E.live?E.live(s,PB.UI.runState().tf):null;
+  if(s.stage==='plan'&&!s.draft.routes.some(function(r){return r.nodes.length>=2;})){profit.classList.add('empty');profit.append(el('small',null,'노선을 만들면 예상 수지가 나와요'));profit.setAttribute('aria-label','이번 단계 예상 수지 · 노선을 만들면 예상 수지가 나와요');}
+  else if(live){profit.classList.add('live');profit.dataset.live=live.total;profit.classList.toggle('negative',live.total<0);
+   profit.title='지금까지 수지 '+PB.App.won(live.total)+'(기본 지원 − 보유·임차 + 받은 운임 − 든 운영·연료비 + 채운 수행분) · 이번 단계 예상 '+PB.App.won(k.total)+'(기본 수요 기준)';profit.setAttribute('aria-label',profit.title);
+   profit.append(el('small',null,'지금까지'),el('strong',null,sign(live.total)),el('small','minimal-profit-expected','예상 '+sign(k.total)));}
+  else{profit.classList.toggle('negative',k.total<0);profit.title='이번 단계 예상 수지 · 기본 수요 기준 · '+PB.App.won(k.total);profit.setAttribute('aria-label',profit.title);
+   profit.append(el('small',null,'예상'),el('strong',null,sign(k.total)));}
+  $('.map-toolbar').append(profit);
   (k.service||[]).forEach(function(c){var p=project(c.id),count=c.stops;
    if(s.stage==='run'&&s.current&&s.current.result){var time=PB.UI.runState().tf;count=s.current.result.timelines.reduce(function(n,tl){return n+(tl.visits||[]).filter(function(v){return v.kind==='stop'&&v.node===c.id&&v.t<=time;}).length;},0);}
-   var ring=el('div','minimal-service');ring.style.left=p.left+'px';ring.style.top=p.top+'px';ring.setAttribute('role','img');ring.setAttribute('aria-label',c.label+' 공공서비스 '+count+'/'+c.need+'번 정차');ring.title=ring.getAttribute('aria-label');
+   var ring=el('div','minimal-service');ring.style.left=p.left+'px';ring.style.top=p.top+'px';ring.setAttribute('role','img');ring.setAttribute('aria-label',c.label+' 공공서비스 '+count+'/'+c.need+'회 정차');ring.title=ring.getAttribute('aria-label');
    for(var i=0;i<c.need;i++){var bar=el('i',i<count?'filled':'');bar.style.transform='rotate('+(i*360/c.need)+'deg) translateY(-27px)';ring.append(bar);}if(count>=c.need)ring.append(el('b',null,'✓'));layer.append(ring);
   });
-  PB.Session.routesInOrder(s).forEach(function(r){if(r.nodes.length<2)return;var n=s.draft.buses.filter(function(b){return b.routeNum===r.num;}).length,h=E.headway(s,r.num,n),p=project(r.nodes[0]),q=project(r.nodes[1]);
-   var badge=el('span','minimal-headway',h==null?'◷ —':'◷ '+(Math.round(h*(s.config.day.end-s.config.day.start)/s.config.bus.window/60*10)/10)+'h');badge.style.left=(p.left+q.left)/2+'px';badge.style.top=((p.top+q.top)/2-22)+'px';badge.style.color=PB.App.routeStyle(r.num).color;badge.title=E.routeLine(s,r.num);badge.setAttribute('aria-label',badge.title);layer.append(badge);
+  var placedBadges=[];PB.Session.routesInOrder(s).forEach(function(r){if(r.nodes.length<2)return;var n=s.draft.buses.filter(function(b){return b.routeNum===r.num;}).length,h=E.headway(s,r.num,n),p=project(r.nodes[0]),q=project(r.nodes[1]);
+   /* 배차 간격(2026-11-01): 자리가 넉넉하면 ‘◷ 2시간 24분마다’, 구간이 짧으면 ‘◷ 2.4h’. 툴팁·aria-label은 늘 ‘버스가 2시간 24분마다 와요’ */
+   var short=h==null?'◷ —':'◷ '+(Math.round(h*(s.config.day.end-s.config.day.start)/s.config.bus.window/60*10)/10)+'h',long=h==null?short:'◷ '+PB.App.duration(h)+'마다';
+   var badge=el('span','minimal-headway',long);badge.style.left=(p.left+q.left)/2+'px';badge.style.top=((p.top+q.top)/2-22)+'px';badge.style.color=PB.App.routeStyle(r.num).color;
+   badge.title=(h==null?'':'버스가 '+PB.App.duration(h)+'마다 와요 · ')+E.routeLine(s,r.num);badge.setAttribute('aria-label',badge.title);layer.append(badge);
+   function rect(){var w=badge.offsetWidth,h=badge.offsetHeight,x=parseFloat(badge.style.left),y=parseFloat(badge.style.top);return {x:x-w/2,y:y-h/2,w:w,h:h};}
+   function bumps(r){return (PB.App.net?PB.App.net.rects():[]).concat(placedBadges).some(function(o){return r.x<o.x+o.w&&o.x<r.x+r.w&&r.y<o.y+o.h&&o.y<r.y+r.h;});}
+   function at(f){badge.style.left=(p.left+(q.left-p.left)*f)+'px';badge.style.top=(p.top+(q.top-p.top)*f-22)+'px';}
+   // 긴 글은 구간 가운데 → 1/3 → 2/3 자리 중 다른 표시와 안 겹치는 곳에. 구간이 짧거나 다 겹치면 가운데에 짧은 글
+   var fits=badge.offsetWidth<=Math.hypot(q.left-p.left,q.top-p.top)-36&&[0.5,0.36,0.64].some(function(f){at(f);return !bumps(rect());});
+   if(!fits){badge.textContent=short;badge.classList.add('short');if(![0.5,0.36,0.64].some(function(f){at(f);return !bumps(rect());}))at(0.5);}placedBadges.push(rect());
   });
   if(s.stage==='plan'&&s.phase===1&&!s.draft.routes.some(function(r){return r.nodes.length>1;})){
    var p=project('F'),mid=project('A'),q=project('D'),hand=el('div','minimal-hand','☝');hand.setAttribute('aria-hidden','true');hand.style.left=p.left+'px';hand.style.top=p.top+'px';hand.style.setProperty('--demo-mid-x',(mid.left-p.left)+'px');hand.style.setProperty('--demo-mid-y',(mid.top-p.top)+'px');hand.style.setProperty('--demo-x',(q.left-p.left)+'px');hand.style.setProperty('--demo-y',(q.top-p.top)+'px');layer.append(hand);

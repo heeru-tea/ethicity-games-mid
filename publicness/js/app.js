@@ -144,6 +144,13 @@
     var a = App.view && App.view.contentAspect && App.view.contentAspect();
     if (!a || (screen !== 'plan' && screen !== 'run')) return;
     var col = st.parentNode, cs = getComputedStyle(col), W = col.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), availH = st.offsetHeight;
+    // 계획 화면(넓은 화면): 지도·노선 버튼·대기 버스·출발 버튼이 스크롤 없이 한 화면에 들어오도록, 지도 높이 = 창 높이 − 지도 위쪽 − 아래 조작부(2026-11-01:
+    // 1440×900에서 출발 버튼이 약 34px 잘렸다 — CSS 고정 계산(100dvh − 330px)이 위쪽 금액 줄·조작부 실제 높이를 몰랐다). 좁은 화면은 위아래로 스크롤하는 배치라 CSS 그대로
+    var bar = screen === 'plan' && root.innerWidth > 850 ? $('#plan-toolbar') : null;
+    if (bar && bar.offsetHeight) {
+      var sr = st.getBoundingClientRect(), below = bar.getBoundingClientRect().bottom - sr.bottom + parseFloat(cs.paddingBottom || 0) + 4;
+      availH = Math.max(300, Math.floor(root.innerHeight - (sr.top + root.scrollY) - below));
+    }
     var P = Math.min(80, Math.max(54, Math.min(W, availH) * 0.1)), need = (W - 2 * P) / a + 2 * P + 24, H, Wst = W;
     if (need <= availH) H = Math.max(200, need);
     else { H = availH; Wst = Math.min(W, (H - 2 * P - 24) * a + 2 * P + 40); }
@@ -386,7 +393,7 @@
   // 모드별 재정 규칙(안내·결과·종료 화면이 같은 문장을 쓴다)
   App.financeRuleText = function (s) {
     return S.financeRule(s) === 'balance-streak'
-      ? '단계가 끝날 때마다 회차 수지를 정산해 누적 잔액에 더해요. 한 단계 적자는 경고일 뿐, 모아 둔 잔액으로 적자 노선을 유지할 수 있어요. 누적 잔액이 0원 미만인 채로 ' + S.NEGATIVE_LIMIT + '번 연속 단계를 마치면 운영 계약이 종료돼요.'
+      ? '단계가 끝날 때마다 회차 수지를 정산해 누적 잔액에 더해요. 한 단계 적자는 경고일 뿐, 모아 둔 잔액으로 적자 노선을 유지할 수 있어요. 누적 잔액이 0원 미만인 채로 ' + S.NEGATIVE_LIMIT + '회 연속 단계를 마치면 운영 계약이 종료돼요.'
       : '중간에 돈이 모자라도 운행은 계속돼요. 마지막 단계가 끝난 뒤 누적 잔액이 0원 미만이면 파산으로 끝나요.';
   };
   // 다시 하기: 기본은 같은 시나리오, 랜덤은 같은 조건(같은 세팅 번호 → 같은 지도·수요·사건) 또는 새 랜덤 게임. 진행 상태는 모두 새로 만든다
@@ -478,6 +485,12 @@
       });
     });
     $('#btn-view-toggle').addEventListener('click', App.toggleView);
+    // 지도 위 금액 줄·아래 조작부 높이가 그린 뒤에 바뀌어도(미니멀 금액 표시, 오류 줄 등) 지도 높이를 다시 맞춘다. 높이가 그대로면 아무것도 안 한다
+    if (root.ResizeObserver) { var colT = null; new root.ResizeObserver(function () { clearTimeout(colT); colT = setTimeout(function () {
+      var scr = document.body.dataset.screen, st = $('#stage'); if (!App.s || (scr !== 'plan' && scr !== 'run')) return;
+      var before = st.style.height + '|' + st.style.maxWidth; App.fitFrame();
+      if (st.style.height + '|' + st.style.maxWidth !== before) { if (App.view && App.view.refit) App.view.refit(); if (App.net) App.net.redraw(); }
+    }, 60); }).observe(document.querySelector('.stage-col')); }
     var fitT = null; root.addEventListener('resize', function () { clearTimeout(fitT); fitT = setTimeout(function () { if (App.s) { App.fitFrame(); if (App.view && App.view.refit) App.view.refit(); if (App.net) App.net.redraw(); } }, 80); });
     App.motion = !!root.__pbReduceMotion;
     $('#opt-motion').checked = App.reducedMotion();

@@ -24,10 +24,10 @@ try{
   browser=await chromium.launch({channel:'msedge',headless:true});
   const ctx=await browser.newContext({viewport:{width:1366,height:900}}),page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'&seed=7');
-  assert.match(await page.locator('label.radio').nth(1).innerText(),/누적 잔액이 2번 연속 0원 미만이면 운영 계약이 끝나요/);
+  assert.match(await page.locator('label.radio').nth(1).innerText(),/누적 잔액이 2회 연속 0원 미만이면 운영 계약이 끝나요/);
   await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();
   const rule=await page.locator('#phase-changes').innerText();
-  assert.match(rule,/재정 규칙[\s\S]*한 단계 적자는 경고일 뿐[\s\S]*0원 미만인 채로 2번 연속 단계를 마치면 운영 계약이 종료돼요/);
+  assert.match(rule,/재정 규칙[\s\S]*한 단계 적자는 경고일 뿐[\s\S]*0원 미만인 채로 2회 연속 단계를 마치면 운영 계약이 종료돼요/);
   assert.match(rule,/지원금[\s\S]*공공서비스 수행분/);
   assert.ok(await top(page).isHidden(),'처음엔 경고 없음');
   const startEvents=await page.evaluate(()=>JSON.stringify(PB.App.s.events));
@@ -54,7 +54,7 @@ try{
   await next(page);await runPhase(page,-10000);
   assert.match(await page.locator('#finance-status').innerText(),/누적 잔액 −5,030원 — 다음 단계를 마칠 때도/);assert.equal(await top(page).innerText(),'잔액 마이너스 1/2회 연속');
   await next(page);await runPhase(page,-1);
-  assert.match(await page.locator('#finance-status').innerText(),/누적 잔액이 2번 연속 0원 미만\(−5,031원\)이라 운영 계약이 종료돼요/);
+  assert.match(await page.locator('#finance-status').innerText(),/누적 잔액이 2회 연속 0원 미만\(−5,031원\)이라 운영 계약이 종료돼요/);
   assert.equal(await top(page).innerText(),'잔액 마이너스 2/2회 연속');
   assert.equal(await page.locator('#btn-next-phase').innerText(),'운영 종료 화면 보기');
   await page.locator('#btn-next-phase').click();await page.locator('#ending-title').waitFor();await closeStory(page);

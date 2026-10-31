@@ -259,7 +259,7 @@
       Object.keys(count).forEach(function(k){if(count[k]>1)shared.push({phase:h.phase,seg:k});});
     });
     if(shared.length&&costs[0][0]!=='holding'){var segs=shared.map(function(x){return x.seg;}).filter(function(k,i,a){return a.indexOf(k)===i;});
-      tips.push({code:'overlap',text:costs[0][1]+'가 '+won(costs[0][2])+'로 가장 컸어요. '+segs.slice(0,3).map(function(k){return k.split('–').map(function(id){return nodeName(config,id);}).join('–');}).join(', ')+' 구간을 노선 여러 개가 함께 달렸어요(단계별 합계 '+shared.length+'번). 겹친 구간의 승객이 그만큼 많았는지 노선별 이용표와 비교해 보세요.'});}
+      tips.push({code:'overlap',text:costs[0][1]+'가 '+won(costs[0][2])+'로 가장 컸어요. '+segs.slice(0,3).map(function(k){return k.split('–').map(function(id){return nodeName(config,id);}).join('–');}).join(', ')+' 구간을 노선 여러 개가 함께 달렸어요(단계별 합계 '+shared.length+'회). 겹친 구간의 승객이 그만큼 많았는지 노선별 이용표와 비교해 보세요.'});}
     return {
       totals:sum,costs:costs,crowd:crowd,noLink:noLink,notBoarded:notBoarded,resting:resting,running:running,perBus:perBus,
       event:{fare:eventFare,phases:eventPhases,unknown:eventUnknown},
