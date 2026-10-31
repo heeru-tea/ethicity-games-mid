@@ -54,7 +54,7 @@
 
   // ── 상호작용 대상 ──
   function interactables() {
-    var list = W.cast.map(function (a) { return { id: a.id, kind: a.kind, x: a.x, y: a.y, at: [a.x, a.y], hit: [a.x - 34, a.y - 112, 68, 120] }; });
+    var list = W.cast.map(function (a) { return { id: a.id, kind: a.kind, x: a.x, y: a.y, at: [a.x, a.y], hit: [a.x - 34, a.y - 130, 68, 138] }; });
     var objs = W.room.objects || {};
     Object.keys(objs).forEach(function (k) { var o = objs[k]; list.push({ id: k, kind: 'object', x: o.x, y: o.y, at: o.at, hit: o.hit }); });
     return list;
@@ -360,7 +360,7 @@
     interactables().forEach(function (it) {
       if (W.targets.indexOf(it.id) < 0) return;
       if (it.kind === 'object') drawMarker(ctx, it.x, it.hit[1] - 12);
-      else drawMarker(ctx, it.x, it.y - 138);
+      else drawMarker(ctx, it.x, it.y - 152);
     });
   }
 

@@ -20,7 +20,7 @@
     STAGE_H: 720,
     SPEED: 210,          // 걷기 속도(논리 px/초)
     TALK_RANGE: 96,      // 말 걸기 거리
-    SCALE: { student: 0.82, adult: 0.92, robot: 0.65 }
+    SCALE: { student: 0.82, adult: 1.1, robot: 0.65 }
   };
 
   // 주인공 후보(공식 학생 5명) — 이 게임에서는 '청소년 시민위원'
