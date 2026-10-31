@@ -15,6 +15,8 @@
   // handlers: { lane(dir), grab() } → unbind()
   function bind(target, handlers, cfg) {
     function onKey(e) {
+      // 일시정지 메뉴·도움말 같은 다이얼로그 안의 키는 달리기 조작이 아니다(Space로 버튼을 눌러야 함)
+      if (e.target && e.target.closest && e.target.closest('dialog')) return;
       var k = e.code || e.key;
       var lane = (k === 'ArrowLeft' || k === 'KeyA' || e.key === 'a' || e.key === 'A') ? -1
         : (k === 'ArrowRight' || k === 'KeyD' || e.key === 'd' || e.key === 'D') ? 1 : 0;

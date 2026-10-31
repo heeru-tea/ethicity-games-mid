@@ -48,7 +48,9 @@ const nextFake = (n) => `const fs = items.filter(i => i.kind==='card' && i.fakeI
     });
     assert.ok(fake, 'a clear fake');
     assert.ok(await stepUntil(page, `return ${fake.z} - p.runnerZ < 25;`), 'approach');
-    for (let p = await page.evaluate(() => DR.Run.peek()); p.lane !== fake.lane; p = await page.evaluate(() => DR.Run.peek())) {
+    // 레인 이동이 안 먹으면 무한 반복 대신 실패(시계를 멈춘 채 키가 들어가야 함)
+    for (let p = await page.evaluate(() => DR.Run.peek()), n = 0; p.lane !== fake.lane; p = await page.evaluate(() => DR.Run.peek()), n++) {
+      assert.ok(n < 4, 'lane keys move the runner while the clock is frozen');
       await page.keyboard.press(p.lane < fake.lane ? 'ArrowRight' : 'ArrowLeft');
       await page.evaluate(() => DR.Run.step(0.02));
     }
@@ -104,7 +106,8 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
   const { browser, page, errors } = await openGame({ viewport, query: '?start=m1' });
   try {
     await toInspect(page, FULL);
-    assert.equal(await page.locator('#inspect-scenes [data-scene="S1"] img').count(), 12, 'S1 shows its cards and both fakes');
+    // 장면 요약엔 조합 줄 아이콘(img)도 있다 — 카드 그림 줄(.scene-thumbs)만 센다
+    assert.equal(await page.locator('#inspect-scenes [data-scene="S1"] .scene-thumbs img').count(), 12, 'S1 shows its cards and both fakes');
     await page.locator('#btn-submit').click();
     await page.locator('#btn-confirm').click();
     const res = await readResults(page);

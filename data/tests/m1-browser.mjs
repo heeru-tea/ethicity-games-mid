@@ -53,7 +53,8 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
       await first.waitFor();
       if (big) await page.screenshot({ path: shotPath('result-1366') });
       const res = await readResults(page);
-      assert.deepEqual(res.map((r) => [r.scene, r.outcome]), [['S1', 'pass'], ['S2', 'inconvenience'], ['S3', 'danger'], ['S4', 'danger']]);
+      // S3 정답은 '젖었을 뿐' — 밤 깊은 침수 예시가 빠져도 길을 막는 불편(m1.js S3_night_deep.fail, judge.test 'S3: …')
+      assert.deepEqual(res.map((r) => [r.scene, r.outcome]), [['S1', 'pass'], ['S2', 'inconvenience'], ['S3', 'inconvenience'], ['S4', 'danger']]);
       const resp = await page.evaluate(() => DR.Missions.m1.story.responsibility);
       assert.ok(res[3].text.includes(resp), 'responsibility line on danger');
       assert.ok(res.every((r) => !r.text.includes('%')), 'no percent');
@@ -108,6 +109,10 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
       assert.equal(focus.length, 10);
       for (const k of ['night_shallow', 'night_muddy']) assert.ok(focus.filter((x) => x === k).length >= 3, 'supplement focus ' + k);
       await fillAndFinish(page, { night_shallow: 2, night_muddy: 2 });
+      // 보충 뒤에도 검수를 거친다 — 새로 담은 4장에 NEW(app.js prepSupplement → review)
+      assert.ok(await page.locator('#screen-inspect').isVisible(), 'inspect after supplement');
+      assert.equal(await page.locator('#inspect-grid .bag-card.is-new').count(), 4, 'NEW on fresh cards');
+      await page.locator('#btn-submit').click();
       assert.ok(await page.locator('#screen-supervisor').isVisible(), 'supervisor after supplement');
       await page.locator('#btn-confirm').click();
       await page.locator('#screen-result .result-scene').waitFor();

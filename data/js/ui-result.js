@@ -30,9 +30,15 @@
         el('h2', { text: s.title }),
         el('img', { class: 'result-art', src: DR.CardArt.scene(mission, s.id, outcome, 480).toDataURL(), alt: s.title }),
         el('p', { class: 'chip chip-' + OUTCOME[outcome].cls, text: (mission.outcomeText && mission.outcomeText[outcome]) || OUTCOME[outcome].text }),
-        el('p', { class: 'lead', text: r.pass ? s.passLine : s.cuts[r.failKind] })
+        el('p', { class: 'lead', text: r.pass ? s.passLine : (r.failLine || s.cuts[r.failKind]) })
       ];
-      r.missing.forEach(function (id) { parts.push(el('p', { class: 'missing', text: byCombo[id].missingLine })); });
+      // 빠진 조합: 문구 + 이번 가방의 숫자(붙은 설명표 기준)
+      var counts = DR.Cards.labelCounts(mission, (DR.App.state && DR.App.state.bag) || []);
+      r.missing.forEach(function (id) {
+        var c = byCombo[id];
+        parts.push(el('p', { class: 'missing', text: c.missingLine }));
+        parts.push(el('p', { class: 'missing-count', text: '이번 가방: ' + DR.Cards.keyLabel(mission, c.keys[0]) + ' ' + DR.UI.comboCount(mission, counts, c) + '장 / 필요 ' + c.need + '장' }));
+      });
       (r.contaminated || []).forEach(function (src) {
         parts.push(el('p', { class: 'missing contam', text: DR.Judge.contaminationLine(mission, src) }));
       });

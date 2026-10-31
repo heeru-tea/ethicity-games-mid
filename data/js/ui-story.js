@@ -17,8 +17,22 @@
     return e;
   }
 
-  // 초상: 색과 도형으로만 구분(첫 버전)
+  // 공통 팩: 256px 표정 4칸. 이미지 파일은 게임 안에 포함해 file://에서도 표시한다.
+  function characterPortrait(id, size, expression) {
+    var names = { onyu: '온유', daon: '다온', robot: 'AI 봇' }, S = size || 72;
+    var frame = el('span', { class: 'portrait character-portrait', 'data-character': id, style: 'width:' + S + 'px;height:' + S + 'px' });
+    var img = el('img', { src: 'assets/characters/' + id + '-portraits.png', alt: names[id], draggable: 'false' });
+    img.style.transform = 'translateX(-' + ((expression || 0) * 25) + '%)';
+    frame.appendChild(img);
+    return frame;
+  }
+
+  // 요청된 공통 캐릭터 외의 인물은 기존 도형 초상을 유지한다.
   function portrait(who, size) {
+    var hero = root.DR.Save ? root.DR.Save.hero() : 'onyu';
+    if (who === 'runner') return characterPortrait(hero, size);
+    if (who === 'peer') return characterPortrait(hero === 'onyu' ? 'daon' : 'onyu', size);
+    if (who === 'guide' || who === 'bot') return characterPortrait('robot', size, who === 'guide' ? 3 : 0);
     var p = root.DR.Cast[who], c = document.createElement('canvas'), S = size || 72;
     c.width = c.height = S * 2; c.style.width = c.style.height = S + 'px';
     c.className = 'portrait';
@@ -99,6 +113,8 @@
       line({ who: 'guide', text: mission.story.guideBrief }),
       el('h2', { text: '이 AI가 판단해야 할 장면' }),
       scenes,
+      root.DR.UI.legend(mission),
+      mission.legendNote ? el('p', { class: 'note legend-note', text: mission.legendNote }) : null,
       el('p', { class: 'note', text: '가방은 ' + mission.bag + '칸. 무엇을 담을지는 러너가 정한다.' }),
       el('div', { class: 'actions' }, [run])
     ]));
@@ -109,7 +125,12 @@
   function tutorialResult(mission, result, handlers) {
     var screen = document.getElementById('screen-result');
     var A = root.DR.CardArt, pass = result.allPass;
-    var lines = pass ? mission.story.pass : mission.story.fail;
+    // 실패 대사: 가방이 비었으면 따로, "한쪽만 잔뜩"은 한쪽 0장·다른 쪽 1장 이상일 때만
+    var counts = root.DR.Cards.labelCounts(mission, (root.DR.App.state && root.DR.App.state.bag) || []);
+    var sides = Object.keys(mission.cardTypes).map(function (k) { return counts[k] || 0; });
+    var empty = sides.every(function (n) { return n === 0; });
+    var oneSide = !empty && sides.some(function (n) { return n === 0; });
+    var lines = pass ? mission.story.pass : empty ? mission.story.empty : oneSide ? mission.story.fail : mission.story.failFew;
     screen.innerHTML = '';
     var btn = pass
       ? el('button', { id: 'btn-next', class: 'btn btn-primary', type: 'button', text: '다음', onclick: handlers.onNext })
@@ -119,7 +140,7 @@
       el('img', { class: 'result-art', src: A.scene(mission, mission.scenes[0].id, pass ? 'pass' : 'neutral', 480).toDataURL(), alt: mission.scenes[0].title })
     ];
     lines.forEach(function (l) { parts.push(line(l)); });
-    if (!pass) root.DR.Judge.missingLines(mission, result).forEach(function (t) { parts.push(el('p', { class: 'missing', text: t })); });
+    if (!pass && !empty) root.DR.Judge.missingLines(mission, result).forEach(function (t) { parts.push(el('p', { class: 'missing', text: t })); });
     parts.push(el('div', { class: 'actions' }, [btn]));
     screen.appendChild(el('div', { class: 'page' }, parts));
     root.DR.App.go('result');
@@ -185,6 +206,7 @@
   root.DR.UI = root.DR.UI || {};
   root.DR.UI.el = el;
   root.DR.UI.portrait = portrait;
+  root.DR.UI.characterPortrait = characterPortrait;
   root.DR.UI.line = line;
   root.DR.UI.dialogue = dialogue;
   root.DR.UI.briefing = briefing;

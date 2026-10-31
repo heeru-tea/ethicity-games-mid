@@ -170,3 +170,27 @@ test('shortfall ignores fakes', () => {
   const { shortfall } = require('../js/judge.js');
   assert.deepEqual(shortfall(m1F, bagOf({ ...ALL2, day_deep: 0 }).concat(fk('f_pool', 2)), cfg), { day_deep: 2 });
 });
+
+// P1: 실패 문구가 장면의 정답과 맞도록 — 조합별 결과(fail) 확장
+test('S3: 밤 깊은 침수만 빠지면 불편, 조합 문구', () => {
+  const r = judge(m1, bagOf({ ...ALL2, night_deep: 0 }), cfg);
+  assert.equal(r.scenes[2].failKind, 'inconvenience');
+  assert.match(r.scenes[2].failLine, /네온 반사를 깊은 물로 착각해 교차로를 막았다/);
+  assert.equal(r.scenes[1].pass && r.scenes[3].pass, true); // 다른 장면은 그대로
+});
+test('fail 확장이 없는 조합은 failLine 없음(장면 문구 사용)', () => {
+  const r = judge(m1, bagOf({ ...ALL2, day_deep: 0 }), cfg);
+  assert.equal(r.scenes[0].failKind, 'danger');
+  assert.equal(r.scenes[0].failLine, null);
+});
+test('S4: 젖은 밤 도로만 빠지면 불편, 침수 길은 막았다는 문구(장면 정답과 일치)', () => {
+  const r = judge(m1, bagOf({ ...ALL2, night_wet: 0, night_neon: 4 }), cfg);
+  assert.equal(r.scenes[3].failKind, 'inconvenience');
+  assert.match(r.scenes[3].failLine, /얕게 잠긴 길은 막았지만/);
+});
+test('장면 문구가 장면 정답과 모순되지 않음', () => {
+  const byId = Object.fromEntries(m1.scenes.map((s) => [s.id, s]));
+  assert.doesNotMatch(byId.S2.cuts.danger, /세웠다/);       // S2 정답 = 젖었을 뿐(통과)
+  assert.doesNotMatch(byId.S3.cuts.danger, /안전/);        // S3 정답 = 젖었을 뿐
+  assert.doesNotMatch(byId.S4.cuts.inconvenience, /젖었을 뿐인/); // S4 정답 = 얕은 침수(막기)
+});

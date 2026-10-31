@@ -85,3 +85,31 @@ test('artId and labelText', () => {
   assert.equal(C.labelText(mB, 'battery'), '건전지');
   assert.equal(C.labelText(mA, 'wet'), '정상(젖음)');
 });
+
+// 카드 라벨·개수(P2·P3) — 언제나 "카드에 붙은 설명표" 기준
+const m1 = require('../missions/m1.js');
+const tut = require('../missions/tutorial.js');
+test('cardLabel: 시간 · 설명표, 드문 종류는 덧말', () => {
+  assert.equal(C.cardLabel(m1, { key: 'night_wet' }), '밤 · 정상(젖음)');
+  assert.equal(C.cardLabel(m1, { key: 'day_deep' }), '낮 · 침수(깊음)');
+  assert.equal(C.cardLabel(m1, { key: 'night_neon' }), '밤 · 정상(젖음) · 네온 반사');
+  assert.equal(C.cardLabel(tut, { key: 'dog' }), '강아지');
+});
+test('cardLabel: 가짜는 붙은 설명표 그대로(정체를 드러내지 않음)', () => {
+  assert.equal(C.cardLabel(m1, { fakeId: 'f_pool' }), '낮 · 침수(깊음)');
+  assert.equal(C.cardLabel(m1, { fakeId: 'f_fridge' }), '밤 · 정상(젖음)');
+});
+test('cardLabel: "?" 카드는 붙인 설명표만, 정답 여부를 드러내지 않음', () => {
+  assert.equal(C.cardLabel(m1, { ambiguousId: 'q_neon' }), '밤 · ?');
+  assert.equal(C.cardLabel(m1, { ambiguousId: 'q_neon', assigned: 'wet' }), '밤 · 정상(젖음)');
+  assert.equal(C.cardLabel(m1, { ambiguousId: 'q_muddy', assigned: 'wet' }), '밤 · 정상(젖음)');
+  assert.equal(C.cardLabel(m1, { ambiguousId: 'q_neon', assigned: null }), '밤 · ? (넣지 않기)');
+});
+test('displayKey·labelCounts: 붙은 설명표 기준, "?"는 붙인 설명표의 보통 종류로 1장', () => {
+  assert.equal(C.displayKey(m1, { fakeId: 'f_pool' }), 'day_deep');
+  assert.equal(C.displayKey(m1, { ambiguousId: 'q_neon', assigned: 'wet' }), 'night_wet');
+  assert.equal(C.displayKey(m1, { ambiguousId: 'q_neon', assigned: undefined }), null);
+  const bag = [{ key: 'night_wet' }, { fakeId: 'f_fridge' }, { ambiguousId: 'q_neon', assigned: 'wet' }, { key: 'night_neon' }, { ambiguousId: 'q_muddy', assigned: null }];
+  assert.deepEqual(C.labelCounts(m1, bag), { night_wet: 3, night_neon: 1 });
+  assert.equal(C.keyLabel(m1, 'night_muddy'), '밤 · 침수(얕음) · 흙탕물');
+});

@@ -1,14 +1,12 @@
 /*
  * 효과음 — 소리 파일 없이 Web Audio로 합성(file:// 오프라인). 첫 사용자 입력 뒤 AudioContext를 만든다.
- * 음소거 상태는 localStorage(실패해도 동작).
+ * 켬/끔은 ethicity.data.sound(DR.Save, 시리즈 규칙). 저장소가 막혀도 동작.
  */
 (function (root) {
   'use strict';
 
-  var KEY = 'dr.muted';
   var ctx = null;
-  var muted = false;
-  try { muted = root.localStorage.getItem(KEY) === '1'; } catch (e) { /* 저장소 막힘 — 기본값 */ }
+  var muted = !root.DR.Save.soundOn();
 
   function audio() {
     if (ctx) return ctx;
@@ -64,7 +62,7 @@
     get muted() { return muted; },
     setMuted: function (m) {
       muted = !!m;
-      try { root.localStorage.setItem(KEY, muted ? '1' : '0'); } catch (e) { /* 무시 */ }
+      root.DR.Save.setSound(!muted);
     },
     unlock: function () { var a = audio(); if (a && a.state === 'suspended') a.resume(); }
   };

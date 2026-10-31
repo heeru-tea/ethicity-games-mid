@@ -40,6 +40,45 @@
     return deck;
   }
 
+  // 코스 순서는 사용자 승인: S2 → S4 → S3 → S1. 장면 자체의 순서/정답은 그대로 둔다.
+  var ZONES = [
+    { id: 'S2', title: '물청소 직후의 낮 도로', short: '물청소 도로' },
+    { id: 'S4', title: '고가도로 아래 저지대', short: '고가도로 아래' },
+    { id: 'S3', title: '비 오는 밤 번화가 교차로', short: '밤 번화가' },
+    { id: 'S1', title: '낮 주택가 골목', short: '주택가 골목' }
+  ];
+  function splitZones(deck, mission) {
+    var groups = [[], [], [], []], wet = 0;
+    deck.forEach(function (c) {
+      var key = c.key || c.ambiguousId;
+      if (c.fakeId) key = (mission.fakes.find(function (f) { return f.id === c.fakeId; }) || {}).label;
+      var n = /^(day_deep|day_shallow)$/.test(key) ? 3 : /^(day_wet|day_dry|q_clean)$/.test(key) ? 0 : /^(night_shallow|night_muddy|q_muddy)$/.test(key) ? 1 : 2;
+      if (key === 'night_wet' && !c.fakeId) n = wet++ % 2 ? 1 : 2;
+      groups[n].push(c);
+    });
+    return groups;
+  }
+  function zonedRows(deck, mission, length, cfg, rng) {
+    var groups = splitZones(deck, mission), weights = splitZones(mainDeck(mission), mission).map(function (g) { return g.length; });
+    var total = weights.reduce(function (a, b) { return a + b; }, 0), start = 0, zones = [], rows = [];
+    groups.forEach(function (group, i) {
+      var end = i === 3 ? length : start + length * weights[i] / total;
+      var zone = { id: ZONES[i].id, title: ZONES[i].title, short: ZONES[i].short, start: start, end: end };
+      zones.push(zone);
+      var count = group.length ? Math.ceil(group.length / 1.35) : 0;
+      var first = i === 0 ? cfg.baseSpeed * START_SECONDS : start + 8;
+      var last = end - (i === 3 ? cfg.baseSpeed * END_SECONDS : 8);
+      var local = [], di = 0;
+      for (var j = 0; j < count; j++) local.push({ z: count === 1 ? last : first + (last - first) * j / (count - 1), cards: [group[di++]] });
+      var singles = shuffle(local.slice(), rng);
+      for (var k = 0; di < group.length; k++) singles[k].cards.push(group[di++]);
+      keepFakesLate(local, length * 0.5, rng);
+      local.forEach(function (r) { r.cards.forEach(function (c) { c.zoneId = zone.id; }); rows.push(r); });
+      start = end;
+    });
+    return { rows: rows, zones: zones };
+  }
+
   // focusCounts({key: 부족한 장 수})가 있으면 부족분 × SUPPLEMENT_SPARE장씩(놓칠 여유), 없으면 focusKeys로 8장 고르게
   function supplementDeck(mission, focusKeys, focusCounts, seed) {
     var deck = [];
@@ -100,13 +139,18 @@
     rows.forEach(function (row) { row.cards.push(deck[di++]); });
     var singles = shuffle(rows.slice(), rng);
     for (var s = 0; di < deck.length; s++) singles[s].cards.push(deck[di++]);
-    keepFakesLate(rows, length * FAKE_FROM, rng);
+    var zones = null;
+    if (mission.id === 'm1') {
+      var layout = zonedRows(deck, mission, length, cfg, rng);
+      rows = layout.rows; zones = layout.zones; rowCount = rows.length;
+    } else keepFakesLate(rows, length * FAKE_FROM, rng);
 
     var items = [];
     rows.forEach(function (row) {
       var lanes = shuffle([0, 1, 2], rng);
       row.cards.forEach(function (c, i) {
         var item = { kind: 'card', lane: lanes[i], z: row.z };
+        if (c.zoneId) item.zoneId = c.zoneId;
         if (c.ambiguousId) item.ambiguousId = c.ambiguousId;
         else if (c.fakeId) item.fakeId = c.fakeId;
         else item.key = c.key;
@@ -145,10 +189,13 @@
       if (it.key) o.key = it.key;
       if (it.ambiguousId) o.ambiguousId = it.ambiguousId;
       if (it.fakeId) o.fakeId = it.fakeId;
+      if (it.zoneId) o.zoneId = it.zoneId;
       o.lane = it.lane; o.z = it.z;
       return o;
     });
-    return { length: length, items: items };
+    var course = { length: length, items: items };
+    if (zones) { course.zones = zones; course.supplement = !!focus; }
+    return course;
   }
 
   var api = { build: build };

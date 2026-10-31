@@ -18,6 +18,8 @@ export async function openGame(opts = {}) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  // 자동 일시정지(창 포커스 잃음)는 끈다 — 테스트가 페이지를 여러 개 열면 포커스가 옮겨 달리기가 멈춰 버림. 일시정지 자체는 flow-browser가 키·버튼으로 확인
+  if (!opts.autoPause) await page.addInitScript(() => { window.__DR_NO_AUTOPAUSE = true; });
   await page.goto(pathToFileURL(path.join(DATA_DIR, 'index.html')).href + (opts.query || ''));
   return { browser, page, errors };
 }

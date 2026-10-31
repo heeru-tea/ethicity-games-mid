@@ -43,6 +43,9 @@
     return { counts: counts, mislabeled: mislabeled, stacked: stacked };
   }
 
+  // 조합이 빠졌을 때의 결과 종류: fail.kind가 있으면 그것(장면의 정답과 맞추려고), 없으면 침수 조합 = 위험
+  function failKindOf(c) { return c.fail ? c.fail.kind : (c.danger ? 'danger' : 'inconvenience'); }
+
   function judge(mission, bag, cfg) {
     var t = tally(mission, bag || [], cfg);
     var scenes = mission.scenes.map(function (scene) {
@@ -55,12 +58,16 @@
       var contaminated = [];
       if (dirty) pile.forEach(function (e) { if (contaminated.indexOf(e.source) < 0) contaminated.push(e.source); });
       var pass = missing.length === 0 && !dirty;
-      var danger = missing.some(function (c) { return c.danger; }) ||
+      var danger = missing.some(function (c) { return failKindOf(c) === 'danger'; }) ||
         (dirty && pile.some(function (e) { return e.harm === 'danger'; }));
+      var failKind = pass ? null : (danger ? 'danger' : 'inconvenience');
+      // 조합이 자기 결과 묘사(fail.line)를 가지면 장면 문구 대신 쓴다(같은 실패 종류일 때만)
+      var own = pass ? null : missing.filter(function (c) { return c.fail && c.fail.kind === failKind; })[0];
       return {
         id: scene.id,
         pass: pass,
-        failKind: pass ? null : (danger ? 'danger' : 'inconvenience'),
+        failKind: failKind,
+        failLine: own ? own.fail.line : null,
         missing: missing.map(function (c) { return c.id; }),
         contaminated: contaminated
       };

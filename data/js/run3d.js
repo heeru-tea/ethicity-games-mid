@@ -29,11 +29,13 @@
     if (S.cardTex[k]) return S.cardTex[k];
     var A = root.DR.CardArt;
     var icons = C.iconsOf(mission, item);
-    var t = canvasTex(200, 270, function (g, w, h) {
+    var t = canvasTex(400, 540, function (g, w, h) {
       g.fillStyle = '#f4f1ff'; roundRect(g, 0, 0, w, h, 18); g.fill();
-      g.drawImage(A.thumb(A.card(mission, id, variant, 192), 24), 10, 10, 180, 180);
+      g.drawImage(A.card(mission, id, variant, 384), 16, 16, 368, 368);
       var size = 60, gap = 8, x0 = (w - (icons.length * size + (icons.length - 1) * gap)) / 2;
-      icons.forEach(function (n, i) { g.drawImage(A.icon(n, 64), x0 + i * (size + gap), 198, size, size); });
+      icons.forEach(function (n, i) { g.drawImage(A.icon(n, 64), x0 + i * (size + gap), 400, size, size); });
+      g.fillStyle = '#162535'; g.font = 'bold 22px "Malgun Gothic", sans-serif'; g.textAlign = 'center';
+      g.fillText(item.ambiguousId ? '판단 필요' : C.cardLabel(mission, item), w / 2, 508, w - 24);
     });
     S.cardTex[k] = t;
     return t;
@@ -63,7 +65,7 @@
     // 도로: 남보라 + 분홍 가로줄(LINE_GAP마다)
     var roadTex = canvasTex(32, 32, function (g, w, h) {
       g.fillStyle = '#1f1652'; g.fillRect(0, 0, w, h);
-      g.fillStyle = '#ff5fb0'; g.fillRect(0, 0, w, 2);
+      g.fillStyle = '#637c91'; g.fillRect(0, 0, w, 2);
     });
     roadTex.wrapS = roadTex.wrapT = THREE.RepeatWrapping; roadTex.repeat.set(1, ROAD_LEN / LINE_GAP);
     var road = new THREE.Mesh(new THREE.PlaneGeometry(W, ROAD_LEN), new THREE.MeshBasicMaterial({ map: roadTex }));
@@ -80,7 +82,7 @@
 
     // 옆 빌딩(재사용 — 뒤로 지나가면 앞으로 옮긴다)
     var buildings = [], span = 26 * 12;
-    var edgeCols = [0x7ff9ff, 0xff5fb0, 0xb46bff];
+    var edgeCols = [0x7ff9ff, 0x81a6ce, 0xb4a1df];
     for (var side = -1; side <= 1; side += 2) {
       for (var i = 0; i < 26; i++) {
         var h = 4 + Math.random() * 16, w = 3 + Math.random() * 4;
@@ -93,8 +95,16 @@
       }
     }
 
-    // 러너
+    // 러너 — 고른 주인공(공통 팩 온유·다온, js/hero-model.js)의 3D 모델. 모델 데이터가 없으면 아래 도형 러너
     var runner = new THREE.Group();
+    var hero = DR.HeroModel && DR.HeroModel.build(S.heroId);
+    if (hero) {
+      runner.add(hero.group);
+      scene.add(runner);
+      // 팔은 몸통에 붙어 있어 흔들지 않는다(빈 축) — animate가 같은 이름으로 다룬다
+      var still = function () { return new THREE.Group(); };
+      return finishScene({ la: still(), ra: still(), ll: hero.legs[0], rl: hero.legs[1] });
+    }
     var suit = new THREE.MeshLambertMaterial({ color: 0xffd24a }), skin = new THREE.MeshLambertMaterial({ color: 0xffe3b0 }), dark = new THREE.MeshLambertMaterial({ color: 0x3b2f7a });
     var body = new THREE.Mesh(new THREE.CapsuleGeometry(0.33, 0.6, 4, 10), suit); body.position.y = 1.15; runner.add(body);
     var head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 16, 12), skin); head.position.y = 1.85; runner.add(head);
@@ -105,9 +115,11 @@
       var m = new THREE.Mesh(new THREE.BoxGeometry(0.15, len, 0.15), mat); m.position.y = -len / 2; pivot.add(m);
       runner.add(pivot); return pivot;
     }
-    var limbs = { la: limb(-0.42, 1.45, 0.55, suit), ra: limb(0.42, 1.45, 0.55, suit), ll: limb(-0.17, 0.75, 0.72, dark), rl: limb(0.17, 0.75, 0.72, dark) };
     scene.add(runner);
+    return finishScene({ la: limb(-0.42, 1.45, 0.55, suit), ra: limb(0.42, 1.45, 0.55, suit), ll: limb(-0.17, 0.75, 0.72, dark), rl: limb(0.17, 0.75, 0.72, dark) });
 
+    // 나머지 장면(속도선·벽 텍스처)은 어느 러너든 같다
+    function finishScene(limbs) {
     // 속도선
     var N = 40, pos = new Float32Array(N * 6);
     var speedGeo = new THREE.BufferGeometry(); speedGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -124,36 +136,43 @@
     wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
     wallTex.magFilter = THREE.NearestFilter;
 
-    return { scene: scene, ground: ground, groundTex: groundTex, road: road, lines: lines, buildings: buildings, span: span, runner: runner, limbs: limbs,
+    return { scene: scene, ground: ground, groundTex: groundTex, road: road, lines: lines, buildings: buildings, span: span, runner: runner, limbs: limbs, hero: !!hero,
       speedLines: speedLines, speedPos: pos, speedSeeds: seeds, wallTex: wallTex };
+    }
   }
 
   /* ---------- 물체(카드·벽) ---------- */
   function makeItemMesh(item) {
     var g = new THREE.Group();
     if (item.kind === 'card') {
-      var frame = new THREE.Mesh(new THREE.PlaneGeometry(1.95, 2.55), new THREE.MeshBasicMaterial({ color: 0x3b2f7a, transparent: true, opacity: 0.9 }));
-      var face = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 2.36), new THREE.MeshBasicMaterial({ map: cardTexture(S.mission, item), transparent: true }));
+      var frame = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 3.1), new THREE.MeshBasicMaterial({ color: 0x3b2f7a, transparent: true, opacity: 0.9 }));
+      var face = new THREE.Mesh(new THREE.PlaneGeometry(2.12, 2.86), new THREE.MeshBasicMaterial({ map: cardTexture(S.mission, item), transparent: true }));
       face.position.z = 0.01;
       g.add(frame); g.add(face);
       g.userData = { frame: frame, face: face };
       g.position.set(laneX(item.lane), 1.45, -item.z);
     } else if (item.kind === 'fire') {
-      var core = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 12), new THREE.MeshBasicMaterial({ color: 0xff7a2f }));
-      var glow = new THREE.Mesh(new THREE.SphereGeometry(1.1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffd24a, transparent: true, opacity: 0.4 }));
-      var trail = new THREE.Mesh(new THREE.ConeGeometry(0.55, 2.4, 12), new THREE.MeshBasicMaterial({ color: 0xff3d2e, transparent: true, opacity: 0.55 }));
-      trail.rotation.x = -Math.PI / 2; trail.position.z = -1.4;
-      g.add(core); g.add(glow); g.add(trail);
-      var mark = new THREE.Mesh(new THREE.PlaneGeometry(cfg().laneWidth * 0.9, 8), new THREE.MeshBasicMaterial({ color: 0xff3d4f, transparent: true, opacity: 0 }));
+      var flameTex = canvasTex(128, 192, function (g) {
+        g.fillStyle = '#ff6832'; g.beginPath(); g.moveTo(64, 4); g.bezierCurveTo(100, 50, 60, 62, 105, 91); g.bezierCurveTo(150, 150, 95, 190, 64, 188); g.bezierCurveTo(4, 190, 0, 133, 30, 83); g.quadraticCurveTo(22, 135, 52, 107); g.quadraticCurveTo(82, 70, 64, 4); g.fill();
+        g.fillStyle = '#ffe595'; g.beginPath(); g.moveTo(70, 85); g.bezierCurveTo(98, 145, 88, 180, 60, 181); g.bezierCurveTo(28, 178, 34, 140, 70, 85); g.fill();
+      });
+      var glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTex, transparent: true, depthTest: false }));
+      glow.scale.set(1.8, 2.7, 1); g.add(glow);
+      var stripes = canvasTex(128, 128, function (g) {
+        g.fillStyle = '#b51d32'; g.fillRect(0, 0, 128, 128); g.strokeStyle = '#ffb4a6'; g.lineWidth = 18;
+        for (var x = -128; x < 256; x += 48) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 128, 128); g.stroke(); }
+      });
+      stripes.wrapS = stripes.wrapT = THREE.RepeatWrapping; stripes.repeat.set(1, 5);
+      var mark = new THREE.Mesh(new THREE.PlaneGeometry(cfg().laneWidth * 0.92, 28), new THREE.MeshBasicMaterial({ map: stripes, transparent: true, opacity: 0, depthWrite: false }));
       mark.rotation.x = -Math.PI / 2;
       mark.position.set(laneX(item.lane), 0.03, -item.z);
       S.view.scene.add(mark);
       g.userData = { glow: glow, mark: mark };
       g.position.set(laneX(item.lane), 1.1, -item.z);
     } else {
-      var wall = new THREE.Mesh(new THREE.BoxGeometry(cfg().laneWidth * 0.92, 1.5, 0.25), new THREE.MeshBasicMaterial({ map: S.view.wallTex, transparent: true, opacity: 0.92 }));
+      var wall = new THREE.Mesh(new THREE.BoxGeometry(cfg().laneWidth * 0.98, 0.45, 0.35), new THREE.MeshBasicMaterial({ map: S.view.wallTex, transparent: true, opacity: 0.55, depthWrite: false }));
       g.add(wall);
-      g.position.set(laneX(item.lane), 0.75, -item.z);
+      g.position.set(laneX(item.lane), 0.28, -item.z);
     }
     S.view.scene.add(g);
     return g;
@@ -180,7 +199,7 @@
     var el = document.querySelector('#hud-bag b');
     if (el) el.textContent = bagCount() + '/' + S.bagMax;
     var box = document.getElementById('hud-bag');
-    if (box) box.classList.toggle('full', bagCount() >= S.bagMax);
+    if (box) { box.classList.toggle('full', bagCount() >= S.bagMax); if (S.t > (S.emptyUntil || 0)) box.classList.remove('empty-grab'); }
     var hpBox = document.getElementById('hud-hp');
     if (hpBox) {
       if (hpBox.children.length !== cfg().hp) {
@@ -201,6 +220,8 @@
   }
 
   function take(item, perfect) {
+    S.emptyUntil = 0; document.getElementById('hud-bag').classList.remove('empty-grab');
+    S.feedback.take(item, S.t);
     S.taken.add(item.uid);
     var g = { uid: item.uid };
     if (item.key) g.key = item.key;
@@ -209,7 +230,7 @@
     S.grabbed.push(g);
     if (perfect) { S.perfects++; burst(item); root.DR.Sfx.play('perfect'); } else root.DR.Sfx.play('grab');
     var m = S.meshes[item.uid];
-    if (m) S.flying.push({ mesh: m, uid: item.uid, t: 0, from: m.position.clone() });
+    if (m) removeMesh(item.uid);
     bump(); updateHud();
   }
 
@@ -228,6 +249,7 @@
     S.hitFires.add(f.uid);
     if (S.t < S.invulnUntil) return;
     S.hp--;
+    S.feedback.damage(S.t);
     S.slowedUntil = S.t + cfg().wallSlow.seconds;
     S.shakeUntil = S.t + 0.45;
     S.invulnUntil = S.t + cfg().fire.invuln;
@@ -271,6 +293,9 @@
       if (!S.fireHintShown) { S.fireHintShown = true; showHint('불꽃! 레인을 바꿔 피하기', 2); }
     }
     S.warning = warn;
+    if (!S.rareHintShown && items.some(function (it) {
+      return it.kind === 'card' && !it.fakeId && (it.ambiguousId || (S.mission.cardTypes[it.key] || {}).rare) && it.z - S.z > 0 && it.z - S.z < 42;
+    })) { S.rareHintShown = true; showHint('귀한 데이터: 노이즈를 지나야 잡을 수 있음', 3); }
     // 첫 가짜 카드가 판정 구간 가까이 오면 한 번만 안내(맞다/틀리다는 알리지 않는다, spec §3.4)
     if (!S.fakeHintShown) {
       var fakeDist = Math.max(speed, cfg().baseSpeed) * cfg().catchLead * 2;
@@ -299,6 +324,7 @@
     var sw = Math.sin(S.t * speed * 0.75);
     v.limbs.la.rotation.x = sw * 0.9; v.limbs.ra.rotation.x = -sw * 0.9;
     v.limbs.ll.rotation.x = -sw * 0.8; v.limbs.rl.rotation.x = sw * 0.8;
+    S.legSwing = v.limbs.ll.rotation.x;
     v.runner.position.y = Math.abs(sw) * 0.08;
     v.runner.visible = !(S.t < S.invulnUntil && Math.floor(S.t * 12) % 2);
     // 카메라(관성 추종 + 충돌 흔들림)
@@ -307,6 +333,10 @@
     var shake = (!rm && S.t < S.shakeUntil) ? 0.18 : 0;
     S.camera.position.set(S.camX + (Math.random() - 0.5) * shake, (portrait ? 4.6 : 3.7) + (Math.random() - 0.5) * shake, -S.z + (portrait ? 7.6 : 6.4));
     S.camera.lookAt(S.camX * 0.5, 1.1, -S.z - 16);
+    if (S.scenery) {
+      var zone = S.course.zones.filter(function (zone) { return S.z >= zone.start; }).pop();
+      S.scenery.update(zone.id, S.z, S.t, rm);
+    }
     // 땅·도로는 줄 간격에 맞춰 따라온다(줄이 세계에 고정돼 보이게)
     var snap = Math.floor(S.z / LINE_GAP) * LINE_GAP;
     var mid = -(snap + ROAD_LEN / 2 - VIEW_BEHIND);
@@ -342,21 +372,26 @@
       if (it.kind === 'fire') {
         var lead = Math.max(0, d) / Math.max(speed, 1);
         m.position.z = -(it.z + c.fire.speed * lead);
-        m.userData.glow.scale.setScalar(1 + 0.15 * Math.sin(S.t * 20));
+        var flicker = rm ? 1 : 1 + 0.08 * Math.sin(S.t * 12);
+        m.userData.glow.scale.set(1.8 * flicker, 2.7 * flicker, 1);
         var warnOn = d > 0 && d <= Math.max(speed, c.baseSpeed) * c.fire.warn;
-        m.userData.mark.material.opacity = warnOn ? 0.55 + 0.3 * Math.sin(S.t * 16) : 0;
+        m.userData.mark.position.z = -S.z - 12;
+        m.userData.mark.material.opacity = warnOn ? (rm ? 0.8 : 0.65 + 0.2 * Math.sin(S.t * 12)) : 0;
         m.userData.mark.visible = m.visible;
         continue;
       }
       if (it.kind !== 'card') continue;
       var active = root.DR.Catch.phase(it, S.z, speed, c) === 'active';
       var mine = active && it.lane === S.lane;
-      m.userData.frame.material.color.setHex(full ? 0x555566 : mine ? 0x7ff9ff : active ? 0x4fb3c8 : 0x3b2f7a);
+      m.visible = m.visible && d > 34;
+      m.userData.frame.material.color.set(root.DR.Cards.runColor(S.mission, it));
       m.userData.face.material.color.setHex(full && active ? 0x888899 : 0xffffff);
       var sc = mine && !full ? 1.12 + 0.04 * Math.sin(S.t * 18) : 1;
       m.scale.set(sc, sc, sc);
       m.position.y = 1.45 + Math.sin(S.t * 3 + i) * 0.06;
     }
+    S.camera.updateMatrixWorld();
+    S.feedback.update({ course: S.course, taken: S.taken, z: S.z, speed: speed, lane: S.lane, full: full, camera: S.camera, t: S.t });
     // 잡은 카드가 가방 쪽(화면 왼쪽 위)으로 날아간다
     S.flying = S.flying.filter(function (f) {
       f.t += dt;
@@ -449,14 +484,22 @@
     S.renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, 2));
     container.appendChild(S.renderer.domElement);
     S.camera = new THREE.PerspectiveCamera(56, 1, 0.1, 400);
+    S.heroId = DR.Save ? DR.Save.hero() : 'onyu';
     S.view = buildScene();
+    if (S.course.zones) S.scenery = root.DR.RunScenery.create(S.view);
+    S.feedback = root.DR.RunFeedback.create(container, S.mission, S.course);
+    // 조작을 막는 건 일시정지 메뉴·도움말 같은 열린 다이얼로그다. S.paused(setPaused)는 시계만 멈춘다 —
+    // 테스트가 시계를 멈춘 채 step()으로 한 칸씩 굴리며 키를 누르기 때문(메뉴는 언제나 다이얼로그로 뜬다).
+    function inputBlocked() { return !S || !S.running || !!document.querySelector('dialog[open]'); }
     S.unbind = root.DR.Input.bind(container, {
       lane: function (dir) {
-        if (!S || !S.running) return;
+        if (inputBlocked()) return;
         var nl = Math.max(0, Math.min(2, S.lane + dir));
         if (nl !== S.lane) { S.lane = nl; root.DR.Sfx.play('lane'); hideHint(); }
       },
-      grab: function () { if (S && S.running) { root.DR.Sfx.unlock(); S.grabber.press(S.t); } }
+      grab: function () { if (!inputBlocked()) { root.DR.Sfx.unlock(); S.grabber.press(S.t);
+        var available = S.course.items.some(function (it) { return it.kind === 'card' && it.lane === S.lane && !S.taken.has(it.uid) && root.DR.Catch.phase(it, S.z, currentSpeed(), cfg()) === 'active'; });
+        if (!available) { S.emptyUntil = S.t + 0.22; var bag = document.getElementById('hud-bag'); bag.classList.remove('empty-grab'); void bag.offsetWidth; bag.classList.add('empty-grab'); } } }
     }, cfg());
     S.onVis = function () { S.hidden = document.hidden; S.last = null; };
     document.addEventListener('visibilitychange', S.onVis);
@@ -483,6 +526,7 @@
     if (mute) mute.removeEventListener('click', S.onMute);
     S.view.scene.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
     S.disposables.forEach(function (t) { t.dispose(); });
+    S.feedback.destroy();
     S.renderer.dispose();
     if (S.renderer.domElement.parentNode) S.renderer.domElement.parentNode.removeChild(S.renderer.domElement);
     hideHint();
@@ -508,7 +552,7 @@
     },
     peek: function () {
       if (!S) return { running: false };
-      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, running: S.running, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning, fakeHintShown: S.fakeHintShown };
+      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, running: S.running, hero: S.view && S.view.hero ? S.heroId : null, legSwing: S.legSwing, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning, fakeHintShown: S.fakeHintShown };
     }
   };
 
