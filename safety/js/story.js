@@ -26,16 +26,16 @@
 
   // 단계마다 인물이 서 있는 곳 [장소, x, y, 방향]
   S.CAST = {
-    p1: { director: ['lobby', 400, 360, 'down'], doctor: ['lobby', 880, 360, 'down'], patientrep: ['lobby', 480, 590, 'left'] },
-    p3: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 480, 590, 'left'], doctor: ['exam', 600, 380, 'down'] },
-    m1: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 480, 590, 'left'], doctor: ['exam', 600, 380, 'down'] },
-    m2a: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 480, 590, 'left'], doctor: ['exam', 600, 380, 'down'] },
-    m2b: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 480, 590, 'left'], doctor: ['exam', 600, 380, 'down'] },
-    m3: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 480, 590, 'left'], doctor: ['ops', 860, 330, 'left'] },
+    p1: { director: ['lobby', 420, 360, 'down'], doctor: ['lobby', 860, 360, 'down'], patientrep: ['lobby', 300, 480, 'right'] },
+    p3: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 300, 480, 'right'], doctor: ['exam', 600, 380, 'down'] },
+    m1: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 300, 480, 'right'], doctor: ['exam', 600, 380, 'down'] },
+    m2a: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 300, 480, 'right'], doctor: ['exam', 600, 380, 'down'] },
+    m2b: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 300, 480, 'right'], doctor: ['exam', 600, 380, 'down'] },
+    m3: { director: ['meeting', 330, 420, 'right'], patientrep: ['lobby', 300, 480, 'right'], doctor: ['ops', 860, 330, 'left'] },
     m4: { director: ['meeting', 330, 420, 'right'], doctor: ['meeting', 950, 420, 'left'], patientrep: ['meeting', 860, 540, 'up'] }
   };
   // 대기실의 다른 환자(그림이 있으면 그리고, 말을 걸 수 있다)
-  S.EXTRAS = [['extra-1', 'lobby', 210, 455, 'down'], ['extra-2', 'lobby', 1000, 455, 'down'], ['extra-3', 'lobby', 1150, 618, 'left']];
+  S.EXTRAS = [['extra-1', 'lobby', 270, 330, 'right'], ['extra-2', 'lobby', 1040, 340, 'left'], ['extra-3', 'lobby', 1040, 520, 'left']];
 
   S.INTRO = [
     ['narr', '미래종합병원에는 매일 많은 환자가 방문합니다.'],
@@ -84,7 +84,7 @@
   };
   S.AFTER_PRIORITY = [
     ['robot', '첫 생각을 기록해 두었어요. 맞고 틀리고는 없어요. 마지막에 이 생각과 다시 비교해 봐요.', 'happy'],
-    ['director', '그럼 메디AI가 실제로 어떻게 판단하는지부터 보시죠. AI 운영실은 로비 오른쪽입니다.', 'explaining']
+    ['director', '그럼 메디AI가 실제로 어떻게 판단하는지부터 보시죠. AI 운영실은 로비 오른쪽 안쪽 복도로 가면 됩니다.', 'explaining']
   ];
 
   // 미션 1
@@ -116,7 +116,7 @@
     ['robot', '같은 환자 100명에게 기준만 바꾸면 결과가 달라져요. 오전 9시부터 오후 1시까지를 빠르게 돌려 볼게요.', 'explaining']
   ];
   S.M2_AFTER = [
-    ['robot', '숫자 뒤에는 한 사람 한 사람이 있어요. 진찰실에서 의료진 대표가 기다리고 있어요. 로비 왼쪽이에요.', 'explaining']
+    ['robot', '숫자 뒤에는 한 사람 한 사람이 있어요. 진찰실에서 의료진 대표가 기다리고 있어요. 로비 왼쪽 안쪽 복도예요.', 'explaining']
   ];
   S.EVENTS = {
     A: {
@@ -261,8 +261,8 @@
     p1: ['세 분은 모두 환자를 걱정하고 있어요. 각자 가장 걱정하는 위험은 무엇일까요?', '느낌표가 떠 있는 분에게 다가가 Space를 누르거나, 그분을 눌러 보세요.'],
     p3: ['로비 위쪽 문으로 가면 위원회 회의실이에요. 길을 모르겠다면 ‘길 안내’를 눌러 보세요.'],
     m1: ['AI가 틀렸을 때 피해가 가장 큰 환자는 누구일까요?', '모든 환자를 다시 확인하면 그동안 다른 환자는 어떻게 될까요?'],
-    m2a: ['운영 현황판은 로비 오른쪽 벽에 있어요.'],
-    m2b: ['진찰실은 로비 왼쪽이에요. 숫자 하나가 어떤 사람의 이야기인지 들어 봐요.'],
+    m2a: ['운영 현황판은 로비 접수대 뒤쪽 벽에 있어요.'],
+    m2b: ['진찰실은 로비 왼쪽 안쪽 복도에 있어요. 숫자 하나가 어떤 사람의 이야기인지 들어 봐요.'],
     m3: ['확신도 96%는 “96% 확률로 맞다”는 뜻일까요, 아니면 “AI가 스스로 96점을 줬다”는 뜻일까요?'],
     m4: ['예산이 5포인트뿐이에요. 지금 기준에서 가장 약한 곳은 어디였나요?', '안전장치마다 도움이 되는 환자가 달라요. 설명을 잘 읽어 보세요.']
   };

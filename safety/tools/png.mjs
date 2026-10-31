@@ -115,6 +115,96 @@ export function keyBackground(img, tol = 60) {
   }
   return img;
 }
+// 투명 표시용 체크무늬(흰 칸·회색 칸)가 그림에 칠해진 원본: 체크 색인 픽셀만 가장자리에서부터 이어서 지운다.
+// 칸 사이 경계(중간 밝기)는 가까이에 흰 칸·회색 칸이 함께 있을 때만 배경으로 본다 — 칸 위치가 고르지 않아도 되고,
+// 흰 옷처럼 체크와 비슷한 색은 인물 외곽선에 막혀 남는다. 체크무늬가 아니면 null
+export function keyChecker(img) {
+  const { width: w, height: h, data } = img;
+  const gray = (x, y) => { const s = (y * w + x) * 4; return data[s + 3] > 200 && Math.max(data[s], data[s + 1], data[s + 2]) - Math.min(data[s], data[s + 1], data[s + 2]) < 8 ? data[s] : -1; };
+  const light = (g) => g >= 246, dark = (g) => g >= 198 && g <= 224;
+  let nl = 0, nd = 0;
+  for (let x = 0; x < w; x++) { const g = gray(x, 2); if (g < 0) return null; if (light(g)) nl++; else if (dark(g)) nd++; }
+  if (nl < w * 0.3 || nd < w * 0.3) return null;
+  const near = (x, y, test) => {
+    for (let k = -2; k <= 2; k++) {
+      if (x + k >= 0 && x + k < w && test(gray(x + k, y))) return true;
+      if (y + k >= 0 && y + k < h && test(gray(x, y + k))) return true;
+    }
+    return false;
+  };
+  const isBg = (p) => {
+    const x = p % w, y = (p / w) | 0, g = gray(x, y);
+    if (g < 198) return false;
+    return light(g) || dark(g) || (near(x, y, light) && near(x, y, dark));
+  };
+  const seen = new Uint8Array(w * h), bg = new Uint8Array(w * h), stack = [];
+  for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
+  for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
+  while (stack.length) {
+    const p = stack.pop();
+    if (seen[p]) continue;
+    seen[p] = 1;
+    if (!isBg(p)) continue;
+    bg[p] = 1;
+    const x = p % w, y = (p / w) | 0;
+    if (x > 0) stack.push(p - 1); if (x < w - 1) stack.push(p + 1); if (y > 0) stack.push(p - w); if (y < h - 1) stack.push(p + w);
+  }
+  for (let p = 0; p < w * h; p++) if (bg[p]) data[p * 4 + 3] = 0;
+  // 남은 체크 조각(칸 모서리 점·이어 붙인 그림의 경계선): 투명한 곳에 떠 있는 밝은 무채색 점·가는 선을 몇 번 깎는다
+  for (let pass = 0; pass < 4; pass++) {
+    const cut = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (gray(x, y) < 198) continue;
+      let n = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if ((dx || dy) && nx >= 0 && ny >= 0 && nx < w && ny < h && data[(ny * w + nx) * 4 + 3]) n++;
+      }
+      if (n <= 3) cut.push(y * w + x);
+    }
+    if (!cut.length) break;
+    cut.forEach((p) => { data[p * 4 + 3] = 0; });
+  }
+  return img;
+}
+// 가장 큰 덩어리(인물)와 그 범위 안에 걸친 조각(티끌보다 큰 것)만 남기고 지운다 — 큰 그림에서 오려 낸 원본에 섞인 옆 인물 조각·티끌 제거
+export function keepMain(img, minAlpha = 128) {
+  const { width: w, height: h, data } = img, label = new Int32Array(w * h), boxes = [];
+  for (let p0 = 0; p0 < w * h; p0++) {
+    if (label[p0] || data[p0 * 4 + 3] < minAlpha) continue;
+    const id = boxes.length + 1, b = { x0: w, y0: h, x1: -1, y1: -1, n: 0 }, stack = [p0];
+    label[p0] = id;
+    while (stack.length) {
+      const p = stack.pop(), x = p % w, y = (p / w) | 0;
+      b.n++; if (x < b.x0) b.x0 = x; if (x > b.x1) b.x1 = x; if (y < b.y0) b.y0 = y; if (y > b.y1) b.y1 = y;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy, q = ny * w + nx;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h || label[q] || data[q * 4 + 3] < minAlpha) continue;
+        label[q] = id; stack.push(q);
+      }
+    }
+    boxes.push(b);
+  }
+  if (!boxes.length) return img;
+  const m = boxes.reduce((a, b) => (b.n > a.n ? b : a));
+  const keep = boxes.map((b) => { const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2; return b === m || (b.n >= m.n * 0.002 && cx >= m.x0 && cx <= m.x1 && cy >= m.y0 && cy <= m.y1); });
+  for (let p = 0; p < w * h; p++) {
+    const x = p % w, y = (p / w) | 0;
+    if (label[p] ? !keep[label[p] - 1] : (x < m.x0 || x > m.x1 || y < m.y0 || y > m.y1)) data[p * 4 + 3] = 0;
+  }
+  return img;
+}
+// from~to 사이에서 불투명 칸이 가장 적은 세로줄(axis 'x') 또는 가로줄(axis 'y') — 격자 그림의 칸 경계 찾기
+export function gutter(img, axis, from, to) {
+  let best = from, min = Infinity;
+  for (let i = from; i <= to; i++) {
+    let n = 0;
+    const len = axis === 'x' ? img.height : img.width;
+    for (let j = 0; j < len; j++) n += img.data[((axis === 'x' ? j * img.width + i : i * img.width + j)) * 4 + 3] >= 128;
+    if (n < min) { min = n; best = i; }
+  }
+  return best;
+}
 export function bbox(img, minAlpha = 128) {
   let x0 = img.width, y0 = img.height, x1 = -1, y1 = -1;
   for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {

@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { upload, run, download } from './fal.mjs';
-import { decode, encode, cover, keyBackground, bbox, crop, resize, blank, paste } from './png.mjs';
+import { decode, encode, cover, keyBackground, keyChecker, keepMain, gutter, bbox, crop, resize, blank, paste } from './png.mjs';
 
 const SF = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const COMMON = path.resolve(SF, '../shared/ethicity-elementary-common-v1');
@@ -68,13 +68,15 @@ async function generate(name) {
 }
 
 // ── 규격 맞춤 ──
+// 배경 지우기: 체크무늬가 칠해진 원본이면 체크무늬를, 아니면 모서리 색을 지운다
+const unbg = (img) => keyChecker(img) || keyBackground(img, 90);
 function packBg(name) {
   const img = cover(decode(fs.readFileSync(path.join(RAW, name + '.png'))), 1672, 941);
   fs.writeFileSync(path.join(ART, name + '.png'), encode(img));
 }
 // 서 있는 모습: 배경 제거 → 몸만 잘라 → 키 110px(공통 팩 성인과 같음)로 줄여 96×128 칸, 발 y=119
 function packStand(name) {
-  const img = keyBackground(decode(fs.readFileSync(path.join(RAW, name + '-stand.png'))), 90);
+  const img = keepMain(unbg(decode(fs.readFileSync(path.join(RAW, name + '-stand.png')))));
   const b = bbox(img); if (!b) throw new Error(name + ': 인물을 찾지 못함');
   const k = Math.min(110 / b.h, 90 / b.w), w = Math.max(1, Math.round(b.w * k)), h = Math.max(1, Math.round(b.h * k));
   const small = resize(crop(img, b.x, b.y, b.w, b.h), w, h, 128);
@@ -82,19 +84,22 @@ function packStand(name) {
   fs.writeFileSync(path.join(ART, `npc-${name}-stand.png`), encode(cell));
 }
 // 표정 4칸: <이름>-neutral/happy/worried/explaining.png 네 장, 또는 <이름>-portraits.png 한 장(2×2 격자: 좌상 기본·우상 기쁨·좌하 걱정·우하 설명)
+// 격자는 가운데 근처의 빈 줄에서 나눈다(칸 크기가 고르지 않은 원본 대비)
 // 각 얼굴을 256×256에 아래 맞춤
 const EXPRS = ['neutral', 'happy', 'worried', 'explaining'];
 function packPortraits(name) {
   const sheet = blank(1024, 256);
   const files = EXPRS.map((e) => path.join(RAW, `${name}-${e}.png`));
   let quads;
-  if (files.every((f) => fs.existsSync(f))) quads = files.map((f) => keyBackground(decode(fs.readFileSync(f)), 90));
+  if (files.every((f) => fs.existsSync(f))) quads = files.map((f) => unbg(decode(fs.readFileSync(f))));
   else {
-    const img = keyBackground(decode(fs.readFileSync(path.join(RAW, name + '-portraits.png'))), 90);
-    const hw = Math.floor(img.width / 2), hh = Math.floor(img.height / 2);
-    quads = [[0, 0], [1, 0], [0, 1], [1, 1]].map(([cx, cy]) => crop(img, cx * hw, cy * hh, hw, hh));
+    const img = unbg(decode(fs.readFileSync(path.join(RAW, name + '-portraits.png'))));
+    const gx = gutter(img, 'x', Math.round(img.width * 0.3), Math.round(img.width * 0.7));
+    const gy = gutter(img, 'y', Math.round(img.height * 0.3), Math.round(img.height * 0.7));
+    quads = [[0, 0, gx, gy], [gx, 0, img.width - gx, gy], [0, gy, gx, img.height - gy], [gx, gy, img.width - gx, img.height - gy]].map(([x, y, w, h]) => crop(img, x, y, w, h));
   }
   quads.forEach((q, i) => {
+    keepMain(q);
     const b = bbox(q); if (!b) throw new Error(name + ': ' + EXPRS[i] + ' 표정이 비어 있음');
     const k = Math.min(236 / b.w, 240 / b.h), w = Math.round(b.w * k), h = Math.round(b.h * k);
     paste(sheet, resize(crop(q, b.x, b.y, b.w, b.h), w, h, 128), i * 256 + Math.round(128 - w / 2), 248 - h);
