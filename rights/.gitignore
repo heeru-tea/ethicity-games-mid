@@ -1,0 +1,49 @@
+# ── 비밀 정보: 절대 커밋 금지 ──────────────────────────────
+# API 키·비밀번호·토큰은 .env에만 두고 코드에 직접 쓰지 않는다(예: fal.ai FAL_KEY)
+.env
+.env.*
+!.env.example
+*.env
+.envrc
+secrets/
+secret*.json
+credentials*.json
+*credentials*
+*.secret
+*-key.json
+*_key.json
+service-account*.json
+.npmrc
+.netrc
+.htpasswd
+
+# 인증서·개인 키
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+
+# ── 공개 전 문서·로컬 메모: 레포에 올리지 않음 ────────────
+# 기획 정본(PRD)·내부 회의록 등
+docs/
+CLAUDE.md
+example/
+
+# ── 실행 결과물·임시 파일 ─────────────────────────────────
+# 검토 도구 스크린샷·출력
+tests/_shot-*.png
+tests/_*.json
+tests/_*.txt
+node_modules/
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
