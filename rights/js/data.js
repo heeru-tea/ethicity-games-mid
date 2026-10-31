@@ -5,6 +5,14 @@
 
   var STUDENTS = ['saebom', 'haneul', 'jiho', 'onyu', 'daon'];
 
+  // 이 게임에서 부르는 이름 — 공통 팩 manifest의 이름을 기본으로 쓰고, 여기 적은 것만 바꾼다(공통 팩은 수정하지 않음).
+  // 2026-10-31 요청: 지호(jiho)와 하늘(haneul)의 이름을 서로 바꿔 부른다. 그림·ID는 그대로.
+  var RENAME = { jiho: '하늘', haneul: '지호' };
+  function nameOf(id) {
+    var c = root.ETHICITY_COMMON_MANIFEST && root.ETHICITY_COMMON_MANIFEST.characters[id];
+    return RENAME[id] || (c ? c.name : id);
+  }
+
   // 1280×720 논리 좌표. walk = 발 기준점이 설 수 있는 사각형(배경 그림의 바닥·길을 직접 재서 정함).
   // 가구 위·뒤로는 걸을 수 없게 두어 앞뒤 순서 문제가 생기지 않게 한다. exit = 출입구(지도 열기).
   var ROOMS = {
@@ -480,7 +488,7 @@
   };
 
   root.RightsData = {
-    STUDENTS: STUDENTS, ROOMS: ROOMS, SPOTS: SPOTS, CARDS: CARDS, POLICY: POLICY, WHY: WHY, NO_FOLLOW: NO_FOLLOW,
+    STUDENTS: STUDENTS, RENAME: RENAME, nameOf: nameOf, ROOMS: ROOMS, SPOTS: SPOTS, CARDS: CARDS, POLICY: POLICY, WHY: WHY, NO_FOLLOW: NO_FOLLOW,
     CHAPTERS: CHAPTERS, QUIZ: QUIZ, REFLECT: REFLECT, FACTORS: FACTORS, SORT: SORT, SCOPE: SCOPE, VALUE: VALUE,
     PRINCIPLES: PRINCIPLES, GUIDE: GUIDE, REC: REC, ENDINGS: ENDINGS, CLOSING: CLOSING, REMEMBER: REMEMBER, DISCUSS: DISCUSS, SCRIPT: SCRIPT
   };

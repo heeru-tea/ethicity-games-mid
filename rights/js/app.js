@@ -21,10 +21,10 @@
 
   // ── 시작 화면 ───────────────────────────────────────────
   function buildPicker() {
-    var box = $('hero-pick'), M = root.ETHICITY_COMMON_MANIFEST.characters;
+    var box = $('hero-pick');
     box.replaceChildren();
     D.STUDENTS.forEach(function (id) {
-      var b = el('button', { type: 'button', class: 'r-hero', 'aria-pressed': 'false', 'data-id': id }, UI.figure(id, 72), el('span', null, M[id].name));
+      var b = el('button', { type: 'button', class: 'r-hero', 'aria-pressed': 'false', 'data-id': id }, UI.figure(id, 72), el('span', null, D.nameOf(id)));
       b.addEventListener('click', function () {
         hero = id;
         Array.prototype.forEach.call(box.children, function (x) { x.setAttribute('aria-pressed', String(x === b)); });
@@ -39,8 +39,7 @@
     $('btn-continue').hidden = !(saved && !saved.done);
     $('btn-result').hidden = !(saved && saved.done);
     if (saved && !saved.done) {
-      var M = root.ETHICITY_COMMON_MANIFEST.characters;
-      $('btn-continue').textContent = '이어 하기 (' + M[saved.hero].name + ' 위원)';
+      $('btn-continue').textContent = '이어 하기 (' + D.nameOf(saved.hero) + ' 위원)';
     }
   }
   function notice() {

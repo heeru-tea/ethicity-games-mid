@@ -18,8 +18,8 @@
   }
   function namesFor(hero) {
     var others = D.STUDENTS.filter(function (id) { return id !== hero; });
-    var M = root.ETHICITY_COMMON_MANIFEST.characters, ids = { hero: hero, A: others[0], B: others[1] };
-    return { ids: ids, hero: M[ids.hero].name, A: M[ids.A].name, B: M[ids.B].name };
+    var ids = { hero: hero, A: others[0], B: others[1] };
+    return { ids: ids, hero: D.nameOf(ids.hero), A: D.nameOf(ids.A), B: D.nameOf(ids.B) };
   }
 
   // 통합 페이지로 보내는 이벤트 — 개인정보·선택 내용은 넣지 않는다.

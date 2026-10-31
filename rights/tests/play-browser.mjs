@@ -19,6 +19,8 @@ try {
   await page.goto(`${url}/rights/`);
   await page.waitForFunction(() => !document.getElementById('btn-new').disabled);
   if (shots) await page.screenshot({ path: `${shots}/01-start.png` });
+  assert.equal(await page.textContent('.r-hero[data-id="jiho"] span'), '하늘', 'jiho 그림은 하늘로 부른다');
+  assert.equal(await page.textContent('.r-hero[data-id="haneul"] span'), '지호', 'haneul 그림은 지호로 부른다');
   await page.click('.r-hero[data-id="saebom"]');
   await page.click('#btn-new');
   await page.click('.r-sheet .ee-button'); // 가상 자료 안내

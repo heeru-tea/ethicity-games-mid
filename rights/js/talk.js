@@ -1,14 +1,14 @@
 // 대화창 — 같은 캐릭터 ID의 공통 초상화 + .ee-speech. 한 줄씩 넘기고, 대화 전체를 건너뛸 수 있다.
 (function (root) {
   'use strict';
-  var UI = root.RightsUI, M = root.ETHICITY_COMMON_MANIFEST;
+  var UI = root.RightsUI;
   var ROLE = { teacher: '선생님 · 사무국장', librarian: '사서 · 시설 관리자', robot: '안내 로봇' };
   var SPEED = { normal: 28, fast: 10, instant: 0 };
   var state = null;
 
   function speakerOf(who, names) {
     var id = who === 'hero' || who === 'A' || who === 'B' ? names.ids[who] : who;
-    return { id: id, name: ROLE[id] || (M.characters[id] ? M.characters[id].name : id) };
+    return { id: id, name: ROLE[id] || root.RightsData.nameOf(id) };
   }
 
   // lines: [[말하는 사람, 표정, 글], ...] → 모두 넘기면 끝나는 Promise

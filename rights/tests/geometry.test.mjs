@@ -60,6 +60,9 @@ assert.equal(D.QUIZ.q1_2.options[D.QUIZ.q1_2.answer], `${5.0 / 0.5}배`);
 assert.equal(D.QUIZ.q2_1.options[D.QUIZ.q2_1.answer], `${1960 / 2000 * 100}%`);
 assert.equal(D.QUIZ.q3_1.options[D.QUIZ.q3_1.answer], `${10000 * 0.005}명`);
 assert.equal(D.QUIZ.q3_2.options[D.QUIZ.q3_2.answer], `${(1e6 * 0.005).toLocaleString('en-US')}건`);
+// 지호(jiho)·하늘(haneul) 이름은 이 게임에서 서로 바꿔 부른다
+assert.equal(D.nameOf('jiho'), '하늘');
+assert.equal(D.nameOf('haneul'), '지호');
 // '초등학교' 표기를 쓰지 않는다(중등편 결정)
 for (const f of ['../js/data.js', '../index.html', '../js/app.js']) assert.ok(!fs.readFileSync(fileURLToPath(new URL(f, import.meta.url)), 'utf8').includes('초등'), `${f}에 '초등' 표기`);
 console.log(`ok — 좌표 ${checked}곳, 카드·문항 참조, 수치, 표기 검사`);
