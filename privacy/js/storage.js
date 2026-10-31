@@ -5,7 +5,7 @@
  * 키 규약
  *   ethicity.player              공통 플레이어 정보 — 읽기만 한다(절대 쓰지 않음)
  *   ethicity.result.privacy      공통 완료 결과 — 엔딩 도달 시에만 쓴다
- *   ethicity.privacy.progress.v1 이 게임 전용 진행 저장
+ *   ethicity.privacy.progress.v2 이 게임 전용 진행 저장
  *   ethicity.privacy.settings.v1 이 게임 전용 화면 설정
  */
 (function (root) {
@@ -14,7 +14,7 @@
   var KEYS = {
     player: 'ethicity.player',
     result: 'ethicity.result.privacy',
-    progress: 'ethicity.privacy.progress.v1',
+    progress: 'ethicity.privacy.progress.v2',
     settings: 'ethicity.privacy.settings.v1'
   };
   var memory = {};

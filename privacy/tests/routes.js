@@ -10,7 +10,7 @@
         'c3_e7_a#warn', 'c3_e7_b#help', 'c3_e8_a#block', 'c3_e9_a#critique', 'c3_e9_b#calm'],
     C: ['pro_1#money', 'c1_e1_a#public', 'c1_e1_b#pass', 'c1_e2_a#shoot', 'c1_e2_b#group', 'c1_e2_d#no',
         'c1_e3_b#capture', 'c1_e3_cap#none',
-        'c2_e4_a#ignore', 'c2_e4_b#blame', 'c2_e5_a#seoa', 'c2_e5_b#close', 'c2_e6_a#leave',
+        'c2_e4_a#ignore', 'c2_e4_b#blame', 'c2_e5_a#jiho', 'c2_e5_b#close', 'c2_e6_a#leave',
         'c3_e7_a#silent', 'c3_e7_b#none', 'c3_e8_a#block', 'c3_e9_a#critique', 'c3_e9_b#step'],
     D: ['pro_1#sns', 'c1_e1_a#dm', 'c1_e1_b#fix', 'c1_e2_a#shoot', 'c1_e2_b#story', 'c1_e2_d#sorry',
         'c1_e3_b#capture', 'c1_e3_cap#part',

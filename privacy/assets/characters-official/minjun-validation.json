@@ -1,0 +1,37 @@
+{
+  "minjun-source": {
+    "width": 1122,
+    "height": 1402,
+    "transparentPixels": 866202,
+    "solidPixels": 584398,
+    "distinctRGBA": 166085
+  },
+  "minjun-walk": {
+    "width": 384,
+    "height": 512,
+    "transparentPixels": 108389,
+    "solidPixels": 73569,
+    "distinctRGBA": 37359
+  },
+  "minjun-portraits": {
+    "width": 1024,
+    "height": 256,
+    "transparentPixels": 100405,
+    "solidPixels": 141139,
+    "distinctRGBA": 54493
+  },
+  "minjun-sleep-source": {
+    "width": 1086,
+    "height": 1448,
+    "transparentPixels": 1069014,
+    "solidPixels": 486861,
+    "distinctRGBA": 26267
+  },
+  "minjun-sleep": {
+    "width": 96,
+    "height": 128,
+    "transparentPixels": 6220,
+    "solidPixels": 5903,
+    "distinctRGBA": 2136
+  }
+}

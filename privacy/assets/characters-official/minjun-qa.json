@@ -1,0 +1,22 @@
+{
+  "sourceRects": 20,
+  "walkFrames": 16,
+  "exactBasePrompt": true,
+  "dimensionsAndAlpha": true,
+  "previewImagesLoaded": true,
+  "stopFrame": 1,
+  "playToggle": true,
+  "pageErrors": [],
+  "sourceColors": {
+    "minjun": {
+      "width": 1122,
+      "height": 1402,
+      "distinctRGBA": 166085
+    },
+    "onyu": {
+      "width": 1122,
+      "height": 1402,
+      "distinctRGBA": 202008
+    }
+  }
+}

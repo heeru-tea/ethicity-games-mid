@@ -5,7 +5,7 @@
  * 좌표는 타일 단위(x: 왼→오, y: 위→아래). 그림은 app/map.js가 그린다.
  *
  * ▸ 사건 트리거(triggers): 사건의 첫 장면 id → 맵에서 그 장면을 여는 조건
- *   { time, mission, target:{ npc:'hayun' } 또는 { obj:'bed' }, spawn?:'gate'|'classroom', tint?, cast:[{who,x,y,dir,pose?}] }
+ *   { time, mission, target:{ npc:'saebom' } 또는 { obj:'bed' }, spawn?:'gate'|'classroom', tint?, cast:[{who,x,y,dir,pose?}] }
  *   - spawn이 있으면 그 위치에서 시작(다음 날 등교 등). 없으면 직전 위치에서 이어 걷는다.
  *   - 대상(❗)에게 말을 걸거나 조사하면 해당 장면이 열린다.
  * ▸ idle: ❗가 아닌 인물에게 말 걸 때 한 줄(조건은 story.js와 같은 문법, 위에서부터 첫 일치)
@@ -165,50 +165,50 @@
   /* ── 사건 트리거 ─────────────────── */
   var schoolDay = function (extra) {
     return [
-      { who: 'hayun', x: 5, y: 4, dir: 'down' }, { who: 'dohyun', x: 8, y: 2, dir: 'left' },
-      { who: 'seoa', x: 3, y: 1, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'up' }
+      { who: 'saebom', x: 5, y: 4, dir: 'down' }, { who: 'haneul', x: 8, y: 2, dir: 'left' },
+      { who: 'jiho', x: 3, y: 1, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'up' }
     ].filter(function (c) { return !extra || extra.indexOf(c.who) < 0; });
   };
   var TRIGGERS = {
-    // 등교 오프닝: 내 방에서 일어나 교실까지 걷는다. 길에서 만난 친구는 castLines로 자기소개, 교실에서 하윤이가 반 친구를 소개한다.
-    pro_1: { time: 'D-4 · 아침', mission: '학교 가기 — 2학년 3반 교실까지', target: { npc: 'hayun' }, spawn: 'home', tint: 'day',
+    // 등교 오프닝: 내 방에서 일어나 교실까지 걷는다. 길에서 만난 친구는 castLines로 자기소개, 교실에서 새봄이가 반 친구를 소개한다.
+    pro_1: { time: 'D-4 · 아침', mission: '학교 가기 — 2학년 3반 교실까지', target: { npc: 'saebom' }, spawn: 'home', tint: 'day',
       hint: '방향키·WASD 또는 화면을 눌러 걸어요',
-      cast: [{ who: 'hayun', x: 5, y: 4, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'left' },
-        { who: 'dohyun', x: 20, y: 17, dir: 'right' }, { who: 'seoa', x: 14, y: 8, dir: 'down' }],
+      cast: [{ who: 'saebom', x: 5, y: 4, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'left' },
+        { who: 'haneul', x: 20, y: 17, dir: 'right' }, { who: 'jiho', x: 14, y: 8, dir: 'down' }],
       castLines: {
-        dohyun: '어, 왔냐? 이번 축제 때 사진 진짜 많이 찍자 ㅋㅋ 다 올려야지!',
-        seoa: '안녕… 나 꾸미기 담당이야. 반짝이 스티커 잔뜩 사 왔어.'
+        haneul: '어, 왔냐? 이번 축제 때 사진 진짜 많이 찍자 ㅋㅋ 다 올려야지!',
+        jiho: '안녕… 나 꾸미기 담당이야. 반짝이 스티커 잔뜩 사 왔어.'
       },
       greet: [
-        { who: 'hayun', text: '왔구나! 오늘 방과 후부터 축제 준비 시작이야.' },
-        { who: 'hayun', text: '나는 정산이랑 역할표 담당. 공지는 단톡방에 올릴 테니까 꼭 확인해 줘.' },
-        { who: 'hayun', text: '여기 민준이는 소품 담당이야. 손재주가 진짜 좋아.' },
+        { who: 'saebom', text: '왔구나! 오늘 방과 후부터 축제 준비 시작이야.' },
+        { who: 'saebom', text: '나는 정산이랑 역할표 담당. 공지는 단톡방에 올릴 테니까 꼭 확인해 줘.' },
+        { who: 'saebom', text: '여기 민준이는 소품 담당이야. 손재주가 진짜 좋아.' },
         { who: 'minjun', text: '…안녕. 소품은 거의 다 돼 가.' },
-        { who: 'hayun', text: '오는 길에 도현이랑 서아도 봤지? 우리 반 다 같이 잘해 보자!' }
+        { who: 'saebom', text: '오는 길에 하늘이랑 지호도 봤지? 우리 반 다 같이 잘해 보자!' }
       ] },
     c1_e1_a: { time: 'D-4 · 하교', mission: '집에 가기 — 마을 길 끝 우리 집, 내 방 침대', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
-      cast: [{ who: 'hayun', x: 5, y: 4, dir: 'down' }, { who: 'dohyun', x: 8, y: 2, dir: 'left' }],
+      cast: [{ who: 'saebom', x: 5, y: 4, dir: 'down' }, { who: 'haneul', x: 8, y: 2, dir: 'left' }],
       greet: '저녁을 먹고 침대에 눕자 휴대폰이 울렸다.' },
     c1_e2_a: { time: 'D-3 · 방과 후', mission: '교실에서 엎드려 자는 민준이 살펴보기', target: { npc: 'minjun' }, spawn: 'gate', tint: 'day',
-      cast: [{ who: 'minjun', x: 7, y: 6, dir: 'up', pose: 'sleep' }, { who: 'dohyun', x: 6, y: 6, dir: 'right' },
-        { who: 'hayun', x: 6, y: 1, dir: 'down' }, { who: 'seoa', x: 2, y: 1, dir: 'down' }] },
+      cast: [{ who: 'minjun', x: 7, y: 6, dir: 'up', pose: 'sleep' }, { who: 'haneul', x: 6, y: 6, dir: 'right' },
+        { who: 'saebom', x: 6, y: 1, dir: 'down' }, { who: 'jiho', x: 2, y: 1, dir: 'down' }] },
     c1_e3_a: { time: 'D-2 · 하교 시간', mission: '집에 가서 쉬기 — 교문을 지나 마을 길 끝 우리 집으로', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
-      cast: [{ who: 'hayun', x: 15, y: 8, dir: 'down' }, { who: 'dohyun', x: 4, y: 15, dir: 'down' }, { who: 'minjun', x: 14, y: 19, dir: 'down' }],
+      cast: [{ who: 'saebom', x: 15, y: 8, dir: 'down' }, { who: 'haneul', x: 4, y: 15, dir: 'down' }, { who: 'minjun', x: 14, y: 19, dir: 'down' }],
       enterLine: '하루 종일 부스를 꾸몄더니 피곤하다. 침대에 눕자 휴대폰이 울렸다.' },
-    c2_e4_a: { time: 'D-1 · 오후', mission: '매점 앞에서 손짓하는 도현이에게 가기', target: { npc: 'dohyun' }, spawn: 'gate', tint: 'day',
-      cast: [{ who: 'dohyun', x: 4, y: 15, dir: 'right' }, { who: 'seoa', x: 14, y: 19, dir: 'up' },
-        { who: 'minjun', x: 16, y: 19, dir: 'up' }, { who: 'hayun', x: 6, y: 9, dir: 'down' }] },
+    c2_e4_a: { time: 'D-1 · 오후', mission: '매점 앞에서 손짓하는 하늘이에게 가기', target: { npc: 'haneul' }, spawn: 'gate', tint: 'day',
+      cast: [{ who: 'haneul', x: 4, y: 15, dir: 'right' }, { who: 'jiho', x: 14, y: 19, dir: 'up' },
+        { who: 'minjun', x: 16, y: 19, dir: 'up' }, { who: 'saebom', x: 6, y: 9, dir: 'down' }] },
     c2_e5_a: { time: 'D-1 · 저녁', mission: '집에 가서 부스 안내문 쓰기 — 내 방 컴퓨터', target: { obj: 'mypc' }, spawn: 'road', tint: 'night',
-      cast: [{ who: 'seoa', x: 14, y: 19, dir: 'up' }, { who: 'minjun', x: 16, y: 19, dir: 'up' }] },
+      cast: [{ who: 'jiho', x: 14, y: 19, dir: 'up' }, { who: 'minjun', x: 16, y: 19, dir: 'up' }] },
     c2_e6_a: { time: '축제 당일 · 아침', mission: '도서관 공용 PC 3번에서 안내문 출력하기', target: { obj: 'pc3' }, spawn: 'gate', tint: 'day',
-      cast: [{ who: 'friend', x: 18, y: 5, dir: 'left' }, { who: 'hayun', x: 13, y: 19, dir: 'up' }, { who: 'seoa', x: 15, y: 19, dir: 'up' }] },
-    c3_e7_a: { time: '축제 당일 · 오후', mission: '운동장 부스 뒤 도현이네에게 가기', target: { npc: 'dohyun' }, spawn: 'hall', tint: 'day',
-      cast: [{ who: 'dohyun', x: 17, y: 20, dir: 'left' }, { who: 'friend', x: 18, y: 20, dir: 'left' },
-        { who: 'minjun', x: 13, y: 19, dir: 'down' }, { who: 'hayun', x: 15, y: 19, dir: 'down' }, { who: 'seoa', x: 20, y: 19, dir: 'left' }] },
+      cast: [{ who: 'friend', x: 18, y: 5, dir: 'left' }, { who: 'saebom', x: 13, y: 19, dir: 'up' }, { who: 'jiho', x: 15, y: 19, dir: 'up' }] },
+    c3_e7_a: { time: '축제 당일 · 오후', mission: '운동장 부스 뒤 하늘이네에게 가기', target: { npc: 'haneul' }, spawn: 'hall', tint: 'day',
+      cast: [{ who: 'haneul', x: 17, y: 20, dir: 'left' }, { who: 'friend', x: 18, y: 20, dir: 'left' },
+        { who: 'minjun', x: 13, y: 19, dir: 'down' }, { who: 'saebom', x: 15, y: 19, dir: 'down' }, { who: 'jiho', x: 20, y: 19, dir: 'left' }] },
     c3_e8_a: { time: '축제 당일 · 저녁', mission: '집에 가서 쉬기 — 내 방 컴퓨터', target: { obj: 'mypc' }, spawn: 'yard', tint: 'evening',
-      cast: [{ who: 'dohyun', x: 18, y: 19, dir: 'down' }, { who: 'teacher', x: 11, y: 12, dir: 'down' }],
+      cast: [{ who: 'haneul', x: 18, y: 19, dir: 'down' }, { who: 'teacher', x: 11, y: 12, dir: 'down' }],
       castLines: { teacher: '고생 많았어. 이제 집에 가서 푹 쉬렴.' } }, // 축제가 끝난 저녁
-    c3_e9_a: { time: '축제 다음 날 · 오전', mission: '교실에서 하윤이에게 말 걸기', target: { npc: 'hayun' }, spawn: 'gate', tint: 'day',
+    c3_e9_a: { time: '축제 다음 날 · 오전', mission: '교실에서 새봄이에게 말 걸기', target: { npc: 'saebom' }, spawn: 'gate', tint: 'day',
       skipIf: 'e8_confrontation=fight', // 싸움 경로는 이미 다음 날 교실·상담실 장면을 거쳤다 → 걷기 생략
       cast: schoolDay() },
     ep_1: { time: '다음 주 월요일', mission: '교실에서 담임 선생님께 가기', target: { npc: 'teacher' }, spawn: 'gate', tint: 'day',
@@ -234,46 +234,46 @@
     booth: { name: '운동장 축제 부스', me: { x: 16, y: 20, dir: 'right' } }
   };
   var classmates = [
-    { who: 'hayun', x: 5, y: 4, dir: 'down' }, { who: 'dohyun', x: 8, y: 2, dir: 'left' },
-    { who: 'seoa', x: 3, y: 1, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'left' }
+    { who: 'saebom', x: 5, y: 4, dir: 'down' }, { who: 'haneul', x: 8, y: 2, dir: 'left' },
+    { who: 'jiho', x: 3, y: 1, dir: 'down' }, { who: 'minjun', x: 9, y: 6, dir: 'left' }
   ];
   function only(list, whos) { return list.filter(function (c) { return whos.indexOf(c.who) >= 0; }); }
   var ATDESK = { x: 36, y: 4, dir: 'up' }; // 내 방 책상 컴퓨터 앞
-  var BOOTH = [{ who: 'dohyun', x: 17, y: 20, dir: 'left' }, { who: 'friend', x: 18, y: 20, dir: 'left' },
-    { who: 'minjun', x: 13, y: 19, dir: 'down' }, { who: 'hayun', x: 15, y: 19, dir: 'down' }, { who: 'seoa', x: 20, y: 19, dir: 'left' }];
+  var BOOTH = [{ who: 'haneul', x: 17, y: 20, dir: 'left' }, { who: 'friend', x: 18, y: 20, dir: 'left' },
+    { who: 'minjun', x: 13, y: 19, dir: 'down' }, { who: 'saebom', x: 15, y: 19, dir: 'down' }, { who: 'jiho', x: 20, y: 19, dir: 'left' }];
 
   var STAGES = {
     pro_1: { place: 'classroom', tint: 'day', card: '방과 후 · 오후 5:30 — 축제 준비 중', me: { x: 5, y: 5, dir: 'up' }, cast: classmates,
-      bubbles: [{ on: '다 올린다', who: 'seoa', text: '…' }, { on: '넌 뭐 할래', who: 'hayun', text: '👀' }] },
+      bubbles: [{ on: '다 올린다', who: 'jiho', text: '…' }, { on: '넌 뭐 할래', who: 'saebom', text: '👀' }] },
     c1_e1_a: { place: 'room', tint: 'evening', cast: [] },
     c1_e1_b: { place: 'room', tint: 'evening', cast: [] },
     c1_e2_a: { place: 'classroom', tint: 'day', me: { x: 8, y: 6, dir: 'left' },
-      cast: [{ who: 'minjun', x: 7, y: 6, dir: 'up', pose: 'sleep' }, { who: 'dohyun', x: 6, y: 6, dir: 'right' },
-        { who: 'hayun', x: 6, y: 1, dir: 'down' }, { who: 'seoa', x: 2, y: 1, dir: 'down' }] },
+      cast: [{ who: 'minjun', x: 7, y: 6, dir: 'up', pose: 'sleep' }, { who: 'haneul', x: 6, y: 6, dir: 'right' },
+        { who: 'saebom', x: 6, y: 1, dir: 'down' }, { who: 'jiho', x: 2, y: 1, dir: 'down' }] },
     c1_e2_b: { place: 'room', tint: 'night', card: '그날 밤 · 내 방', cast: [] },
     c1_e2_d: { place: 'road', tint: 'day', card: 'D-2 아침 · 등굣길', cast: [] },
     c1_e3_a: { place: 'room', tint: 'night', cast: [] },
-    c1_e3_b: { place: 'gate', tint: 'day', card: 'D-1 아침 · 교문 앞', cast: [{ who: 'hayun', x: 16, y: 17, dir: 'down' }] },
-    c1_e3_ask: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['hayun', 'seoa']),
-      bubbles: [{ on: '고마워. 내가 정한 만큼만', who: 'seoa', text: '🙂' }] },
-    c1_e3_anon: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['hayun', 'seoa', 'dohyun']),
-      bubbles: [{ on: '역할 바꿨어', who: 'seoa', text: '😌' }] },
-    c1_e3_cap: { place: 'classroom', tint: 'day', card: 'D-1 점심 · 교실', cast: only(classmates, ['hayun', 'seoa', 'dohyun']),
-      bubbles: [{ on: '…화나. 아무한테도', who: 'seoa', text: '💢' }] },
-    c2_e4_a: { place: 'store', tint: 'evening', cast: [{ who: 'dohyun', x: 4, y: 15, dir: 'right' }],
-      bubbles: [{ on: '누가 만든 거래', who: 'dohyun', text: '이거 봐 ㅋㅋ' }, { on: '나 보낸 거 지울게', who: 'dohyun', text: '…' }] },
+    c1_e3_b: { place: 'gate', tint: 'day', card: 'D-1 아침 · 교문 앞', cast: [{ who: 'saebom', x: 16, y: 17, dir: 'down' }] },
+    c1_e3_ask: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'jiho']),
+      bubbles: [{ on: '고마워. 내가 정한 만큼만', who: 'jiho', text: '🙂' }] },
+    c1_e3_anon: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'jiho', 'haneul']),
+      bubbles: [{ on: '역할 바꿨어', who: 'jiho', text: '😌' }] },
+    c1_e3_cap: { place: 'classroom', tint: 'day', card: 'D-1 점심 · 교실', cast: only(classmates, ['saebom', 'jiho', 'haneul']),
+      bubbles: [{ on: '…화나. 아무한테도', who: 'jiho', text: '💢' }] },
+    c2_e4_a: { place: 'store', tint: 'evening', cast: [{ who: 'haneul', x: 4, y: 15, dir: 'right' }],
+      bubbles: [{ on: '누가 만든 거래', who: 'haneul', text: '이거 봐 ㅋㅋ' }, { on: '나 보낸 거 지울게', who: 'haneul', text: '…' }] },
     c2_e4_b: { place: 'road', tint: 'evening', card: '그날 저녁 · 집에 가는 길', cast: [] },
     c2_e5_a: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
     c2_e5_b: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
     c2_e6_a: { place: 'library', tint: 'day', cast: [{ who: 'friend', x: 18, y: 5, dir: 'left' }] },
     c2_e6_b: { place: 'library', tint: 'day', cast: [{ who: 'friend', x: 18, y: 5, dir: 'left' }] },
-    c2_e6_c: { place: 'hall', tint: 'day', card: '1교시 뒤 · 복도', cast: [{ who: 'dohyun', x: 12, y: 8, dir: 'down' }],
-      bubbles: [{ on: '아까 진짜 고마웠어', who: 'dohyun', text: '🙏' }, { on: '다음부터는 진짜 그러지 마라', who: 'dohyun', text: '😠' }] },
+    c2_e6_c: { place: 'hall', tint: 'day', card: '1교시 뒤 · 복도', cast: [{ who: 'haneul', x: 12, y: 8, dir: 'down' }],
+      bubbles: [{ on: '아까 진짜 고마웠어', who: 'haneul', text: '🙏' }, { on: '다음부터는 진짜 그러지 마라', who: 'haneul', text: '😠' }] },
     c3_e7_a: { place: 'booth', tint: 'day', cast: BOOTH,
-      bubbles: [{ on: '해 해', who: 'friend', text: 'ㅋㅋㅋ' }, { on: '다음은 내 차례다', who: 'dohyun', text: '👀' }] },
-    c3_e7_small: { place: 'booth', tint: 'day', card: '그날 오후 · 운동장', cast: only(BOOTH, ['minjun', 'dohyun']),
+      bubbles: [{ on: '해 해', who: 'friend', text: 'ㅋㅋㅋ' }, { on: '다음은 내 차례다', who: 'haneul', text: '👀' }] },
+    c3_e7_small: { place: 'booth', tint: 'day', card: '그날 오후 · 운동장', cast: only(BOOTH, ['minjun', 'haneul']),
       bubbles: [{ on: '나눔 아직 돼요', who: 'minjun', text: '😟' }] },
-    c3_e7_b: { place: 'booth', tint: 'day', card: '그날 오후 · 운동장', cast: only(BOOTH, ['minjun', 'dohyun']),
+    c3_e7_b: { place: 'booth', tint: 'day', card: '그날 오후 · 운동장', cast: only(BOOTH, ['minjun', 'haneul']),
       bubbles: [{ on: '좀 무서워', who: 'minjun', text: '😰' }] },
     c3_e8_a: { place: 'room', tint: 'evening', me: ATDESK, pcOn: true, device: 'monitor', cast: [] },
     c3_e8_b: { place: 'room', tint: 'night', cast: [] },
@@ -286,31 +286,31 @@
     c3_e8_i: { place: 'classroom', tint: 'day', cast: classmates },
     c3_e8_h: { place: 'hall', tint: 'day', card: '상담실 앞', cast: [] },
     c3_e9_a: { place: 'classroom', tint: 'day', cast: classmates,
-      bubbles: [{ on: '다들 퍼 가 주세요', who: 'seoa', text: '…!' }, { on: '당하고만 있으면 안 돼', who: 'hayun', text: '😤' }] },
-    c3_e9_b: { place: 'classroom', tint: 'day', card: '점심시간 · 교실', cast: only(classmates, ['hayun', 'seoa']),
-      bubbles: [{ on: '그냥 넘어가면 억울한데', who: 'hayun', text: '😣' }] },
+      bubbles: [{ on: '다들 퍼 가 주세요', who: 'jiho', text: '…!' }, { on: '당하고만 있으면 안 돼', who: 'saebom', text: '😤' }] },
+    c3_e9_b: { place: 'classroom', tint: 'day', card: '점심시간 · 교실', cast: only(classmates, ['saebom', 'jiho']),
+      bubbles: [{ on: '그냥 넘어가면 억울한데', who: 'saebom', text: '😣' }] },
     ep_1: { place: 'classroom', tint: 'day', me: { x: 7, y: 2, dir: 'left' },
       cast: [{ who: 'teacher', x: 6, y: 1, dir: 'down' }].concat(classmates) }
   };
 
   /* ── ❗가 아닌 인물에게 말 걸 때 ─────── */
   var IDLE = {
-    hayun: [
+    saebom: [
       { if: 'e9b=calm|del', text: '그때 말려 줘서… 고마워.' },
       { if: 'e4b=blame', text: '…괜찮아. 신경 쓰지 마.' },
-      { if: 'trust.hayun>=1', text: '요즘 네 덕분에 든든해.' },
+      { if: 'trust.saebom>=1', text: '요즘 네 덕분에 든든해.' },
       { if: 'e4', text: '합성 사진… 아직도 돌고 있는 것 같아.' },
       { text: '역할표 아직 정리 중이야!' }
     ],
-    dohyun: [
+    haneul: [
       { if: 'e6=logout', text: '그때 로그아웃해 준 거 진짜 고마웠다.' },
       { if: 'e6=post|leave', text: '내 계정에 이상한 거 올린 사람 아직도 못 찾았어 ㅡㅡ' },
-      { if: 'trust.dohyun<0', text: '…뭐.' },
+      { if: 'trust.haneul<0', text: '…뭐.' },
       { text: '축제 때 사진 많이 찍자 ㅋㅋ' }
     ],
-    seoa: [
-      { if: 'trust.seoa<0', text: '(서아는 대답 없이 고개를 돌렸다.)' },
-      { if: 'trust.seoa>=1', text: '꾸미기 재료 같이 고를래?' },
+    jiho: [
+      { if: 'trust.jiho<0', text: '(지호는 대답 없이 고개를 돌렸다.)' },
+      { if: 'trust.jiho>=1', text: '꾸미기 재료 같이 고를래?' },
       { text: '반짝이 스티커 더 사야 해.' }
     ],
     minjun: [

@@ -91,10 +91,10 @@ body[data-view="v-start"] .app { max-width: 52rem; padding-top: 20px; padding-bo
   padding: 8px 8px 10px; border: 2px solid var(--border); border-radius: var(--radius-out);
   background: var(--surface);
 }
-.hero-card img {
-  /* 칸 높이 = min(그림 비율 2:3, 화면 높이에 맞춘 상한) → 휴대폰에서 빈 공간 없이, 노트북에서 시작 버튼이 첫 화면 안에 */
-  display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; max-height: clamp(150px, calc(100dvh - 400px), 420px);
-  object-fit: contain; object-position: center bottom;
+.hero-face {
+  /* 공통 팩 초상화 시트(256×256 × 4표정)의 웃는 얼굴. 정사각 칸, 화면 높이에 맞춘 상한 → 노트북에서 시작 버튼이 첫 화면 안에 */
+  display: block; width: min(100%, clamp(150px, calc(100dvh - 400px), 320px)); aspect-ratio: 1;
+  background-size: 400% 100%; background-position: 33.333% 0; background-repeat: no-repeat; image-rendering: pixelated;
 }
 .hero-card input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
 .hero-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
@@ -292,7 +292,7 @@ body[data-view="v-chapter"] .hud { display: none; }
 /* 대화 초상화: 대화창 위 왼쪽에 반신으로 선다(대화창이 닫히면 함께 사라짐) */
 .talk-portrait {
   position: absolute; left: 20px; z-index: 4; pointer-events: none;
-  height: clamp(150px, 36%, 300px); width: auto; object-fit: contain;
+  height: clamp(150px, 36%, 300px); aspect-ratio: 1; /* 공통 팩 초상화 = 256×256 정사각 칸 */
   filter: drop-shadow(0 2px 0 rgba(22, 32, 31, .25));
 }
 @container (max-height: 560px) { .talk-portrait { height: 26%; } }

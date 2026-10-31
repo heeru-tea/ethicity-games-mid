@@ -33,8 +33,8 @@
       PLAYER = JSON.stringify({ character: 'char_07', nickname: '<img src=x onerror="window.__xss=1"><b>굵게</b>아주아주아주아주아주아주긴별명을가진반짝이는고래와친구들' });
       window.__probe.PLAYER = PLAYER;
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
-    case 'corrupt-progress': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.progress.v1', '{"v":1,"run":'); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
-    case 'stale-progress': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.progress.v1', '{"v":1,"run":{"v":1,"screen":"scene","scene":"사라진_장면","stats":{},"trust":{},"flags":{},"history":[],"visited":[]},"explored":{"pro_1":["sns"]},"endingsSeen":["B"]}'); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
+    case 'corrupt-progress': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.progress.v2', '{"v":1,"run":'); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
+    case 'stale-progress': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.progress.v2', '{"v":1,"run":{"v":1,"screen":"scene","scene":"사라진_장면","stats":{},"trust":{},"flags":{},"history":[],"visited":[]},"explored":{"pro_1":["sns"]},"endingsSeen":["B"]}'); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'webp-fallback': // webp를 못 받는 환경 흉내: .webp 요청을 없는 파일로
       var wDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
       Object.defineProperty(HTMLImageElement.prototype, 'src', { configurable: true, get: function () { return wDesc.get.call(this); },
@@ -53,7 +53,7 @@
     case 'no-sprites': // 캐릭터 시트를 못 불러오는 환경 흉내
       var srcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
       Object.defineProperty(HTMLImageElement.prototype, 'src', { configurable: true, get: function () { return srcDesc.get.call(this); },
-        set: function (v) { srcDesc.set.call(this, /char_|minjun_sleep|characters-v3\//.test(String(v)) ? 'assets/__missing__.png' : v); } });
+        set: function (v) { srcDesc.set.call(this, /char_|minjun_sleep|characters-v3\/|-walk\.png|-portraits\.png|-sleep\.png/.test(String(v)) ? 'assets/__missing__.png' : v); } });
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'nf-resume': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"look":"m"}'); break;
     case 'nf-noimg': // 나이트폭스 CG를 못 불러오는 환경

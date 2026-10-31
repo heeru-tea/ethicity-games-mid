@@ -1,0 +1,46 @@
+민준 공통 팩 에셋 납품 — 2026-10-31
+
+생성: built-in image_gen. 원본 시트 1회, 잠든 포즈 1회. 재생성 0회.
+정확한 요청문은 minjun-prompts.json. characters.base 원문 일치 검사 통과.
+STYLE REFERENCE Image 1 = example/minjun-brief/official/style-reference-saebom.png.
+
+파일 및 규격
+- minjun-source.png: 1122×1402, 투명 원본, 4열×5행, 실루엣 20개.
+- minjun-walk.png: 384×512, 96×128 칸, down/left/right/up, 4프레임, 6fps.
+- minjun-portraits.png: 1024×256, neutral/happy/worried/explaining.
+- minjun-sleep.png: 96×128, 투명, 뒤쪽 위에서 본 앉아 엎드린 인물만.
+- minjun-sleep-source.png: 1086×1448, 잠든 포즈 보존 원본.
+- minjun-data.json: 공식처럼 최상위 minjun 키 안에 frames/sourceRects 등. 경로는 이 폴더 기준.
+- minjun-preview.html: 오프라인 비교. 공식 비교 이미지는 내장. 민준 PNG들은 같은 폴더 참조.
+- minjun-preview.png: 비교 페이지 전체 스크린샷 1150×2508.
+- pack-minjun.cjs: 공식 pack-characters.cjs 복사본에서 ID/경로/출력명만 민준용으로 조정.
+  추가로 원본의 상위 20개 잘라내기를 제거해 실제 큰 실루엣 수가 정확히 20개인지 검사.
+  공식 alpha>=160, 연결 성분 >500픽셀, source pad 2, 칸 안 여유 16,
+  하단 여백 8, smoothing=false, 발 기준 (48,120) 규칙 그대로.
+- build-minjun-preview.cjs: 잠든 포즈 배치·비교 페이지·치수 보고 재생성.
+- verify-minjun.cjs: 구조·치수·프롬프트·헤드리스 Edge 미리보기 확인.
+- minjun-validation.json / minjun-qa.json: 확인 결과.
+- minjun-prompts.json: 정확한 생성 요청과 횟수.
+
+실행: CODEX_PRIMARY_RUNTIME_NODE_MODULES를 번들 node_modules 경로로 설정하고
+node pack-minjun.cjs → node build-minjun-preview.cjs → node verify-minjun.cjs.
+
+확인한 것
+- 겹치지 않는 큰 연결 실루엣 20개, 걷기 프레임 16개, 네 방향 및 초상화 네 표정.
+- 최종 PNG 치수 및 실제 알파 투명 배경.
+- 공식과 같은 자르기/배치 계산 및 정지 인덱스 1.
+- Edge 헤드리스에서 모든 이미지 로드, 재생/정지 전환, 페이지 JS 오류 0.
+- 비교 스크린샷 육안 검토: 공식과 비슷한 큰 머리·작은 몸, 짙은 외곽선, 계단형 픽셀 표현.
+
+남은 차이 / 미확인
+- 지정된 의상과 머리색 때문에 공식 온유보다 전체 색조가 차갑고 어둡다.
+- 생성형 픽셀 그림이므로 고정 소수색 팔레트는 아니다. alpha>=160의 RGBA 고유값은
+  민준 원본 166085, 온유 원본 202008. 가장자리와 음영의 미세 색 변화가 양쪽 모두 있다.
+- 몇몇 걷기 프레임은 발의 좌우 교대 표현이 미묘하며, 마지막 앞/뒤 프레임은
+  완전히 발을 모은 자세보다 작은 전진 자세에 가깝다. 가방 위치도 프레임별 소폭 변한다.
+- 잠든 포즈는 머리 뒤로 접은 팔 일부가 가려진다. 최하단 엉덩이를 y≈120에 맞췄다.
+  실제 게임의 책상 높이·의자 위치와 합성한 상태는 미확인이며 연결 단계에서 확인 필요.
+- 원본 크기는 공식 온유와 같은 1122×1402로, 요청한 4:5 비율에 거의 일치하나 정확한 정수비는 아니다.
+
+변경 범위: privacy/assets/characters-official/만 생성.
+js/, shared/, 공식 참고 원본 변경 없음. commit/push 하지 않음.

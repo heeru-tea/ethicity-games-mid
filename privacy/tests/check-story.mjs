@@ -224,7 +224,7 @@ function runRoute(route) {
   if (sup.fail) err('e8 fight→support 경로: ' + sup.fail);
   else {
     if (sup.s.ending === 'D') err('싸운 뒤 지원을 요청해 수습했는데 엔딩 D');
-    if (sup.s.trust.dohyun !== base.trust.dohyun - 1) err(`영상 확산 감점: 도현 신뢰 ${base.trust.dohyun}→${sup.s.trust.dohyun} (−1 기대)`);
+    if (sup.s.trust.haneul !== base.trust.haneul - 1) err(`영상 확산 감점: 하늘 신뢰 ${base.trust.haneul}→${sup.s.trust.haneul} (−1 기대)`);
     if (sup.s.stats.spread !== base.stats.spread + 1) err(`영상 확산 spread ${base.stats.spread}→${sup.s.stats.spread} (+1 기대)`);
     if (sup.mapBefore9) err('싸움 경로인데 사건 9 전에 교문에서 다시 걷게 됨');
   }

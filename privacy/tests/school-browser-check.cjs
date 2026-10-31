@@ -24,7 +24,7 @@ const path = require('node:path');
     await page.waitForTimeout(3500);
     async function position(x, y) {
       await page.evaluate(({x, y}) => {
-        const key = 'ethicity.privacy.progress.v1';
+        const key = 'ethicity.privacy.progress.v2';
         const p = JSON.parse(localStorage.getItem(key));
         p.pos = Object.assign({}, p.pos, { x, y, dir: 'up' });
         localStorage.setItem(key, JSON.stringify(p));

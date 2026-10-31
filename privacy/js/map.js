@@ -37,8 +37,8 @@
   var srcTile = 48; // 월드 표시 단위. 고해상도 시트의 원본 셀 크기와 분리한다.
   var WALK_FILES = {
     'char_player_m.png': 'boy', 'char_player_f.png': 'girl',
-    'char_hayun.png': 'hayun', 'char_seoa.png': 'seoa',
-    'char_dohyun.png': 'dohyun', 'char_minjun.png': 'minjun', 'char_teacher.png': 'teacher'
+    'char_hayun.png': 'saebom', 'char_seoa.png': 'jiho',
+    'char_dohyun.png': 'haneul', 'char_minjun.png': 'minjun', 'char_teacher.png': 'teacher'
   };
   // 건물은 반복 벽 타일 대신 하나의 외관을 사용한다. 충돌/문 좌표는 world.js 소유.
   var houseExterior = null;
@@ -91,18 +91,30 @@
     return true;
   }
   // 임시 도형의 머리 모양(색이 아니라 실루엣으로도 구분)
-  var HAIR = { hayun: 'long', seoa: 'pony', dohyun: 'short', minjun: 'short', teacher: 'short', friend: 'short' };
+  var HAIR = { saebom: 'long', jiho: 'pony', haneul: 'short', minjun: 'short', teacher: 'short', friend: 'short' };
 
   function $(id) { return document.getElementById(id); }
 
   /* ── 스프라이트(있으면) ─────────── */
-  function loadSprite(key, file) {
+  // official = 공통 팩 규격 그림 주소(PrivacyCast). 있으면 먼저 쓰고, 못 불러오면 옛 시트로 내려간다
+  function loadSprite(key, file, official) {
     if (sprites[key] !== undefined) return;
     sprites[key] = null;
     var character = WALK_FILES[file];
     // A late response from a previous player selection must not replace the new one.
     var token = {};
     sprites[key] = token;
+    if (official) {
+      var oi = new Image();
+      oi.onload = function () {
+        if (sprites[key] !== token) return;
+        oi.privacyOfficial = true; // 공통 팩 그림은 색 보정(palette) 없이 그대로
+        sprites[key] = oi;
+      };
+      oi.onerror = function () { if (sprites[key] === token) load(!!character); };
+      oi.src = official;
+      return;
+    }
     function load(modern) {
       var im = new Image();
       im.onload = function () {
@@ -139,11 +151,11 @@
     trig = WD.triggers[targetId];
     cast = trig.cast.slice();
     blocked = {};
-    cast.forEach(function (c) { blocked[c.x + ',' + c.y] = true; loadSprite(c.who, 'char_' + c.who + '.png'); });
+    cast.forEach(function (c) { blocked[c.x + ',' + c.y] = true; loadSprite(c.who, 'char_' + c.who + '.png', window.PrivacyCast.walk(c.who)); });
     var look = o.playerLook();
     if (look !== lastLook) { delete sprites.me; lastLook = look; }
-    loadSprite('me', 'char_player_' + look + '.png');
-    loadSprite('minjun_sleep', 'minjun_sleep.png');
+    loadSprite('me', 'char_player_' + look + '.png', window.PrivacyCast.walk('me', look));
+    loadSprite('minjun_sleep', 'minjun_sleep.png', window.PrivacyCast.sleep());
     loadAtlas();
 
     var pos = o.loadPos();
@@ -174,11 +186,11 @@
     opts = opts || {};
     mode = 'stage'; stageInfo = st; trig = null; targetId = null; focus = opts.focus || null; gen++; camS = null;
     cast = st.cast.slice(); blocked = {};
-    cast.forEach(function (c) { loadSprite(c.who, 'char_' + c.who + '.png'); });
+    cast.forEach(function (c) { loadSprite(c.who, 'char_' + c.who + '.png', window.PrivacyCast.walk(c.who)); });
     var look = o.playerLook();
     if (look !== lastLook) { delete sprites.me; lastLook = look; }
-    loadSprite('me', 'char_player_' + look + '.png');
-    loadSprite('minjun_sleep', 'minjun_sleep.png');
+    loadSprite('me', 'char_player_' + look + '.png', window.PrivacyCast.walk('me', look));
+    loadSprite('minjun_sleep', 'minjun_sleep.png', window.PrivacyCast.sleep());
     loadAtlas();
     place(st.me || WD.PLACES[st.place].me);
     held = []; path = null; actOnArrive = false; busy = false; bubbles = [];
@@ -234,7 +246,7 @@
   function finishStep() {
     me.moving = false;
     me.x = me.to.x; me.y = me.to.y;
-    if (me.door) { me.x = me.door.to[0]; me.y = me.door.to[1]; me.dir = me.door.dir; flashSay(me.door.label === '집 안으로' ? '우리 집에 들어왔다.' : '밖으로 나왔다.'); }
+    if (me.door) { if (window.PrivacySfxDoor) window.PrivacySfxDoor(); me.x = me.door.to[0]; me.y = me.door.to[1]; me.dir = me.door.dir; flashSay(me.door.label === '집 안으로' ? '우리 집에 들어왔다.' : '밖으로 나왔다.'); }
     me.fx = me.x; me.fy = me.y;
     me.frame = (me.frame + 1) % 4;
     me.walked = (me.walked || 0) + 1; // 걸은 칸 수: 걷기 동작을 칸이 바뀌어도 이어 가게
@@ -298,7 +310,7 @@
       talk([{ who: null, name: null, text: n.ob.look || n.ob.name }]);
     }
   }
-  // 'hayun: 대사' 형식이면 말한 사람을 그 이름으로, 아니면 기본 화자로
+  // 'saebom: 대사' 형식이면 말한 사람을 그 이름으로, 아니면 기본 화자로
   function personLine(who, text) {
     var m = /^(\w+): ([\s\S]*)$/.exec(text);
     if (m && o.story.characters[m[1]]) { who = m[1]; text = m[2]; }
@@ -313,11 +325,9 @@
       if (part) node.appendChild(document.createTextNode(part));
     });
   }
-  // 대화 초상화(Codex v3를 세로 512px로 줄인 사본). 기본 표정뿐이라 맵에서 말 걸기·오프닝에만 쓴다
-  var PORTRAIT = { hayun: 1, seoa: 1, dohyun: 1, minjun: 1, teacher: 1, me: 1 };
+  // 대화 초상화 = 공통 팩 초상화 시트(기본 표정). 맵에서 말 걸기·오프닝에 쓴다
   function portraitFor(who) {
-    if (!PORTRAIT[who]) return null;
-    return window.PrivacyImg.src('assets/portraits/' + (who === 'me' ? 'player_' + o.playerLook() : who) + '.png');
+    return window.PrivacyCast.id(who, o.playerLook()) ? { who: who, look: o.playerLook(), expr: 'neutral' } : null;
   }
   function talk(lines) {
     return window.PrivacyTalk.open(lines, { instant: o.instant(), portrait: portraitFor, onLine: function (l) {
@@ -588,9 +598,9 @@
     });
     cast.forEach(function (c) {
       if (schoolCovered && school.contains(c.x, c.y)) return;
-      list.push({ y: c.pose === 'sleep' ? c.y - 0.5 : c.y, fn: function () { drawPerson(c.who, o.story.characters[c.who].name, c.x, c.y, c.dir, 0, c.pose); } });
+      list.push({ y: c.pose === 'sleep' ? c.y - 0.5 : c.y, fn: function () { drawPerson(c.who, o.story.characters[c.who].name, c.x, c.y, c.dir, 0, c.pose, false); } });
     });
-    list.push({ y: me.fy + 0.01, fn: function () { drawPerson('me', o.playerName(), me.fx, me.fy, me.dir, walkFrame()); } });
+    list.push({ y: me.fy + 0.01, fn: function () { drawPerson('me', o.playerName(), me.fx, me.fy, me.dir, walkFrame(), null, me.moving); } });
     list.sort(function (a, b) { return a.y - b.y; });
     list.forEach(function (d) { d.fn(); });
     var tint = mode === 'stage' ? stageInfo.tint : trig.tint;
@@ -628,11 +638,22 @@
     ctx.fillText(ob.icon || '', sx + w / 2, sy + h / 2 + 1);
     if (ob.label) { ctx.font = 'bold ' + Math.round(T * 0.3) + 'px sans-serif'; ctx.fillStyle = '#16201F'; ctx.fillText(ob.label, sx + w - T * 0.2, sy + T * 0.25); }
   }
-  function drawPerson(who, name, fx, fy, dir, frame, pose) {
+  function drawPerson(who, name, fx, fy, dir, frame, pose, moving) {
     var sx = fx * T - cam.x, sy = fy * T - cam.y;
     if (sx < -T * 2 || sy < -T * 2 || sx > viewW + T || sy > viewH + T) return;
     var sheet = pose === 'sleep' ? sprites.minjun_sleep : sprites[who];
-    if (sheet && sheet.naturalWidth) {
+    if (sheet && sheet.naturalWidth && sheet.privacyOfficial) {
+      // 공통 팩 규격: 칸 96×128, 발 기준점 (48,120). 몸(약 112px)이 옛 그림처럼 1.5타일 높이가 되게 줄이고 발을 타일 아래쪽에 맞춘다
+      var C = window.PrivacyCast.CELL, s = T * 1.5 / C.body, dw = C.w * s, dh = C.h * s;
+      var sm = ctx.imageSmoothingEnabled;
+      ctx.imageSmoothingEnabled = false; // 픽셀 그림
+      if (pose === 'sleep') ctx.drawImage(sheet, 0, 0, C.w, C.h, sx + T / 2 - C.ax * s, sy - C.ay * s, dw, dh); // 한 칸 위 책상에 앉아 엎드림(옛 규칙: 책상 y - 0.5칸)
+      else {
+        var f = moving ? frame : window.PrivacyCast.STOP_FRAME;
+        ctx.drawImage(sheet, f * C.w, ROW[dir] * C.h, C.w, C.h, sx + T / 2 - C.ax * s, sy + T - C.ay * s, dw, dh);
+      }
+      ctx.imageSmoothingEnabled = sm;
+    } else if (sheet && sheet.naturalWidth) {
       // 칸 = 가로 1타일 × 세로 1.5타일, 발밑이 타일 아래쪽에 오도록
       var fw = sheet.naturalWidth / (pose === 'sleep' ? 1 : 4), fh = sheet.naturalHeight / (pose === 'sleep' ? 1 : 4);
       if (pose === 'sleep') ctx.drawImage(sheet, 0, 0, fw, fh, sx, sy - T * 1.5, T, T * 1.5); // 바로 위 책상 칸에 겹쳐 그림(납품 규칙: 책상 y - 0.5칸)

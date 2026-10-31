@@ -13,7 +13,7 @@ const path = require('node:path');
     await page.goto('http://127.0.0.1:' + server.address().port + '/privacy/?probe=shot-road');
     await page.waitForTimeout(12000);
     await page.evaluate(() => {
-      const key = 'ethicity.privacy.progress.v1';
+      const key = 'ethicity.privacy.progress.v2';
       const p = JSON.parse(localStorage.getItem(key));
       p.pos = Object.assign({}, p.pos, { x: 11, y: 32, dir: 'right' });
       localStorage.setItem(key, JSON.stringify(p));
@@ -28,7 +28,7 @@ const path = require('node:path');
     await page.screenshot({ path: path.join(__dirname, '_shot-schoolyard-mobile.png'), fullPage: true });
     console.log('Resumed position', await page.evaluate(() => PrivacyMap.debug.me()));
     await page.evaluate(() => {
-      const key = 'ethicity.privacy.progress.v1', p = JSON.parse(localStorage.getItem(key));
+      const key = 'ethicity.privacy.progress.v2', p = JSON.parse(localStorage.getItem(key));
       p.pos = Object.assign({}, p.pos, { x: 19, y: 16 });
       localStorage.setItem(key, JSON.stringify(p));
     });

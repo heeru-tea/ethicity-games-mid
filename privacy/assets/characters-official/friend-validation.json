@@ -1,0 +1,32 @@
+{
+  "silhouettes": 20,
+  "files": [
+    {
+      "file": "friend-source.png",
+      "width": 1122,
+      "height": 1402,
+      "hasAlpha": true,
+      "bytes": 1536750
+    },
+    {
+      "file": "friend-walk.png",
+      "width": 384,
+      "height": 512,
+      "hasAlpha": true,
+      "bytes": 235441
+    },
+    {
+      "file": "friend-portraits.png",
+      "width": 1024,
+      "height": 256,
+      "hasAlpha": true,
+      "bytes": 356861
+    }
+  ],
+  "frames": 16,
+  "portraits": 4,
+  "anchor": {
+    "x": 48,
+    "y": 120
+  }
+}

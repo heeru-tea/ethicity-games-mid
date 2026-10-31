@@ -188,7 +188,7 @@
       ok(/촬영은 계속됐다/.test(document.body.textContent), '사건 결과에 촬영 계속 기록');
     }
     else if (s === 'nf-resume') { // 남 주인공 · 보통 속도 · 움직임 허용
-      var PK = 'ethicity.privacy.progress.v1';
+      var PK = 'ethicity.privacy.progress.v2';
       if (P.phase === 0) {
         $('#btn-new').click();
         PrivacyApp.setSpeed('instant');
@@ -226,7 +226,7 @@
       var before = PrivacyApp.state();
       $$('#g-dock .choice').filter(function (b) { return b.getAttribute('data-choice') === 'fight'; })[0].click();
       await wait(50); await passTalk();
-      ok(PrivacyApp.state().trust.dohyun === before.trust.dohyun - 1, '싸움·영상 확산 → 도현 −1');
+      ok(PrivacyApp.state().trust.haneul === before.trust.haneul - 1, '싸움·영상 확산 → 하늘 −1');
       $('#btn-undo').click(); await wait(); confirmYes(); await wait(100);
       var af = PrivacyApp.state();
       ok(af.scene === 'c3_e8_c' && !af.reaction && JSON.stringify(af.trust) === JSON.stringify(before.trust) && af.flags.e8_confrontation === undefined && JSON.stringify(af.stats) === JSON.stringify(before.stats), '되돌리면 신뢰·수치·플래그 원복');
@@ -279,10 +279,10 @@
       await play(R.A, { upto: 1, stopAtMap: true });
       ok(view() === 'v-map', '첫 사건 전에 맵 화면');
       ok(/집/.test($('#m-mission').textContent), '지금 할 일 표시(하교): ' + $('#m-mission').textContent);
-      var pt = PrivacyMap.debug.tileToClient(5, 4); // 하윤 자리
+      var pt = PrivacyMap.debug.tileToClient(5, 4); // 새봄 자리
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pt.x, clientY: pt.y, bubbles: true }));
       var g = 0; while ($('#talk').hidden && g++ < 300) await wait(20);
-      ok(!$('#talk').hidden && /하윤/.test($('#talk .talk-name').textContent), '하윤을 누르면 걸어가서 말 걸기 ' + JSON.stringify([pt, PrivacyMap.debug.me()]));
+      ok(!$('#talk').hidden && /새봄/.test($('#talk .talk-name').textContent), '새봄을 누르면 걸어가서 말 걸기 ' + JSON.stringify([pt, PrivacyMap.debug.me()]));
       await passTalk();
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk(); await wait();
       ok(view() === 'v-game' && PrivacyApp.state().scene === 'c1_e1_a', '침대에 가면 정산 장면 시작');
@@ -305,12 +305,12 @@
       ok(view() === 'v-map' && !$('#stage').hidden && getComputedStyle($('#stage')).display !== 'none', '맵 화면에서 무대 보임');
       var cr = $('#m-canvas').getBoundingClientRect(), sr = { width: $('#stage').clientWidth, height: $('#stage').clientHeight };
       ok(Math.abs(cr.width - sr.width) < 2 && Math.abs(cr.height - sr.height) < 2, '캔버스가 무대를 채움 ' + [cr.width, cr.height, sr.width, sr.height].map(Math.round));
-      // 하윤이 아닌 도현(8,2)을 누르면 걸어가서 말을 건다 → 대화창
+      // 새봄이 아닌 하늘(8,2)을 누르면 걸어가서 말을 건다 → 대화창
       var pd = PrivacyMap.debug.tileToClient(8, 2);
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true }));
       var gt = 0; while ((!$('#talk') || $('#talk').hidden) && gt++ < 300) await wait(20);
       ok(!!$('#talk') && !$('#talk').hidden && /\S/.test($('#talk .talk-text').textContent), '말 걸기 결과가 대화창에 나옴');
-      ok(!!$('#talk .talk-name') && /도현/.test($('#talk .talk-name').textContent), '대화창 이름 탭');
+      ok(!!$('#talk .talk-name') && /하늘/.test($('#talk .talk-name').textContent), '대화창 이름 탭');
       ok($('#talk').getBoundingClientRect().height >= 118, '한 줄이어도 넉넉한 대화창 높이 ' + Math.round($('#talk').getBoundingClientRect().height));
       key(' '); await wait(30);
       ok($('#talk').hidden && view() === 'v-map', 'Space로 대화창 닫힘, 맵 그대로');
@@ -334,12 +334,12 @@
       var oseq = ow.areas.join('>');
       ok(/우리 집 앞.*마을 길.*교문.*복도.*2학년 3반 교실/.test(oseq), '집→마을 길→교문→복도→교실: ' + oseq);
       ok($('#m-say').textContent.indexOf('방향키') < 0, '걷기 시작하면 첫 안내가 사라짐');
-      ok(ow.talkLines >= 4, '하윤의 친구 소개 ' + ow.talkLines + '줄');
+      ok(ow.talkLines >= 4, '새봄의 친구 소개 ' + ow.talkLines + '줄');
       ok(view() === 'v-game' && PrivacyApp.state().scene === 'pro_1', '소개 뒤 pro_1 장면');
     }
 
     else if (s === 'resume-old') {
-      var E2 = window.PrivacyEngine, ST = window.PRIVACY_STORY, PK = 'ethicity.privacy.progress.v1';
+      var E2 = window.PrivacyEngine, ST = window.PRIVACY_STORY, PK = 'ethicity.privacy.progress.v2';
       if (P.phase === 0) { // 개편 전 저장 1: 프롤로그 장면에서 바로 시작하던 형태
         var old = E2.createState(ST); old.screen = 'scene'; old.mapTarget = null; old.visited = ['pro_1'];
         localStorage.setItem(PK, JSON.stringify({ v: 1, run: old, explored: {}, endingsSeen: [] }));
@@ -375,10 +375,10 @@
       var m2 = PrivacyMap.debug.me();
       ok(m1.x === m2.x && m1.y === m2.y, '무대 모드에선 방향키로 걷지 않음');
       await PrivacyMap.stage(SG.pro_1);
-      ok(PrivacyMap.bubble('dohyun', '📱…') && PrivacyMap.bubble('seoa', '…'), '무대 인물 말풍선');
+      ok(PrivacyMap.bubble('haneul', '📱…') && PrivacyMap.bubble('jiho', '…'), '무대 인물 말풍선');
       ok(!PrivacyMap.bubble('teacher', 'x'), '무대에 없는 인물은 말풍선 없음');
       var b = PrivacyMap.debug.stage().bubbles;
-      ok(b.indexOf('dohyun') >= 0 && b.indexOf('seoa') >= 0, '두 명 말풍선 동시: ' + b);
+      ok(b.indexOf('haneul') >= 0 && b.indexOf('jiho') >= 0, '두 명 말풍선 동시: ' + b);
       PrivacyMap.clearBubbles();
       ok(PrivacyMap.debug.stage().bubbles.length === 0, '말풍선 지우기');
     }
@@ -388,11 +388,11 @@
       await play(R.A, { upto: 0 });
       var d = PrivacyMap.debug.stage();
       ok(view() === 'v-game' && d.mode === 'stage' && d.place === 'classroom', '단톡 장면이 교실 무대 위에서 ' + JSON.stringify(d));
-      ok(['hayun', 'dohyun', 'seoa', 'minjun'].every(function (w) { return d.cast.indexOf(w) >= 0; }), '같은 공간 친구 4명: ' + d.cast);
+      ok(['saebom', 'haneul', 'jiho', 'minjun'].every(function (w) { return d.cast.indexOf(w) >= 0; }), '같은 공간 친구 4명: ' + d.cast);
       ok($('#g-phone').getAttribute('data-device') === 'phone' && !$('#g-phone').hidden, '폰 오버레이');
       ok($('#g-phone').getBoundingClientRect().width <= $('#stage').clientWidth * 0.45, '데스크톱에서 폰은 무대 폭의 45% 이하 ' + Math.round($('#g-phone').getBoundingClientRect().width) + '/' + $('#stage').clientWidth);
-      ok(d.bubbles.indexOf('dohyun') >= 0 && d.bubbles.indexOf('minjun') >= 0, '메시지 보낸 친구 머리 위 말풍선: ' + d.bubbles);
-      ok(d.bubbleTexts.indexOf('…') >= 0 && d.bubbleTexts.indexOf('👀') >= 0, '손으로 쓴 반응(서아 …, 하윤 👀): ' + d.bubbleTexts);
+      ok(d.bubbles.indexOf('haneul') >= 0 && d.bubbles.indexOf('minjun') >= 0, '메시지 보낸 친구 머리 위 말풍선: ' + d.bubbles);
+      ok(d.bubbleTexts.indexOf('…') >= 0 && d.bubbleTexts.indexOf('👀') >= 0, '손으로 쓴 반응(지호 …, 새봄 👀): ' + d.bubbleTexts);
       ok(d.bubbleTexts.every(function (t) { return t.indexOf('올린다') < 0; }), '폰 메시지 원문은 머리 위에 안 뜸');
       var mp = PrivacyMap.debug.me(), mpt = PrivacyMap.debug.tileToClient(mp.x, mp.y), phr = $('#g-phone').getBoundingClientRect(), dkr = $('#g-dock').getBoundingClientRect();
       ok(phr.right < dkr.left, '시선 순서: 폰(카톡)은 왼쪽, 선택 상자는 오른쪽 ' + [Math.round(phr.right), Math.round(dkr.left)]);
@@ -482,19 +482,17 @@
       await play(R.A, { upto: 0 });
       var avs = $$('#g-log .ln.msg:not(.me) .av');
       ok(avs.length > 0, '대화 프로필 있음');
-      var named = avs.filter(function (a) { return /hayun|dohyun|seoa|minjun|teacher/.test(a.getAttribute('data-who') || ''); });
-      ok(named.length > 0 && named.every(function (a) { var im = a.querySelector('img'); return a.classList.contains('has-face') && im && /portraits\/(hayun|dohyun|seoa|minjun|teacher)\.(webp|png)/.test(im.getAttribute('src') || ''); }), '친구 프로필 = 작은 초상화(portraits/): ' + named.map(function (a) { return a.getAttribute('data-who'); }).join(','));
-      ok(named.every(function (a) { return a.textContent === ''; }), '얼굴이 있으면 이니셜 글자 없음');
-      var hy = named.filter(function (a) { return a.getAttribute('data-who') === 'hayun'; })[0];
-      if (hy) { var him = hy.querySelector('img'); him.src = 'assets/__missing__.png'; } // 그림을 못 받은 경우
-      await wait(400);
-      ok(!!hy && !hy.querySelector('img') && hy.textContent === '하' && !hy.classList.contains('has-face'), '그림 실패 → 이니셜로 돌아감');
+      var named = avs.filter(function (a) { return /saebom|haneul|jiho|minjun|teacher/.test(a.getAttribute('data-who') || ''); });
+      ok(named.length > 0 && named.every(function (a) { var w = a.getAttribute('data-who'); return a.classList.contains('has-face') && new RegExp(w + '-portraits\\.png').test(a.style.backgroundImage); }), '친구 프로필 = 공통 팩 초상화(기본 표정): ' + named.map(function (a) { return a.getAttribute('data-who'); }).join(','));
+      ok(named.every(function (a) { return a.textContent === '' && !a.querySelector('img'); }), '얼굴이 있으면 이니셜 글자 없음');
+      var others = avs.filter(function (a) { return !a.classList.contains('has-face'); });
+      ok(others.every(function (a) { return a.textContent.length > 0; }), '그림이 없는 인물은 이니셜');
     }
 
     else if (s === 'photo') { // 민준이 엎드려 자는 사진: 흐리게 올라오고, 눌러야 보인다
       $('#btn-new').click();
       await play(R.A, { upto: 4 });
-      ok(PrivacyApp.state().scene === 'c1_e2_b', '사진을 받은 도현 개인 대화');
+      ok(PrivacyApp.state().scene === 'c1_e2_b', '사진을 받은 하늘 개인 대화');
       var ph = $('#g-log .photo');
       ok(!!ph && ph.classList.contains('blurred'), '사진은 흐리게 가려진 채 올라옴');
       var pim = ph && ph.querySelector('img');
@@ -540,9 +538,9 @@
       ok(!!$('#name-field') && $('#name-field').hidden, '공통 플레이어 정보가 있으면 이름 입력칸 숨김');
       ok(!$('.start-phone'), '메신저 푸시 알림 장식 없음');
       ok(/단톡방 28명, 스토리 조회 312회, 캡처 1장/.test($('#v-start').textContent), '훅 문장 유지');
-      var imgs = $$('#look-pick .hero-card img');
-      ok(imgs.length === 2 && /hero-boy\.png$/.test(imgs[0].getAttribute('src')) && /hero-girl\.png$/.test(imgs[1].getAttribute('src')), '두 주인공 일러스트');
-      var gi = 0; while (imgs.some(function (im) { return !im.complete; }) && gi++ < 100) await wait(30);
+      var imgs = $$('#look-pick .hero-card .hero-face');
+      ok(imgs.length === 2 && /onyu-portraits\.png/.test(imgs[0].style.backgroundImage) && /daon-portraits\.png/.test(imgs[1].style.backgroundImage), '두 주인공 = 공통 팩 온유·다온 초상화');
+      await wait(100);
       var r0 = imgs[0].getBoundingClientRect(), r1 = imgs[1].getBoundingClientRect();
       ok(Math.abs(r0.width - r1.width) < 1 && Math.abs(r0.height - r1.height) < 1 && r0.height >= 150, '두 주인공 같은 비중 ' + [r0.width, r0.height, r1.width, r1.height].map(Math.round));
       ok(Math.abs(r0.top - r1.top) < 1, '나란히 배치');
@@ -556,8 +554,7 @@
         document.body.appendChild(fr);
         await new Promise(function (r) { fr.onload = r; });
         var fd = fr.contentDocument, fg = 0;
-        var fimgs = Array.prototype.slice.call(fd.querySelectorAll('#look-pick .hero-card img'));
-        while (fimgs.some(function (im) { return !im.complete; }) && fg++ < 100) await wait(30);
+        var fimgs = Array.prototype.slice.call(fd.querySelectorAll('#look-pick .hero-card .hero-face'));
         await wait(50);
         var bb = fd.getElementById('btn-new').getBoundingClientRect();
         var h0 = fimgs[0].getBoundingClientRect(), h1 = fimgs[1].getBoundingClientRect();
@@ -582,7 +579,7 @@
       ok(lis.every(function (li) { return !!li.querySelector('.trust-mark'); }), '가까워짐·그대로·멀어짐 표식');
       var mj = $('#c-summary .trust-list li[data-who="minjun"] .spr.face');
       var gl = 0; while (mj && !mj.classList.contains('loaded') && gl++ < 100) await wait(30);
-      ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /minjun-portrait\.png/.test(mj.style.backgroundImage), '민준 줄엔 새 민준 초상화');
+      ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /characters-official\/minjun-portraits\.png/.test(mj.style.backgroundImage), '민준 줄엔 공통 규격 민준 초상화');
       ok(!!mj && mj.getBoundingClientRect().width >= 60 && mj.getBoundingClientRect().right <= $('#c-summary .trust-list').getBoundingClientRect().right + 1, '얼굴 2배 크기, 줄 안에 들어감');
       $('#btn-chapter-go').click();
       await play(R.A, { from: 6 });
@@ -604,7 +601,7 @@
       $('#btn-map-act').click(); await wait(30);
       ok(!!$('#m-say .ico-quest') && $('#m-say').textContent.indexOf('❗') < 0, '대상 아닌 곳에서 누를 때 안내에도 그림');
       $('#btn-map-skip').click(); await wait(30);
-      ok(!!$('#btn-map-act .ico-quest') && $('#btn-map-act').textContent.indexOf('❗') < 0 && /하윤에게 말 걸기/.test($('#btn-map-act').textContent), '목적지 버튼: 그림 + 하윤에게 말 걸기');
+      ok(!!$('#btn-map-act .ico-quest') && $('#btn-map-act').textContent.indexOf('❗') < 0 && /새봄에게 말 걸기/.test($('#btn-map-act').textContent), '목적지 버튼: 그림 + 새봄에게 말 걸기');
       ok($$('.ico-quest').every(function (im) { return /quest\.png/.test(getComputedStyle(im).backgroundImage) && im.getAttribute('role') === 'img' && !!im.getAttribute('aria-label'); }), 'quest.png 사용·대체 글자 있음');
     }
 
@@ -621,20 +618,19 @@
       if (s === 'webp') {
         ok(pngHits.length === 0, '변환된 그림은 png를 받지 않음 ' + pngHits.slice(0, 4).join(','));
         ok(webpHits.length >= 25, 'webp로 받음 ' + webpHits.length + '장');
-        ok(/hero-boy\.webp$/.test($$('#look-pick img')[0].currentSrc), '타이틀 일러스트도 webp ' + $$('#look-pick img')[0].currentSrc);
       } else ok(pngHits.length >= 20, 'webp가 안 되면 png로 되돌아감 ' + pngHits.length + '장');
     }
 
     else if (s === 'portrait') {
-      function pv() { var p = $('#talk-portrait'); return p && !p.hidden && getComputedStyle(p).display !== 'none' ? p.getAttribute('src') : null; }
+      function pv() { var p = $('#talk-portrait'); return p && !p.hidden && getComputedStyle(p).display !== 'none' ? p.style.backgroundImage : null; }
       $('#btn-new').click(); await wait(30);
       PrivacyApp.setSpeed('normal'); // 한 줄씩(한꺼번에 모드는 초상화 없이)
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(50);
-      ok(/portraits\/hayun\.(png|webp)$/.test(pv() || ''), '오프닝 소개: 하윤 초상화 ' + pv());
+      ok(/saebom-portraits\.png/.test(pv() || ''), '오프닝 소개: 새봄 초상화 ' + pv());
       var pr = $('#talk-portrait').getBoundingClientRect(), tr = $('#talk').getBoundingClientRect(), mc = $('#v-map .map-controls').getBoundingClientRect();
       ok(pr.bottom <= tr.top + 16 && pr.bottom <= mc.top, '초상화는 대화창 위에 서고 아래 버튼을 가리지 않음');
       var sawMinjun = false, gg = 0;
-      while (!$('#talk').hidden && gg++ < 20) { if (/minjun\.(png|webp)$/.test(pv() || '')) sawMinjun = true; $('#btn-talk-next').click(); await wait(30); }
+      while (!$('#talk').hidden && gg++ < 20) { if (/minjun-portraits\.png/.test(pv() || '')) sawMinjun = true; $('#btn-talk-next').click(); await wait(30); }
       ok(sawMinjun, '민준이 말하는 줄에선 민준 초상화');
       ok(pv() === null, '대사가 끝나면 초상화도 사라짐');
       PrivacyApp.setSpeed('instant');
@@ -642,10 +638,10 @@
       ok(view() === 'v-game' && pv() === null, '폰(단톡) 장면에선 초상화 없음');
       await play(R.A, { upto: 1, stopAtMap: true });
       PrivacyApp.setSpeed('normal');
-      var pd = PrivacyMap.debug.tileToClient(8, 2); // 도현
+      var pd = PrivacyMap.debug.tileToClient(8, 2); // 하늘
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true }));
       var gt = 0; while ($('#talk').hidden && gt++ < 300) await wait(20);
-      ok(/portraits\/dohyun\.(png|webp)$/.test(pv() || ''), '맵에서 도현에게 말 걸기: 도현 초상화');
+      ok(/haneul-portraits\.png/.test(pv() || ''), '맵에서 하늘에게 말 걸기: 하늘 초상화');
       key(' '); await wait(30);
       // 사물 조사(해설)엔 초상화 없음: 교탁(5,2) 옆으로 가서 조사
       var rt = PrivacyMap.debug.routeTo(5, 3) || [];
@@ -724,7 +720,7 @@
       $('#btn-new').click(); await wait(300);
       var mk0 = markerVisible('첫날 아침 내 방');
       ok(!!mk0 && mk0.tx === 34 && mk0.ty === 8, '방 안에서 목적지가 바깥이면 ❗는 방문에 ' + JSON.stringify(mk0));
-      // 집 밖으로 나가면 다시 목적지(교실 하윤) 쪽
+      // 집 밖으로 나가면 다시 목적지(교실 새봄) 쪽
       var rt = PrivacyMap.debug.routeTo(42, 19) || [];
       for (var k = 0; k < rt.length; k++) { key(ARROW[rt[k]]); key(ARROW[rt[k]], 'keyup'); var g = 0; await wait(16); while (PrivacyMap.debug.me().moving && g++ < 100) await wait(16); }
       await wait(100);
@@ -765,7 +761,7 @@
     }
 
     else if (s === 'pos-recover') {
-      var E3 = window.PrivacyEngine, ST3 = window.PRIVACY_STORY, PK3 = 'ethicity.privacy.progress.v1';
+      var E3 = window.PrivacyEngine, ST3 = window.PRIVACY_STORY, PK3 = 'ethicity.privacy.progress.v2';
       if (P.phase === 0) { // 저장 위치가 새로 생긴 벽돌집 안(39,26)
         var m3 = E3.createState(ST3), g3 = 0;
         while (!(m3.screen === 'map' && m3.mapTarget === 'c1_e1_a') && g3++ < 8) m3 = m3.screen === 'scene' && E3.needsChoice(ST3, m3) ? E3.choose(ST3, m3, 'photo') : E3.advance(ST3, m3);
@@ -865,7 +861,7 @@
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(30);
       ok(!$('#talk').hidden && document.activeElement === $('#btn-talk-next'), '대화창이 열리면 ▼에 키보드 포커스');
       key('ArrowLeft'); key('ArrowLeft', 'keyup'); await wait(200);
-      ok(!$('#talk').hidden && view() === 'v-map', '하윤 소개 중 방향키로 건너뛰지 않음');
+      ok(!$('#talk').hidden && view() === 'v-map', '새봄 소개 중 방향키로 건너뛰지 않음');
       // 소개 도중 처음부터 다시 → 내 방에서 다시 걷기(바로 장면으로 넘어가면 안 됨)
       $('#btn-menu').click(); await wait(); $('#btn-menu-restart').click(); await wait(); confirmYes(); await wait(50);
       if (!$('#talk').hidden) { $('#btn-talk-next').click(); await wait(50); }
@@ -1019,7 +1015,7 @@
         $('#btn-menu').click(); await wait();
         $('#btn-menu-wipe').click(); await wait();
         confirmYes(); await wait();
-        ok(ls('ethicity.privacy.progress.v1') === null && ls('ethicity.result.privacy') === null, '이 게임 진행·결과 삭제');
+        ok(ls('ethicity.privacy.progress.v2') === null && ls('ethicity.result.privacy') === null, '이 게임 진행·결과 삭제');
         ok(ls('ethicity.player') === P.PLAYER, '공통 플레이어 정보 유지');
         checkOthersKept();
         ok(view() === 'v-start' && $('#last-result').hidden, '시작 화면에 결과 없음');
@@ -1028,7 +1024,7 @@
         var st3 = PrivacyApp.state();
         ok(st3.scene === 'pro_1' && st3.history.length === 0, '다시 하기: 새 진행');
         checkResult('B');
-        var p = JSON.parse(ls('ethicity.privacy.progress.v1'));
+        var p = JSON.parse(ls('ethicity.privacy.progress.v2'));
         ok(p.endingsSeen.indexOf('B') >= 0 && Object.keys(p.explored).length > 5, '해금 기록 유지');
         // 중간에 처음부터 → 확인 창
         $('#btn-menu').click(); await wait(); $('#btn-menu-home').click(); await wait();
@@ -1072,7 +1068,7 @@
         document.body.appendChild(cv); await wait(300); return;
       }
       if (s === 'shot-warning') { $('#btn-new').click(); await wait(1200); return; } // 시작 직후 주의 화면
-      if (s === 'shot-photo') { $('#btn-new').click(); await play(R.A, { upto: 4 }); await wait(600); return; } // 도현 DM의 흐린 사진
+      if (s === 'shot-photo') { $('#btn-new').click(); await play(R.A, { upto: 4 }); await wait(600); return; } // 하늘 DM의 흐린 사진
       if (s === 'shot-start-noname') { await wait(300); return; } // 공통 정보 없는 시작 화면(이름 입력칸)
       if (/^shot-nf-/.test(s)) { // 렌즈 안에 갇힌 밤: 대치(선택지) · 촬영(REC) · 교실 반응(선택지)
         var nr = nfRoute(R, NF_FIGHT);

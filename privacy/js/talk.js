@@ -18,7 +18,6 @@
     textEl = box.querySelector('.talk-text');
     nextBtn = $('btn-talk-next');
     portraitEl = $('talk-portrait');
-    if (portraitEl) portraitEl.addEventListener('error', function () { portraitEl.hidden = true; }); // 못 불러오면 이름 탭만
     nextBtn.addEventListener('click', function (e) { e.stopPropagation(); next(); });
     box.addEventListener('click', function () { next(); });
     // 맵(걷기·말 걸기)보다 먼저 받는다: 열려 있으면 Enter·Space는 대화 넘기기
@@ -55,12 +54,11 @@
     if (opts.onLine) opts.onLine(line, idx);
   }
 
-  // opts.portrait(who) → 그림 주소(없으면 null). 대화창 바로 위에 세운다
+  // opts.portrait(who) → { who, look, expr }(공통 팩 초상화 시트의 한 칸) 또는 null. 대화창 바로 위에 세운다
   function showPortrait(who) {
     if (!portraitEl) return;
-    var src = opts.portrait && !opts.stack && who ? opts.portrait(who) : null;
-    if (!src) { portraitEl.hidden = true; return; }
-    if (portraitEl.getAttribute('src') !== src) portraitEl.setAttribute('src', src);
+    var p = opts.portrait && !opts.stack && who ? opts.portrait(who) : null;
+    if (!p || !window.PrivacyCast.paintPortrait(portraitEl, p.who, p.look, p.expr)) { portraitEl.hidden = true; return; }
     var stage = box.offsetParent || box.parentNode;
     portraitEl.style.bottom = (stage.clientHeight - box.offsetTop - 10) + 'px';
     portraitEl.hidden = false;

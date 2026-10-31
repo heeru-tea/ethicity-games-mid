@@ -1,0 +1,72 @@
+[
+  {
+    "file": "boy-arrival.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2280180
+  },
+  {
+    "file": "girl-arrival.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2274747
+  },
+  {
+    "file": "boy-confrontation.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2263683
+  },
+  {
+    "file": "girl-confrontation.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2270180
+  },
+  {
+    "file": "boy-clash.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2229988
+  },
+  {
+    "file": "girl-clash.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2244716
+  },
+  {
+    "file": "boy-recorded.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2163620
+  },
+  {
+    "file": "girl-recorded.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2126881
+  },
+  {
+    "file": "classroom-reaction.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 2029975
+  },
+  {
+    "file": "teacher-support.png",
+    "width": 1280,
+    "height": 720,
+    "nonOpaquePixels": 0,
+    "bytes": 1784215
+  }
+]

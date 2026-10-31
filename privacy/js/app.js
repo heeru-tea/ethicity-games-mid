@@ -236,21 +236,13 @@
     return li;
   }
 
-  /* 메신저 프로필: 그림이 있는 친구·선생님은 작은 초상화(assets/portraits, webp ~35KB), 나머지·실패 시 이니셜 */
-  var AV_FACE = { hayun: 1, dohyun: 1, seoa: 1, minjun: 1, teacher: 1 };
+  /* 메신저 프로필: 공통 팩 초상화(기본 표정, 루미 = 안내 로봇). 그림이 없는 인물(보호자·낯선 계정 등)·나는 이니셜 */
   function avatarNode(who, ch) {
     var av = el('span', 'av');
     av.setAttribute('aria-hidden', 'true');
     av.setAttribute('data-who', who);
-    if (!AV_FACE[who]) { av.textContent = ch.initial; return av; }
-    av.classList.add('has-face');
-    var im = document.createElement('img');
-    im.alt = '';
-    im.decoding = 'async';
-    // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 이니셜로
-    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.remove(); av.classList.remove('has-face'); av.textContent = ch.initial; } };
-    av.appendChild(im);
-    window.PrivacyImg.load(im, 'assets/portraits/' + who + '.png');
+    if (who === 'me' || !window.PrivacyCast.paintPortrait(av, who, playerLook() || 'm', 'neutral')) { av.textContent = ch.initial; return av; }
+    av.classList.add('has-face', 'cast-face');
     return av;
   }
 
@@ -339,30 +331,10 @@
     if (device === 'none') return { x: 0.5, y: 0.36 };
     return $('stage').clientWidth <= 720 ? { x: 0.5, y: 0.17 } : { x: 0.7, y: 0.36 }; // 넓은 화면: 폰(왼쪽) 오른쪽 빈 곳
   }
-  /* ── 수신음: 메시지 하나당 짧은 '띠링' 한 번(파일 없이 합성). 기본 꺼짐 ── */
-  var audioCtx = null, lastChime = 0;
-  function chime(force) {
-    if (!settings.sound) return;
-    var now = Date.now();
-    if (!force && now - lastChime < 150) return; // 여러 줄이 한꺼번에 와도 겹치지 않게
-    lastChime = now;
-    try {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      audioCtx = audioCtx || new AC();
-      if (audioCtx.state === 'suspended' && audioCtx.resume) audioCtx.resume();
-      var t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-      // '두욱~': 낮고 부드러운 한 번의 울림 — 음이 살짝 내려가며 사라진다(소리 1개 = 메시지 1개)
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(392, t);
-      osc.frequency.exponentialRampToValueAtTime(262, t + 0.16);
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.22, t + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
-      osc.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(t); osc.stop(t + 0.45);
-    } catch (e) { /* 소리를 못 내는 환경이면 조용히 넘어간다 */ }
-  }
+  /* ── 효과음: 공통 팩 WAV(js/sfx.js). 메시지 하나당 'paper' 한 번. 기본 꺼짐 ── */
+  function sfx(id) { if (window.PrivacySfx) { window.PrivacySfx.setEnabled(settings.sound); window.PrivacySfx.play(id); } }
+  function chime() { sfx('paper'); }
+  window.PrivacySfxDoor = function () { sfx('door'); };
   function nodeOf(line) { var n = lineNode(line); n._line = line; return n; }
   // 줄이 나타날 때: 같은 공간 친구 머리 위 말풍선(폰 메시지는 원문 대신 📱…) + 장면에 적어 둔 반응
   function stageBubble(line) {
@@ -377,7 +349,7 @@
     (st.bubbles || []).forEach(function (b) { if (text.indexOf(b.on) >= 0) window.PrivacyMap.bubble(b.who, b.text); });
   }
   /* ── 사건 CG(전체 화면 그림): 장면 view.cg로 시작, 대사 줄의 cg·rec·fx로 바뀐다(story.js 작성법) ── */
-  var CG_DIR = 'assets/nightfox-event/';
+  var CG_DIR = 'assets/nightfox-event-official/'; // 공통 팩 화풍(온유/다온·새봄·지호·하늘·민준·교사)으로 다시 그린 사건 8 CG
   var CG_LOOK = { arrival: 1, confrontation: 1, clash: 1, recorded: 1 }; // 주인공 남/여 그림이 따로 있는 키
   var CG_ALT = { arrival: '밤의 학교 정문 앞에 도착한 나', confrontation: '@nightfox와 마주 선 나', clash: '서로 옷을 붙잡고 밀치는 두 사람',
     recorded: '휴대폰을 들어 두 사람을 찍는 구경꾼들', 'classroom-reaction': '영상을 본 반 친구들', 'teacher-support': '이야기를 들어 주는 담임 선생님' };
@@ -542,6 +514,7 @@
   function focusFirst(b) { if (b) b.focus({ preventScroll: true }); }
 
   function onChoose(id) {
+    sfx('tap');
     var run = progress.run;
     var scene = story.scenes[run.scene];
     var next = E.choose(story, run, id);
@@ -632,6 +605,7 @@
   }
 
   function renderChapter() {
+    sfx('collect');
     var run = progress.run;
     var n = run.nextChapter, ch = story.chapters[n];
     var prev = run.chapter;
@@ -768,6 +742,7 @@
     var run = progress.run;
     var end = endingOf(run.ending);
     if (justArrived) {
+      sfx('win');
       S.saveResult(end.code, cardText(end));
       if (progress.endingsSeen.indexOf(end.code) < 0) progress.endingsSeen.push(end.code);
       saveProgress();
@@ -963,6 +938,7 @@
       var c = (story.scenes[last.scene].choices || []).filter(function (x) { return x.id === last.choice; })[0];
       ask('이전 선택으로 돌아갈까요?', '“' + fill(c.text) + '”를 고르기 직전으로 돌아가요. 그 뒤의 진행은 지워져요.', '돌아가기', function () {
         stopReveal();
+        sfx('retry');
         setRun(E.undo(progress.run));
         routeRun(false);
       });
@@ -974,7 +950,7 @@
       r.addEventListener('change', function () { settings.speed = r.value; saveSettings(); });
     });
     $('opt-motion').addEventListener('change', function () { settings.reduceMotion = $('opt-motion').checked; applySettings(); saveSettings(); });
-    $('opt-sound').addEventListener('change', function () { settings.sound = $('opt-sound').checked; saveSettings(); if (settings.sound) chime(true); });
+    $('opt-sound').addEventListener('change', function () { settings.sound = $('opt-sound').checked; saveSettings(); if (settings.sound) sfx('tap'); });
     $('btn-menu-home').addEventListener('click', function () { $('menu').hidden = true; renderStart(); });
     $('btn-menu-restart').addEventListener('click', function () {
       $('menu').hidden = true;
