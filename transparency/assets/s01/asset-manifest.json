@@ -1,0 +1,21 @@
+{
+  "stage": "S01 asset-first review; gameplay not implemented",
+  "background": {"file":"bg-festival-board.png","width":1672,"height":941,"alpha":false},
+  "characters": [
+    {"file":"moa-attentive.png","width":1024,"height":1536,"alpha":true},
+    {"file":"lulu-concerned.png","width":1024,"height":1536,"alpha":true},
+    {"file":"dami-hurt.png","width":1024,"height":1536,"alpha":true}
+  ],
+  "photo": {
+    "original":"festival-group-original.png",
+    "width":1536,"height":1024,
+    "auto":{"file":"festival-preview-auto.png","rectXYWH":[900,50,600,400],"centerXY":[1200,250]},
+    "dami":{"file":"festival-preview-dami.png","rectXYWH":[550,300,500,500],"centerXY":[800,550]},
+    "derivation":"Both previews are exact pixel crops of original via System.Drawing, not separately generated.",
+    "futureP3":"Scores 2,5,8 are fictional supplied values. Use auto.centerXY and auto.rectXYWH for actual overlay. No scoring model has been implemented."
+  },
+  "review": {
+    "confirmed":["PNG formats and dimensions inspected", "Character alpha channels present; corner alpha zero", "All five friends visible in original", "Moa Lulu Dami visual identities retained"],
+    "limitations":["Character silhouettes retain soft translucent edge shading; scene compositing not yet verified", "Dami face is higher than requested numeric placement but lower than other faces", "Only one pose per character", "No game UI, mobile or gameplay testing performed"]
+  }
+}

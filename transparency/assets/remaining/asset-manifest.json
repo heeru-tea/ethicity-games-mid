@@ -1,0 +1,79 @@
+[
+  {
+    "file": "bami-concerned.png",
+    "width": 1024,
+    "height": 1536,
+    "format": "Format32bppArgb",
+    "cornerAlpha": 0
+  },
+  {
+    "file": "bg-bakery-entrance.png",
+    "width": 1672,
+    "height": 941,
+    "format": "Format24bppRgb",
+    "cornerAlpha": 255
+  },
+  {
+    "file": "bg-repair-shop.png",
+    "width": 1672,
+    "height": 941,
+    "format": "Format24bppRgb",
+    "cornerAlpha": 255
+  },
+  {
+    "file": "bg-school-corridor.png",
+    "width": 1672,
+    "height": 941,
+    "format": "Format24bppRgb",
+    "cornerAlpha": 255
+  },
+  {
+    "file": "clerk-hesitant.png",
+    "width": 1024,
+    "height": 1536,
+    "format": "Format32bppArgb",
+    "cornerAlpha": 0
+  },
+  {
+    "file": "clerk-reconsidering.png",
+    "width": 1024,
+    "height": 1536,
+    "format": "Format32bppArgb",
+    "cornerAlpha": 0
+  },
+  {
+    "file": "face-comparison-fictional.png",
+    "width": 1774,
+    "height": 887,
+    "format": "Format24bppRgb",
+    "cornerAlpha": 255
+  },
+  {
+    "file": "lulu-manuscript.png",
+    "width": 1024,
+    "height": 1536,
+    "format": "Format32bppArgb",
+    "cornerAlpha": 0
+  },
+  {
+    "file": "moa-expressions.png",
+    "width": 1254,
+    "height": 1254,
+    "format": "Format32bppArgb",
+    "cornerAlpha": 0
+  },
+  {
+    "file": "props-atlas.png",
+    "width": 1254,
+    "height": 1254,
+    "format": "Format32bppArgb",
+    "cornerAlpha": 0
+  },
+  {
+    "file": "teacher-listening.png",
+    "width": 1024,
+    "height": 1536,
+    "format": "Format32bppArgb",
+    "cornerAlpha": 0
+  }
+]

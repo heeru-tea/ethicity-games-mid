@@ -1,0 +1,45 @@
+[
+  {
+    "profile": "careful",
+    "completed": true,
+    "help": false,
+    "choices": {
+      "photo": "manual",
+      "writing": "review",
+      "face": "release"
+    },
+    "errors": [],
+    "externalRequests": 0
+  },
+  {
+    "profile": "trusting",
+    "completed": true,
+    "help": false,
+    "choices": {
+      "photo": "auto",
+      "writing": "detector",
+      "face": "maintain"
+    },
+    "errors": [],
+    "externalRequests": 0
+  },
+  {
+    "profile": "help",
+    "completed": true,
+    "help": true,
+    "choices": {
+      "photo": "dami",
+      "writing": "draft",
+      "face": "crowd"
+    },
+    "errors": [],
+    "externalRequests": 0
+  },
+  {
+    "storageBlocked": "playable"
+  },
+  {
+    "damagedStorage": "safe reset",
+    "player": "read-only, escaped"
+  }
+]

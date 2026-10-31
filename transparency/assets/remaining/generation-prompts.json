@@ -1,0 +1,50 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-10-19",
+  "jobs": [
+    {
+      "name": "bg-repair-shop.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. Wide 16:9 reusable background, evening repair shop on a village alley. Camera at eye level outside an open-front workshop, wood workbench across center-right with three EMPTY places for later black-box props, shelves of modest repair tools in background, warm desk lamp, navy twilight alley on left. Clear foreground for separate characters. No people, animals or black boxes baked into background. Match supplied festival village background as style reference only."
+    },
+    {
+      "name": "bg-school-corridor.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. Wide 16:9 background plate. Empty middle-school corridor and clearly visible classroom entrance, wooden door with glass upper panes at center right, through doorway a few classroom desks, blue-gray lockers on left, late afternoon light from windows. Eye-level visual novel composition, open floor foreground reserved for sprites, clean flat area on classroom wall for code overlays. Everyday Korean school atmosphere, no readable posters or signage, no people or animals."
+    },
+    {
+      "name": "bg-bakery-entrance.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. Wide 16:9 reusable background, village bakery entrance at evening, eye-level from pavement. Glass door partly open at right, warm bakery shelves with bread inside, small blank dark-screen security terminal near door, bread-shaped unlettered hanging sign above. Clear foreground pavement for three sprites. No barrier across doorway, door status will be expressed through code. Cool navy exterior warm restrained amber interior, no people, animals or text."
+    },
+    {
+      "name": "bami-concerned.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. Single full-body character sprite, actual transparent background. Bami anthropomorphic adult black-and-white tuxedo cat customer, unmistakably different from Moa gray cat: smooth black fur white muzzle and chest, rounded short hair, green eyes, dusty gray-green long coat and brown trousers, no scarf, no notebook, holding a small blank bread reservation slip. Facing slightly right, quietly confused and dignified, not angry villain. Four-head-tall illustrated proportions. Clean silhouette, whole feet and ears and tail within frame, generous margins. No background glow, no halo, no ground shadow."
+    },
+    {
+      "name": "teacher-listening.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. Single full-body transparent sprite of an adult anthropomorphic owl schoolteacher, gray-brown feathers, navy wool vest over gray shirt, brown trousers, simple oval spectacles, dark shoes. Patient attentive expression listening with one open hand, other hand holds a plain blank folder. Three-quarter facing left, upright humane teacher not judge. Same illustrated animal world and proportions as Moa, full ears/head/feet visible. No backdrop, shadow, glow, vignette, text or extra poses."
+    },
+    {
+      "name": "clerk-hesitant.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. Single full-body transparent sprite of an adult anthropomorphic brown bear bakery clerk, short rounded ears, gray linen apron over off-white shirt with rolled sleeves, brown trousers and sturdy shoes. Three-quarter facing left, hesitant slightly troubled expression, one palm held forward in cautious stop gesture, other at apron. Humane everyday employee, not threatening villain. Four-head-tall illustrated proportions, full feet ears inside frame. No hat, background, ground shadow, glow, vignette, text or additional poses."
+    },
+    {
+      "name": "moa-expressions.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. Edit/reference identity: supplied Moa gray cat yellow scarf. Create ONE transparent sprite atlas square 2x2 equal cells, four isolated chest-up portraits of EXACT same Moa, same head shape, amber eyes, gray tousled fur, navy jacket, yellow scarf. Top-left surprise (raised brows slightly open mouth), top-right skeptical questioning (one raised brow, not angry); bottom-left focused studying (eyes downward, concentrated); bottom-right relieved (small gentle closed-mouth smile). Each portrait entirely inside its own quadrant, even scale, ample transparent gutter, no labels, no lines between cells, no background glow. Do not include full bodies. Actual transparent alpha. This is a production expression atlas, not a scene."
+    },
+    {
+      "name": "lulu-manuscript.png",
+      "prompt": "Identity-preserve edit of supplied ivory rabbit Lulu sprite. Preserve exact face, ears, cardigan, skirt, satchel, proportions, style and transparent background. Replace smartphone with a few blank manuscript sheets held in both hands at waist. Expression anxious before presentation, shoulders slightly tense. Entire full body as original, no text on paper, no other characters or scene. Clean transparent silhouette no halo."
+    },
+    {
+      "name": "clerk-reconsidering.png",
+      "prompt": "Identity-preserve edit of supplied brown bear bakery clerk sprite. Preserve face species clothes apron proportions and textured gouache style, entire full body. Change pose: lower stopping hand, open palm gently gesturing sideways to welcome customer inside, other hand at chest acknowledging a mistake. Expression sincere concerned apology, not cheerful victory. Actual transparent background, no props, text or scene. No halo."
+    },
+    {
+      "name": "face-comparison-fictional.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. One landscape evidence image containing two adjacent square low-resolution surveillance-like illustrated head snapshots of fictional black-and-white anthropomorphic cats, separated by narrow neutral gray gutter. BOTH snapshots heavily blurred and partially obscured by foreground doorframe and reflection across face; cannot determine whether same or different individual. Muted gray, soft low contrast. No clear unique identity marks, no scars, no criminal tropes, no mugshot numbers. These are purely fictional animal faces, not real humans. No matching lines, percentage, labels, red boxes, verdict or text. Image demonstrates limited evidence, not proven error cause."
+    },
+    {
+      "name": "props-atlas.png",
+      "prompt": "Refined textured gouache graphic-novel / illustrated mystery game for ages 13–15; restrained charcoal contours, muted navy, cool gray, dark wood brown, small yellow accents. Match reference style, not preschool/chibi, not pixel art, not photorealistic. No text, letters, numbers, logos, watermark or UI. One transparent production sprite atlas square with SIX isolated illustrated props in precise 3 columns x 2 rows equal cells, generous transparent gutters. Top row left: closed charcoal black cube box seen three-quarter, plain face; top center: identical charcoal box with tiny square window in its front showing only dim indistinct sliver of interior, closed lid, NOT fully opened; top right: open small brown notebook with entirely blank pale pages. Bottom row left: closed plain gray paper envelope; bottom center: modest stack of blank manuscript sheets held by small clip; bottom right: plain small bread reservation paper ticket with bread-shaped nonverbal pictogram only. All six objects entirely contained in each own cell, coherent gouache charcoal texture, no ground or cast shadow, no frames, labels or text, no halo or glow. These are reusable props, not UI cards."
+    }
+  ]
+}

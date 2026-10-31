@@ -1,0 +1,18 @@
+[
+  {
+    "name": "help shown then dismissed remains helped",
+    "pass": true
+  },
+  {
+    "name": "keyboard focus survives rendering and evidence modal",
+    "pass": true
+  },
+  {
+    "name": "range retains focus for repeated keyboard adjustment",
+    "pass": true
+  },
+  {
+    "name": "verified order remains correct on reload and cannot be edited as solved",
+    "pass": true
+  }
+]
