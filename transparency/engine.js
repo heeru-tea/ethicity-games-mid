@@ -14,7 +14,7 @@
  const AUTO=[900,50,600,400],DAMI=[550,300,500,500];
  const faces=[[300,210,220,180],[460,35,240,300],[695,350,165,150],[815,55,220,230],[1050,105,230,210]];
  function caseKey(scene){return scene<=4?'photo':scene<=8?'writing':scene<=12?'face':null;}
- function initial(){return {version:1,scene:0,furthest:0,evidence:[],tasks:{},assistedScenes:[],cases:Object.fromEntries(Object.keys(choices).map(k=>[k,{first:null,final:null,pending:null,help:false}])),crop:AUTO.slice(),completed:false};}
+ function initial(){return {version:1,revision:2,scene:0,furthest:0,evidence:[],tasks:{},assistedScenes:[],cases:Object.fromEntries(Object.keys(choices).map(k=>[k,{first:null,final:null,pending:null,help:false}])),crop:AUTO.slice(),completed:false};}
  function readyEvidence(s){return (requirements[s.scene]?.evidence||[]).every(id=>s.evidence.includes(id));}
  function allFaces(rect){const [x,y,w,h]=rect;return faces.every(([fx,fy,fw,fh])=>fx>=x&&fy>=y&&fx+fw<=x+w&&fy+fh<=y+h);}
  function canConfirm(s){const k=actionKey[s.scene];return !!k&&!!s.cases[k].pending&&!!s.tasks[s.scene+':effect']&&(k!=='photo'||s.cases[k].pending!=='manual'||allFaces(s.crop));}
@@ -31,20 +31,20 @@
    const allowed=ak?['effect']:requirements[s.scene]?.tasks||[];
    if(allowed.includes(action.id))s.tasks[s.scene+':'+action.id]=s.tasks[s.scene+':'+action.id]||(s.assistedScenes.includes(s.scene)?'helped':'independent');
   }
-  if(['help','help-view'].includes(action.type)&&readyEvidence(s)){if(k)s.cases[k].help=true;if(!s.assistedScenes.includes(s.scene))s.assistedScenes.push(s.scene);}
+  if(action.type==='help'&&readyEvidence(s)){if(k)s.cases[k].help=true;if(!s.assistedScenes.includes(s.scene))s.assistedScenes.push(s.scene);}
   if(action.type==='help'&&readyEvidence(s)){
    if(k)s.cases[k].help=true;
    const tasks=ak?(s.cases[ak].pending?['effect']:[]):requirements[s.scene]?.tasks||[];
    tasks.forEach(t=>{s.tasks[s.scene+':'+t]=s.tasks[s.scene+':'+t]||'helped';});
   }
   if(action.type==='choose'&&ak&&choices[ak].includes(action.id)){
-   const c=s.cases[ak];if(!c.first)c.first=action.id;c.pending=action.id;s.completed=false;delete s.tasks[s.scene+':effect'];
+   const c=s.cases[ak];c.pending=action.id;s.completed=false;delete s.tasks[s.scene+':effect'];
    if(ak==='photo')s.crop=(action.id==='dami'?DAMI:AUTO).slice();
   }
   if(action.type==='crop'&&s.scene===4&&s.cases.photo.pending==='manual'){
    const r=action.rect;if(Array.isArray(r)&&r.length===4&&r.every(Number.isFinite)&&r[0]>=0&&r[1]>=0&&r[2]>0&&r[3]>0&&r[0]+r[2]<=1536&&r[1]+r[3]<=1024){s.crop=r.slice();delete s.tasks['4:effect'];}
   }
-  if(action.type==='confirm'&&canConfirm(s)){s.cases[ak].final=s.cases[ak].pending;s.cases[ak].pending=null;}
+  if(action.type==='confirm'&&canConfirm(s)){const c=s.cases[ak];if(!c.first)c.first=c.pending;c.final=c.pending;c.pending=null;}
   if(action.type==='next'&&canAdvance(s)){if(s.scene<13){s.scene++;s.furthest=Math.max(s.furthest,s.scene);}else{s.completed=true;}}
   if(action.type==='revisit'&&!Object.values(s.cases).some(c=>c.pending)&&Number.isInteger(action.scene)&&action.scene>=0&&action.scene<=s.furthest){s.scene=action.scene;}
   return s;
@@ -60,6 +60,7 @@
    if(!Array.isArray(v.assistedScenes)||v.assistedScenes.some(n=>!Number.isInteger(n)||n<0||n>13))return initial();
    if(v.completed&&(!endingReady(v)||v.furthest!==13))return initial();
    if(Object.entries(v.cases).some(([k,c])=>c.pending&&actionKey[v.scene]!==k))return initial();
+   if(v.revision===undefined){for(const c of Object.values(v.cases)){c.first=c.final;c.legacyFirst=!!c.final;}v.revision=2;}
    return JSON.parse(JSON.stringify(v));
   }catch{return initial();}
  }

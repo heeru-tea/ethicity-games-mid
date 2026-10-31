@@ -22,12 +22,13 @@ test('help cannot bypass unseen evidence; helped is distinct from independent',(
 test('first choice survives revisions and pending cannot advance',()=>{
  let s=E.initial(); s.scene=12;
  s=E.reduce(s,{type:'choose',id:'maintain'});
- assert.equal(s.cases.face.first,'maintain'); assert.equal(E.canAdvance(s),false);
+ assert.equal(s.cases.face.first,null); assert.equal(E.canAdvance(s),false);
  s=E.reduce(s,{type:'choose',id:'release'});
- assert.equal(s.cases.face.first,'maintain');
+ assert.equal(s.cases.face.first,null);
  s=E.reduce(s,{type:'solve',id:'effect',correct:true});
  s=E.reduce(s,{type:'confirm'});
  assert.equal(s.cases.face.final,'release'); assert.equal(E.canAdvance(s),true);
+ assert.equal(s.cases.face.first,'release');
  assert.equal(E.outcome(s,'face').restricted,false);
 });
 test('all action branches can be confirmed and their outcomes match',()=>{
@@ -55,10 +56,10 @@ test('wrong answers never mark solved; rejected transitions preserve current sce
  let s=E.initial();s.scene=3;s=E.reduce(s,{type:'solve',id:'rule',correct:false});
  assert.equal(s.tasks['3:rule'],undefined);assert.equal(E.reduce(s,{type:'next'}).scene,3);
 });
-test('viewing help records assistance even without accepting it',()=>{
+test('viewing help without accepting leaves independent work independent',()=>{
  let s=E.initial();s.scene=3;for(const id of ['P1','P2','P3'])s=E.reduce(s,{type:'read',id});
- s=E.reduce(s,{type:'help-view'});assert.equal(s.cases.photo.help,true);
- s=E.reduce(s,{type:'solve',id:'rule',correct:true});assert.equal(s.tasks['3:rule'],'helped');
+ s=E.reduce(s,{type:'help-view'});assert.equal(s.cases.photo.help,false);
+ s=E.reduce(s,{type:'solve',id:'rule',correct:true});assert.equal(s.tasks['3:rule'],'independent');
 });
 test('pending revised action preserves previous final, invalidates completion and cannot jump out',()=>{
  let s=E.initial();s.scene=12;s.furthest=13;s.completed=true;
