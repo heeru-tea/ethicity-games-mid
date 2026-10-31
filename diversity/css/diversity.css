@@ -48,6 +48,8 @@
 .game-diversity .dv-steps li.done { background: var(--ee-green); border-color: var(--ee-green); color: var(--ee-cream); }
 .game-diversity .dv-steps li.now { background: var(--ee-gold); border-color: var(--ee-ink); color: var(--ee-ink); font-weight: 700; }
 .game-diversity .dv-menu-btn { flex: 0 0 auto; }
+.game-diversity .dv-hud-task { margin: 0; flex: 1 1 100%; order: 3; display: flex; gap: 8px; align-items: baseline; font-weight: 700; }
+.game-diversity .dv-hud-task-label { flex: 0 0 auto; font-size: 14px; padding: 0 8px; background: var(--ee-gold); border: 2px solid var(--ee-ink); border-radius: 4px; }
 
 /* ── 본문 배치: 넓은 화면은 무대 | 패널, 좁은 화면은 무대 위·패널 아래 ── */
 .game-diversity .dv-main {
@@ -55,11 +57,58 @@
   max-width: 1440px; margin: 0 auto; padding: 16px;
 }
 .game-diversity .dv-stage-wrap { display: flex; justify-content: center; }
+.game-diversity .dv-stage-box { position: relative; width: min(100%, calc(40dvh * 16 / 9)); }
 .game-diversity .dv-stage {
-  display: block; width: min(100%, calc(40dvh * 16 / 9)); height: auto; aspect-ratio: 16 / 9;
+  display: block; width: 100%; height: auto; aspect-ratio: 16 / 9;
   border: 3px solid var(--ee-ink); border-radius: 4px; background: var(--ee-ink);
   image-rendering: pixelated;
 }
+
+/* ── 탐험: 무대 위 장소 버튼(1280×720 좌표를 %로) ── */
+.game-diversity .dv-spots { position: absolute; inset: 3px; cursor: pointer; touch-action: manipulation; }
+.game-diversity .dv-spot {
+  position: absolute; transform: translate(-50%, -50%);
+  min-width: 44px; min-height: 44px; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: transparent; border: 3px dashed transparent; border-radius: 6px; cursor: pointer;
+  font: inherit; color: var(--ee-ink);
+}
+.game-diversity .dv-spot[data-state="new"] { border-color: var(--ee-gold); background: rgba(243, 207, 114, .18); }
+.game-diversity .dv-spot:hover, .game-diversity .dv-spot:focus-visible { border-style: solid; border-color: var(--ee-ink); background: rgba(255, 249, 231, .35); outline: 3px solid #b47f35; outline-offset: 2px; }
+.game-diversity .dv-spot .ee-icon { width: 30px; height: 30px; padding: 2px; image-rendering: pixelated; background: var(--ee-cream); border: 2px solid var(--ee-ink); border-radius: 50%; }
+.game-diversity .dv-spot[data-state="new"] .ee-icon { background: var(--ee-gold); }
+.game-diversity .dv-spot-label {
+  font-size: 13px; font-weight: 700; line-height: 1.3; white-space: nowrap;
+  padding: 0 6px; background: var(--ee-cream); border: 2px solid var(--ee-ink); border-radius: 4px;
+}
+.game-diversity .dv-spot[data-state="idle"] .dv-spot-label { opacity: .85; }
+/* 인물: 표시는 머리 위에, 몸은 가리지 않는다 */
+.game-diversity .dv-spot-npc { justify-content: flex-start; }
+.game-diversity .dv-spot-npc[data-state="new"] { background: transparent; }
+.game-diversity .dv-spot-npc > * { position: relative; top: -40px; }
+.game-diversity .dv-spot-npc > .ee-icon { order: 2; }
+.game-diversity .dv-spot-npc > .dv-spot-key { order: 3; }
+/* 플레이어가 앞에 서 있는 곳 */
+.game-diversity .dv-spot-key { display: none; font-size: 12px; font-weight: 700; line-height: 1.3; white-space: nowrap; padding: 0 6px; background: var(--ee-gold); border: 2px solid var(--ee-ink); border-radius: 4px; }
+.game-diversity .dv-spot.dv-spot-near { border-style: solid; border-color: var(--ee-ink); background: rgba(255, 249, 231, .3); }
+.game-diversity .dv-spot.dv-spot-near .dv-spot-key { display: block; }
+@media (hover: none), (pointer: coarse) { .game-diversity .dv-spot.dv-spot-near .dv-spot-key { display: none; } }
+.game-diversity .dv-spot-hint { animation: dv-pulse 0.9s ease-in-out 3; }
+@keyframes dv-pulse { 50% { transform: translate(-50%, -50%) scale(1.12); background: rgba(243, 207, 114, .45); } }
+@media (prefers-reduced-motion: reduce) { .game-diversity .dv-spot-hint { animation: none; outline: 3px solid #b47f35; } }
+.game-diversity.dv-still .dv-spot-hint { animation: none; outline: 3px solid #b47f35; }
+
+/* 로봇 동료·둘러볼 곳 목록 */
+.game-diversity .dv-buddy { padding: 12px; background: var(--ee-cream); border: 3px solid var(--dv-line); border-radius: 4px; }
+.game-diversity .dv-buddy .dv-talk { margin-bottom: 12px; }
+.game-diversity .dv-buddy-line { margin: 0; }
+.game-diversity .dv-buddy-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.game-diversity .dv-buddy-actions .ee-button, .game-diversity .dv-spot-row { display: inline-flex; align-items: center; gap: 8px; }
+.game-diversity .dv-buddy-actions .ee-icon, .game-diversity .dv-spot-row .ee-icon { width: 24px; height: 24px; image-rendering: pixelated; }
+.game-diversity .dv-spot-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 8px; }
+.game-diversity .dv-spot-row { width: 100%; justify-content: flex-start; text-align: left; }
+.game-diversity .dv-spot-row .dv-small { margin-left: auto; white-space: nowrap; }
+.game-diversity .dv-spot-row[data-state="new"] { border-color: var(--ee-ink); background: #fbecc0; }
 .game-diversity .dv-panel { min-width: 0; outline: none; }
 .game-diversity .dv-main[data-layout="doc"] .dv-stage-wrap { display: none; }
 .game-diversity .dv-main[data-layout="doc"] .dv-panel { width: 100%; max-width: 880px; margin: 0 auto; }
@@ -67,7 +116,7 @@
 @media (min-width: 1100px) {
   .game-diversity .dv-main[data-layout="scene"] { grid-template-columns: minmax(0, 3fr) minmax(400px, 2fr); align-items: start; }
   .game-diversity .dv-main[data-layout="scene"] .dv-stage-wrap { position: sticky; top: calc(var(--dv-hud-h) + 16px); }
-  .game-diversity .dv-main[data-layout="scene"] .dv-stage { width: 100%; }
+  .game-diversity .dv-main[data-layout="scene"] .dv-stage-box { width: 100%; }
 }
 
 /* ── 카드 ── */
@@ -132,6 +181,9 @@
 .game-diversity .dv-first { justify-self: start; margin-top: 4px; }
 .game-diversity .dv-picked { visibility: hidden; font-size: 14px; font-weight: 700; color: var(--ee-green); white-space: nowrap; }
 .game-diversity .dv-choice[aria-pressed="true"] .dv-picked { visibility: visible; }
+.game-diversity .dv-pick { grid-template-columns: auto auto 1fr auto; align-items: center; }
+.game-diversity .dv-pick-face { width: 64px; height: 64px; border: 3px solid var(--ee-ink); border-radius: 4px; background: var(--ee-cream); overflow: hidden; }
+.game-diversity .dv-pick-face .dv-portrait { display: block; }
 .game-diversity .dv-mine { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 
 /* ── 결과·보고서 ── */
@@ -186,7 +238,8 @@
   .game-diversity .dv-title { font-size: 22px; }
   .game-diversity .dv-logo { font-size: 32px; }
   .game-diversity .dv-logo-sub { font-size: 20px; }
-  .game-diversity .dv-stage { width: min(100%, calc(32dvh * 16 / 9)); }
+  .game-diversity .dv-stage-box { width: min(100%, calc(32dvh * 16 / 9)); }
+  .game-diversity .dv-spot-label { display: none; }
 }
 @media (max-width: 650px) {
   .game-diversity .dv-talk { flex-direction: column; gap: 28px; }
@@ -197,7 +250,8 @@
 }
 @media (max-width: 430px) {
   .game-diversity { font-size: 16px; }
-  .game-diversity .dv-hud { gap: 8px; padding: 8px 12px; flex-wrap: nowrap; }
+  .game-diversity .dv-hud { gap: 8px; padding: 8px 12px; }
+  .game-diversity .dv-hud-where { flex: 1 1 0; min-width: 0; }
   .game-diversity .dv-hud-place { display: none; }
   .game-diversity .dv-actions { justify-content: stretch; }
   .game-diversity .dv-actions > .ee-button { flex: 1 1 100%; }

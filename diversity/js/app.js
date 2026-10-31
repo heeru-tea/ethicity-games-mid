@@ -1,6 +1,7 @@
 /*
  * 화면 흐름 — START(표지) → 장면 목록(story.scenes) 순서대로 → COMPLETE.
  * 장면마다 패널(오른쪽/아래 HTML)을 다시 그리고, 무대(canvas)에는 배경과 인물을 세운다.
+ * 탐험 장면(map·explore)은 무대 위에 장소·인물 버튼을 겹쳐 두고, 누르면 패널에 조사 내용이 열린다.
  * 통합 이벤트: ethicity:ready / ethicity:progress / ethicity:complete (개인정보는 담지 않는다)
  */
 (function () {
@@ -110,6 +111,7 @@
   function hud(scene) {
     var part = partOf(sceneIndex);
     var partEl = $('hud-part');
+    $('hud-task').hidden = true;
     if (sceneIndex < 0) { partEl.hidden = true; $('hud-progress').hidden = true; $('hud-place').textContent = S.title; return; }
     partEl.hidden = false; partEl.textContent = S.parts[part];
     $('hud-place').textContent = S.places[scene.bg] || '';
@@ -121,9 +123,14 @@
     }));
   }
 
+  function setTask(text) {
+    $('hud-task-text').textContent = text;
+    $('hud-task').hidden = !text;
+  }
+
   function partOf(index) {
     var p = 0;
-    for (var i = 0; i <= index && i < S.scenes.length; i++) if (S.scenes[i].type === 'chapter') p = S.scenes[i].part;
+    for (var i = 0; i <= index && i < S.scenes.length; i++) if (S.scenes[i].type === 'chapter' || S.scenes[i].type === 'map') p = S.scenes[i].part;
     return p;
   }
 
@@ -135,9 +142,10 @@
     if (scene.type === 'complete') progress.done = true;
     save();
     view = {}; primary = null; choose = null;
+    clearSpots();
     if (scene.type === 'chapter') emit('ethicity:progress', { current: scene.part, total: S.parts.length });
     hud(scene);
-    Stage.show(scene.bg, scene.cast || [], scene.who || null);
+    Stage.show(scene.bg, castFor(scene.cast), role(scene.who) || null);
     RENDER[scene.type](scene);
   }
 
@@ -147,7 +155,9 @@
   function safeScene(saved) {
     for (var i = 0; i < saved; i++) {
       var s = S.scenes[i];
+      if (s.type === 'player' && !progress.player) return i;
       if (s.type === 'choice' && !pickOf(s)) return i;
+      if (s.type === 'explore' && !exploreDone(s.set)) return i;
       if (s.type === 'principle' && !progress.principle) return i;
       if (s.type === 'review' && !progress.confirmed) return i - 1;
       if (s.type === 'reflect' && !progress.reflection.change) return i;
@@ -171,6 +181,162 @@
     view.typing = finish;
   }
 
+  // ── 대화(여러 턴) ──
+  // o: lines[{who, expr, text}], title, eyebrow, before[](대화 위에 붙일 것), after[], effect, endLabel, onEnd
+  function dialogue(o) {
+    var face = h('div', { class: 'dv-face' });
+    var name = h('p', { class: 'ee-speaker' });
+    var line = h('p', { class: 'dv-line', 'aria-hidden': 'true' });
+    var bubble = h('div', { class: 'ee-speech dv-bubble' }, [name, line]);
+    var nextBtn = button('다음 ▼', advance, { id: 'btn-next' });
+    var counter = h('span', { class: 'dv-small' });
+    mount(card(null, o.title, (o.before || []).concat([h('div', { class: 'dv-talk' }, [face, bubble])], o.after || [], [actions([counter, nextBtn])]), o.eyebrow));
+    var i = -1;
+    function show() {
+      var l = o.lines[i], who = role(l.who);
+      face.replaceChildren(who ? portrait(who, l.expr) : icon('robot'));
+      name.textContent = who ? S.people[who] : '안내';
+      Stage.speak(who);
+      counter.textContent = (i + 1) + ' / ' + o.lines.length;
+      nextBtn.textContent = i === o.lines.length - 1 ? (o.endLabel || '계속하기 ▶') : '다음 ▼';
+      say((who ? S.people[who] + ': ' : '') + l.text);
+      typeLine(line, l.text, function () {});
+      if (i === 0 && o.effect) effect(o.effect);
+    }
+    function advance() {
+      if (view.typing) { view.typing(); return; }
+      if (i < o.lines.length - 1) { i++; sound('tap'); show(); } else o.onEnd();
+    }
+    primary = advance;
+    advance();
+  }
+
+  // ── 탐험: 걷기 + 무대 위 장소 버튼 ──
+  var W = 1280, H = 720;
+  var Walk = window.DiversityWalk;
+  var SPOT_ICON = { new: 'clue', done: 'check', locked: 'lock' };
+  var SPOT_STATE = { new: '살펴볼 것 있음', done: '살펴봄', locked: '아직 열리지 않음', idle: '' };
+
+  // 걷기를 멈추고 장소 버튼을 치운다. 같은 장면으로 돌아오면 멈춘 자리에서 다시 걷는다.
+  function clearSpots() {
+    var box = $('spots');
+    box.hidden = true;
+    box.replaceChildren();
+    var at = Walk.stop();
+    if (at) view.lastWalk = at;
+    view.spotButtons = null;
+    view.spotActs = null;
+  }
+
+  // list: [{spot, state('new'|'done'|'locked'|'idle'), act}] — 누르면 그 앞(spot.at)까지 걸어가서 act
+  function showSpots(list) {
+    var box = $('spots');
+    view.spotActs = {};
+    list.forEach(function (it) { view.spotActs[it.spot.id] = it.act; });
+    var go = function (it) { return function () { var a = it.spot.at; Walk.goTo(a[0], a[1], it.act, a[2]); }; };
+    var btns = list.map(function (it) {
+      var r = it.spot.rect || [it.spot.x - 40, it.spot.y - 110, 80, 115]; // 인물은 발 좌표 위로 몸 크기만큼
+      var label = it.spot.label + (SPOT_STATE[it.state] ? ' · ' + SPOT_STATE[it.state] : '');
+      return h('button', {
+        type: 'button', class: 'dv-spot' + (it.spot.rect ? '' : ' dv-spot-npc'), 'data-state': it.state, 'data-spot': it.spot.id, 'data-order': it.order, 'aria-label': label, onclick: go(it),
+        style: 'left:' + ((r[0] + r[2] / 2) / W * 100) + '%;top:' + ((r[1] + r[3] / 2) / H * 100) + '%;width:' + (r[2] / W * 100) + '%;height:' + (r[3] / H * 100) + '%'
+      }, [SPOT_ICON[it.state] ? icon(SPOT_ICON[it.state]) : null, h('span', { class: 'dv-spot-label', 'aria-hidden': 'true', text: it.spot.label }), h('span', { class: 'dv-spot-key', 'aria-hidden': 'true', text: 'Space 살펴보기' })]);
+    });
+    box.replaceChildren.apply(box, btns);
+    box.hidden = false;
+    view.spotButtons = btns;
+    // 패널 쪽 목록(작은 화면·화면 읽기 프로그램에서도 같은 일을 할 수 있게)
+    return h('ul', { class: 'dv-spot-list' }, list.map(function (it) {
+      return h('li', {}, [h('button', { type: 'button', class: 'ee-button secondary dv-spot-row', 'data-state': it.state, 'data-spot': it.spot.id, onclick: go(it) }, [
+        icon(SPOT_ICON[it.state] || 'inspect'), h('span', { text: it.spot.label }), SPOT_STATE[it.state] ? h('span', { class: 'dv-small', text: SPOT_STATE[it.state] }) : null
+      ])]);
+    }));
+  }
+
+  // 플레이어가 장소 앞에 서면 그 버튼을 표시한다
+  function markNear(id) {
+    (view.spotButtons || []).forEach(function (b) { b.classList.toggle('dv-spot-near', b.dataset.spot === id); });
+  }
+
+  // 다음 목적지: 지금 단계의 할 일 순서대로
+  function pendingSpot() {
+    return (view.spotButtons || []).filter(function (b) { return b.dataset.state === 'new'; })
+      .sort(function (a, b) { return (Number(a.dataset.order) || 0) - (Number(b.dataset.order) || 0); })[0] || null;
+  }
+  function focusSpot(b) { if (b) b.focus({ preventScroll: false }); }
+
+  // 무대 바닥을 누르면 그 자리로 걸어간다(장소 버튼은 각자 처리)
+  $('spots').addEventListener('click', function (e) {
+    if (e.target !== e.currentTarget || !Walk.active()) return;
+    var r = e.currentTarget.getBoundingClientRect();
+    Walk.goTo((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H, null);
+  });
+
+  // ── 로봇 동료: 질문하기 · 어디로 가지? ──
+  function buddy(line, ask, hint) {
+    var face = h('div', { class: 'dv-face' }, [portrait('robot', 'happy')]);
+    var text = h('p', { class: 'dv-buddy-line', text: line });
+    function speak(t, expr) {
+      face.replaceChildren(portrait('robot', expr || 'explaining'));
+      text.textContent = t;
+      Stage.speak('robot');
+      say(S.people.robot + ': ' + t);
+    }
+    function showWay() {
+      speak(hint, 'explaining');
+      (view.spotButtons || []).forEach(function (b) { b.classList.toggle('dv-spot-hint', b.dataset.state === 'new'); });
+      focusSpot(pendingSpot());
+      sound('tap');
+    }
+    view.buddy = speak;
+    primary = showWay;
+    Stage.speak('robot');
+    say(S.people.robot + ': ' + line);
+    return h('section', { class: 'dv-buddy', 'aria-label': '로봇 동료' }, [
+      h('div', { class: 'dv-talk dv-talk-sm' }, [face, h('div', { class: 'ee-speech dv-bubble' }, [h('p', { class: 'ee-speaker', text: S.people.robot + ' · 동료' }), text])]),
+      h('div', { class: 'dv-buddy-actions' }, [
+        h('button', { type: 'button', class: 'ee-button secondary', onclick: function () { speak(ask, 'worried'); sound('tap'); } }, [icon('help'), ' 물어보기']),
+        h('button', { type: 'button', class: 'ee-button secondary', onclick: showWay }, [icon('map'), ' 어디로 가지?'])
+      ])
+    ]);
+  }
+
+  // 탐험 장소의 첫 화면: 로봇 동료 + 둘러볼 곳, 무대에서는 플레이어가 걷는다
+  // o: title, eyebrow, line, ask, hint, spots[], bg, npcs[], enter{x,y,dir}
+  function placeView(o) {
+    var b = buddy(o.line, o.ask, o.hint);
+    var list = showSpots(o.spots);
+    var at = view.lastWalk;
+    var p = at ? at.player : o.enter;
+    var walk = S.walks[o.bg];
+    Walk.start({
+      area: walk.area, block: walk.block, npcs: o.npcs || [],
+      player: { id: progress.player, x: p.x, y: p.y, dir: p.dir },
+      robot: at && at.robot ? at.robot : { x: p.x + (p.x > 640 ? -56 : 56), y: p.y + 6, dir: p.dir },
+      spots: o.spots.map(function (it) { return { id: it.spot.id, x: it.spot.at[0], y: it.spot.at[1] }; }),
+      onNear: markNear, reduced: reduced()
+    });
+    mount(card(null, o.title, [
+      b,
+      h('h3', { class: 'dv-label' }, [icon('map'), ' 둘러볼 곳']),
+      list,
+      h('p', { class: 'dv-small', text: '방향키·WASD로 걷고, 표시된 곳 앞에서 Space로 살펴봐요. 무대의 바닥이나 장소, 위 목록을 누르면 그곳까지 걸어가요.' })
+    ], o.eyebrow));
+  }
+
+  // ── 플레이어 학생과 대신 맡는 위원 ──
+  function role(id) { return progress && progress.player && id === progress.player ? S.standIn[id] : id; }
+  // 장면 인물: 플레이어가 고른 학생의 자리는 대신 맡는 학생이 서고(그 학생이 이미 있으면 그대로 플레이어),
+  // 플레이어는 출입구 쪽 앞자리에서 위원들을 바라본다
+  function castFor(cast) {
+    if (!cast || !cast.length || !progress || !progress.player) return cast || [];
+    var me = progress.player, sub = S.standIn[me];
+    var ids = cast.map(function (c) { return c.id; });
+    var out = cast.map(function (c) { return c.id === me && ids.indexOf(sub) < 0 ? { id: sub, x: c.x, y: c.y, dir: c.dir } : c; });
+    if (!out.some(function (c) { return c.id === me; })) out.push({ id: me, x: 640, y: 665, dir: 'up' });
+    return out;
+  }
+
   // ── 장면별 그리기 ──
   var RENDER = {
     chapter: function (scene) {
@@ -178,7 +344,7 @@
       var kids = [];
       if (scene.sub) kids.push(h('p', { class: 'dv-lead', text: scene.sub }));
       if (scene.issue) kids.push(h('p', { class: 'dv-issue' }, [h('span', { class: 'ee-badge', text: '핵심 쟁점' }), ' ', scene.issue]));
-      var label = scene.part === 0 ? '탐험을 시작합니다' : '계속하기';
+      var label = scene.part === 0 ? '탐험을 시작합니다' : scene.start || '계속하기';
       kids.push(actions([button(label, next)]));
       primary = next;
       mount(card(null, scene.title, kids, scene.eyebrow));
@@ -186,31 +352,7 @@
 
     talk: function (scene) {
       if (scene.sound) sound(scene.sound);
-      var face = h('div', { class: 'dv-face' });
-      var name = h('p', { class: 'ee-speaker' });
-      var line = h('p', { class: 'dv-line', 'aria-hidden': 'true' });
-      var bubble = h('div', { class: 'ee-speech dv-bubble' }, [name, line]);
-      var nextBtn = button('다음 ▼', advance, { id: 'btn-next' });
-      var counter = h('span', { class: 'dv-small' });
-      mount(card(scene, scene.title || '대화', [h('div', { class: 'dv-talk' }, [face, bubble]), actions([counter, nextBtn])]));
-      var i = -1;
-      function show() {
-        var l = scene.lines[i];
-        face.replaceChildren(l.who ? portrait(l.who, l.expr) : icon('robot'));
-        name.textContent = l.who ? S.people[l.who] : '안내';
-        Stage.speak(l.who);
-        counter.textContent = (i + 1) + ' / ' + scene.lines.length;
-        nextBtn.textContent = i === scene.lines.length - 1 ? '계속하기 ▶' : '다음 ▼';
-        say((l.who ? S.people[l.who] + ': ' : '') + l.text);
-        typeLine(line, l.text, function () {});
-        if (i === 0 && scene.effect) effect(scene.effect);
-      }
-      function advance() {
-        if (view.typing) { view.typing(); return; }
-        if (i < scene.lines.length - 1) { i++; sound('tap'); show(); } else next();
-      }
-      primary = advance;
-      advance();
+      dialogue({ lines: scene.lines, title: scene.title || '대화', eyebrow: scene.id, effect: scene.effect, onEnd: next });
     },
 
     rules: function (scene) {
@@ -223,28 +365,6 @@
         h('p', { class: 'ee-notice' }, [scene.note]),
         actions([button('알겠습니다', next)])
       ], scene.id + ' · 위원 임명 및 임무 안내'));
-    },
-
-    case: function (scene) {
-      sound('paper');
-      primary = next;
-      mount(card(scene, scene.title, [
-        h('p', { class: 'dv-badges' }, [h('span', { class: 'ee-badge', text: scene.label })]),
-        h('div', {}, scene.body.map(function (b) { return h('p', { text: b }); })),
-        h('figure', { class: 'dv-request' }, [
-          h('figcaption', { class: 'dv-label' }, [icon('notebook'), ' ', scene.requester]),
-          h('blockquote', { text: '“' + scene.request + '”' })
-        ]),
-        h('figure', { class: 'dv-output' }, [
-          h('figcaption', { class: 'dv-label' }, [icon('robot'), ' AI 생성 결과 ', h('span', { class: 'dv-small', text: '(이미지를 글로 설명)' })]),
-          h('p', { class: 'dv-output-text', text: scene.output })
-        ]),
-        h('ul', { class: 'dv-quotes' }, scene.quotes.map(function (q) {
-          return h('li', { class: 'dv-quote' }, [h('p', { class: 'ee-speaker', text: q.who }), h('p', { text: '“' + q.text + '”' })]);
-        })),
-        h('p', { class: 'dv-ask' }, [h('strong', { text: scene.ask })]),
-        actions([button('선택하러 가기', next)])
-      ], scene.id + ' · 사건 제시'));
     },
 
     choice: function (scene) {
@@ -274,7 +394,7 @@
         if (scene.slot === 'initial') progress.initial = view.pick;
         else progress.missions[scene.set][scene.slot] = view.pick;
         sound('collect');
-        next();
+        (scene.onDone || next)();
       }
       choose = function (n) { if (n >= 1 && n <= 3) pick(LETTERS[n - 1]); };
       primary = function () { if (view.pick) commit(); };
@@ -283,46 +403,14 @@
       if (first) kids.push(h('p', { class: 'dv-small' }, ['처음에 고른 선택지에 ', h('span', { class: 'ee-badge', text: '처음 선택' }), ' 표시가 있어요. 유지해도, 바꿔도 괜찮아요.']));
       kids.push(h('div', { class: 'dv-choices', role: 'group', 'aria-label': '선택지' }, btns));
       if (scene.note) kids.push(h('p', { class: 'dv-small', text: scene.note }));
-      kids.push(actions([h('span', { class: 'dv-small', text: '하나를 골라야 결정할 수 있어요.' }), decide]));
+      kids.push(actions([h('span', { class: 'dv-small', text: '하나를 골라야 결정할 수 있어요.' }), scene.onBack ? button('돌아가기', scene.onBack, { secondary: true }) : null, decide]));
       mount(card(scene, scene.title, kids, scene.id + (scene.set === 'initial' ? ' · 프롤로그' : ' · ' + S.missions[scene.set].title)));
-    },
-
-    result: function (scene) {
-      var r = S.results[scene.set], L = progress.missions[scene.set].first, o = r[L];
-      Stage.speak(r.critic);
-      primary = next;
-      mount(card(scene, '당신의 결정으로 나타난 결과', [
-        h('p', { class: 'dv-mine' }, [h('span', { class: 'ee-badge', text: '나의 선택' }), ' ', L + '. ' + optionsOf(scene.set)[L].text]),
-        h('section', { class: 'ee-success dv-block' }, [h('h3', { class: 'dv-label' }, [icon('check'), ' 긍정적인 결과']), h('p', { text: o.good })]),
-        h('section', { class: 'ee-notice dv-block' }, [h('h3', { class: 'dv-label' }, [icon('warning'), ' 새롭게 제기된 문제']), h('p', { text: o.problem })]),
-        h('p', { class: 'dv-small', text: S.people[r.reporter] + ' 위원이 결과를 정리했습니다.' }),
-        h('section', { class: 'dv-talk' }, [
-          h('div', { class: 'dv-face' }, [portrait(r.critic, 'worried')]),
-          h('div', { class: 'ee-speech dv-bubble' }, [h('h3', { class: 'ee-speaker', text: '위원회에 접수된 반론 · ' + S.people[r.critic] }), h('p', { text: o.rebuttal })])
-        ]),
-        h('p', { class: 'dv-small', text: S.resultNote }),
-        actions([button('추가 정보 보기', next)])
-      ], scene.id + ' · 선택 결과 확인'));
-    },
-
-    info: function (scene) {
-      var inf = S.info[scene.set];
-      Stage.speak(inf.who);
-      sound('paper'); effect('clue');
-      primary = next;
-      mount(card(scene, '추가 조사 결과', [
-        h('div', { class: 'dv-talk dv-talk-sm' }, [h('div', { class: 'dv-face' }, [portrait(inf.who, 'explaining')]), h('div', { class: 'ee-speech dv-bubble' }, [h('p', { class: 'ee-speaker', text: S.people[inf.who] }), h('p', { text: '위원회가 사건을 더 조사한 결과 다음 사실을 확인했습니다.' })])]),
-        h('ol', { class: 'dv-info' }, inf.items.map(function (t, i) {
-          return h('li', {}, [h('span', { class: 'dv-label' }, [icon('inspect'), ' 정보 ' + (i + 1) + '.']), h('p', { text: t })]);
-        })),
-        actions([button('최종 판단하기', next)])
-      ], scene.id + ' · 새로운 정보 공개'));
     },
 
     verdict: function (scene) {
       var m = progress.missions[scene.set], v = S.verdicts[scene.set], o = optionsOf(scene.set);
       var kept = m.first === m.final;
-      var speaker = scene.set === 'edu' ? 'teacher' : scene.set === 'news' ? 'librarian' : 'robot';
+      var speaker = scene.set === 'news' ? 'librarian' : 'teacher';
       Stage.speak(speaker);
       var last = scene.set === 'edu';
       primary = next;
@@ -333,7 +421,8 @@
         ]),
         h('p', { class: 'ee-notice' }, [kept ? v.keep : v.change]),
         h('div', { class: 'dv-talk dv-talk-sm' }, [h('div', { class: 'dv-face' }, [portrait(speaker, 'explaining')]), h('div', { class: 'ee-speech dv-bubble' }, [h('p', { class: 'ee-speaker', text: S.people[speaker] }), h('p', { text: v.closing })])]),
-        actions([button(last ? '최종 심의로' : '다음 사건으로', next)])
+        scene.buddy ? h('div', { class: 'dv-talk dv-talk-sm' }, [h('div', { class: 'dv-face' }, [portrait('robot', 'happy')]), h('div', { class: 'ee-speech dv-bubble' }, [h('p', { class: 'ee-speaker', text: S.people.robot }), h('p', { text: scene.buddy })])]) : null,
+        actions([button(last ? '최종 심의로' : scene.exit || '다음 사건으로', next)])
       ], scene.id + ' · 미션 종료'));
     },
 
@@ -374,7 +463,7 @@
         btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.id === id)); });
         decide.disabled = false; sound('tap');
       }
-      function commit() { if (!view.pick) return; progress.principle = view.pick; sound('collect'); next(); }
+      function commit() { if (!view.pick) return; progress.principle = view.pick; sound('collect'); (scene.onDone || next)(); }
       if (progress.principle) pick(progress.principle);
       choose = function (n) { if (n >= 1 && n <= 4) pick(S.principles[n - 1].id); };
       primary = function () { if (view.pick) commit(); };
@@ -382,7 +471,7 @@
         h('div', { class: 'dv-talk dv-talk-sm' }, [h('div', { class: 'dv-face' }, [portrait(scene.who, 'explaining')]), h('div', { class: 'ee-speech dv-bubble' }, [h('p', { class: 'ee-speaker', text: S.people[scene.who] }), h('p', { text: scene.prompt })])]),
         h('div', { class: 'dv-choices', role: 'group', 'aria-label': '공통 원칙' }, btns),
         h('p', { class: 'dv-small', text: scene.note }),
-        actions([decide])
+        actions([scene.onBack ? button('돌아가기', scene.onBack, { secondary: true }) : null, decide])
       ], scene.id + ' · 공통 원칙 결정'));
     },
 
@@ -409,7 +498,7 @@
         h('p', { class: 'dv-badges' }, [h('span', { class: 'ee-badge', text: '공통 원칙: ' + pr.label }), ' ', h('span', { class: 'dv-small', text: pr.text })]),
         h('div', { class: 'dv-fields' }, fields),
         h('p', { class: 'dv-small', text: '적은 글은 이 기기에만 저장돼요. 비워 둔 칸은 보고서에 \'미작성\'으로 표시돼요.' }),
-        actions([button('다시 고르기: 공통 원칙', function () { save(); go(sceneIndex - 1); }, { secondary: true }), button('작성 완료 · 점검하기', function () { save(); next(); })])
+        actions([button('AI 실습실로 (공통 원칙 다시 고르기)', function () { save(); go(sceneIndex - 1); }, { secondary: true }), button('작성 완료 · 점검하기', function () { save(); next(); })])
       ], scene.id + ' · 분야별 적용 기준 제정'), 'doc');
     },
 
@@ -505,6 +594,223 @@
     }
   };
 
+  // 게임 시작 전: 공통 팩 학생 가운데 나의 모습 고르기
+  RENDER.player = function (scene) {
+    var ids = S.students;
+    var cast = ids.map(function (id, i) { return { id: id, x: 340 + i * 150, y: 420, dir: 'down' }; });
+    var decide = button('이 모습으로 시작', commit, { disabled: true });
+    var btns = ids.map(function (id, n) {
+      return h('button', { type: 'button', class: 'ee-choice dv-choice dv-pick', 'aria-pressed': 'false', 'data-id': id, onclick: function () { pick(id); } }, [
+        h('span', { class: 'dv-letter', text: (n + 1) + '.' }),
+        h('span', { class: 'dv-pick-face' }, [portrait(id, 'happy')]),
+        h('span', { class: 'dv-choice-body' }, [h('span', { class: 'dv-choice-text', text: S.people[id] })]),
+        h('span', { class: 'dv-picked', 'aria-hidden': 'true', text: '✓ 선택함' })
+      ]);
+    });
+    function pick(id) {
+      view.pick = id;
+      btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.id === id)); });
+      decide.disabled = false;
+      Stage.speak(id);
+      sound('tap');
+    }
+    function commit() {
+      if (!view.pick) return;
+      progress.player = view.pick;
+      save();
+      sound('collect');
+      next();
+    }
+    Stage.show(scene.bg, cast, null);
+    choose = function (n) { if (n >= 1 && n <= ids.length) pick(ids[n - 1]); };
+    primary = function () { if (view.pick) commit(); };
+    mount(card(null, scene.title, [
+      h('p', { class: 'dv-lead', text: scene.lead }),
+      h('div', { class: 'dv-choices dv-picks', role: 'group', 'aria-label': '나의 모습' }, btns),
+      h('p', { class: 'dv-small', text: scene.note }),
+      actions([h('span', { class: 'dv-small', text: '숫자 키 1~5로도 고를 수 있어요.' }), decide])
+    ], '시작 · 나의 모습 고르기'));
+    if (progress.player) pick(progress.player);
+  };
+
+  // 중앙마당 지도: 다음 목적지만 열려 있고, 다녀온 곳은 '살펴봄'
+  RENDER.map = function (scene) {
+    var M = S.maps[scene.id];
+    Stage.show(scene.bg, [], 'robot');
+    setTask(M.task);
+    placeView({
+      title: S.places[scene.bg], eyebrow: '지도 · 다음 목적지 찾기',
+      line: M.robot, ask: M.ask, hint: M.hint, bg: scene.bg, enter: M.enter,
+      spots: S.mapSpots.map(function (sp) {
+        var state = sp.id === M.open ? 'new' : M.done.indexOf(sp.id) >= 0 ? 'done' : 'locked';
+        return { spot: sp, state: state, act: function () {
+          if (state === 'new') { sound('door'); next(); return; }
+          sound('tap');
+          view.buddy(state === 'done' ? S.mapDone[sp.id] : sp.locked, 'worried');
+        } };
+      })
+    });
+  };
+
+  // 탐험 장면이 끝났는지(이어 하기에서 이 장면을 건너뛰어도 되는지)
+  function exploreDone(set) {
+    if (set === 'final') return !!progress.principle;
+    return !!progress.missions[set].final;
+  }
+
+  // 장소 탐험(뉴스·광고·교육·최종 심의). 단계는 저장된 것(found, 선택)에서 매번 다시 계산한다.
+  RENDER.explore = function (scene) {
+    var X = S.explore[scene.set];
+    var m = progress.missions[scene.set] || {};
+    var found = progress.found[scene.set];
+    var has = function (k) { return found.indexOf(k) >= 0; };
+    var stepDone = function (st) {
+      if (st.id === 'first') return !!m.first;
+      if (st.id === 'final') return !!m.final;
+      if (st.id === 'principle') return !!progress.principle;
+      if (st.id === 'charter') return false; // 테이블에 가면 제정서 화면(다음 장면)으로 나간다
+      return st.items.every(function (it) { return has(it.key); });
+    };
+    var current = function () { return X.steps.filter(function (st) { return !stepDone(st); })[0] || null; };
+    var mark = function (k) { if (!has(k)) { found.push(k); save(); } };
+    var choiceKey = function (k) { return k === 'first' || k === 'final' || k === 'principle' || k === 'charter'; };
+
+    // 결과를 전하는 두 위원: 플레이어가 고른 학생이면 대신 맡는 학생으로
+    var R = S.results[scene.set] || {};
+    var names = R.reporter ? { reporter: S.people[role(R.reporter)], critic: S.people[role(R.critic)] } : {};
+    var fill = function (t) { return t && t.replace(/\{(reporter|critic)\}/g, function (_, k) { return names[k]; }); };
+    var spots = X.spots.map(function (sp) {
+      if (!sp.role) return sp;
+      var who = role(R[sp.role]);
+      return { id: sp.id, label: S.people[who], who: who, x: sp.x, y: sp.y, dir: sp.dir, at: sp.at, idle: sp.idle };
+    });
+    var npcs = spots.filter(function (sp) { return sp.who; }).map(function (sp) { return { id: sp.who, x: sp.x, y: sp.y, dir: sp.dir }; });
+    (X.crowd || []).forEach(function (c) { if (c.id !== progress.player) npcs.push(c); });
+    Stage.show(scene.bg, [], 'robot');
+
+    function root(line) {
+      clearSpots();
+      choose = null;
+      var st = current();
+      if (!st) return verdict();
+      var k = X.steps.indexOf(st);
+      var left = st.items.filter(function (it) { return choiceKey(it.key) || !has(it.key); });
+      var n = st.items.length;
+      setTask(fill(st.task) + (n > 1 ? ' (' + (n - left.length) + '/' + n + ')' : ''));
+      if (!line) line = k === 0 && !found.length ? X.arrive : n - left.length === 0 && k > 0 ? fill(X.steps[k - 1].done) : fill(st.hint);
+      placeView({
+        title: X.title, eyebrow: scene.id + ' · ' + X.tag,
+        line: line, ask: st.ask, hint: fill(st.hint), bg: scene.bg, enter: X.enter || S.walks[scene.bg].enter, npcs: npcs,
+        spots: spots.map(function (sp) {
+          var todo = left.filter(function (it) { return it.spot === sp.id; })[0];
+          var seen = Object.keys(X.titles).filter(function (key) { return (has(key) || key === 'principle' && progress.principle) && itemSpot(key) === sp.id; });
+          var state = todo ? 'new' : seen.length ? 'done' : 'idle';
+          return { spot: sp, state: state, order: todo ? st.items.indexOf(todo) : null, act: function () {
+            if (todo) return open(todo.key, st);
+            if (seen.length) return open(seen[seen.length - 1], null);
+            if (sp.who) {
+              return dialogue({ lines: [{ who: sp.who, expr: 'neutral', text: sp.idle }], title: sp.label, eyebrow: scene.id + ' · 대화', endLabel: '돌아가기', onEnd: function () { root(); } });
+            }
+            sound('tap');
+            view.buddy(sp.idle, 'neutral');
+          } };
+        })
+      });
+    }
+
+    function itemSpot(key) {
+      for (var i = 0; i < X.steps.length; i++) {
+        var it = X.steps[i].items.filter(function (x) { return x.key === key; })[0];
+        if (it) return it.spot;
+      }
+      return null;
+    }
+
+    // 상호작용을 마치고 장소로: 그 단계를 막 끝냈으면 로봇이 돌아보기·다음 행동을 말한다
+    function back(st) {
+      var finished = st && stepDone(st);
+      if (finished) { sound('collect'); effect('unlock'); }
+      root(finished ? fill(st.done) : null);
+    }
+
+    function open(key, st) {
+      var C = X.case, o = m.first ? R[m.first] : null, ids = X.ids;
+      clearSpots();
+      if (key === 'first' || key === 'final') {
+        var c = key === 'first' ? X.first : X.final;
+        Stage.speak(c.who);
+        return RENDER.choice({ id: c.id, set: c.set, slot: c.slot, who: c.who, title: c.title, prompt: c.prompt,
+          onBack: function () { root(); },
+          onDone: function () { save(); if (key === 'final') verdict(); else back(st); } });
+      }
+      if (key === 'principle') {
+        var P = X.principle;
+        return RENDER.principle({ id: P.id, who: P.who, title: P.title, prompt: P.prompt, note: P.note,
+          onBack: function () { root(); },
+          onDone: function () { save(); back(st || X.steps.filter(function (x) { return x.id === 'principle'; })[0]); } });
+      }
+      if (key === 'charter') { sound('paper'); next(); return; }
+      if (st) mark(key);
+      if (key === 'open') {
+        return dialogue({ title: X.titles.open, eyebrow: X.talk.id, lines: X.talk.lines, endLabel: '돌아가기', onEnd: function () { back(st); } });
+      }
+      if (key === 'good') {
+        return dialogue({
+          title: fill(X.titles.good), eyebrow: ids.result + ' · 선택 결과 확인',
+          before: [h('p', { class: 'dv-mine' }, [h('span', { class: 'ee-badge', text: '나의 선택' }), ' ', m.first + '. ' + S.options[scene.set][m.first].text])],
+          lines: [{ who: R.reporter, expr: 'happy', text: o.good }, { who: R.reporter, expr: 'worried', text: o.problem }],
+          after: [h('p', { class: 'dv-small', text: S.resultNote })],
+          endLabel: '돌아가기', onEnd: function () { back(st); }
+        });
+      }
+      if (key === 'rebuttal') {
+        return dialogue({
+          title: X.titles.rebuttal, eyebrow: ids.result + ' · 선택 결과 확인',
+          lines: [{ who: R.critic, expr: 'worried', text: o.rebuttal }],
+          after: [h('p', { class: 'dv-small', text: S.resultNote })],
+          endLabel: '돌아가기', onEnd: function () { back(st); }
+        });
+      }
+      // 글 자료(사건 단서·추가 정보): 공통 창 안에 보여 준다
+      var kids, eyebrow;
+      sound('paper');
+      if (key === 'plan' || key === 'output' || key === 'quotes') {
+        eyebrow = ids.case + ' · 사건 단서';
+        kids = [h('p', { class: 'dv-badges' }, [h('span', { class: 'ee-badge', text: C.label + ' · ' + C.title })])];
+        if (key === 'plan') kids.push(
+          h('div', {}, C.body.map(function (b) { return h('p', { text: b }); })),
+          h('figure', { class: 'dv-request' }, [h('figcaption', { class: 'dv-label' }, [icon('notebook'), ' ', C.requester]), h('blockquote', { text: '“' + C.request + '”' })]));
+        if (key === 'output') kids.push(
+          h('figure', { class: 'dv-output' }, [
+            h('figcaption', { class: 'dv-label' }, [icon('robot'), ' AI 생성 결과 ', h('span', { class: 'dv-small', text: '(이미지를 글로 설명)' })]),
+            h('p', { class: 'dv-output-text', text: C.output })
+          ]));
+        if (key === 'quotes') kids.push(
+          h('ul', { class: 'dv-quotes' }, C.quotes.map(function (q) {
+            return h('li', { class: 'dv-quote' }, [h('p', { class: 'ee-speaker', text: q.who }), h('p', { text: '“' + q.text + '”' })]);
+          })),
+          h('p', { class: 'dv-ask' }, [h('strong', { text: C.ask })]));
+      } else {
+        var idx = Number(key.slice(4)) - 1;
+        eyebrow = ids.info + ' · 새로운 정보 ' + (idx + 1) + '/' + S.info[scene.set].items.length;
+        effect('clue');
+        kids = [h('ol', { class: 'dv-info' }, [h('li', {}, [h('span', { class: 'dv-label' }, [icon('inspect'), ' 정보 ' + (idx + 1) + '.']), h('p', { text: S.info[scene.set].items[idx] })])])];
+      }
+      var done = function () { back(st); };
+      kids.push(actions([button('돌아가기', done)]));
+      primary = done;
+      mount(card(null, fill(X.titles[key]), kids, eyebrow));
+    }
+
+    function verdict() {
+      clearSpots();
+      setTask(X.exit.replace(' ▶', ''));
+      RENDER.verdict({ id: X.final.id, set: scene.set, buddy: X.afterFinal, exit: X.exit });
+    }
+
+    root();
+  };
+
   function indexOfType(type) { for (var i = 0; i < S.scenes.length; i++) if (S.scenes[i].type === type) return i; return -1; }
   function principleOf(id) { return S.principles.filter(function (p) { return p.id === id; })[0] || S.principles[0]; }
 
@@ -575,6 +881,7 @@
   // ── 표지 ──
   function home() {
     sceneIndex = -1; primary = null; choose = null; view = {};
+    clearSpots();
     hud(null);
     Stage.show('ai_lab', [
       { id: 'saebom', x: 300, dir: 'right' }, { id: 'jiho', x: 410, dir: 'right' }, { id: 'onyu', x: 520, dir: 'down' },
@@ -641,6 +948,7 @@
   function applySettings() {
     Store.saveSettings(settings);
     Stage.setReducedMotion(reduced());
+    document.body.classList.toggle('dv-still', reduced());
     if (assets) assets.setSound(settings.sound);
   }
   $('btn-menu').addEventListener('click', function () { syncMenu(); openOverlay($('menu')); });
@@ -681,11 +989,16 @@
     var tag = e.target.tagName;
     if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    if (choose && /^[1-4]$/.test(e.key)) { e.preventDefault(); choose(Number(e.key)); return; }
+    // 걷기: 방향키·WASD(버튼에 초점이 있어도), Space·Enter는 앞에 있는 곳 살펴보기
+    if (Walk.active() && Walk.key(e.key, true)) { e.preventDefault(); return; }
+    if (choose && /^[1-5]$/.test(e.key)) { e.preventDefault(); choose(Number(e.key)); return; }
     // 버튼·링크에 초점이 있으면 Space/Enter는 그 버튼이 받는다
     if (tag === 'BUTTON' || tag === 'SUMMARY' || tag === 'A') return;
+    if ((e.key === ' ' || e.key === 'Enter') && Walk.active() && Walk.near() && view.spotActs) { e.preventDefault(); view.spotActs[Walk.near()](); return; }
     if ((e.key === ' ' || e.key === 'Enter') && primary) { e.preventDefault(); primary(); }
   });
+  document.addEventListener('keyup', function (e) { Walk.key(e.key, false); });
+  window.addEventListener('blur', function () { Walk.release(); });
 
   // ── 시작 ──
   async function boot() {

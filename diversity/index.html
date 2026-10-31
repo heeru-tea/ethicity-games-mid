@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>AI 윤리 위원회 — 다양성의 기준을 정하라</title>
-  <meta name="description" content="뉴스·광고·교육에서 AI의 다양성 보정 기준을 심의하는 비주얼 노벨형 윤리 시뮬레이션. 중·고등학생용.">
+  <meta name="description" content="학교 곳곳을 조사하며 뉴스·광고·교육에서 AI의 다양성 보정 기준을 심의하는 탐험형 윤리 게임. 중·고등학생용.">
   <meta name="theme-color" content="#fff9e7">
   <!-- 공통 팩: common.css를 먼저, 게임 전용 CSS는 .game-diversity 아래로만 -->
   <link rel="stylesheet" href="../shared/ethicity-elementary-common-v1/runtime/common.css">
@@ -18,6 +18,7 @@
       <span id="hud-part" class="ee-badge" hidden></span>
       <span id="hud-place" class="dv-hud-place"></span>
     </p>
+    <p class="dv-hud-task" id="hud-task" hidden><span class="dv-hud-task-label">지금 할 일</span> <span id="hud-task-text"></span></p>
     <div class="dv-progress" id="hud-progress" hidden>
       <span class="dv-sr" id="hud-progress-text"></span>
       <ol class="dv-steps" id="hud-steps" aria-hidden="true"></ol>
@@ -27,7 +28,11 @@
 
   <main class="dv-main" id="main" data-layout="scene">
     <div class="dv-stage-wrap" id="stage-wrap">
-      <canvas id="stage" class="dv-stage ee-pixel" role="img" aria-label="위원회 장면"></canvas>
+      <div class="dv-stage-box">
+        <canvas id="stage" class="dv-stage ee-pixel" role="img" aria-label="위원회 장면"></canvas>
+        <!-- 탐험 화면에서 누를 수 있는 장소·인물(무대 위에 겹친 버튼) -->
+        <div class="dv-spots" id="spots" role="group" aria-label="둘러볼 곳" hidden></div>
+      </div>
     </div>
     <section class="dv-panel" id="panel" tabindex="-1" aria-label="진행 화면">
       <div class="ee-panel dv-card" id="loading" role="status">공통 그림을 불러오고 있습니다.</div>
@@ -77,6 +82,7 @@
   <script src="js/story.js"></script>
   <script src="js/store.js"></script>
   <script src="js/stage.js"></script>
+  <script src="js/walk.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
