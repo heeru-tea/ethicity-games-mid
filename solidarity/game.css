@@ -1,0 +1,136 @@
+/* 마지막 한 사람까지 · 게임 전용 스타일 — .game-solidarity 아래로만 적용 (공통 토큰 --ee-* 은 재정의하지 않음) */
+html,body{margin:0;height:100%}
+body.game-solidarity{background:var(--ee-paper);overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+.game-solidarity [hidden]{display:none!important}
+.game-solidarity .gs-wrap{max-width:1280px;margin:auto;padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px;user-select:none;-webkit-user-select:none}
+/* HUD */
+.game-solidarity .gs-hud{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.game-solidarity .gs-round{background:var(--ee-ink);color:var(--ee-cream);border-color:var(--ee-ink);font-weight:700}
+.game-solidarity .gs-timer{flex:1;min-width:140px;height:16px;background:#e6edda;border:2px solid #b3c19c;border-radius:5px;overflow:hidden;position:relative}
+.game-solidarity .gs-timer i{position:absolute;inset:0 auto 0 0;width:100%;background:var(--ee-blue);transition:width .2s linear}
+.game-solidarity .gs-timer.low i{background:var(--ee-red)}
+.game-solidarity .gs-ico-badge{display:inline-flex;align-items:center;gap:6px}
+.game-solidarity .gs-iconbtn{width:48px;height:48px;border:12px solid transparent;border-image:url('../shared/ethicity-elementary-common-v1/ui/panel.png') 12 fill stretch;background:none;padding:0;cursor:pointer;display:grid;place-items:center}
+.game-solidarity .gs-iconbtn[aria-pressed=true]{border-image-source:url('../shared/ethicity-elementary-common-v1/ui/success.png')}
+.game-solidarity .gs-iconbtn:focus-visible{outline:3px solid #b47f35;outline-offset:3px}
+/* 공통 아이콘·초상화 (manifest 좌표를 CSS 배경으로 표시) */
+.game-solidarity .gs-icon{display:inline-block;width:24px;height:24px;image-rendering:pixelated;background-repeat:no-repeat;flex-shrink:0}
+.game-solidarity .gs-portrait{display:inline-block;width:72px;height:72px;image-rendering:pixelated;background-repeat:no-repeat;background-size:400% 100%;flex-shrink:0}
+.game-solidarity .gs-art{display:block;flex-shrink:0;image-rendering:pixelated}
+/* 지도 */
+.game-solidarity .gs-map-wrap{position:relative;border:12px solid transparent;border-image:url('../shared/ethicity-elementary-common-v1/ui/panel.png') 12 fill stretch;background:#a7c48a}
+.game-solidarity svg#map{display:block;width:100%;height:auto;max-height:calc(100dvh - 214px);touch-action:none;image-rendering:pixelated}
+.game-solidarity svg text{font-family:var(--ee-font)}
+.game-solidarity .house{cursor:pointer;outline:none}
+.game-solidarity .house:focus-visible .ring{opacity:1;stroke:#b47f35}
+.game-solidarity .house .glow{opacity:0;transition:opacity .3s}
+.game-solidarity .house.lit .glow{opacity:1}
+.game-solidarity .house .ring{opacity:0}
+.game-solidarity .house .danger-ring{opacity:0;transform-box:fill-box;transform-origin:center}
+.game-solidarity .house.danger .danger-ring{opacity:1;animation:gs-danger .7s ease-in-out infinite alternate}
+@keyframes gs-danger{from{transform:scale(.92);opacity:.45}to{transform:scale(1.06);opacity:1}}
+.game-solidarity .house.hot .ring{opacity:1}
+.game-solidarity .house.flooded .bimg{filter:saturate(.35) brightness(.92) hue-rotate(160deg)}
+.game-solidarity .house.left .rimg{opacity:0;transition:opacity .3s}
+.game-solidarity .helper{cursor:grab}
+.game-solidarity .rain line{stroke:#eef6ff;stroke-width:1.5;stroke-linecap:round;animation:gs-rain .5s linear infinite}
+@keyframes gs-rain{from{transform:translate(0,-40px)}to{transform:translate(-14px,60px)}}
+.game-solidarity .float{animation:gs-float 1.2s forwards;pointer-events:none}
+@keyframes gs-float{0%{opacity:0;transform:translateY(0)}15%{opacity:1}100%{opacity:0;transform:translateY(-36px)}}
+/* 하단 봉사단 */
+.game-solidarity .gs-dock{display:flex;gap:8px;align-items:stretch}
+.game-solidarity .hcard{flex:1;display:flex;align-items:center;gap:8px;text-align:left;font:inherit;color:var(--ee-ink);background:var(--ee-cream);border:3px solid #9fae87;border-radius:4px;padding:4px 10px;min-height:72px;touch-action:none;cursor:grab}
+.game-solidarity .hcard .gs-portrait{width:60px;height:60px}
+.game-solidarity .hcard b{display:block;font-size:16px}
+.game-solidarity .hcard small{display:block;font-size:12px;color:var(--ee-green)}
+.game-solidarity .hcard .st{font-size:12px;color:#7a6a3a}
+.game-solidarity .hcard[aria-pressed=true]{background:#e8f0d9;border-color:var(--ee-ink)}
+.game-solidarity .hcard.busy{opacity:.6;cursor:default}
+.game-solidarity .hcard.off{opacity:.35;pointer-events:none}
+.game-solidarity .hcard:focus-visible{outline:3px solid #b47f35;outline-offset:3px}
+.game-solidarity .bc{flex:0 0 132px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.game-solidarity .bc small{font-size:11px;opacity:.85}
+.game-solidarity .ghost{position:fixed;z-index:999;pointer-events:none;width:64px;height:64px;margin:-70px 0 0 -32px}
+/* 팝업 */
+.game-solidarity .gs-overlay{position:fixed;inset:0;background:#294b4099;z-index:100;display:grid;place-items:center;padding:12px}
+.game-solidarity .gs-card{max-width:780px;width:100%;max-height:calc(100dvh - 24px);overflow:auto;background-clip:padding-box}
+.game-solidarity .gs-card h2{margin:4px 0 8px;font-size:24px;line-height:1.35}
+.game-solidarity .kicker{font-size:13px;font-weight:700;color:var(--ee-green)}
+.game-solidarity .sub{font-size:15px;line-height:1.75;margin:0 0 12px}
+.game-solidarity .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px;align-items:center}
+.game-solidarity .gs-talk{display:flex;gap:12px;align-items:flex-start;margin:8px 0 8px 0}
+.game-solidarity .gs-talk .gs-portrait{width:88px;height:88px}
+.game-solidarity .gs-talk .ee-speech{flex:1;margin-left:14px;font-size:17px}
+.game-solidarity .gs-talk .ee-speech p{margin:0}
+.game-solidarity .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.game-solidarity .grid3>div{background:#f6f0dc;border:2px solid #d8cfa8;border-radius:4px;padding:10px;font-size:14px;line-height:1.6}
+.game-solidarity .grid3 .gs-icon,.game-solidarity .grid3 .gs-art{width:36px;height:36px;margin-bottom:4px}
+.game-solidarity .facerow{display:flex;gap:2px;margin-bottom:4px}.game-solidarity .facerow .gs-portrait{width:36px;height:36px}
+.game-solidarity .facerow.gray .gs-portrait{filter:grayscale(1);opacity:.55}
+.game-solidarity .pick-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 10px}
+.game-solidarity .pick-row .ee-choice{display:flex;align-items:center;gap:10px}
+.game-solidarity .pick-row .gs-portrait{width:64px;height:64px}
+.game-solidarity .gs-h3{font-size:16px;margin:14px 0 6px}
+.game-solidarity .team-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.game-solidarity .mate{display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px dashed var(--ee-sage);border-radius:6px;background:rgba(168,187,140,.12);line-height:1.45}
+.game-solidarity .mate .gs-portrait{width:56px;height:56px;flex:none}
+.game-solidarity .mate .tagline{color:var(--ee-green)}
+.game-solidarity .id-row{display:grid;grid-template-columns:1fr 1.3fr;gap:8px}
+.game-solidarity .id-row label{font-size:14px;font-weight:700}
+.game-solidarity .field{display:block;width:100%;margin-top:4px;min-height:48px;font:inherit;font-size:16px;color:var(--ee-ink);background:var(--ee-cream);border:3px solid #9fae87;border-radius:4px;padding:8px 10px;user-select:text;-webkit-user-select:text}
+.game-solidarity textarea.field{min-height:76px;resize:vertical;line-height:1.6}
+.game-solidarity .field:focus-visible{outline:3px solid #b47f35;outline-offset:2px}
+.game-solidarity .err{color:var(--ee-red);font-size:14px;font-weight:700;margin:6px 0 0}
+.game-solidarity .result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.game-solidarity .rg{background:#f6f0dc;border:2px solid #d8cfa8;border-radius:4px;padding:8px;text-align:center}
+.game-solidarity .rg.bad{background:#f4e1d8;border-color:var(--ee-red)}
+.game-solidarity .rg .gs-art{width:44px;height:58px;margin:0 auto 4px}
+.game-solidarity .rg b{display:block;font-size:20px}.game-solidarity .rg small{font-size:12px}
+.game-solidarity .voices{display:grid;gap:6px;margin:8px 0 12px}
+.game-solidarity .voice{display:flex;gap:10px;align-items:center;background:#f6f0dc;border:2px solid #d8cfa8;border-radius:4px;padding:6px 10px;font-size:15px}
+.game-solidarity .voice .gs-art{width:34px;height:46px}.game-solidarity .voice .gs-portrait{width:44px;height:44px}
+.game-solidarity .ups{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.game-solidarity .ups .ee-choice{display:flex;gap:10px;align-items:flex-start;font-size:15px;padding:10px 12px}
+.game-solidarity .ups .ee-choice .gs-art{width:42px;height:42px}
+.game-solidarity .ups .ee-choice b{display:block}
+.game-solidarity .ups .ee-choice small{display:block;font-size:13px;line-height:1.5;opacity:.85}
+.game-solidarity .ups .cost{margin-left:auto;white-space:nowrap;color:#9a7417}
+.game-solidarity .ups .ee-choice:disabled{opacity:.45;cursor:default}
+.game-solidarity .ups .owned{opacity:.6}
+.game-solidarity .coins{letter-spacing:3px;color:#b48a24}
+.game-solidarity .tl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.game-solidarity .tl div{background:#f6f0dc;border:2px solid #d8cfa8;border-radius:4px;padding:8px;text-align:center;font-size:13px}
+.game-solidarity .tl b{display:block;font-size:22px}
+.game-solidarity .found{display:grid;gap:8px;margin:10px 0}
+.game-solidarity .found h3{margin:0 0 4px;font-size:15px;color:var(--ee-green)}
+.game-solidarity .found p{margin:0;font-size:15px;line-height:1.7}
+.game-solidarity .fl{display:block;font-size:14px;font-weight:700;margin-top:12px}
+.game-solidarity .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.game-solidarity .subh{display:block;font-size:16px;font-weight:700;margin:18px 0 6px}
+.game-solidarity .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.game-solidarity .chips .ee-choice{display:inline-flex;width:auto;align-items:center;font-size:14px;padding:8px 12px;min-height:44px;text-decoration:none}
+.game-solidarity .checks{display:grid;gap:2px;margin-top:8px}
+.game-solidarity .check{display:flex;gap:8px;align-items:center;font-size:14px;min-height:40px}
+.game-solidarity .check input{width:22px;height:22px;accent-color:var(--ee-green)}
+.game-solidarity .gs-toast{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:200;max-width:92vw;text-align:center;font-size:16px}
+.game-solidarity .loading{text-align:center;padding:24px;font-size:18px}
+@media(max-width:760px){
+ .game-solidarity svg#map{max-height:none}
+ .game-solidarity .gs-dock{flex-wrap:wrap}
+ .game-solidarity .hcard{flex:1 1 30%;min-height:60px;padding:4px 6px}
+ .game-solidarity .hcard .gs-portrait{width:40px;height:40px}
+ .game-solidarity .hcard small{display:none}
+ .game-solidarity .bc{flex:1 1 100%;flex-direction:row}
+ .game-solidarity .grid3,.game-solidarity .ups,.game-solidarity .two,.game-solidarity .team-row{grid-template-columns:1fr}
+ .game-solidarity .result-grid{grid-template-columns:repeat(2,1fr)}
+ .game-solidarity .gs-talk .gs-portrait{width:56px;height:56px}
+}
+@media(max-width:430px){.game-solidarity .gs-card h2{font-size:20px}.game-solidarity .tl{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.game-solidarity .rain{display:none}.game-solidarity .house.danger .danger-ring{animation:none;opacity:1}.game-solidarity .float{animation:none;opacity:1}}
+
+/* 결과: 늦은 집 */
+.game-solidarity .house.late .danger-ring{opacity:1;stroke:#c23b2a;stroke-dasharray:none;stroke-width:6;animation:gs-danger .9s ease-in-out infinite alternate}
+.game-solidarity .gs-back{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:150;box-shadow:0 4px 14px #0005}
+/* 교사 시연 모드 */
+.game-solidarity .gs-demo{font-size:20px;line-height:1;color:var(--ee-ink)}
+.game-solidarity .gs-demo[aria-pressed=true]{background:#f3cf72}
