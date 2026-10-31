@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>윤리시티: AI 도입 심의위원회 — 인권 보장</title>
+<meta name="description" content="안면인식 AI를 건물 출입·채용·치안에 도입할지 심의하고, 인권 보장 정책 권고안을 쓰는 탐험형 윤리 게임. 중·고등학생용.">
+<link rel="stylesheet" href="../shared/ethicity-elementary-common-v1/runtime/common.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="ee-theme game-rights">
+<a class="r-skip" href="#main">본문으로 건너뛰기</a>
+<main id="main" class="r-app">
+
+  <!-- 시작 -->
+  <section id="screen-start" class="r-screen r-start" aria-labelledby="start-title">
+    <div class="r-start-inner">
+      <p class="r-eyebrow">윤리시티 · AI 윤리 탐험대 · 인권 보장</p>
+      <h1 id="start-title" class="r-logo">AI 도입 심의위원회</h1>
+      <p class="r-lead">안면인식 AI는 생활을 더 편리하고 안전하게 만들지만, 누군가에게는 차별과 감시의 위험이 될 수 있어요. <strong>우리는 이 기술을 어디까지 허용해야 할까요?</strong></p>
+      <div class="ee-panel r-pick">
+        <h2 class="r-pick-title" id="pick-title">누구로 위원회에 참여할까요?</h2>
+        <div id="hero-pick" class="r-heroes" role="group" aria-labelledby="pick-title"></div>
+        <p id="pick-msg" class="r-gate" role="alert" hidden>먼저 참여할 위원을 골라 주세요.</p>
+        <div class="r-actions">
+          <button id="btn-continue" class="ee-button" type="button" hidden>이어 하기</button>
+          <button id="btn-result" class="ee-button secondary" type="button" hidden>지난 심의 결과 보기</button>
+          <button id="btn-new" class="ee-button" type="button">심의 시작하기</button>
+        </div>
+        <p id="load-msg" class="r-mute" role="status">공통 그림을 불러오는 중이에요…</p>
+      </div>
+      <details class="r-facts">
+        <summary>게임 안내</summary>
+        <ul>
+          <li>약 25분 · 프롤로그 → 세 가지 안건(건물 출입 · 채용 · 치안) → 최종 권고안</li>
+          <li>도입·조건부 도입·미도입 가운데 무엇을 골라도 성공이나 실패가 아니에요. 판단의 근거와 인권 보호 방안이 중요해요.</li>
+          <li>등장하는 기관·사례·수치는 모두 수업용 가상 자료예요.</li>
+          <li>근거는 키워드를 골라 기록하고, 원하면 한 줄을 더 적을 수 있어요. 기록은 이 기기에만 저장되고 어디로도 보내지 않아요.</li>
+          <li>방향키·WASD로 걷고 <kbd>Space</kbd>로 말 걸기·조사하기. 휴대폰·태블릿은 가고 싶은 곳을 누르세요. 휴대폰은 가로로 두면 편해요.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- 무대: 지도 위 걷기·대화 -->
+  <section id="stage" class="r-stage" hidden aria-label="심의 진행">
+    <header class="r-hud" id="hud">
+      <div class="r-hud-text">
+        <p class="r-hud-line"><span id="hud-chapter"></span> <span class="r-hud-sep" aria-hidden="true">·</span> <span id="hud-place"></span></p>
+        <p class="r-mission"><span class="r-mission-label">지금 할 일</span> <span id="hud-mission" aria-live="polite"></span></p>
+      </div>
+      <div class="r-hud-buttons">
+        <button id="btn-map" class="ee-button secondary r-hud-btn" type="button"><span data-icon="map"></span><span class="r-hud-label">지도</span></button>
+        <button id="btn-book" class="ee-button secondary r-hud-btn" type="button"><span data-icon="notebook"></span><span class="r-hud-label">심의 기록</span></button>
+        <button id="btn-menu" class="ee-button secondary r-hud-btn" type="button" aria-haspopup="dialog"><span data-icon="settings"></span><span class="r-hud-label">메뉴</span></button>
+      </div>
+    </header>
+    <div id="stage-wrap" class="r-stage-wrap">
+      <div id="stage-box" class="r-stage-box">
+        <canvas id="stage-canvas" class="ee-pixel" tabindex="0" aria-label="회의실과 현장 지도. 방향키로 걷고 Space로 말을 걸거나 조사합니다. 화면을 눌러 그곳으로 걸어갈 수도 있어요."></canvas>
+        <div class="r-act" id="act-buttons">
+          <button id="btn-act" class="ee-button" type="button"><span>말 걸기 · 조사하기</span></button>
+          <button id="btn-go" class="ee-button secondary" type="button"><span data-icon="map"></span><span>목적지로 바로 가기</span></button>
+        </div>
+        <div id="talk" class="r-talk" hidden>
+          <div id="talk-portrait" class="r-talk-portrait"></div>
+          <div class="ee-speech r-talk-box">
+            <p id="talk-name" class="ee-speaker"></p>
+            <p id="talk-text" class="r-talk-text" aria-hidden="true"></p>
+            <div class="r-talk-buttons">
+              <button id="talk-skip" class="r-link" type="button">대화 건너뛰기</button>
+              <button id="talk-next" class="ee-button r-talk-next" type="button">다음 <span aria-hidden="true">▼</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p id="talk-live" class="r-sr" aria-live="polite"></p>
+  </section>
+
+  <!-- 결과 -->
+  <section id="screen-end" class="r-screen r-end" hidden aria-labelledby="end-title"></section>
+</main>
+
+<!-- 가로 모드 권장 -->
+<div id="rotate" class="r-rotate" hidden role="dialog" aria-modal="true" aria-labelledby="rotate-title">
+  <div class="ee-panel r-rotate-card">
+    <p class="r-rotate-icon" aria-hidden="true">⟳</p>
+    <h2 id="rotate-title">휴대폰을 가로로 돌려 주세요</h2>
+    <p>지도와 인물이 더 크게 보여요. 세로로 계속해도 모든 기능을 쓸 수 있어요.</p>
+    <button id="btn-rotate-ok" class="ee-button secondary" type="button">세로로 계속하기</button>
+  </div>
+</div>
+
+<div id="panels"></div>
+<p id="status" class="ee-notice r-status" role="status" hidden></p>
+
+<script src="../shared/ethicity-elementary-common-v1/runtime/manifest.js"></script>
+<script src="../shared/ethicity-elementary-common-v1/runtime/common.js"></script>
+<script src="js/data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/stage.js"></script>
+<script src="js/talk.js"></script>
+<script src="js/panels.js"></script>
+<script src="js/flow.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

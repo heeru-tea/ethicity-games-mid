@@ -1,0 +1,188 @@
+/* 권리 편 전용 스타일 — 모두 .game-rights 아래. --ee-* 토큰과 .ee-* 컴포넌트는 다시 정의하지 않고 배치만 더한다. */
+.game-rights { margin: 0; min-height: 100vh; background: var(--ee-paper); font-size: 17px; line-height: 1.6; }
+.game-rights.r-modal-open { overflow: hidden; }
+.game-rights [hidden] { display: none !important; }
+.game-rights h1, .game-rights h2, .game-rights h3 { margin: 0; line-height: 1.4; }
+.game-rights p { margin: 0; }
+.game-rights :focus-visible { outline: 3px solid #b47f35; outline-offset: 3px; }
+.game-rights kbd { font: inherit; padding: 0 6px; border: 2px solid #b3c19c; border-radius: 4px; background: var(--ee-cream); }
+
+.game-rights .r-skip { position: absolute; left: 8px; top: -60px; z-index: 100; padding: 8px 16px; background: var(--ee-cream); color: var(--ee-ink); }
+.game-rights .r-skip:focus { top: 8px; }
+.game-rights .r-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.game-rights .r-eyebrow { font-size: 14px; font-weight: 700; color: var(--ee-green); letter-spacing: .02em; }
+.game-rights .r-title { font-size: 22px; margin: 4px 0 16px; }
+.game-rights .r-mute { color: #5c6f66; font-size: 15px; }
+.game-rights .r-lead { font-size: 18px; margin-top: 12px; }
+.game-rights .r-logo { font-size: clamp(32px, 6vw, 52px); font-weight: 700; margin-top: 8px; }
+.game-rights .r-link { font: inherit; font-size: 15px; color: var(--ee-ink); background: none; border: 0; text-decoration: underline; min-height: 44px; padding: 0 8px; cursor: pointer; }
+.game-rights .r-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 16px; }
+.game-rights .r-actions.r-left { justify-content: flex-start; }
+.game-rights .ee-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.game-rights .r-gate { flex: 1 1 100%; text-align: right; font-size: 15px; color: #8c4a39; }
+.game-rights .r-gate::before { content: '⚠ '; }
+
+/* 시작 */
+.game-rights .r-screen { padding: 32px 16px 48px; }
+.game-rights .r-start-inner, .game-rights .r-end-inner { max-width: 880px; margin: 0 auto; }
+.game-rights .r-pick { margin-top: 24px; }
+.game-rights .r-pick-title { font-size: 19px; margin-bottom: 12px; }
+.game-rights .r-heroes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.game-rights .r-hero { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 48px; padding: 8px 4px; font: inherit; font-size: 16px; color: var(--ee-ink); background: var(--ee-cream); border: 3px solid #9fae87; border-radius: 4px; cursor: pointer; }
+.game-rights .r-hero[aria-pressed="true"] { background: #e8f0d9; border-color: var(--ee-ink); font-weight: 700; }
+.game-rights .r-hero[aria-pressed="true"]::after { content: '✓ 선택'; position: absolute; top: 4px; right: 6px; font-size: 13px; }
+.game-rights .r-facts { margin-top: 16px; }
+.game-rights .r-facts summary, .game-rights .r-peek summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 700; }
+.game-rights .r-facts ul { margin: 8px 0 0; padding-left: 20px; }
+.game-rights .r-facts summary::before, .game-rights .r-peek summary::before { content: '▸'; margin-right: 8px; }
+.game-rights .r-facts[open] summary::before, .game-rights .r-peek[open] summary::before { content: '▾'; }
+
+/* 무대 */
+.game-rights .r-stage { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; background: var(--ee-paper); padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+.game-rights .r-stage[hidden] { display: none; }
+.game-rights .r-hud { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 6px 12px; background: var(--ee-cream); border-bottom: 3px solid var(--ee-ink); }
+.game-rights .r-hud-text { min-width: 0; }
+.game-rights .r-hud-line { font-size: 14px; color: var(--ee-green); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.game-rights .r-mission { font-size: 17px; }
+.game-rights .r-mission-label { display: inline-block; padding: 0 8px; margin-right: 4px; background: var(--ee-gold); border: 2px solid var(--ee-ink); border-radius: 4px; font-size: 14px; font-weight: 700; }
+.game-rights .r-hud-buttons { display: flex; gap: 6px; flex: none; }
+.game-rights .r-hud-btn { font-size: 15px; padding: 2px 8px; }
+.game-rights .r-stage-wrap { position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 8px; overflow: hidden; }
+.game-rights .r-stage-box { position: relative; }
+.game-rights #stage-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; border: 3px solid var(--ee-ink); box-sizing: border-box; background: var(--ee-ink); }
+.game-rights .r-act { position: absolute; right: 12px; bottom: 12px; display: none; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.game-rights.r-free .r-act { display: flex; }
+.game-rights .r-act .ee-button { font-size: 15px; }
+
+/* 대화창 */
+.game-rights .r-talk { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; align-items: flex-end; gap: 20px; max-width: 1000px; margin: 0 auto; }
+.game-rights .r-talk[hidden] { display: none; }
+.game-rights .r-talk-portrait canvas, .game-rights .r-portrait { display: block; background: var(--ee-cream); border: 3px solid var(--ee-ink); border-radius: 4px; image-rendering: pixelated; }
+.game-rights .r-talk-box { flex: 1; min-width: 0; }
+.game-rights .r-talk-box .ee-speaker { margin-bottom: 4px; }
+.game-rights .r-talk-text { min-height: 3.5em; cursor: pointer; }
+.game-rights .r-talk-buttons { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; }
+.game-rights .r-talk-next { font-size: 16px; }
+
+/* 패널 */
+.game-rights .r-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(41, 75, 64, .55); }
+.game-rights .r-sheet { width: 100%; max-width: 760px; max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow: auto; overscroll-behavior: contain; }
+.game-rights .r-overlay.wide .r-sheet { max-width: 980px; }
+.game-rights .r-sheet h3 { font-size: 17px; margin: 20px 0 8px; }
+.game-rights .r-choices { display: grid; gap: 8px; }
+.game-rights .ee-choice { display: flex; gap: 12px; align-items: flex-start; }
+.game-rights .ee-choice:disabled { cursor: default; opacity: .75; }
+.game-rights .r-choice-mark { flex: none; width: 1.2em; font-weight: 700; }
+.game-rights .r-choice-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.game-rights .r-choice-sub { font-size: 15px; color: #5c6f66; }
+.game-rights .r-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.game-rights .r-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 14px; font: inherit; font-size: 16px; color: var(--ee-ink); background: var(--ee-cream); border: 2px solid #b3c19c; border-radius: 5px; cursor: pointer; text-align: left; }
+.game-rights .r-chip[aria-pressed="true"] { background: #e8f0d9; border: 3px solid var(--ee-ink); font-weight: 700; padding: 5px 13px; }
+.game-rights .r-chip-mark { font-weight: 700; }
+.game-rights .r-guards { display: grid; gap: 8px; }
+.game-rights .r-field { margin-top: 16px; }
+.game-rights .r-field label { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 4px; }
+.game-rights .r-optional { font-size: 12px; padding: 2px 8px; }
+.game-rights .r-note { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; color: var(--ee-ink); background: var(--ee-cream); border: 2px solid #9fae87; border-radius: 4px; padding: 8px; resize: vertical; }
+.game-rights .r-help { font-size: 13px; color: #5c6f66; margin-top: 4px; }
+.game-rights .r-count { float: right; }
+.game-rights .r-list { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.game-rights .r-feedback { margin-top: 12px; }
+.game-rights .r-say { margin-top: 12px; padding: 8px 12px; border-left: 4px solid var(--ee-sage); }
+.game-rights .ee-notice, .game-rights .ee-success { margin-top: 12px; }
+.game-rights .r-peek { margin: 8px 0 12px; padding: 0 12px 8px; background: #f7f1dc; border: 2px solid #d8cfa8; border-radius: 4px; }
+
+/* 자료 카드 */
+.game-rights .r-who { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.game-rights .r-who .ee-speaker { margin: 0; }
+.game-rights .r-faceless { display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; flex: none; background: #e6edda; border: 2px dashed #9fae87; border-radius: 4px; }
+.game-rights .r-quote { margin: 0; padding: 4px 0 4px 16px; border-left: 4px solid var(--ee-sage); display: grid; gap: 8px; font-size: 18px; }
+.game-rights .r-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.game-rights .r-tile { display: flex; flex-direction: column; padding: 12px; background: #e6edda; border: 2px solid #b3c19c; border-radius: 4px; }
+.game-rights .r-tile strong { font-size: 28px; line-height: 1.3; }
+.game-rights .r-tile span { font-size: 15px; }
+.game-rights .r-tile.warn { background: #f6e5dc; border-color: var(--ee-red); }
+.game-rights .r-tile.warn strong::before { content: '! '; }
+.game-rights .r-flow-arrow { margin-top: 8px; font-size: 15px; color: #5c6f66; }
+.game-rights .r-flow-arrow::after { content: ' ↓'; }
+.game-rights .r-screen-log, .game-rights ol.r-screen { margin: 8px 0 0; padding: 12px 16px 12px 36px; background: var(--ee-ink); color: var(--ee-cream); border-radius: 6px; display: grid; gap: 4px; font-size: 16px; }
+.game-rights .r-table-wrap { overflow-x: auto; margin-top: 8px; }
+.game-rights .r-table { width: 100%; border-collapse: collapse; font-size: 16px; }
+.game-rights .r-table caption { text-align: left; font-size: 15px; color: #5c6f66; padding-bottom: 4px; }
+.game-rights .r-table th, .game-rights .r-table td { padding: 8px; text-align: left; vertical-align: top; border-bottom: 2px solid #d8cfa8; }
+.game-rights .r-table thead th { border-bottom-color: var(--ee-ink); font-size: 15px; }
+.game-rights .r-bar-col { width: 40%; }
+.game-rights .r-bar-track { display: block; height: 16px; margin-top: 4px; background: #e6edda; }
+.game-rights .r-bar { display: block; height: 100%; min-width: 4px; background: var(--ee-green); border-radius: 0 4px 4px 0; }
+.game-rights .r-quote-line { display: block; font-size: 15px; margin-top: 4px; }
+
+/* 분류 · 장 카드 · 에필로그 */
+.game-rights .r-bins { display: grid; gap: 8px; margin-bottom: 12px; }
+.game-rights .r-sort { margin: 0; padding-left: 20px; display: grid; gap: 12px; }
+.game-rights .r-sort-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.game-rights .r-sort-q { flex: 1 1 240px; }
+.game-rights .r-sort-btns { display: flex; gap: 8px; }
+.game-rights .r-sort-res { min-width: 7em; font-size: 15px; font-weight: 700; }
+.game-rights .r-chapter { text-align: center; padding: 16px 8px; }
+.game-rights .r-chapter .r-title { font-size: 26px; }
+.game-rights .r-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 420px; margin: 16px auto 0; text-align: left; }
+.game-rights .r-principle { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.game-rights .r-guide { margin: 0; padding-left: 24px; display: grid; gap: 12px; }
+.game-rights .r-guide li span { display: block; }
+.game-rights .r-rec { margin: 16px 0 0; padding: 12px; border: 2px solid #d8cfa8; border-radius: 4px; }
+.game-rights .r-rec legend { font-weight: 700; padding: 0 4px; }
+.game-rights .r-place { align-items: center; }
+.game-rights .r-set { margin: 16px 0 0; border: 2px solid #d8cfa8; border-radius: 4px; padding: 8px 12px; }
+.game-rights .r-set legend { font-weight: 700; padding: 0 4px; }
+.game-rights .r-opt { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.game-rights .r-opt input { width: 22px; height: 22px; accent-color: var(--ee-green); }
+.game-rights .r-menu-actions { display: grid; gap: 8px; margin-top: 16px; }
+
+/* 결과 */
+.game-rights .r-end h2 { font-size: 22px; margin: 32px 0 12px; }
+.game-rights .r-end h3 { font-size: 18px; margin: 20px 0 8px; }
+.game-rights .r-end-title { font-size: clamp(28px, 5vw, 40px); }
+.game-rights .r-remember { margin-top: 24px; display: grid; gap: 4px; font-size: 20px; }
+.game-rights .r-endings { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.game-rights .r-ending h3 { margin: 0 0 8px; }
+.game-rights .r-found, .game-rights .r-q { margin: 0; padding-left: 24px; display: grid; gap: 12px; }
+.game-rights .r-rec-text { white-space: pre-wrap; font: inherit; font-size: 16px; margin: 0; overflow-wrap: anywhere; }
+
+/* 가로 모드 권장 · 상태 알림 */
+.game-rights .r-rotate { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(41, 75, 64, .7); }
+.game-rights .r-rotate[hidden] { display: none; }
+.game-rights .r-rotate-card { max-width: 360px; text-align: center; display: grid; gap: 12px; }
+.game-rights .r-rotate-icon { font-size: 48px; line-height: 1; }
+.game-rights .r-status { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 90; max-width: calc(100% - 32px); }
+
+/* 좁은 화면 */
+@media (max-width: 760px) {
+  .game-rights .r-heroes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .game-rights .r-hud { flex-wrap: wrap; }
+  .game-rights .r-hud-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .game-rights .r-mission { font-size: 15px; }
+  .game-rights .r-title { font-size: 19px; }
+  .game-rights .r-sheet { padding: 4px; }
+}
+/* 가로로 둔 휴대폰처럼 낮은 화면: 대화창과 버튼을 줄인다 */
+@media (max-height: 520px) {
+  .game-rights .r-hud { padding: 2px 8px; }
+  .game-rights .r-hud-line { display: none; }
+  .game-rights .r-hud-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .game-rights .r-stage-wrap { padding: 4px; }
+  .game-rights .r-talk { left: 6px; right: 6px; bottom: 6px; gap: 16px; }
+  .game-rights .r-talk-portrait canvas { width: 64px !important; height: 64px !important; }
+  .game-rights .r-talk-box.ee-speech { font-size: 16px; line-height: 1.55; padding: 4px 12px; }
+  .game-rights .r-talk-box .ee-speech:before, .game-rights .r-talk-box.ee-speech:before { top: 16px; }
+  .game-rights .r-talk-text { min-height: 2.6em; }
+  .game-rights .r-act { right: 6px; bottom: 6px; }
+  .game-rights .r-act .ee-button span:last-child { font-size: 14px; }
+}
+.game-rights.r-reduce * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+@media print {
+  .game-rights { background: #fff; }
+  .game-rights * { visibility: hidden; }
+  .game-rights #print-area, .game-rights #print-area * { visibility: visible; }
+  .game-rights #print-area { position: absolute; left: 0; top: 0; width: 100%; border: 0; }
+}
