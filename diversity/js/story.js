@@ -23,8 +23,8 @@
     teacher: '위원장 선생님',
     robot: '안내 로봇',
     librarian: '사서 선생님',
-    jiho: '하늘',
-    haneul: '지호',
+    jiho: '지호',
+    haneul: '하늘',
     saebom: '새봄',
     onyu: '온유',
     daon: '다온'

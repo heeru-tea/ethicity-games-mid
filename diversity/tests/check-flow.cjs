@@ -1,5 +1,5 @@
 // 끝까지 진행 검사: 키보드만(1280), 터치만(760·430)으로 표지 → 완료까지 가며
-// 시작 전 학생 고르기: 1280 jiho(이름 '하늘', 뉴스 결과 위원 → haneul '지호'가 대신), 760 온유, 430 새봄.
+// 시작 전 학생 고르기: 1280 지호(뉴스 결과 위원 → 하늘이 대신), 760 온유, 430 새봄.
 // 뉴스·광고·교육·최종 심의 모두 걸어 다니며 진행한다.
 // 탐험 화면(지도·도서관)은 플레이어가 걸어간다. 키보드는 Space('어디로 가지?')→Enter, 760은 무대 위 표시, 430은 패널 목록을 누른다.
 // 콘솔 오류·가로 넘침·통합 이벤트·저장 키·이어 하기를 확인하고 화면을 tests/_shot-*.png로 남긴다.
@@ -17,9 +17,9 @@ const SHOT = (name) => path.join(__dirname, '_shot-' + name + '.png');
   const browser = await chromium.launch({ headless: true });
   try {
     for (const run of [
-      { name: 'kbd-1280', viewport: { width: 1280, height: 800 }, keyboard: true, pick: 1, reporter: '지호' },
-      { name: 'touch-760', viewport: { width: 760, height: 1000 }, touch: true, pick: 4, reporter: '하늘' },
-      { name: 'touch-430', viewport: { width: 430, height: 900 }, touch: true, reducedMotion: 'reduce', pick: 3, reporter: '하늘' }
+      { name: 'kbd-1280', viewport: { width: 1280, height: 800 }, keyboard: true, pick: 1, reporter: '하늘' },
+      { name: 'touch-760', viewport: { width: 760, height: 1000 }, touch: true, pick: 4, reporter: '지호' },
+      { name: 'touch-430', viewport: { width: 430, height: 900 }, touch: true, reducedMotion: 'reduce', pick: 3, reporter: '지호' }
     ]) {
       const ctx = await browser.newContext({ viewport: run.viewport, hasTouch: !!run.touch, isMobile: !!run.touch, reducedMotion: run.reducedMotion || 'no-preference' });
       const page = await ctx.newPage();
@@ -196,7 +196,7 @@ const SHOT = (name) => path.join(__dirname, '_shot-' + name + '.png');
     await page.reload();
     await page.getByRole('button', { name: '이어 하기' }).click();
     assert((await page.locator('.dv-eyebrow').first().textContent()).includes('미션 1 탐험'));
-    assert.equal(await page.locator('#hud-task-text').textContent(), '하늘·온유에게 결과 듣기 (1/2)');
+    assert.equal(await page.locator('#hud-task-text').textContent(), '지호·온유에게 결과 듣기 (1/2)');
     assert.deepEqual(await page.locator('.dv-spot[data-state=new]').evaluateAll((b) => b.map((x) => x.dataset.spot)), ['critic']);
     // 학생을 고르기 전 저장 → 고르기 화면으로
     await page.evaluate(() => localStorage.setItem('ethicity.diversity.progress.v2', JSON.stringify({ v: 2, scene: 8, initial: 'A' })));
