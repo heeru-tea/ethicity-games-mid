@@ -73,3 +73,6 @@ node_modules/
 Thumbs.db
 .vscode/
 .idea/
+
+# fal.ai 생성 원본은 로컬에만 — 게임은 tools/art.mjs가 규격에 맞춘 assets/art/*.png만 쓴다
+assets/art/raw/

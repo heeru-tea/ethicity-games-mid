@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>의료 AI 안전기준 위원회 — 윤리시티 · 안전성</title>
+  <meta name="description" content="미래종합병원의 청소년 시민위원이 되어 의료 AI를 어디까지 믿을지 정하고, 안전 운영 프로토콜을 완성하는 탐험형 윤리 게임. 중·고등학생용.">
+  <meta name="theme-color" content="#294b40">
+  <link rel="stylesheet" href="../shared/ethicity-elementary-common-v1/runtime/common.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="ee-theme game-safety">
+  <a class="skip" href="#main">본문으로 건너뛰기</a>
+  <div id="notice" class="ee-notice toast" role="status" hidden></div>
+  <p id="sr-status" class="sr-only" aria-live="polite"></p>
+
+  <main id="main" class="app">
+    <p id="boot" class="boot">불러오는 중…</p>
+
+    <!-- 주의: 시작할 때 한 번. 확인해야 진행 -->
+    <div id="warning" class="overlay" hidden>
+      <div class="ee-panel warning-box" role="dialog" aria-modal="true" aria-labelledby="warning-title">
+        <h2 id="warning-title">시작하기 전에</h2>
+        <p>이 게임의 병원·환자·AI·수치는 모두 <strong>가상</strong>이며, 실제 병원의 환자 비율이나 AI 정확도를 뜻하지 않습니다.</p>
+        <p>게임 속 판단은 학습을 위한 것이며 실제 진료나 건강 판단의 기준이 아닙니다.</p>
+        <p>몸이 아프거나 걱정되는 일이 있으면 보호자·보건 선생님께 이야기하고, 위급할 때는 <strong>119</strong>에 연락하세요.</p>
+        <button id="btn-warning-ok" class="ee-button" type="button">확인했어요</button>
+      </div>
+    </div>
+
+    <!-- START -->
+    <section id="v-start" class="view start" aria-labelledby="start-title" hidden>
+      <header class="start-head">
+        <p class="eyebrow">윤리시티 · AI 윤리 탐험대 — 안전성</p>
+        <h1 id="start-title" class="start-title">의료 AI 안전기준 위원회</h1>
+        <p class="start-lead">의사가 AI의 판단을 매번 다시 확인하면 진료가 늦어지고, AI를 지나치게 믿으면 위험한 환자를 놓칠 수 있습니다.<br><strong>우리는 의료 AI를 어디까지 믿어야 할까요?</strong></p>
+      </header>
+      <div class="ee-panel mission-box">
+        <p class="mission-eyebrow">MISSION</p>
+        <p class="mission-title">AI의 실수는 줄이고, 환자는 더 빠르고 안전하게!</p>
+        <p>AI를 어디까지 활용할지 결정하고, AI가 실수해도 환자를 지킬 수 있는 안전 규칙을 완성하세요.</p>
+      </div>
+      <fieldset class="pick-field">
+        <legend class="pick-legend">함께 걸어갈 청소년 시민위원을 골라 주세요</legend>
+        <div id="pick-list" class="pick-list"></div>
+        <p id="pick-msg" class="pick-msg" role="alert" hidden>먼저 시민위원을 골라 주세요.</p>
+      </fieldset>
+      <div class="start-actions">
+        <button id="btn-continue" class="ee-button" type="button" hidden>이어 하기</button>
+        <button id="btn-new" class="ee-button" type="button">탐험을 시작합니다</button>
+      </div>
+      <p id="last-done" class="start-done ee-badge" hidden>✔ 이 기기에서 한 번 끝까지 진행했어요.</p>
+      <details class="start-guide">
+        <summary>게임 안내</summary>
+        <ul>
+          <li>약 15~18분 · 프롤로그 → 미션 1~4 → 프로토콜과 성찰</li>
+          <li>정답·오답을 보여 주지 않아요. 선택의 결과는 환자 100명의 이야기와 숫자로 돌아와요.</li>
+          <li>방향키·WASD로 걷고 Space로 말을 걸어요. 바닥이나 사람을 누르면 그곳으로 걸어가요. 선택지는 숫자 키 1~4로도 골라요.</li>
+          <li>소리는 꺼진 채로 시작해요(메뉴에서 켤 수 있어요). 진행은 이 기기에 자동 저장돼요.</li>
+          <li>성찰 글은 이 기기에만 저장되고 점수가 매겨지지 않아요. 이름·연락처 같은 개인정보는 쓰지 마세요.</li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- 탐험 -->
+    <section id="v-play" class="view play" aria-label="미래종합병원 탐험" hidden>
+      <div class="play-shell">
+        <header class="hud" aria-label="현재 상황">
+          <div class="hud-info">
+            <p class="hud-line"><span id="hud-chapter" class="ee-badge hud-chapter"></span> <span id="hud-time" class="hud-time"></span> · <span id="hud-place" class="hud-place"></span> <span id="hud-step" class="hud-step"></span></p>
+            <p class="hud-mission"><span class="hud-mission-label">지금 할 일</span> <span id="hud-mission"></span></p>
+          </div>
+          <div class="hud-actions">
+            <button id="btn-guide" class="ee-button secondary hud-btn" type="button"><canvas width="64" height="64" class="ee-icon" aria-hidden="true"></canvas><span>길 안내</span></button>
+            <button id="btn-ask" class="ee-button secondary hud-btn" type="button"><canvas width="64" height="64" class="ee-icon" aria-hidden="true"></canvas><span>로봇에게 묻기</span></button>
+            <button id="btn-menu" class="ee-button secondary hud-btn" type="button"><canvas width="64" height="64" class="ee-icon" aria-hidden="true"></canvas><span>메뉴</span></button>
+          </div>
+        </header>
+        <div id="stage" class="stage">
+          <canvas id="world" class="world ee-pixel" tabindex="0" aria-label="미래종합병원 지도. 방향키로 걷고 Space로 말을 겁니다. 화면을 누르면 그곳으로 걸어갑니다."></canvas>
+          <button id="btn-act" class="ee-button act-btn" type="button" hidden></button>
+        </div>
+        <div id="talk" class="talk" hidden>
+          <canvas id="talk-face" class="talk-face ee-pixel" width="256" height="256" aria-hidden="true"></canvas>
+          <div class="ee-speech talk-speech">
+            <p id="talk-name" class="ee-speaker"></p>
+            <p id="talk-text" class="talk-text" aria-hidden="true"></p>
+            <button id="talk-next" class="ee-button talk-next" type="button">다음 ▶</button>
+          </div>
+          <p id="talk-live" class="sr-only" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT: 프로토콜 -->
+    <section id="v-result" class="view doc-view" aria-labelledby="result-title" hidden>
+      <p class="eyebrow">엔딩 · 최종 산출물</p>
+      <h1 id="result-title" class="doc-title" tabindex="-1">나의 의료 AI 안전 운영 프로토콜</h1>
+      <p class="doc-lead">당신이 내린 결정과 같은 환자 100명에게 적용한 결과를 모았습니다. 인쇄하거나 이미지로 저장해 수업 활동에 쓸 수 있어요.</p>
+      <div id="result-doc"></div>
+      <div id="result-actions" class="doc-actions"></div>
+    </section>
+
+    <!-- COMPLETE: 엔딩·성찰 -->
+    <section id="v-end" class="view doc-view" aria-labelledby="end-title" hidden>
+      <p class="eyebrow">엔딩 · AI의 실수로부터 환자를 지켰을까?</p>
+      <h1 id="end-title" class="doc-title" tabindex="-1">나의 선택을 돌아봅니다</h1>
+      <section class="ee-panel end-tendency">
+        <p class="end-label">나의 운영 경향 <span class="end-label-note">(정답이 아닌 경향입니다)</span></p>
+        <p id="end-tendency" class="end-tendency-title"></p>
+        <p id="end-trait"></p>
+        <p class="end-question-wrap"><span class="ee-badge">다시 생각할 점</span> <span id="end-question" class="end-question"></span></p>
+      </section>
+      <section class="end-sec">
+        <h2>선택 → 일어난 일</h2>
+        <ol id="end-story" class="end-story"></ol>
+      </section>
+      <section class="end-sec">
+        <h2>성찰</h2>
+        <p class="ee-notice">쓴 글은 이 기기에만 저장되고 점수가 매겨지지 않아요. 이름·연락처 같은 개인정보는 쓰지 마세요.</p>
+        <div id="end-reflect"></div>
+        <button id="btn-reflect-done" class="ee-button" type="button">성찰 마치기</button>
+      </section>
+      <section id="end-final" class="end-final" hidden>
+        <h2 id="end-final-title" tabindex="-1">우리가 발견한 것</h2>
+        <div id="end-message" class="ee-panel end-message"></div>
+        <div class="end-cards">
+          <div class="ee-success"><p class="end-card-h">기억할 한 문장</p><p id="end-remember"></p></div>
+          <div class="ee-notice"><p class="end-card-h">다음 탐험</p><p id="end-next"></p></div>
+        </div>
+        <p class="end-last">“<span id="end-last"></span>”</p>
+        <details class="end-path-wrap">
+          <summary>나의 선택 경로 보기</summary>
+          <ul id="end-path" class="end-path"></ul>
+        </details>
+        <div id="end-actions" class="doc-actions"></div>
+      </section>
+    </section>
+  </main>
+
+  <div id="sheet" class="overlay sheet" hidden></div>
+  <div id="print-area" class="print-area" aria-hidden="true"></div>
+
+  <script src="../shared/ethicity-elementary-common-v1/runtime/manifest.js"></script>
+  <script src="../shared/ethicity-elementary-common-v1/runtime/common.js"></script>
+  <script src="assets/art/art.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/sim.js"></script>
+  <script src="js/story.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/panels.js"></script>
+  <script src="js/protocol.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
