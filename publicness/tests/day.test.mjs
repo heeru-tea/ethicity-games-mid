@@ -16,8 +16,9 @@ test('only four residents have linked routines, Sol goes to station, demand rema
 });
 test('late arrival postpones the return and arrival after closing creates no phantom return',()=>{
  const s=S.create(cfg),original=D.base(cfg,1,42).find(q=>q.residentId==='narae'),plan={buses:[{id:1,route:route(['F','D']),offset:0}]};
- for(const t of [60,100]){
-  const q={...original,t},res=Sim.run({g:S.graph(s),config:cfg,phase:1,plan,requests:[q]}),out=res.passengers[0],back=res.passengers.find(p=>p.leg==='return');
+ // 2026-10-27 기본 지도를 세로로 펼친 뒤엔 늦게 출발하면 아예 도착하지 못한다 → ‘도착했지만 귀가 준비가 운행 종료 뒤’는 오래 머무는 경우로 만든다(84분 출발·99 도착·30 머묾 → 129)
+ for(const t of [60,84]){
+  const q={...original,t,returnTrip:t===84?{...original.returnTrip,stay:30}:original.returnTrip},res=Sim.run({g:S.graph(s),config:cfg,phase:1,plan,requests:[q]}),out=res.passengers[0],back=res.passengers.find(p=>p.leg==='return');
   assert.equal(out.status,'arrived');
   if(t===60){assert.ok(back);assert.equal(back.t,out.arriveT+q.returnTrip.stay);assert.ok(back.t>q.returnTrip.earliest);}
   else{assert.ok(out.returnReadyT>=120);assert.equal(back,undefined);}

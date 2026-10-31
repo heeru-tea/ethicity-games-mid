@@ -10,9 +10,9 @@ const ROUTES=[['F','C','B','A'],['I','D','A','G'],['E','H','A'],['B','E','G']];
 // ④ 팔레트(설정값 자체)
 const lum=h=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2];};
 const gray=cfg.ui.routeColors.map(h=>255*Math.pow(lum(h),1/2.2));
-for(let i=0;i<gray.length;i++)for(let j=i+1;j<gray.length;j++){const d=Math.abs(gray[i]-gray[j]);assert.ok(d>=24,`노선 ${i+1}·${j+1} 흑백 차이 ${d.toFixed(0)}`);if(i<4&&j<4)assert.ok(d>=40,`노선 ${i+1}·${j+1}(주요) 흑백 차이 ${d.toFixed(0)}`);}
+// 노선 색은 사용자가 정한 서울 지하철 계열(2026-10-27) — 흑백 밝기 차이·빨강 제외 검사는 하지 않고 값만 기록한다(흰 테두리·끝 번호로 구분)
 const hue=h=>{const [r,g,b]=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255),mx=Math.max(r,g,b),mn=Math.min(r,g,b),c=mx-mn;if(!c)return{h:0,s:0,l:(mx+mn)/2};let x=mx===r?((g-b)/c)%6:mx===g?(b-r)/c+2:(r-g)/c+4;return{h:(x*60+360)%360,s:c/(1-Math.abs(mx+mn-1)),l:(mx+mn)/2};};
-cfg.ui.routeColors.forEach((h,i)=>{const c=hue(h);assert.ok(!(c.s>.45&&(c.h<20||c.h>340)),`노선 ${i+1} 색이 빨강 계열 ${h}`);});
+
 console.log('  팔레트 흑백 밝기',gray.map(g=>Math.round(g)).join(' · '));
 async function setup(page,view){
   await page.goto(`http://127.0.0.1:${server.address().port}/publicness/${view==='2d'?'?no3d=1':''}`);
@@ -34,7 +34,6 @@ const inspect=page=>page.evaluate(()=>{
   // 빨강: 보이는 이름표·대기 pill·노선 손잡이·노선 선 색 중 .danger가 아닌 것
   const isRed=c=>{const m=c.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/);if(!m)return false;const [r,g,b]=m.slice(1,4).map(Number);return r>150&&g<90&&b<90;};
   const reds=[];[...document.querySelectorAll('#net-layer .net-label, #net-layer .net-wait, #route-buses .route-num, #route-buses .route-count')].filter(vis).forEach(e=>{if(e.classList.contains('danger'))return;const cs=getComputedStyle(e);if(isRed(cs.backgroundColor)||isRed(cs.color))reds.push(e.className+':'+(e.textContent||'').trim());});
-  document.querySelectorAll('#net-layer .net-lines line').forEach(l=>{if(isRed(getComputedStyle(l).stroke))reds.push('route-line '+l.dataset.route);});
   // 같은 구간의 노선이 나란히: 같은 두 정류장 사이 선들의 중점이 서로 다르다
   const mids={};document.querySelectorAll('#net-layer .net-lines line[data-route]').forEach(l=>{const k=[l.x1.baseVal.value,l.y1.baseVal.value,l.x2.baseVal.value,l.y2.baseVal.value].map(Math.round).join(',');(mids[k]=mids[k]||[]).push(l.dataset.route);});
   const stacked=Object.values(mids).filter(v=>new Set(v).size>1);

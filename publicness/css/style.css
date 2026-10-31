@@ -584,11 +584,18 @@ body[data-screen="result"] .resident-cards>li { animation:resident-reveal .35s e
 #lease-note { flex-basis:100%; padding:0 4px; }
 .depot-bus .depot-id, .depot-bus small, .leased-bus .btn { white-space:nowrap; }
 /* ── 지도 3층(2026-10-27 시각 위계) ── 배경층(3D 캔버스·2D 지형) / 네트워크층(#net-layer: 노선·정류장·번호 원·이름표) / 상태층(대기 pill·경고·인물 링) */
-#net-layer { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+#net-layer { position: absolute; inset: 0; z-index: auto; pointer-events: none; }
 #net-layer .net-svg { position: absolute; inset: 0; overflow: visible; }
+#net-layer .net-route-svg { z-index: 2; }
+#net-layer .net-status-svg { z-index: 5; }
+#net-layer .net-labels { z-index: 7; }
+/* Route previews stay on the map; warning bubbles and controls stay above them. */
+#stage #drop-highlight { z-index: 2; }
+#stage .run-alert { z-index: 10; }
+#stage .net-label { background: #fff; }
 .net-casing line { stroke: var(--map-casing); stroke-linecap: round; }
 .net-lines line { stroke-linecap: round; }
-.net-lines line.active { filter: drop-shadow(0 0 4px rgba(255,255,255,.95)) drop-shadow(0 0 6px currentColor); }
+.net-lines line.active { filter: none; }
 .net-lines line.express { stroke-dasharray: none; }
 .net-stop circle:first-child { fill: #fff; stroke: #1A1D24; stroke-width: 2; }
 .net-stop .tick { stroke: #fff; stroke-width: 1.2; }
@@ -607,7 +614,7 @@ body[data-screen="result"] .resident-cards>li { animation:resident-reveal .35s e
 .labels-3d .stop-name, .labels-3d .wait-num { display: none !important; }
 #stage-svg .layer-routes, #stage-svg .layer-stops, #stage-svg .layer-badges { display: none; }
 /* 배경층: 설계·운행 중에는 채도 −40%·대비 −20%·밝기 +10%(제목·컷신·결과·엔딩은 원래 색) */
-body[data-screen="plan"] #stage-3d canvas, body[data-screen="run"] #stage-3d canvas,
+body[data-screen="plan"] #stage-3d canvas.bg-canvas, body[data-screen="run"] #stage-3d canvas.bg-canvas,
 body[data-screen="plan"] #stage-svg .layer-terrain, body[data-screen="run"] #stage-svg .layer-terrain { filter: saturate(.6) contrast(.8) brightness(1.1); }
 /* 직행(5번)·광역(6번) 노선 표시 — 노선색 위 가운데 줄로 일반 노선과 바로 구분 */
 .net-lines .express-stripe { stroke: #fff; stroke-dasharray: 2 7; stroke-linecap: round; }
@@ -642,3 +649,16 @@ body.panel-collapsed[data-screen="run"] #panel { display: none !important; }
 /* 2D 버스층: 네트워크층(z 5) 위 */
 .stage-svg-buses { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 6; pointer-events: none; }
 .net-leaders line { stroke: #1A1D24; stroke-width: 1.2; stroke-dasharray: 2 2; opacity: .7; }
+
+/* 지도 틀 너비를 네트워크 비율에 맞춰 줄였을 때 가운데 */
+body[data-screen="plan"] #stage, body[data-screen="run"] #stage { margin-inline: auto; }
+
+/* 3D 버스 층(노선 위) — 클릭은 아래 지도 캔버스가 받는다 */
+#stage-3d canvas.bus-canvas { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+#stage-3d .labels-3d { z-index: 7; }
+
+/* 노선 버튼 = 노선 색으로 칠한 버튼(지하철 노선 표시처럼). 고른 노선은 두꺼운 테두리 */
+.route-tab.route-color { background: var(--route); border-color: var(--route); color: #fff; font-weight: 700; }
+.route-tab.route-color.light { color: #1A1D24; }
+.route-tab.route-color:hover { filter: brightness(1.06); }
+.route-tab.route-color[aria-pressed="true"] { box-shadow: 0 0 0 3px #fff, 0 0 0 5px #1A1D24; }

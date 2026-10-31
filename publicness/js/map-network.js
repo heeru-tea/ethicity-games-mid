@@ -22,7 +22,9 @@
 
   function create(stage, getView, opts) {
     var layer = document.createElement('div'); layer.id = 'net-layer'; layer.setAttribute('aria-hidden', 'true');
-    var svg = svgEl('svg', { 'class': 'net-svg' }); layer.appendChild(svg);
+    // Separate ground markings from status markers: routes must not cover alerts.
+    var routeSvg = svgEl('svg', { 'class': 'net-svg net-route-svg' }); layer.appendChild(routeSvg);
+    var svg = svgEl('svg', { 'class': 'net-svg net-status-svg' }); layer.appendChild(svg);
     var labels = document.createElement('div'); labels.className = 'net-labels'; layer.appendChild(labels);
     stage.appendChild(layer);
     var st = { nodes: {}, routes: [], waiting: {}, selected: [], selectable: [], show: true, faces: [] }, placed = [], flashT = {}, facePos = {};
@@ -33,20 +35,21 @@
       return project(a.x + (b.x - a.x) * f + o.dx / 110, a.y + (b.y - a.y) * f + o.dy / 110);
     }
     function draw() {
-      svg.textContent = ''; labels.textContent = ''; placed = [];
+      routeSvg.textContent = ''; svg.textContent = ''; labels.textContent = ''; placed = [];
       if (!st.show || !getView()) return;
       var T = opts.tokens(), box = stage.getBoundingClientRect();
       svg.setAttribute('width', box.width); svg.setAttribute('height', box.height);
+      routeSvg.setAttribute('width', box.width); routeSvg.setAttribute('height', box.height);
       // 지도 위 시계·운행 조작(opts.reserved)도 빈자리 찾기에서 막힌 곳으로 — 얼굴·이름표가 그 밑에 깔리지 않게
       (opts.reserved ? opts.reserved() : []).forEach(function (r) { placed.push({ x: r.left - box.left - 4, y: r.top - box.top - 4, w: r.width + 8, h: r.height + 8, kind: 'hud' }); });
-      var gLead, gCase = svgEl('g', { 'class': 'net-casing' }, svg), gLine = svgEl('g', { 'class': 'net-lines' }, svg), gStop = svgEl('g', { 'class': 'net-stops' }, svg), gCap = svgEl('g', { 'class': 'net-caps' }, svg); gLead = svgEl('g', { 'class': 'net-leaders' }, svg);
+      var gLead, gCase = svgEl('g', { 'class': 'net-casing' }, routeSvg), gLine = svgEl('g', { 'class': 'net-lines' }, routeSvg), gStop = svgEl('g', { 'class': 'net-stops' }, svg), gCap = svgEl('g', { 'class': 'net-caps' }, svg); gLead = svgEl('g', { 'class': 'net-leaders' }, svg);
       var at = {}, segs = []; // 정류장별 서는 노선 색, 이름표가 피할 노선 선
       st.routes.forEach(function (r) {
-        var ns = r.route.nodes, w = r.active ? T.lineActive : T.line, dash = r.preview ? '10 7' : null;
+        var ns = r.route.nodes, w = r.active ? Math.min(T.lineActive, 6) : Math.min(T.line, 4), casing = Math.min(T.casing, 1), dash = r.preview ? '10 7' : null;
         for (var i = 1; i < ns.length; i++) {
           var a = st.nodes[ns[i - 1]], b = st.nodes[ns[i]]; if (!a || !b) continue;
           var p = lanePoint(a, b, r.num, 0), q = lanePoint(a, b, r.num, 1);
-          if (!r.preview) { svgEl('line', { x1: p.left, y1: p.top, x2: q.left, y2: q.top, 'stroke-width': w + T.casing * 2 }, gCase); segs.push({ x1: p.left, y1: p.top, x2: q.left, y2: q.top, pad: w / 2 + T.casing }); }
+          if (!r.preview) { svgEl('line', { x1: p.left, y1: p.top, x2: q.left, y2: q.top, 'stroke-width': w + casing * 2 }, gCase); segs.push({ x1: p.left, y1: p.top, x2: q.left, y2: q.top, pad: w / 2 + casing }); }
           var ln = svgEl('line', { x1: p.left, y1: p.top, x2: q.left, y2: q.top, stroke: r.color, 'stroke-width': r.preview ? T.line * 0.6 : w, 'data-route': r.num }, gLine);
           if (dash) ln.setAttribute('stroke-dasharray', dash);
           if (r.active) ln.setAttribute('class', 'active');

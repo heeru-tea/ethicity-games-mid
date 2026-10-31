@@ -99,7 +99,7 @@
     }
     if(screen!=='reflect')App.syncStage(stageOpts || {});
     // 화면이 바뀌면(운행 조작 묶음이 생기는 등) 지도 맞춤을 다시 — 정류장이 조작 버튼 밑에 깔리지 않게
-    if (App.view && App.view.refit) App.view.refit(); if (App.net) App.net.redraw();
+    App.fitFrame(); if (App.view && App.view.refit) App.view.refit(); if (App.net) App.net.redraw();
     App.syncPanelToggle();
     renderTextRoutes();
     App.save();
@@ -119,9 +119,22 @@
     function close(e) { if (e.type === 'keydown' && e.key !== 'Escape') return; if (e.type === 'pointerdown' && p.contains(e.target)) return; p.remove(); document.removeEventListener('keydown', close, true); document.removeEventListener('pointerdown', close, true); if (e.type === 'keydown') { e.stopPropagation(); anchor.focus(); } }
     document.addEventListener('keydown', close, true); document.addEventListener('pointerdown', close, true);
   };
+  // 지도 틀 크기(2026-10-27 후반 지도 정리): 네트워크(세팅 전체 정류장)가 틀의 가로·세로 모두 75% 이상 차지하도록
+  // 틀 비율을 네트워크에 맞춘다 — 여유가 있으면 높이 = 너비 ÷ 비율, 높이가 모자라면 틀 너비를 줄여 가운데. 설계·운행 화면만(다른 화면은 CSS 그대로)
+  App.fitFrame = function () {
+    var st = $('#stage'), screen = document.body.dataset.screen; if (!st) return;
+    st.style.height = ''; st.style.maxWidth = '';
+    var a = App.view && App.view.contentAspect && App.view.contentAspect();
+    if (!a || (screen !== 'plan' && screen !== 'run')) return;
+    var col = st.parentNode, cs = getComputedStyle(col), W = col.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), availH = st.offsetHeight;
+    var P = Math.min(64, Math.max(44, Math.min(W, availH) * 0.08)), need = (W - 2 * P) / a + 2 * P + 18, H, Wst = W;
+    if (need <= availH) H = Math.max(200, need);
+    else { H = availH; Wst = Math.min(W, (H - 2 * P - 18) * a + 2 * P + 40); }
+    st.style.height = Math.round(H) + 'px'; st.style.maxWidth = Math.round(Wst) + 'px';
+  };
   // 오른쪽 패널 접기(운행·결과 지도 화면): 접으면 지도가 전체 폭. 기억은 이 브라우저에만(실패해도 그냥 펼침)
   var PANEL_KEY = 'ethicity.publicness.panelCollapsed';
-  App.setPanelCollapsed = function (v) { document.body.classList.toggle('panel-collapsed', !!v); try { localStorage.setItem(PANEL_KEY, v ? '1' : '0'); } catch (e) { /* 이번 창에서만 */ } App.syncPanelToggle(); if (App.view && App.view.refit) root.requestAnimationFrame(function () { App.view.refit(); if (App.net) App.net.redraw(); }); };
+  App.setPanelCollapsed = function (v) { document.body.classList.toggle('panel-collapsed', !!v); try { localStorage.setItem(PANEL_KEY, v ? '1' : '0'); } catch (e) { /* 이번 창에서만 */ } App.syncPanelToggle(); root.requestAnimationFrame(function () { App.fitFrame(); if (App.view && App.view.refit) App.view.refit(); if (App.net) App.net.redraw(); }); };
   App.syncPanelToggle = function () {
     var b = $('#btn-panel-toggle'), screen = document.body.dataset.screen, can = screen === 'run';
     if (!b) return; b.hidden = !can; if (!can) { document.body.classList.remove('panel-collapsed'); return; }
@@ -417,7 +430,7 @@
     $('#hook-1').textContent = lines[0];
     $('#hook-2').textContent = lines[1];
 
-    var controls={onNode:onNode,canEdit:function(){return App.s&&App.s.stage==='plan';},onLink:function(a,b){if(App.onLink)App.onLink(a,b);},onRoute:function(n,i){if(App.onRouteClick)App.onRouteClick(n,i);},onRouteDouble:function(n,i){if(App.onRouteDouble)App.onRouteDouble(n,i);},
+    var controls={onCamera:function(){if(App.net)App.net.redraw();},onNode:onNode,canEdit:function(){return App.s&&App.s.stage==='plan';},onLink:function(a,b){if(App.onLink)App.onLink(a,b);},onRoute:function(n,i){if(App.onRouteClick)App.onRouteClick(n,i);},onRouteDouble:function(n,i){if(App.onRouteDouble)App.onRouteDouble(n,i);},
       // 지도 위 시계 영역 — 2D 지도는 이 영역 밑에 정류장이 깔리지 않도록 화면을 비켜 그린다
       reserved:function(){return ['#map-clock','#run-controls'].map(function(id){return $(id);}).filter(function(c){return c&&c.getClientRects().length;}).map(function(c){return c.getBoundingClientRect();});}};
     App.map2d = PB.Map2D.create($('#stage-svg'), controls);
@@ -444,6 +457,7 @@
       });
     });
     $('#btn-view-toggle').addEventListener('click', App.toggleView);
+    var fitT = null; root.addEventListener('resize', function () { clearTimeout(fitT); fitT = setTimeout(function () { if (App.s) { App.fitFrame(); if (App.view && App.view.refit) App.view.refit(); if (App.net) App.net.redraw(); } }, 80); });
     App.motion = !!root.__pbReduceMotion;
     $('#opt-motion').checked = App.reducedMotion();
     $('#opt-motion').addEventListener('change', function (e) { App.motion = e.target.checked; App.view.setReducedMotion(App.reducedMotion()); });

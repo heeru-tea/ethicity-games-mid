@@ -121,7 +121,9 @@ try{for(const view of (process.env.VIEWS||'2d,3d').split(',')){
  // 7) 화면 크기·배율이 바뀐 뒤에도 판정이 맞다
  for(const [w,h] of [[1024,768],[820,1100]]){
   await page.setViewportSize({width:w,height:h});await page.waitForTimeout(400);
-  const d0=await draft(page),p3=await linePoint(page,2,0,.2,12);s=await dragTo(page,'#route-bus-1',p3);
+  // 지도 틀이 화면에 맞춰 작아지면 노선 사이가 좁아져 ‘모호’가 될 수 있다 — 게임 판정으로 2번만 가리키는 점을 고른다
+  const d0=await draft(page),p3=await page.evaluate(()=>{const A=PB.App,v=A.view,r=PB.Session.routeByNum(A.s,2),box=document.querySelector('#stage').getBoundingClientRect();for(let i=0;i+1<r.nodes.length;i++)for(let f=.1;f<.95;f+=.05)for(const k of [0,8,-8,14,-14]){const a=A.nodeXY(r.nodes[i]),b=A.nodeXY(r.nodes[i+1]),o=v.laneOffset(r.nodes[i],r.nodes[i+1],2),P=v.project(a.x+o.dx/110,a.y+o.dy/110),Q=v.project(b.x+o.dx/110,b.y+o.dy/110),dx=Q.left-P.left,dy=Q.top-P.top,l=Math.hypot(dx,dy),x=box.left+P.left+dx*f-dy/l*k,y=box.top+P.top+dy*f+dx/l*k,t=PB.UI.busDrop.targetAt(x,y),h=document.elementFromPoint(x,y);if(t.kind==='route'&&t.num===2&&h&&!h.closest('.route-bus,.map-person,#bus-depot'))return {x,y};}});
+  s=await dragTo(page,'#route-bus-1',p3);
   assert.equal(s.hl,'2',w+'px 강조');assert.deepEqual(await buses(page),[2,2],w+'px 실제 배치');
   await page.evaluate(d=>{PB.App.s.draft=JSON.parse(d);PB.App.keepFocus=true;PB.App.render();},d0);
  }

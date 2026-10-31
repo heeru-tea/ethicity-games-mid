@@ -15,6 +15,7 @@
   var Advisor = NODE ? require('./advisor.js') : root.PB.Advisor;
   var Rng = NODE ? require('./rng.js') : root.PB.Rng;
   var Schedule = NODE ? require('./schedule.js') : root.PB.Schedule;
+  var Layout = NODE ? require('./layout.js') : root.PB.Layout;
   var Scores = NODE ? require('./scores.js') : root.PB.Scores;
 
   function copyRoute(r) { return { nodes: r.nodes.slice(), stops: r.stops.slice() }; }
@@ -46,14 +47,9 @@
         config.nodes=config.nodes.concat(challenge.nodes);config.demandRows=config.demandRows.concat(challenge.demandRows);
         config.residents.forEach(function(r){if(r.itineraries){r.itineraries[6]={o:'J',d:'H',depart:60,returnAt:100,stay:20,returnTo:'B'};r.itineraries[7]=clone(r.itineraries[5]);}});
       }
-      var rng=Rng.create(seed ^ 0x51ed270b),sx=rng.next()<.5?-1:1,sy=rng.next()<.5?-1:1;
-      var cells=[[-.6,-2.6],[-2.4,-.6],[-2,2],[1.2,1.8],[4.4,.5],[0,-.2]];
-      for(var k=cells.length-1;k>0;k--){var j=Math.floor(rng.next()*(k+1)),tmp=cells[k];cells[k]=cells[j];cells[j]=tmp;}
-      config.nodes.forEach(function(n){
-        var p=n.id==='F'?[-4.8,2.8]:n.id==='I'?[4.8,-2.8]:n.id==='D'?[3,-1.8]:n.id==='J'?[4.4,2.7]:n.id==='K'?[-4.4,.7]:n.id==='L'?[-4.6,-2.3]:n.id==='M'?[2.7,.2]:n.id==='N'?[8.7,0]:cells.pop();
-        var jitter=['F','I','J','K','L','M','N'].indexOf(n.id)>=0?0:.12;
-        n.x=sx*(p[0]+(rng.next()-.5)*jitter);n.y=sy*(p[1]+(rng.next()-.5)*jitter);
-      });
+      // 배치(2026-10-27): 역할 자리 세로로 펼치고 나머지 생활권은 분산 표본 + 완화 — js/layout.js. 같은 시드 = 같은 배치
+      var placed=Layout.place(config.nodes,Rng.create(seed ^ 0x51ed270b));
+      config.nodes.forEach(function(n){n.x=placed[n.id].x;n.y=placed[n.id].y;});
     }
     var s = {
       config: config, seed: seed, mode: mode, phase: 1, stage: 'reveal',

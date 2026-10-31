@@ -35,7 +35,11 @@
     renderer.setClearColor(C.bg, 0);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.PCFSoftShadowMap;
+    renderer.domElement.classList.add('bg-canvas');
     container.appendChild(renderer.domElement);
+    // 버스 층: 지도 네트워크층(노선 선, z 5) 위에 버스가 보이도록 버스만 그리는 투명 캔버스(z 6). 클릭은 받지 않는다
+    var busRenderer = null;
+    try { busRenderer = new T.WebGLRenderer({ antialias: true, alpha: true }); busRenderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, 2)); busRenderer.setClearColor(0x000000, 0); busRenderer.domElement.classList.add('bus-canvas'); container.appendChild(busRenderer.domElement); } catch (e) { busRenderer = null; }
     var labels = document.createElement('div');
     labels.className = 'labels-3d';
     labels.setAttribute('aria-hidden', 'true');
@@ -52,10 +56,12 @@
     scene.add(sun);
 
     var groups = { world: new T.Group(), routes: new T.Group(), buses: new T.Group(), people: new T.Group() };
-    Object.keys(groups).forEach(function (k) { scene.add(groups[k]); });
+    var busScene = new T.Scene();
+    busScene.add(new T.HemisphereLight(0xffffff, 0xb3aa9e, 0.85)); var busSun = new T.DirectionalLight(0xffffff, 0.55); busSun.position.set(-40, 80, 50); busScene.add(busSun);
+    Object.keys(groups).forEach(function (k) { (k === 'buses' && busRenderer ? busScene : scene).add(groups[k]); });
     var nodes = {}, stops = {}, hits = [], zoneGroups = {}, routeSegs = {}, busMesh = {}, lastBus = {};
     var labelEls = { stop: {}, wait: {}, bus: {} };
-    var frameBox = null, reduced = false, dirty = true, bounds = null, board = null, rising = null, prevIds = null, waitingNow = {}, currentRoutes = [];
+    var frameBox = null, fullBox = null, animateNext = false, camAnim = null, reduced = false, dirty = true, bounds = null, board = null, rising = null, prevIds = null, waitingNow = {}, currentRoutes = [];
 
     // 3D 버스 모델(assets/models/bus.js, 없거나 실패하면 상자 버스). 노선 색마다 띠를 칠한 재질을 하나씩 만든다
     var busGeo = null, busTex = null, busMats = {};
@@ -416,10 +422,14 @@
       clear(groups.world); hits = []; stops = {}; zoneGroups = {};
       nodes = {};
       sceneDef.nodes.forEach(function (n) { nodes[n.id] = n; });
-      // 화면 틀은 이 세팅의 모든 정류장(sceneDef.frame)으로 정한다 — 새 정류장이 생겨도 기존 정류장 위치·배율이 흔들리지 않게
+      // 판·땅은 이 세팅의 모든 정류장(sceneDef.frame) 기준. 카메라는 2026-10-27부터 이번 단계 정류장(stageBox)에 맞춘다 —
+      // 앞 단계는 가깝게, 새 정류장이 생기는 단계마다 조금씩 뒤로(도시가 커지는 느낌), 전환 0.6초. 지도 틀 비율은 전체(fullBox)로 정한다
       var frame = sceneDef.frame || sceneDef.nodes;
       var xs = frame.map(function (n) { return n.x * K; }), zs = frame.map(function (n) { return n.y * K; });
-      frameBox = { minX: Math.min.apply(null, xs), maxX: Math.max.apply(null, xs), minZ: Math.min.apply(null, zs), maxZ: Math.max.apply(null, zs) };
+      fullBox = { minX: Math.min.apply(null, xs), maxX: Math.max.apply(null, xs), minZ: Math.min.apply(null, zs), maxZ: Math.max.apply(null, zs) };
+      var sx2 = sceneDef.nodes.map(function (n) { return n.x * K; }), sz2 = sceneDef.nodes.map(function (n) { return n.y * K; });
+      frameBox = { minX: Math.min.apply(null, sx2), maxX: Math.max.apply(null, sx2), minZ: Math.min.apply(null, sz2), maxZ: Math.max.apply(null, sz2) };
+      animateNext = !!prevIds && !reduced;
       bounds = { minX: Math.min.apply(null, xs) - 20, maxX: Math.max.apply(null, xs) + 16, minZ: Math.min.apply(null, zs) - 18, maxZ: Math.max.apply(null, zs) + 18 };
       // 풀밭 판: 화면 틀보다 BOARD_MARGIN만큼 넓게, 윗면은 잔디 타일. 강은 판 안쪽까지 잘라 그린다
       board = { minX: bounds.minX - BOARD_MARGIN, maxX: bounds.maxX + BOARD_MARGIN, minZ: bounds.minZ - BOARD_MARGIN, maxZ: bounds.maxZ + BOARD_MARGIN };
@@ -635,6 +645,7 @@
       var r = container.getBoundingClientRect(), wdt = Math.max(1, r.width), hgt = Math.max(1, r.height);
       renderer.setSize(wdt, hgt, false);
       renderer.domElement.style.width = '100%'; renderer.domElement.style.height = '100%';
+      if (busRenderer) { busRenderer.setSize(wdt, hgt, false); busRenderer.domElement.style.width = '100%'; busRenderer.domElement.style.height = '100%'; }
       var cx = (bounds.minX + bounds.maxX) / 2, cz = (bounds.minZ + bounds.maxZ) / 2;
       // No sideways rotation: retain the map orientation while showing building height.
       camera.up.set(0, 1, 0);
@@ -652,21 +663,32 @@
       }); }); });
       Object.keys(nodes).forEach(function (id) { pts.push(new T.Vector3(nodes[id].x, 2, nodes[id].z).applyMatrix4(inv)); });
       var vw = Math.max(1, maxX - minX), vh = Math.max(1, maxY - minY), PAD = Math.min(64, Math.max(44, Math.min(wdt, hgt) * 0.08)), top = PAD, bottom = PAD + 18; // 노선 끝 번호 원이 정류장 밖으로 약 35px 나오므로 44px 이상
-      var areas = opts.reserved ? opts.reserved() : [], cr = container.getBoundingClientRect();
+      var areas = opts.reserved ? opts.reserved() : [], cr = container.getBoundingClientRect(), target = null, start = camStart;
       function place() {
         var aw = Math.max(1, wdt - 2 * PAD), ah = Math.max(1, hgt - top - bottom), s = Math.min(aw / vw, ah / vh);
         var cxp = PAD + aw / 2, cyp = top + ah / 2, mx = (minX + maxX) / 2, my = (minY + maxY) / 2;
         camera.left = mx - cxp / s; camera.right = camera.left + wdt / s; camera.top = my + cyp / s; camera.bottom = camera.top - hgt / s;
         camera.updateProjectionMatrix();
+        target = { l: camera.left, r: camera.right, t: camera.top, b: camera.bottom };
         return function (v) { return { left: (v.x - camera.left) * s + cr.left, top: (camera.top - v.y) * s + cr.top }; };
       }
       for (var tries = 0; tries < 12; tries++) {
         var at = place(), hit = pts.some(function (v) { var p = at(v); return areas.some(function (a) { return p.left > a.left - 24 && p.left < a.right + 24 && p.top > a.top - 24 && p.top < a.bottom + 40; }); });
         if (!hit) break; top += 18;
       }
-      dirty = true;
+      // 단계가 바뀐 맞춤이면 이전 카메라에서 0.6초 동안 옮겨 간다(움직임 줄이기면 바로)
+      if (animateNext && start && target && !reduced) { camAnim = { from: start, to: target, t0: root.performance.now() }; setCam(start); }
+      animateNext = false; camStart = target; dirty = true; if (opts.onCamera) opts.onCamera();
     }
 
+    var camStart = null;
+    function setCam(c) { camera.left = c.l; camera.right = c.r; camera.top = c.t; camera.bottom = c.b; camera.updateProjectionMatrix(); }
+    // 세팅 전체 정류장 틀의 화면 가로:세로(카메라 기울기 반영) — 지도 틀 크기를 정하는 데 쓴다(App.fitFrame)
+    function contentAspect() {
+      var fb = fullBox; if (!fb) return null; camera.updateMatrixWorld(); var inv = camera.matrixWorldInverse, xs = [], ys = [];
+      [fb.minX, fb.maxX].forEach(function (x) { [fb.minZ, fb.maxZ].forEach(function (z) { var v = new T.Vector3(x, 0, z).applyMatrix4(inv); xs.push(v.x); ys.push(v.y); }); });
+      return (Math.max.apply(null, xs) - Math.min.apply(null, xs)) / Math.max(1, Math.max.apply(null, ys) - Math.min.apply(null, ys));
+    }
     function placeLabels() {
       Object.keys(labelEls.stop).forEach(function (id) {
         if (!nodes[id]) return;
@@ -686,6 +708,11 @@
 
     function frame() {
       var now = root.performance.now();
+      if (camAnim) {
+        var k = Math.min(1, (now - camAnim.t0) / 600), e = 1 - Math.pow(1 - k, 3), a = camAnim.from, b = camAnim.to;
+        setCam({ l: a.l + (b.l - a.l) * e, r: a.r + (b.r - a.r) * e, t: a.t + (b.t - a.t) * e, b: a.b + (b.b - a.b) * e });
+        if (k >= 1) camAnim = null; dirty = true; if (opts.onCamera) opts.onCamera();
+      }
       if (rising) {
         var f = Math.min(1, (now - rising.t0) / 800);
         if (zoneGroups[rising.id]) zoneGroups[rising.id].scale.y = 0.02 + 0.98 * (1 - Math.pow(1 - f, 3));
@@ -702,6 +729,7 @@
       });
       if (dirty && container.offsetParent !== null) {
         renderer.render(scene, camera);
+        if (busRenderer) busRenderer.render(busScene, camera);
         placeLabels();
         dirty = false;
       }
@@ -717,7 +745,7 @@
       kind: '3d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
       zoneInfo: function () { return Object.keys(zoneGroups).map(function (id) { return { id: id, model: !!zoneGroups[id].userData.model, offset: {x:zoneGroups[id].position.x-wp(id).x,z:zoneGroups[id].position.z-wp(id).z} }; }); },
       busInfo: function () { return Object.keys(busMesh).filter(function (id) { return busMesh[id].visible; }).map(function (id) { var u = busMesh[id].userData; return { id: Number(id), model: !!u.model, color: u.color || null }; }); },
-      refit: function () { fit(); }, setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
+      refit: function () { fit(); }, contentAspect: contentAspect, setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },
       show: function (v) { container.hidden = !v; if (v) { fit(); dirty = true; frame(); } },
       dispose: function () { renderer.dispose(); },

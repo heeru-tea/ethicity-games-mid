@@ -26,7 +26,15 @@
     function px(n) { return { x: n.x * U, y: n.y * U }; }
 
     // 지도 위에 겹쳐 놓인 시계(opts.reserved) 밑에 정류장·이름이 깔리면 위쪽 여백을 늘려 지도를 아래로 비킨다
-    var baseBox = null, extraTop = 0;
+    var baseBox = null, extraTop = 0, fullAspect = null, boxAnim = null;
+    // 단계 전환 0.6초: viewBox를 이전 틀에서 새 틀로(시계 밑 여백 extraTop은 새 틀 기준)
+    function animateBox(from, to) {
+      var t0 = performance.now(), end = Object.assign({}, to);
+      boxAnim = true;
+      (function step() { var k = Math.min(1, (performance.now() - t0) / 600), e = 1 - Math.pow(1 - k, 3);
+        baseBox = { x: from.x + (end.x - from.x) * e, y: from.y + (end.y - from.y) * e, w: from.w + (end.w - from.w) * e, h: from.h + (end.h - from.h) * e }; applyBox(); if (opts.onCamera) opts.onCamera();
+        if (k < 1) root.requestAnimationFrame(step); else { baseBox = end; boxAnim = false; fitReserved(); if (opts.onCamera) opts.onCamera(); } })();
+    }
     function applyBox() { var vb = [baseBox.x, baseBox.y - extraTop, baseBox.w, baseBox.h + extraTop].join(' '); svg.setAttribute('viewBox', vb); top.setAttribute('viewBox', vb); }
     function underReserved(area) {
       var r = svg.getBoundingClientRect();
@@ -48,14 +56,18 @@
     function setScene(scene) {
       nodes = {};
       scene.nodes.forEach(function (n) { nodes[n.id] = n; });
-      var frame = scene.frame || scene.nodes; // 이 세팅의 모든 정류장으로 틀을 고정(새 정류장이 생겨도 흔들리지 않게)
+      // 틀 = 이번 단계 정류장(2026-10-27, 앞 단계는 가깝게·정류장이 늘면 뒤로). 지도 틀 비율은 세팅 전체(fullAspect)
+      var all = scene.frame || scene.nodes, fx = all.map(function (n) { return n.x * U; }), fy = all.map(function (n) { return n.y * U; });
+      fullAspect = (Math.max.apply(null, fx) - Math.min.apply(null, fx) + (all.some(function (n) { return n.id === 'N'; }) ? 180 : 0)) / Math.max(1, Math.max.apply(null, fy) - Math.min.apply(null, fy));
+      var frame = scene.nodes;
       var xs = frame.map(function (n) { return n.x * U; }), ys = frame.map(function (n) { return n.y * U; });
       var minX = Math.min.apply(null, xs) - PAD, minY = Math.min.apply(null, ys) - PAD;
       var w = Math.max.apply(null, xs) - minX + PAD, h = Math.max.apply(null, ys) - minY + PAD;
       if(frame.some(function(n){return n.id==='N';})){minX-=90;w+=180;}
-      baseBox = { x: minX, y: minY, w: w, h: h };
+      var prevBox = baseBox; baseBox = { x: minX, y: minY, w: w, h: h };
       svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
       fitReserved();
+      if (prevBox && !reduced && (prevBox.w !== w || prevBox.h !== h || prevBox.x !== minX || prevBox.y !== minY)) animateBox(prevBox, baseBox);
       layers.roads.innerHTML = ''; layers.stops.innerHTML = ''; layers.terrain.innerHTML = '';
       if(scene.river && scene.river.length){
         var points=scene.river.map(function(p){return p.x*U+','+p.y*U;}).join(' ');
@@ -196,6 +208,7 @@
       kind: '2d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
       setBuses: setBuses, setWaiting: setWaiting, flash: flash, project: project, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },
+      contentAspect: function () { return fullAspect; },
       show: function (v) { svg.style.display = v ? '' : 'none'; top.style.display = v ? '' : 'none'; if (v) fitReserved(); },
       dispose: function () { svg.innerHTML = ''; }
     };

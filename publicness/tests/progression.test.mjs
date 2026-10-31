@@ -17,11 +17,12 @@ test('five phases automatically grant 2/3/4/5/6 buses and 2/3/4/4/4 route slots'
 test('random layout is seeded, bounded, separated and does not mutate default',()=>{
  const before=JSON.stringify(cfg),s=S.create(cfg,{mode:'random',rand:()=>.123}),t=S.create(cfg,{mode:'fixed',seed:s.seed}),u=S.create(cfg,{mode:'random',rand:()=>.75});
  assert.notDeepEqual(s.config.nodes,cfg.nodes);assert.deepEqual(s.config.nodes,t.config.nodes);assert.notDeepEqual(s.config.nodes,u.config.nodes);
- for(const n of s.config.nodes){assert.ok(Math.abs(n.x)<=(n.id==='N'?8.7:4.8)&&Math.abs(n.y)<=2.8);for(const m of s.config.nodes)if(m!==n)assert.ok(Math.hypot(m.x-n.x,m.y-n.y)>=1.5);}
+ // 2026-10-27 세로로 펼침(js/layout.js SPREAD_Y 1.45): 세로 한계 2.8 → 2.8×1.45
+ for(const n of s.config.nodes){assert.ok(Math.abs(n.x)<=(n.id==='N'?8.7:4.8)&&Math.abs(n.y)<=2.8*1.45+1e-9);for(const m of s.config.nodes)if(m!==n)assert.ok(Math.hypot(m.x-n.x,m.y-n.y)>=1.5);}
  assert.equal(JSON.stringify(cfg),before);assert.deepEqual(S.create(cfg).config.nodes,cfg.nodes);
  for(let seed=0;seed<100;seed++){
   const nodes=S.create(cfg,{mode:'fixed',seed}).config.nodes,f=nodes.find(n=>n.id==='F');
-  assert.equal(Math.abs(f.x),4.8);assert.equal(Math.abs(f.y),2.8);
+  assert.equal(Math.abs(f.x),4.8);assert.equal(Math.abs(f.y),Math.round(2.8*1.45*100)/100);
   // The phase-five local welfare centre deliberately serves the outer village nearby.
   for(const n of nodes)if(n!==f)assert.ok(Math.hypot(n.x-f.x,n.y-f.y)>=(n.id==='K'?1.5:2.6));
  }
