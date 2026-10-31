@@ -210,6 +210,10 @@
     if (App.net && s.stage !== 'plan') App.net.setFaces([]); // 인물 얼굴 자리는 계획 화면에서만(ui-map-plan이 채움)
     if (App.net) App.net.setOptions({ showWait: s.stage === 'run' || s.stage === 'result' });
     v.setRoutes(routes);
+    // A view refresh can happen while paused, when the playback tick does not run.
+    // Restore physical transfer roads here as well as during active playback.
+    if (v.setDrivingSegments) v.setDrivingSegments(s.current && (s.stage === 'run' || s.stage === 'result')
+      ? s.current.result.timelines.reduce(function (out, tl) { return out.concat(tl.segments.filter(function (seg) { return seg.deadhead; })); }, []) : []);
     document.querySelector('#stage').classList.toggle('previewing',!!opts.preview);
     document.querySelector('#stage').dataset.caption=opts.preview?'AI 제안 미리보기 · 적용 전':'정류장을 연결해 나만의 노선을 만드세요';
     v.setSelectable(opts.selectable || []);

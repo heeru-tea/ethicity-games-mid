@@ -60,7 +60,7 @@
     busScene.add(new T.HemisphereLight(0xffffff, 0xb3aa9e, 0.85)); var busSun = new T.DirectionalLight(0xffffff, 0.55); busSun.position.set(-40, 80, 50); busScene.add(busSun);
     Object.keys(groups).forEach(function (k) { (k === 'buses' && busRenderer ? busScene : scene).add(groups[k]); });
     var nodes = {}, stops = {}, hits = [], zoneGroups = {}, routeSegs = {}, busMesh = {}, lastBus = {};
-    var labelEls = { stop: {}, wait: {}, bus: {} };
+    var labelEls = { stop: {}, wait: {}, bus: {} }, drivingSegments = null, drivingRoadKey = '';
     var frameBox = null, fullBox = null, animateNext = false, camAnim = null, reduced = false, dirty = true, bounds = null, board = null, rising = null, prevIds = null, waitingNow = {}, currentRoutes = [];
 
     // 3D 버스 모델(assets/models/bus.js, 없거나 실패하면 상자 버스). 노선 색마다 띠를 칠한 재질을 하나씩 만든다
@@ -77,6 +77,8 @@
         img.onload = function () {
           var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
           var x = c.getContext('2d'); x.drawImage(img, 0, 0);
+          geo.computeBoundingBox();
+          geo.translate(0, -geo.boundingBox.min.y, 0);
           busTex = x.getImageData(0, 0, c.width, c.height); busGeo = geo; dirty = true;
         };
         img.src = d.texture;
@@ -409,7 +411,7 @@
       // 강조 테두리는 평소 숨김. 지도 깜빡임(flash) 때만 바닥에 잠깐 비친다
       var halo = new T.Mesh(new T.RingGeometry(Math.max(W, D) * 0.6, Math.max(W, D) * 0.6 + 0.5, 40), new T.MeshBasicMaterial({ color: C.warn, transparent: true, opacity: 0.6, depthWrite: false }));
       halo.rotation.x = -Math.PI / 2; halo.position.set(0, 0.04, 0); halo.visible = false; g.add(halo);
-      return { base: base, ring: halo, sign: sign, crowd: crowd, tier: tier, front: (D / 2 + 0.12) * STOP_SCALE };
+      return { group: g, base: base, ring: halo, sign: sign, crowd: crowd, tier: tier, front: (D / 2 + 0.12) * STOP_SCALE };
     }
     var crowdVisible = true;
     function setCrowd(v) { crowdVisible = !!v; Object.keys(stops).forEach(function (id) { if (stops[id].crowd) stops[id].crowd.visible = crowdVisible; }); dirty = true; }
@@ -417,7 +419,9 @@
     function clear(g) { while (g.children.length) { var c = g.children.pop(); if (c.geometry) c.geometry.dispose(); } }
 
     function setScene(sceneDef) {
+      var sameScene = lastScene && lastScene.phase === sceneDef.phase && JSON.stringify(lastScene.nodes) === JSON.stringify(sceneDef.nodes);
       lastScene = sceneDef;
+      if (!sameScene) drivingSegments = null;
       var ids = sceneDef.nodes.map(function (n) { return n.id; });
       clear(groups.world); hits = []; stops = {}; zoneGroups = {};
       nodes = {};
@@ -484,6 +488,7 @@
         if (ld) { var c = document.createElement('span'); c.className = 'stop-load'; c.textContent = ld.tier==='high'?'● ● ●':ld.tier==='mid'?'● ●':'●'; c.title = '출발·도착 '+ld.count+'건'; l.appendChild(c); }
         labels.appendChild(l); labelEls.stop[id] = l;
       });
+      if (currentRoutes.length) setRoutes(currentRoutes);
       fit(); dirty = true;
     }
 
@@ -493,6 +498,55 @@
       var A = wp(a), B = wp(b), dx = B.x - A.x, dz = B.z - A.z, len = Math.hypot(dx, dz) || 1;
       var sign = a < b ? 1 : -1, off = (k - (n - 1) / 2) * LANE * sign;
       return { x: -dz / len * off, z: dx / len * off };
+    }
+
+    // Physical roads are shared by routes; route colours remain thin map guides.
+    // Both the driving path and this surface use BusMotion's map-unit dimensions.
+    function drivingRoads(routes) {
+      var spec = root.PB.BusMotion.road, edges = {}, junctions = {}, half = spec.halfWidth * K;
+      root.PB.BusMotion.roadEdges(routes, drivingSegments, Object.keys(nodes).map(function(id){return nodes[id];})).forEach(function(edge){
+        var a=edge[0],b=edge[1];edges[segKey(a,b)]=edge;
+        (junctions[a]=junctions[a]||new Set()).add(b);
+        (junctions[b]=junctions[b]||new Set()).add(a);
+      });
+      function strip(a,b,width,y,color) {
+        var len=Math.hypot(b.x-a.x,b.z-a.z); if(len<.001)return;
+        var m=new T.Mesh(new T.PlaneGeometry(len,width),mat(color));
+        m.rotation.x=-Math.PI/2; m.rotation.z=-Math.atan2(b.z-a.z,b.x-a.x);
+        m.position.set((a.x+b.x)/2,y,(a.z+b.z)/2);m.receiveShadow=true;m.name='driving-road';groups.routes.add(m);
+      }
+      Object.keys(edges).forEach(function(key){
+        var a=wp(edges[key][0]),b=wp(edges[key][1]);
+        strip(a,b,half*2+.32,.12,0xC5C5BA);
+        strip(a,b,half*2,.15,0x59666A);
+        var d={x:b.x-a.x,z:b.z-a.z},len=Math.hypot(d.x,d.z),trim=spec.junction*K;
+        if(len>trim*2) [-1,1].forEach(function(sign){
+          var ox=-d.z/len*(half-.28)*sign,oz=d.x/len*(half-.28)*sign;
+          strip({x:a.x+d.x/len*trim+ox,z:a.z+d.z/len*trim+oz},
+            {x:b.x-d.x/len*trim+ox,z:b.z-d.z/len*trim+oz},.07,.17,0xDDDCD0);
+        });
+      });
+      Object.keys(stops).forEach(function(id){
+        var stop=stops[id],p=wp(id),neighbours=junctions[id];
+        stop.group.position.set(p.x,0,p.z);
+        if(!neighbours)return;
+        [[spec.junction*K+.16,.12,0xC5C5BA],[spec.junction*K,.15,0x59666A]].forEach(function(style){
+          var disk=new T.Mesh(new T.CircleGeometry(style[0],48),mat(style[2]));disk.rotation.x=-Math.PI/2;
+          disk.position.set(p.x,style[1],p.z);disk.receiveShadow=true;disk.name='driving-junction';groups.routes.add(disk);
+        });
+        var best = root.PB.BusMotion.shelterPosition(id, Object.keys(nodes).map(function(key){return nodes[key];}),
+          Object.keys(edges).map(function(key){return edges[key];}),
+          Object.keys(zoneGroups).map(function(key){var q=zoneGroups[key].position;return {x:q.x/K,y:q.z/K};}));
+        stop.group.position.set(best.x*K,0,best.y*K);
+      });
+    }
+
+    function setDrivingSegments(segments) {
+      var key = segments.map(function (s) { return s.from + '>' + s.to; }).sort().join('|');
+      if (drivingSegments && drivingRoadKey === key) return;
+      drivingSegments = segments;
+      drivingRoadKey = key;
+      setRoutes(currentRoutes);
     }
 
     function setRoutes(routes) {
@@ -505,6 +559,7 @@
           (routeSegs[k] = routeSegs[k] || []).push(r.num);
         }
       });
+      if (root.PB.BusMotion) drivingRoads(routes);
       routes.forEach(function (r, ri) {
         var color = new T.Color(r.color).getHex(), m = new T.MeshLambertMaterial({ color: color, transparent: !!r.dim, opacity: r.dim ? 0.24 : 1 });
         var dash = (r.dash || '').split(' ').filter(Boolean).map(function (x) { return Number(x) * K / PX; });
@@ -558,6 +613,17 @@
     function setSelectable(ids) { selectable = ids || []; paintStops(); }
     function setSelected(ids) { selected = ids || []; paintStops(); }
 
+    var busContactMaterial = null;
+    function contactMaterial() {
+      if (busContactMaterial) return busContactMaterial;
+      var c = document.createElement('canvas'); c.width = c.height = 64;
+      var ctx = c.getContext('2d'), gradient = ctx.createRadialGradient(32,32,5,32,32,32);
+      gradient.addColorStop(0,'rgba(22,29,32,.48)'); gradient.addColorStop(.65,'rgba(22,29,32,.23)'); gradient.addColorStop(1,'rgba(22,29,32,0)');
+      ctx.fillStyle=gradient;ctx.fillRect(0,0,64,64);
+      busContactMaterial = new T.MeshBasicMaterial({map:new T.CanvasTexture(c),transparent:true,depthWrite:false});
+      return busContactMaterial;
+    }
+
     function setBuses(list) {
       var seen = {};
       list.forEach(function (b) {
@@ -587,9 +653,15 @@
         else if (g.userData.color !== b.color + (b.express ? '|x' : '')) { g.userData.model.material = busMat(b.color, b.express ? EXPRESS_BODY : null); g.userData.color = b.color + (b.express ? '|x' : ''); }
         var x = b.x * K + (b.dx || 0) * K / PX, z = b.y * K + (b.dy || 0) * K / PX;
         var last = lastBus[b.id];
-        if (last && Math.hypot(x - last.x, z - last.z) > 0.05) g.rotation.y = -Math.atan2(z - last.z, x - last.x);
+        if (Number.isFinite(b.heading)) g.rotation.y = -b.heading;
+        else if (last && Math.hypot(x - last.x, z - last.z) > 0.05) g.rotation.y = -Math.atan2(z - last.z, x - last.x);
         lastBus[b.id] = { x: x, z: z };
-        g.position.set(x, 0, z);
+        g.position.set(x, .18, z);
+        if (!g.userData.contact) {
+          var shadow = new T.Mesh(new T.PlaneGeometry(3.65, 1.9), contactMaterial());
+          shadow.rotation.x = -Math.PI / 2; shadow.position.y = -.005; shadow.renderOrder = -1;
+          g.add(shadow); g.userData.contact = shadow;
+        }
         g.visible = true;
         labelEls.bus[b.id].textContent = '';
         g.scale.set(BUS_SCALE*(b.regional?1.4:b.express?1.2:1), BUS_SCALE, BUS_SCALE);
@@ -612,7 +684,7 @@
       Object.keys(waitingNow).forEach(function (id) {
         var n = waitingNow[id];
         if (!n || !nodes[id]) return;
-        var p = wp(id);
+        var p = stops[id] ? stops[id].group.position : wp(id);
         for (var i = 0; i < Math.min(n, 12); i++) {
           var m = new T.Mesh(personGeo, mat(C.people));
           m.position.set(p.x + 2.4 + (i % 4) * 0.75, 0.5, p.z - 2.2 + Math.floor(i / 4) * 0.75);
@@ -745,7 +817,8 @@
       kind: '3d', ok: true, setScene: setScene, setRoutes: setRoutes, setSelectable: setSelectable, setSelected: setSelected,
       zoneInfo: function () { return Object.keys(zoneGroups).map(function (id) { return { id: id, model: !!zoneGroups[id].userData.model, offset: {x:zoneGroups[id].position.x-wp(id).x,z:zoneGroups[id].position.z-wp(id).z} }; }); },
       busInfo: function () { return Object.keys(busMesh).filter(function (id) { return busMesh[id].visible; }).map(function (id) { var u = busMesh[id].userData; return { id: Number(id), model: !!u.model, color: u.color || null }; }); },
-      refit: function () { fit(); }, contentAspect: contentAspect, setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, laneOffset: laneOffset,
+      refit: function () { fit(); }, contentAspect: contentAspect, setBuses: setBuses, setWaiting: setWaiting, setCrowd: setCrowd, flash: flash, project: project, setDrivingSegments: setDrivingSegments,
+      projectRoad: function (x, y) { return toScreen(x * K, .18, y * K); }, laneOffset: laneOffset,
       setReducedMotion: function (v) { reduced = !!v; },
       show: function (v) { container.hidden = !v; if (v) { fit(); dirty = true; frame(); } },
       dispose: function () { renderer.dispose(); },

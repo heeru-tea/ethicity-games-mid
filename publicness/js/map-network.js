@@ -32,7 +32,7 @@
     function project(x, y) { var v = getView(); return v.project(x, y); }
     function lanePoint(a, b, num, f) {
       var v = getView(), o = v.laneOffset ? v.laneOffset(a.id, b.id, num) : { dx: 0, dy: 0 };
-      return project(a.x + (b.x - a.x) * f + o.dx / 110, a.y + (b.y - a.y) * f + o.dy / 110);
+      return (v.projectRoad || v.project)(a.x + (b.x - a.x) * f + o.dx / 110, a.y + (b.y - a.y) * f + o.dy / 110);
     }
     function draw() {
       routeSvg.textContent = ''; svg.textContent = ''; labels.textContent = ''; placed = [];

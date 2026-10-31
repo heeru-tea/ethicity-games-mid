@@ -309,10 +309,28 @@
   }
   function drawBuses(App, t) {
     var v = App.view;
+    R.motionCache = R.motionCache || new WeakMap();
+    if (v.setDrivingSegments) {
+      if (R.roadResult !== R.res) {
+        R.roadResult = R.res;
+        R.roadSegments = R.res.timelines.reduce(function (out, tl) { return out.concat(tl.segments.filter(function (s) { return s.deadhead; })); }, []);
+      }
+      v.setDrivingSegments(R.roadSegments);
+    }
     var counts = PB.Sim.occupancyAt(R.res, Math.floor(t)), names = namesOnBus(Math.floor(t));
     v.setBuses(R.res.timelines.map(function (tl) {
       var b = busAt(App, tl, t), pos = b.pos, num = b.num;
       var color = num ? App.routeStyle(num).color : '#6B7280';
+      if (v.kind === '3d' && PB.BusMotion && tl.segments.length && !(pos.parked && !tl.route)) {
+        var cached = R.motionCache.get(tl);
+        if (!cached || cached.segments !== tl.segments || cached.count !== tl.segments.length || cached.nodes !== cfg.nodes) {
+          cached = { segments: tl.segments, count: tl.segments.length, nodes: cfg.nodes, path: PB.BusMotion.compile(tl, cfg.nodes) };
+          R.motionCache.set(tl, cached);
+        }
+        var drive = PB.BusMotion.sample(cached.path, t);
+        if (drive) return { id: tl.busId, x: drive.x, y: drive.y, heading: drive.heading, color: color, num: num,
+          riders: counts[tl.busId], names: names[tl.busId] || [], express: cfg.challengeApplied && tl.busId === 7, regional: cfg.challengeApplied && tl.busId === 9 };
+      }
       if (pos.node) {
         var p = App.nodeXY(pos.node);
         var parked = pos.parked;
