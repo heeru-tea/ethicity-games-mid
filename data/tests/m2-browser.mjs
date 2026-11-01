@@ -111,4 +111,115 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
     } finally { await browser.close(); }
   }
 }
+// 2부 — 컨베이어 실제 분류(spec §5.5)
+const NO_NUMBERS = /\d+\s*\/\s*\d+|%|\d+\s*개/;
+async function toConveyor(page, fill, step) {
+  await toInspect(page, fill);
+  if (step) await page.evaluate((s) => { DR.config.conveyor.step = s; }, step);
+  await submitAndConfirm(page);
+  await page.locator('#screen-conveyor').waitFor({ state: 'visible', timeout: 4000 });
+}
+
+for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 }]) {
+  const small = viewport.width < 500;
+  // all pass flow
+  {
+    const { browser, page, errors } = await openGame({ viewport, query: '?start=m2' });
+    try {
+      await toConveyor(page, M2_ALL2);
+      const txt = await page.locator('#screen-conveyor').innerText();
+      assert.ok(txt.includes('그럼, 실제로 돌려 보자.'), 'supervisor intro');
+      assert.equal(await page.locator('#screen-conveyor .cv-bin').count(), 7, 'seven bins');
+      if (small) assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 375 && document.getElementById('screen-conveyor').scrollWidth <= 375), 'conveyor fits 375');
+      await page.locator('#btn-cv-skip').click();
+      assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), 12, 'all placed after skip');
+      assert.equal(await page.locator('#screen-conveyor .cv-item[data-correct="true"]').count(), 12, 'all correct');
+      assert.ok(!NO_NUMBERS.test(await page.locator('#screen-conveyor').innerText()), 'no numbers');
+      await page.screenshot({ path: shotPath('conveyor-end-' + viewport.width) });
+      await page.locator('#btn-cv-next').click();
+      const res = await throughResults(page);
+      assert.deepEqual(res.map((r) => r.outcome), ['pass', 'pass', 'pass', 'pass']);
+      assert.ok(res.every((r) => r.wrong === 0), 'no wrong items on pass pages');
+      const senior = await page.evaluate(() => DR.Missions.m2.story.senior[0].text);
+      assert.ok((await page.locator('#screen-story').innerText()).includes(senior), 'senior at the end');
+      assert.deepEqual(errors, []);
+    } finally { await browser.close(); }
+  }
+}
+
+// receipt to paper
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m2' });
+  try {
+    await toConveyor(page, { ...M2_ALL2, f_receipt: 2 });
+    await page.locator('#btn-cv-skip').click();
+    const receipt = page.locator('#screen-conveyor .cv-item[data-id="cv7"]');
+    assert.equal(await receipt.getAttribute('data-bin'), 'paper');
+    assert.equal(await receipt.getAttribute('data-correct'), 'false');
+    assert.equal(await page.locator('#screen-conveyor .cv-bin[data-bin="paper"] .cv-item[data-id="cv7"]').count(), 1, 'sits in the paper bin');
+    await page.locator('#btn-cv-next').click();
+    const res = await throughResults(page);
+    const s3 = res.find((r) => r.scene === 'S3');
+    assert.equal(s3.outcome, 'inconvenience');
+    assert.ok(s3.wrong >= 1, 'wrong item thumbnail on S3');
+    assert.ok(s3.text.includes("영수증 사진이 '종이'로"), 'receipt line');
+    assert.ok(res.filter((r) => r.scene !== 'S3').every((r) => r.wrong === 0));
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
+// emergency stop → resume → end (2배속)
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m2' });
+  try {
+    await toConveyor(page, { ...M2_ALL2, battery_aa: 0 }, 0.05);
+    await page.locator('#btn-cv-fast').click();
+    assert.equal(await page.locator('#btn-cv-fast').getAttribute('aria-pressed'), 'true');
+    await page.locator('#cv-stop').waitFor({ state: 'visible', timeout: 6000 });
+    const stopText = await page.locator('#cv-stop').innerText();
+    assert.ok(stopText.includes('비상 정지') && stopText.includes('나도 같이 책임질게'), stopText);
+    await page.screenshot({ path: shotPath('conveyor-stop-1280') });
+    await page.locator('#btn-cv-resume').click();
+    await page.locator('#btn-cv-next').waitFor({ state: 'visible', timeout: 6000 });
+    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), 12);
+    assert.ok(!(await page.locator('#cv-stop').isVisible()));
+    const bad = await page.locator('#screen-conveyor .cv-item[data-correct="false"]').evaluateAll((els) => els.map((e) => e.dataset.id));
+    assert.ok(bad.includes('cv12'), 'battery S4 wrong');
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
+// skip during stop — done only once
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m2' });
+  try {
+    await toConveyor(page, { ...M2_ALL2, battery_aa: 0 }, 0.05);
+    await page.evaluate(() => { const o = DR.UI.result; window.__rc = 0; DR.UI.result = function () { window.__rc++; return o.apply(this, arguments); }; });
+    await page.locator('#cv-stop').waitFor({ state: 'visible', timeout: 6000 });
+    await page.locator('#btn-cv-skip').click();
+    assert.ok(!(await page.locator('#cv-stop').isVisible()), 'stop closed by skip');
+    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), 12);
+    // 정지 창 없이 끝나도 책임 대사는 끝 화면에 남는다
+    assert.ok((await page.locator('#screen-conveyor').innerText()).includes('나도 같이 책임질게'));
+    await page.evaluate(() => { const b = document.getElementById('btn-cv-next'); b.click(); b.click(); });
+    await page.waitForTimeout(300);
+    assert.equal(await page.evaluate(() => window.__rc), 1, 'done once');
+    assert.equal(await page.locator('#screen-result .result-scene').getAttribute('data-scene'), 'S1');
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
+// reduced motion — 열자마자 다 분류된 함
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m2' });
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await toConveyor(page, { ...M2_ALL2, battery_aa: 0 });
+    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), 12, 'all in bins at once');
+    assert.ok(await page.locator('#btn-cv-next').isVisible());
+    assert.ok(!(await page.locator('#cv-stop').isVisible()));
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
 console.log('PASS m2');

@@ -6,7 +6,7 @@
 (function (root) {
   'use strict';
 
-  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'result', 'prep', 'knockout', 'outro'];
+  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'conveyor', 'result', 'prep', 'knockout', 'outro'];
   var DR = root.DR;
 
   // 화면을 바꿀 때 포커스를 풀어 둔다 — 연타한 Space/Enter가 다음 화면 버튼을 눌러 브리핑·결과를 건너뛰지 않게
@@ -134,10 +134,15 @@
     if (App.state.firstTry === null) App.state.firstTry = r.allPass;
     App.state.needRevealed = true; // 첫 결과부터 필요 장수 공개(P3)
     checkpoint('result');
-    DR.UI.result(m, r, function () {
-      if (r.allPass || App.state.supplements >= DR.config.maxSupplements) finishMission(m);
-      else prepSupplement(m, r);
-    });
+    function showResult() {
+      DR.UI.result(m, r, function () {
+        if (r.allPass || App.state.supplements >= DR.config.maxSupplements) finishMission(m);
+        else prepSupplement(m, r);
+      });
+    }
+    // 2 임무: 장면별 결과 전에 컨베이어 실제 분류(spec §5.5). 1 임무 결과는 그대로
+    if (m.conveyor) DR.UI.conveyor(m, r, showResult);
+    else showResult();
   }
 
   // 보충: 빠진 조합에 모자란 장 수만큼(여유 포함) 그 카드가 나오는 짧은 코스. 이미 모은 가방은 그대로.
