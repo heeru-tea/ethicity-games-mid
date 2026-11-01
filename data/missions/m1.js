@@ -12,6 +12,13 @@
 
   var m1 = {
     id: 'm1', title: '침수 판별 AI', next: 'm2', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 1101, fires: 6,
+    // 달리기 구역(코스 순서 — 사용자 승인: 물청소 → 고가 아래 → 밤 번화가 → 주택가 골목)
+    zones: [
+      { id: 'S2', title: '물청소 직후의 낮 도로', short: '물청소 도로' },
+      { id: 'S4', title: '고가도로 아래 저지대', short: '고가도로 아래' },
+      { id: 'S3', title: '비 오는 밤 번화가 교차로', short: '밤 번화가' },
+      { id: 'S1', title: '낮 주택가 골목', short: '주택가 골목' }
+    ],
     labelOptions: [
       { id: 'flood_deep', text: '침수(깊음)' },
       { id: 'flood_shallow', text: '침수(얕음)' },

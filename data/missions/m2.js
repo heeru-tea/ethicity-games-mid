@@ -16,6 +16,14 @@
 
   var m2 = {
     id: 'm2', title: '분리배출 분류 AI', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 2201, fires: 6,
+    // 달리기 구역(장면 순서) · 가짜는 자기 구역 뒤쪽 절반 · 배경은 선별장(js/run-scenery.js)
+    zones: [
+      { id: 'S1', title: '음료 캔과 통조림 캔', short: '캔' },
+      { id: 'S2', title: '찌그러진 페트병과 비닐', short: '페트·비닐' },
+      { id: 'S3', title: '우유팩·신문지·영수증', short: '종이·영수증' },
+      { id: 'S4', title: '캔 사이에 섞인 건전지', short: '건전지' }
+    ],
+    fakeLate: 'zone', scenery: 'sorting',
     labels: [
       { id: 'can', text: '캔' },
       { id: 'pet', text: '투명 페트' },
