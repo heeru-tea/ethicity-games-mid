@@ -11,7 +11,10 @@
   var S = window.PrivacyStorage;
   var CFG = window.PRIVACY_CONFIG || { characterImages: {}, defaultAvatar: 'assets/avatar-default.svg', defaultNickname: '플레이어' };
 
-  var SPEED_MS = { normal: 1500, fast: 500, instant: 0 }; // 메시지 간격(ms): 한 개씩 '두욱' 소리와 함께, 읽을 틈을 두고
+  var SPEED_MS = { normal: 1500, fast: 500, instant: 0 }; // 메시지 간격(ms): 한 개씩 '두욱' 소리와 함께, 읽을 틈을 두고(타자 효과가 꺼졌을 때)
+  // 타자 효과(typer.js)가 켜져 있으면: 친구 메시지 앞 '입력 중…' → 글자가 주르륵 → 다 쳐진 뒤 잠깐 쉬고 다음 메시지
+  var TYPING_MS = { normal: 450, fast: 150 }; // '입력 중…' 표시 시간
+  var TYPE_GAP = { normal: 900, fast: 300 };  // 한 메시지를 다 친 뒤 다음 메시지까지
   var VIEW_ICON = { group: '👥', dm: '💬', sns: '📱', ai: '✦', pc: '🖥', place: '📍' };
   // 장면을 띄우는 기기: 폰(메신저·SNS) / 모니터(공용 PC·AI) / 없음(그 자리 대화 → 대화창)
   var DEVICE = { group: 'phone', dm: 'phone', sns: 'phone', ai: 'monitor', pc: 'monitor', place: 'none' };
@@ -26,6 +29,7 @@
   // 이 게임에서만 쓰는 이름(공통 플레이어 정보가 없을 때). 제어 문자·앞뒤 공백을 빼고 10자까지
   function cleanName(v) { return typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, NAME_MAX) : ''; }
   var revealTimer = null, revealQueue = [], revealDone = null;
+  var typing = null, typingNode = null, typingDots = null; // 지금 쳐지는 메시지(typer 핸들·줄) / '입력 중…' 줄
   var pathBack = 'v-start', reflectBack = 'v-start';
   var noticeMsgs = [];
   var posTimer = null;
@@ -121,6 +125,7 @@
 
   function applySettings() {
     document.documentElement.classList.toggle('reduce-motion', settings.reduceMotion);
+    window.PrivacyTyper.set({ speed: settings.speed, reduce: settings.reduceMotion });
   }
 
   /* ── 아바타 ───────────────────────── */
@@ -273,19 +278,56 @@
     return fig;
   }
 
+  /* ── 폰 메시지 차례로 보이기 ──
+   * 한 줄씩: (친구 메시지면 '입력 중…' 잠깐) → 글자가 주르륵(typer.js) → 다 쳐지면 잠깐 쉬고 다음 줄.
+   * 누르기(화면·Space·Enter) 한 번 = 치는 중이면 그 줄을 다 보여 주기, 다 보인 상태면 바로 다음 줄(누른 것을 버리지 않음).
+   * '모두 보기 ▸▸'는 남은 줄을 한꺼번에. 화면 읽기 프로그램에는 다 보인 줄만 #g-live로 한 번씩 읽힌다. */
   function stopReveal() {
     if (revealTimer) clearTimeout(revealTimer);
     revealTimer = null;
+    if (typing) { typing.cancel(); typing = null; }
+    if (typingNode) typingNode.removeAttribute('aria-hidden');
+    typingNode = null;
+    removeDots();
     revealQueue = [];
     revealDone = null;
   }
+  function announce(n) {
+    if (!n || n._said || !n._say) return;
+    n._said = true;
+    $('g-live').appendChild(el('p', null, n._say));
+  }
+  function showDots(n) {
+    var l = n._line, ch = story.characters[l.who] || { name: l.who, initial: '?' };
+    var li = el('li', 'ln msg typing' + (l.who === 'lumi' ? ' ai' : ''));
+    li.setAttribute('aria-hidden', 'true');
+    li.appendChild(avatarNode(l.who, ch));
+    var body = el('div', 'msg-body');
+    body.appendChild(el('span', 'who', ch.name));
+    var b = el('div', 'bubble');
+    b.appendChild(el('span', 'dots', '입력 중…'));
+    body.appendChild(b);
+    li.appendChild(body);
+    typingDots = li;
+    $('g-log').appendChild(li);
+    scrollLog(false);
+  }
+  function removeDots() {
+    if (typingDots && typingDots.parentNode) typingDots.parentNode.removeChild(typingDots);
+    typingDots = null;
+  }
+  // 친구가 보낸 말풍선만 '입력 중…'(나·해설·알림·게시물 카드는 없음)
+  function wantsDots(n) { var l = n._line; return !!(l && l.who && l.who !== 'me' && l.who !== 'narr' && l.who !== 'sys' && !l.kind); }
   function flushReveal() {
     if (!revealDone) return;
     var log = $('g-log');
-    revealQueue.forEach(function (n) { n.classList.remove('enter'); log.appendChild(n); stageBubble(n._line); });
-    revealQueue = [];
     if (revealTimer) clearTimeout(revealTimer);
     revealTimer = null;
+    if (typingDots) { removeDots(); revealQueue.unshift(typingNode); } // 아직 화면에 안 붙은 줄
+    else if (typing) { typing.cancel(); typingNode.removeAttribute('aria-hidden'); announce(typingNode); }
+    typing = null; typingNode = null;
+    revealQueue.forEach(function (n) { n.classList.remove('enter'); log.appendChild(n); stageBubble(n._line); announce(n); });
+    revealQueue = [];
     var done = revealDone; revealDone = null;
     scrollLog(true);
     done();
@@ -295,7 +337,7 @@
     var log = $('g-log');
     var ms = SPEED_MS[settings.speed];
     if (!animate || ms === 0 || !nodes.length) {
-      nodes.forEach(function (n) { log.appendChild(n); stageBubble(n._line); });
+      nodes.forEach(function (n) { log.appendChild(n); stageBubble(n._line); announce(n); });
       scrollLog(true);
       done();
       return;
@@ -307,20 +349,52 @@
     skip.type = 'button';
     skip.addEventListener('click', flushReveal);
     $('g-dock').appendChild(skip);
-    (function step() {
-      var n = revealQueue.shift();
-      if (!settings.reduceMotion) n.classList.add('enter');
-      log.appendChild(n);
-      stageBubble(n._line);
-      scrollLog(false);
-      if (!revealQueue.length) {
-        revealTimer = null;
-        var d = revealDone; revealDone = null;
-        d();
-        return;
-      }
-      revealTimer = setTimeout(step, ms);
-    })();
+    revealNext(false);
+  }
+  // 다음 줄 하나. manual = 눌러서 넘긴 경우('입력 중…' 없이 바로 치기 시작)
+  function revealNext(manual) {
+    revealTimer = null;
+    var n = revealQueue.shift();
+    if (!n) return;
+    var typed = window.PrivacyTyper.enabled() && !!n._typeEl;
+    if (typed && !manual && wantsDots(n)) {
+      typingNode = n;
+      showDots(n);
+      revealTimer = setTimeout(function () { removeDots(); startLine(n, true); }, TYPING_MS[settings.speed] || 0);
+      return;
+    }
+    startLine(n, typed);
+  }
+  function startLine(n, typed) {
+    revealTimer = null;
+    typingNode = n;
+    if (!settings.reduceMotion) n.classList.add('enter');
+    if (typed) n.setAttribute('aria-hidden', 'true'); // 치는 동안은 읽히지 않게 — 다 쳐지면 #g-live로 한 번
+    $('g-log').appendChild(n);
+    stageBubble(n._line);
+    scrollLog(false);
+    if (!typed) { lineDone(n); return; }
+    var h = window.PrivacyTyper.start(n._typeEl, n._text, function () { typing = null; lineDone(n); });
+    typing = h.active ? h : null;
+  }
+  function lineDone(n) {
+    n.removeAttribute('aria-hidden');
+    announce(n);
+    typingNode = null;
+    if (!revealQueue.length) {
+      var d = revealDone; revealDone = null;
+      if (d) d();
+      return;
+    }
+    var gap = window.PrivacyTyper.enabled() ? TYPE_GAP[settings.speed] : SPEED_MS[settings.speed];
+    revealTimer = setTimeout(function () { revealNext(false); }, gap);
+  }
+  // 누르기: '입력 중…' → 이 줄 바로 다 보여 주기 / 치는 중 → 이 줄 다 보여 주기 / 다 보인 상태 → 다음 줄
+  function advanceReveal() {
+    if (!revealDone) return;
+    if (typingDots) { clearTimeout(revealTimer); var w = typingNode; removeDots(); startLine(w, false); return; }
+    if (typing && typing.active) { typing.finish(); return; }
+    if (revealTimer) { clearTimeout(revealTimer); revealNext(true); }
   }
   function scrollLog(instant) {
     var phone = $('g-phone');
@@ -344,7 +418,25 @@
   function sfx(id) { if (window.PrivacySfx) { window.PrivacySfx.setEnabled(settings.sound); window.PrivacySfx.play(id); } }
   function chime() { sfx('paper'); }
   window.PrivacySfxDoor = function () { sfx('door'); };
-  function nodeOf(line) { var n = lineNode(line); n._line = line; return n; }
+  // 화면에 붙일 줄. _say = 화면 읽기용 한 문장, _typeEl/_text = 타자 효과를 줄 자리(해설·말풍선만)
+  function nodeOf(line) {
+    var n = lineNode(line), who = line.who || 'narr';
+    n._line = line;
+    n._say = sayOf(line);
+    if (!line.kind && who !== 'sys') {
+      n._typeEl = who === 'narr' ? n : n.querySelector('.bubble p');
+      n._text = fill(line.text);
+    }
+    return n;
+  }
+  function sayOf(line) {
+    var who = line.who || 'narr', t = fill(line.text || '');
+    if (line.kind === 'setting') return t + (line.meta ? ', ' + fill(line.meta) : '');
+    if (line.kind === 'image') return '사진: ' + t;
+    if (who === 'narr' || who === 'sys') return t;
+    var name = who === 'me' ? player.nickname + ' (나)' : (story.characters[who] || { name: who }).name;
+    return name + ': ' + t + (line.meta ? ' (' + fill(line.meta) + ')' : '');
+  }
   // 줄이 나타날 때: 같은 공간 친구 머리 위 말풍선(폰 메시지는 원문 대신 📱…) + 장면에 적어 둔 반응
   function stageBubble(line) {
     if (!line || !progress.run) return;
@@ -443,6 +535,7 @@
     if (v.meta) head.appendChild(el('span', 'head-meta', v.meta));
 
     $('g-log').textContent = '';
+    $('g-live').textContent = '';
     $('g-dock').textContent = '';
     if (current !== 'v-game') show('v-game', $('g-chap'));
     if (!v.cg) cgShow(null);
@@ -481,6 +574,7 @@
     var mine = el('li', 'ln choice-echo');
     mine.appendChild(el('span', 'echo-label', '내 선택'));
     mine.appendChild(el('span', null, fill(c.text)));
+    mine._say = '내 선택: ' + fill(c.text);
     out.push(mine);
     if (c.say) out.push(nodeOf({ who: 'me', text: c.say }));
     return out.concat(E.visibleLines(story, c.react, run).map(nodeOf));
@@ -971,7 +1065,7 @@
     $('btn-menu').addEventListener('click', function () { syncMenu(); openOverlay('menu'); });
     $('btn-menu-close').addEventListener('click', function () { closeOverlay('menu'); });
     Array.prototype.forEach.call(document.querySelectorAll('input[name=speed]'), function (r) {
-      r.addEventListener('change', function () { settings.speed = r.value; saveSettings(); });
+      r.addEventListener('change', function () { settings.speed = r.value; applySettings(); saveSettings(); });
     });
     $('opt-motion').addEventListener('change', function () { settings.reduceMotion = $('opt-motion').checked; applySettings(); saveSettings(); });
     $('opt-sound').addEventListener('change', function () { settings.sound = $('opt-sound').checked; saveSettings(); if (settings.sound) sfx('tap'); });
@@ -1003,13 +1097,13 @@
       if (!$('menu').hidden) { if (e.key === 'Escape') closeOverlay('menu'); trapFocus(e, 'menu'); return; }
       if (current !== 'v-game' || e.altKey || e.ctrlKey || e.metaKey) return;
       var tag = (e.target && e.target.tagName) || '';
-      if (revealDone && (e.key === 'Enter' || e.key === ' ') && tag !== 'BUTTON') { e.preventDefault(); flushReveal(); return; }
+      if (revealDone && (e.key === 'Enter' || e.key === ' ') && tag !== 'BUTTON') { e.preventDefault(); advanceReveal(); return; }
       if (/^[1-9]$/.test(e.key)) {
         var b = $('g-dock').querySelectorAll('.choice')[Number(e.key) - 1];
         if (b) { e.preventDefault(); b.click(); }
       }
     });
-    $('g-log').addEventListener('click', function () { if (revealDone) flushReveal(); });
+    $('g-log').addEventListener('click', function (e) { if (e.target.closest && e.target.closest('button')) return; if (revealDone) advanceReveal(); }); // 사진 '눌러서 보기'는 넘기기로 치지 않음
   }
   function goTo(view) {
     if (view === 'v-ending' && progress.run && progress.run.screen === 'ending') renderEnding(false);
@@ -1041,7 +1135,9 @@
   window.PrivacyApp = {
     state: function () { return progress.run ? E.clone(progress.run) : null; },
     player: function () { return E.clone(player); },
-    setSpeed: function (s) { if (SPEED_MS.hasOwnProperty(s)) settings.speed = s; },
+    setSpeed: function (s) { if (SPEED_MS.hasOwnProperty(s)) { settings.speed = s; applySettings(); } },
+    setReduceMotion: function (v) { settings.reduceMotion = !!v; applySettings(); },
+    typing: function () { return !!((typing && typing.active) || typingDots); },
     staging: function () { return cutPending; }
   };
 })();

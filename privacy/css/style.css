@@ -208,9 +208,15 @@ body[data-view="v-game"] .app { padding-top: 12px; padding-bottom: 16px; }
 .echo-label { font-size: .75rem; font-weight: 700; color: var(--accent); }
 
 .enter { animation: rise .28s ease-out; }
+/* 타자 효과(typer.js): 아직 안 쳐진 글자는 자리만 차지 / 친구 메시지 앞 '입력 중…' */
+.type-rest { visibility: hidden; }
+.ln.msg.typing .bubble { color: var(--text-mute); font-size: .88rem; }
+.ln.msg.typing .dots { animation: typing-pulse 1s ease-in-out infinite; }
+@keyframes typing-pulse { 50% { opacity: .4; } }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-@media (prefers-reduced-motion: reduce) { .enter { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .enter, .ln.msg.typing .dots { animation: none; } }
 
 .dock { padding-top: 12px; min-height: 64px; }
 .prompt { font-weight: 700; margin: 0 0 8px; }
