@@ -10,7 +10,7 @@ assert.equal(await page.evaluate(() => PB.Bgm.state().playing), false, '입력 �
 await page.mouse.click(5, 5); // 첫 입력
 await page.evaluate(() => { const A = PB.App; A.startGame(); A.s.tutorialSeen = true; PB.Session.beginPlan(A.s); A.go('plan'); document.querySelectorAll('dialog[open]').forEach(d => d.close()); });
 await page.waitForFunction(() => PB.Bgm.state().playing && PB.Bgm.state().cur === 'plan', null, { timeout: 8000 });
-await page.waitForTimeout(900); const v = await page.evaluate(() => PB.Bgm.state().volume); assert.ok(v > 0.1 && v <= 0.14 + 1e-6, '볼륨 0.14까지 서서히: ' + v);
+await page.waitForFunction(() => PB.Bgm.state().volume >= 0.139, null, { timeout: 5000 }); const v = await page.evaluate(() => PB.Bgm.state().volume); assert.ok(v <= 0.14 + 1e-6, '볼륨은 0.14까지(서서히 올라감): ' + v);
 await page.evaluate(() => { PB.Session.startRun(PB.App.s); PB.App.go('run'); });
 await page.waitForFunction(() => PB.Bgm.state().cur === 'run' && PB.Bgm.state().playing, null, { timeout: 8000 });
 await page.evaluate(() => { PB.Bgm.set(false); }); await page.waitForTimeout(600);
