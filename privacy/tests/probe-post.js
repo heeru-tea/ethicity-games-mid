@@ -1121,6 +1121,21 @@
       ok($('#menu').hidden, 'Esc로 메뉴 닫힘');
     }
 
+    else if (s === 'route-bad') {
+      // 지시서 [나쁜 경로]: 내가 해친 민준이는 9시 전에 말리지 않는다(아무도 없으면 '알림'), 엔딩 D 본문에 양면·책임 행동
+      var BAD = ['pro_1#sns', 'c1_e1_a#public', 'c1_e1_b#pass', 'c1_e2_a#shoot', 'c1_e2_b#story', 'c1_e2_d#no', 'c1_e3_b#capture', 'c1_e3_cap#none',
+        'c2_e4_a#forward', 'c2_e4_b#blame', 'c2_e5_a#all', 'c2_e5_b#close', 'c2_e6_a#post', 'c2_e6_b#deny',
+        'c3_e7_a#join', 'c3_e7_b#hide', 'c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#fine', 'c3_e9_a#share', 'c3_e9_b#keep'];
+      var heads = {};
+      new MutationObserver(function () { var st = PrivacyApp.state(); var h = $('#g-head .head-title'); if (st && h) heads[st.scene] = h.textContent; }).observe($('#g-head'), { childList: true, subtree: true });
+      $('#btn-new').click(); await wait();
+      await play(BAD);
+      ok(heads.c3_e8_b === '알림', '9시 전: 민준 개인톡이 아님(말리는 친구 없음 → 알림) ' + heads.c3_e8_b);
+      ok(heads.c3_e8_i === '민준', '다음 날 민준 개인톡은 그대로 ' + heads.c3_e8_i);
+      ok(view() === 'v-ending' && /엔딩 D/.test($('#e-eyebrow').textContent), '엔딩 D');
+      ok(/퍼뜨린 사람이기도/.test($('#e-body').textContent) && /사과하고/.test($('#e-body').textContent) && /협조/.test($('#e-body').textContent), '엔딩 D 본문: 양면 + 책임지는 행동');
+    }
+
     else if (s === 'typing') {
       // 1) 대화창(오프닝 소개): 첫 누르기 = 이 줄 다 보이기, 다음 누르기 = 다음 줄
       $('#btn-new').click(); await wait(30);

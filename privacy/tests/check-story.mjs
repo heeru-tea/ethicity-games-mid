@@ -39,6 +39,7 @@ function condKeys(cond) {
 function checkCond(cond, where) {
   for (const k of condKeys(cond)) {
     if (knownStats.has(k)) continue;
+    if (E.COMPUTED && Object.prototype.hasOwnProperty.call(E.COMPUTED, k)) continue; // 계산 플래그(hurt.*·harmed_others)
     if (k.startsWith('trust.')) { if (!story.trustable.includes(k.slice(6))) err(`${where}: 없는 신뢰 대상 ${k}`); continue; }
     if (!setFlags.has(k)) err(`${where}: 어디서도 설정하지 않는 플래그 '${k}'`);
   }
@@ -233,6 +234,54 @@ function runRoute(route) {
   const fine = runRoute(swap(['c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#fine']));
   if (fine.fail) err('e8 fight→silence→fine 경로: ' + fine.fail);
   else if (fine.s.ending !== 'D') err('위험이 해소되지 않았는데 엔딩 ' + fine.s.ending + ' (D 기대)');
+}
+
+// ── 5d. 내가 해친 친구는 나를 위로하지 않는다 / 가해 경로의 엔딩·에필로그엔 책임이 보인다(2026-11-02 지시서) ──
+function linesOnRoute(route) {
+  let s = E.createState(story), i = 0;
+  const seen = [];
+  for (let step = 0; s.screen !== 'ending' && step < 800; step++) {
+    if (s.screen === 'scene' && !s.reaction) E.visibleLines(story, story.scenes[s.scene].lines, s).forEach((l) => seen.push({ scene: s.scene, who: l.who, text: l.text }));
+    if (s.screen === 'scene' && E.needsChoice(story, s)) {
+      const [sc, id] = (route[i] || '').split('#');
+      if (sc !== s.scene) return { fail: s.scene + ' / ' + (route[i] || '없음') };
+      const c = story.scenes[sc].choices.find((x) => x.id === id);
+      s = E.choose(story, s, id); s.history = []; i++;
+      E.visibleLines(story, c.react, s).forEach((l) => seen.push({ scene: sc, who: l.who, text: l.text }));
+    }
+    s = E.advance(story, s);
+  }
+  const end = story.endings.find((e) => e.code === s.ending);
+  const body = end.body.filter((p) => typeof p === 'string' || E.evalCond(p.if, s)).map((p) => (typeof p === 'string' ? p : p.text));
+  return { s, seen, body };
+}
+{
+  const BAD = ['pro_1#sns', 'c1_e1_a#public', 'c1_e1_b#pass', 'c1_e2_a#shoot', 'c1_e2_b#story', 'c1_e2_d#no', 'c1_e3_b#capture', 'c1_e3_cap#none',
+    'c2_e4_a#forward', 'c2_e4_b#blame', 'c2_e5_a#all', 'c2_e5_b#close', 'c2_e6_a#post', 'c2_e6_b#deny',
+    'c3_e7_a#join', 'c3_e7_b#hide', 'c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#fine', 'c3_e9_a#share', 'c3_e9_b#keep'];
+  const bad = linesOnRoute(BAD);
+  if (bad.fail) err('나쁜 경로: ' + bad.fail);
+  else {
+    if (bad.s.ending !== 'D') err('나쁜 경로가 엔딩 ' + bad.s.ending + '에 도착(D 기대)');
+    const warm = bad.seen.filter((l) => l.who === 'minjun' && /미안|걱정|괜찮아\?|언제든|같이 가 줄까/.test(l.text) && /^c3_|^ep_/.test(l.scene));
+    if (warm.length) err('나쁜 경로에서 민준이 사과·걱정함: ' + warm.map((l) => l.scene + ' "' + l.text + '"').join(' / '));
+    if (!bad.seen.some((l) => l.scene === 'c3_e8_b' && l.who !== 'minjun' && l.who !== 'sys')) err('나쁜 경로 9시 전: 민준 대신 말리는 사람(또는 "아무도 말리지 않았다")이 없음');
+    if (bad.seen.some((l) => l.scene === 'c3_e9_a' && /\(개인톡\)/.test(l.text))) err('새봄이를 해친 경로인데 새봄이가 개인톡으로 부탁함');
+    if (!bad.seen.some((l) => l.scene === 'ep_1' && l.who === 'haneul' && /너였지/.test(l.text))) err('계정 사칭·모른 척 경로에서 하늘이가 알게 되는 줄이 없음');
+    if (!bad.seen.some((l) => l.scene === 'ep_1' && /각자 마주해야/.test(l.text))) err('가해 경로 에필로그에 "각자 한 일은 각자 마주" 줄이 없음');
+    if (!bad.body.some((t) => /퍼뜨린 사람이기도/.test(t)) || !bad.body.some((t) => /사과하고/.test(t) && /협조/.test(t))) err('나쁜 경로 엔딩 D 본문에 양면·책임 행동 문단이 없음');
+  }
+  // 좋은 선택을 해 오다 9시에 나간 경로: 민준이 말리고, 다음 날 사과하고, 같이 가 준다(따뜻한 대사 그대로)
+  const GOOD_OUT = ROUTES.A.flatMap((x) => (x === 'c3_e8_a#tell' ? ['c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#accept'] : [x]));
+  const good = linesOnRoute(GOOD_OUT);
+  if (good.fail) err('좋은 경로(9시 외출): ' + good.fail);
+  else {
+    const want = [['c3_e8_b', '진짜 나가?'], ['c3_e8_i', '미안'], ['c3_e8_i', '같이 가 줄까?']];
+    want.forEach(([sc, t]) => { if (!good.seen.some((l) => l.scene === sc && l.who === 'minjun' && l.text.indexOf(t) >= 0)) err('좋은 경로에서 민준의 대사가 빠짐: ' + sc + ' "' + t + '"'); });
+    if (good.body.some((t) => /퍼뜨린 사람이기도/.test(t))) err('남의 정보를 퍼뜨리지 않은 경로에 책임 문단이 나옴');
+  }
+  const goodA = linesOnRoute(ROUTES.A);
+  if (!goodA.fail && goodA.seen.some((l) => /각자 마주해야/.test(l.text))) err('대표 경로 A 에필로그에 가해 경로 줄이 나옴');
 }
 
 // ── 6. 커버리지 ──────────────────────────

@@ -8,7 +8,7 @@ import { startServer } from './serve.mjs';
 
 const EDGE = process.env.EDGE || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const ALL = ['yard', 'warning', 'chat-face', 'photo', 'name-input', 'nf-flow', 'nf-resume', 'nf-undo', 'nf-noimg', 'webp', 'webp-fallback', 'portrait', 'smooth', 'marker', 'neighborhood', 'pos-recover', 'sound', 'finale', 'quest-icon', 'talk-marks', 'talk-marks-motion', 'talk-guard', 'title', 'frame', 'opening', 'resume-old', 'stage-mode', 'stage-phone', 'stage-flow', 'stage-resize', 'chapter-face', 'no-sprites', 'walk-A', 'tap', 'map-resume', 'route-A', 'route-B-key', 'route-C', 'route-D', 'no-player', 'damaged-player', 'wrong-player', 'xss',
-  'resume', 'blocked', 'corrupt-progress', 'stale-progress', 'wipe', 'restart-keeps', 'normal-speed', 'typing', 'typing-reduce', 'typing-os-reduce'];
+  'resume', 'blocked', 'corrupt-progress', 'stale-progress', 'wipe', 'restart-keeps', 'normal-speed', 'typing', 'typing-reduce', 'typing-os-reduce', 'route-bad'];
 // 시나리오별 Edge 추가 플래그: 기기 설정 '동작 줄이기'(prefers-reduced-motion) 흉내
 const EXTRA = { 'typing-os-reduce': ['--force-prefers-reduced-motion'] };
 const list = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
