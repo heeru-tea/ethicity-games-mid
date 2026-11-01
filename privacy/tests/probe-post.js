@@ -871,7 +871,7 @@
       ok(!!$('#opt-sound') && !$('#opt-sound').checked, '메뉴에 효과음 켜기(꺼짐 표시)');
       $('#opt-sound').click(); await wait();
       $('#btn-menu-close').click(); await wait();
-      ok(JSON.parse(ls('ethicity.privacy.settings.v1')).sound === true && window.__plays.length === 1 && /tap\.wav$/.test(window.__plays[0]), '켠 설정이 저장되고 미리듣기(tap) 한 번: ' + window.__plays.join(','));
+      ok(JSON.parse(ls('ethicity.privacy.settings.v1')).sound === true && (function (fx) { return fx.length === 1 && /tap\.wav$/.test(fx[0]); })(window.__plays.filter(function (u) { return !/assets\/bgm\//.test(u); })), '켠 설정이 저장되고 미리듣기(tap) 한 번(배경음악 제외): ' + window.__plays.join(','));
       await wait(300);
       var b0 = window.__beeps;
       $$('#g-dock .choice')[0].click(); await wait(400);
