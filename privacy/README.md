@@ -34,14 +34,14 @@ node privacy/tests/serve.mjs 8080      # → http://127.0.0.1:8080/privacy/
 | `js/story.js` | **스토리 데이터** — 장면·대사·선택지·조건·사건별 결과·엔딩·성찰 질문. 대사 수정은 이 파일만 |
 | `js/engine.js` | 상태 엔진(조건 판정·선택·진행·되돌리기·엔딩 판정). DOM을 모르는 순수 로직, Node에서도 동작 |
 | `js/world.js` | **맵 데이터** — 지형·가구·문·걷기 구간(트리거)·인물 배치·말 걸기 대사·**장면 무대(PLACES·STAGES)** + 길찾기 |
-| `js/map.js` | 맵 캔버스 — 걷기 모드(이동·탭·말 걸기·❗) / 무대 모드(장면 장소·인물·시간대·말풍선·컷 카드) |
+| `js/map.js` | 맵 캔버스 — 걷기 모드(이동·탭·말 걸기·목적지 핀·? 말풍선) / 무대 모드(장면 장소·인물·시간대·말풍선·컷 카드) |
 | `js/storage.js` | 저장 래퍼(localStorage 실패·손상 시 메모리로 계속) |
 | `js/config.js` | 공통 캐릭터 코드 → 이미지 매핑(현재 비어 있음) |
 | `js/app.js` | 화면 그리기·입력 처리 |
 | `assets/avatar-default.svg` | **임시 아바타**(팀 공식 캐릭터 아님) |
 | `assets/sprites/` | 캐릭터·타일 스프라이트(Codex 납품 v2), 집 외관 — 아래 ‘맵’ 참고 |
 | `assets/landing/` | 타이틀의 두 주인공 일러스트(투명 PNG, 각 약 1.5MB) |
-| `assets/icons/` | 탐험 아이콘(quest.png = 다음 목적지 노란 느낌표: 맵 위·안내 문장·목적지 버튼) |
+| `assets/markers/` | 지도 표시 그림(16칸 픽셀, 공통 팩 말풍선·팔레트): dest.png = 목적지 핀(!), talk.png = 말 걸어 볼 사람 머리 위 ? 말풍선. 시안은 fal.ai(`tools/marker-art.mjs`, 기록 generation-log.jsonl). 옛 `assets/icons/`(quest.png 등)는 더 안 씀 |
 | `assets/school/`·`room/`·`outdoor/`·`terrain/` + `js/school.js`·`room.js`·`outdoor.js`·`terrain.js` | 학교(밖에선 지붕이 덮고 들어가면 사라짐)·내 방·바깥·지형 그림(Codex 협업) |
 | `tests/` | 검증 도구(아래). 게임 실행에는 쓰이지 않음 |
 
@@ -118,7 +118,8 @@ node privacy/tests/serve.mjs 8080      # → http://127.0.0.1:8080/privacy/
 | 에필로그 | 교실 | 담임 선생님 |
 
 - 조작: 방향키·WASD 이동, Space·Enter 말 걸기·조사 / 화면을 누르면 그 칸까지 걸어감(인물·사물을 누르면 가서 말 걸기) / **‘목적지로 바로 가기’** 버튼(걷기가 어려운 학생·시간 부족 대비).
-- ❗가 아닌 인물에게 말 걸면 앞선 선택에 따라 달라지는 한 줄 대사(`world.js`의 `IDLE`), 사물은 조사 문구.
+- 목적지가 사물·장소면 금색 핀(!), 다른 장면이면 그쪽 출입구에 핀. 목적지 인물과 할 말이 있는 인물(이번 걷기의 `castLines`, 앞선 선택에 반응하는 `IDLE` 조건 줄)은 머리 위에 **? 말풍선** — 말을 걸면 사라진다(대사만, 관계·점수 변화 없음). 규칙은 `map.js` 머리 주석.
+- 목적지가 아닌 인물에게 말 걸면 앞선 선택에 따라 달라지는 한 줄 대사(`world.js`의 `IDLE`), 사물은 조사 문구.
 - 맵 위치는 진행 저장(`progress.pos`)에 함께 저장되어, 새로고침해도 같은 자리에서 이어 걷는다.
 - **장면 무대** (`world.js` `STAGES`): 33장면마다 장소·시간대·같은 공간 인물·컷 카드 문구·반응 말풍선(`bubbles: [{ on: 그 줄의 글자, who, text }]`). `check-story.mjs`가 인물 위치와 말풍선 기준 줄을 검사한다.
 - **새로 쓴 대사(교사 검토 대상)**: 오프닝 하윤의 반 친구 소개·길목 자기소개(`TRIGGERS.pro_1`의 `greet`·`castLines`), 하교 한 줄(`c1_e1_a`의 `greet`), 장면 컷 카드 문구·반응 말풍선(`STAGES`). 스토리 본문(`story.js`)은 그대로다.

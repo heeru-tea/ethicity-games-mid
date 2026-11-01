@@ -1,5 +1,5 @@
 /*
- * 맵 화면 — 장면 그림(world.js SCENES) 위를 걸어 다니다 ❗ 대상에게 말을 걸면 사건 장면이 열린다.
+ * 맵 화면 — 장면 그림(world.js SCENES) 위를 걸어 다니다 목적지(핀 ! 또는 ? 인물)에 말을 걸거나 조사하면 사건 장면이 열린다.
  * 장면마다 그림 1장(논리 1280×720) + 40px 칸 32×18. 출입구 칸을 밟으면 옆 장면으로(짧은 페이드).
  * 인물: 공통 팩 걷기 시트를 공통 런타임과 같은 0.8배(몸 약 2.2칸)로. 로드 실패 시 옛 시트, 이어 임시 도형.
  * 조작: 방향키/WASD 이동, Space/Enter 말 걸기·조사, 화면 탭 = 그 칸까지 걸어가기(인물·사물을 탭하면 가서 말 걸기)
@@ -11,10 +11,25 @@
   var STEP_MS = 110; // 한 칸(40px, 몸 높이의 약 0.45) 걷는 시간 — 옛 48px 칸 150ms와 같은 눈높이 속도
   var BODY = 2.24, HEAD = 1.25; // 인물 몸 높이·머리 꼭대기(칸 위쪽에서 몇 칸 위) — 말풍선·이름표·느낌표 자리 기준
   var SPRITE_DIR = 'assets/sprites/';
-  var questIcon = null;
-  var questImage = new Image();
-  questImage.onload = function () { questIcon = questImage; };
-  window.PrivacyImg.load(questImage, 'assets/icons/quest.png');
+  /*
+   * 맵 표시 두 가지(그림: assets/markers/, tools/marker-art.mjs — 공통 팩 말풍선·팔레트로 맞춘 16칸 픽셀 그림, 정수 배로 키워 그림)
+   *  ▸ 목적지 핀(dest.png, 금색 핀 + 느낌표): 이번 걷기 구간의 목적지가 '사물·장소'일 때 그 위에.
+   *    목적지가 다른 장면이면(사람이든 사물이든) 지금 장면에서 그쪽으로 가는 출입구 위에. 화면 밖이면 가장자리에 붙이고 화살표.
+   *  ▸ 물음표 말풍선(talk.png, ?): 같은 장면에 있는 인물 중 말을 걸어 볼 만한 사람 머리 위에.
+   *    (1) 목적지 인물(trig.target.npc) — 말을 걸면 사건이 열린다. 같은 장면이면 핀 대신 이 ?가 목적지 표시를 맡는다(겹치지 않게 하나만).
+   *    (2) 이 걷기 구간에서 할 말이 있는 인물(trig.castLines)
+   *    (3) 지금까지의 선택에 반응하는 한 줄이 있는 인물(world.js IDLE에서 조건(if)이 맞는 줄 — 기본 줄만 있으면 ? 없음)
+   *    (2)(3)은 직접 말을 걸면(Space·말 걸기 버튼·탭) 이 걷기 구간에서 사라진다. 지나가며 저절로 뜬 말풍선은 말 건 것으로 치지 않는다.
+   *    말을 거는 것은 대사만 보여 준다 — 관계·플래그·엔딩 점수는 바뀌지 않는다.
+   *  둘 다 모양·글자(!·?)로 구분되고(색만으로 구분하지 않음), 버튼 글자와 지도 설명(aria-label)에도 같은 내용이 글로 나온다.
+   *  위아래로 살짝 흔들림(움직임 줄이기면 멈춤).
+   */
+  var MARK = { dest: null, talk: null };
+  ['dest', 'talk'].forEach(function (k) {
+    var im = new Image();
+    im.onload = function () { MARK[k] = im; };
+    window.PrivacyImg.load(im, 'assets/markers/' + k + '.png');
+  });
   var ROW = { down: 0, left: 1, right: 2, up: 3 };
   var KEY_DIR = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
   var CHAR_COLOR = window.PrivacySprite.COLOR; // 관계 보고 얼굴 대체색과 같은 색
@@ -96,7 +111,7 @@
     targetId = r.mapTarget;
     trig = WD.triggers[targetId];
     cast = trig.cast.slice();
-    passGreeted = {};
+    passGreeted = {}; talked = {}; talkMarks = []; lastLabel = '';
     blocked = {};
     cast.forEach(function (c) { blocked[c.x + ',' + c.y] = true; loadSprite(c.who, 'char_' + c.who + '.png', window.PrivacyCast.walk(c.who)); });
     var look = o.playerLook();
@@ -245,8 +260,10 @@
     if (window.PrivacyTalk.isOpen()) { window.PrivacyTalk.next(); return; }
     if (busy || me.moving) return;
     var ns = neighbors();
-    if (!ns.length) { say('가까이 가서 눌러 보세요. {!}가 다음 목적지예요.'); return; }
+    if (!ns.length) { say('가까이 가서 눌러 보세요. {!}는 갈 곳, {?}는 말 걸어 볼 사람이에요.'); return; }
     var t = ns.filter(isTarget)[0];
+    var spoke = t || ns[0];
+    if (spoke.type === 'npc') { talked[spoke.c.who] = true; updateLabel(); } // 말 건 사람의 ?는 이번 걷기에서 지운다
     if (t) {
       me.dir = t.dir;
       busy = true;
@@ -276,12 +293,13 @@
     return { who: who, name: who ? o.story.characters[who].name : null, text: o.fill(text) };
   }
   // 대화창에 줄이 뜰 때 말하는 사람이 맵에 있으면 머리 위에도 짧게
-  // 글자 속 {!}를 노란 느낌표 그림(quest.png)으로
+  // 글자 속 {!}·{?}를 지도 표시 그림(목적지 핀·물음표 말풍선)으로. 그림마다 읽어 줄 이름을 단다
+  var ICON = { '{!}': ['ico-quest', '목적지 표시(느낌표 핀)'], '{?}': ['ico-talk', '물음표 말풍선'] };
   function rich(node, text) {
     node.textContent = '';
-    String(text).split('{!}').forEach(function (part, i) {
-      if (i) { var ic = document.createElement('span'); ic.className = 'ico-quest'; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', '노란 느낌표'); node.appendChild(ic); }
-      if (part) node.appendChild(document.createTextNode(part));
+    String(text).split(/(\{!\}|\{\?\})/).forEach(function (part) {
+      if (ICON[part]) { var ic = document.createElement('span'); ic.className = ICON[part][0]; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', ICON[part][1]); node.appendChild(ic); }
+      else if (part) node.appendChild(document.createTextNode(part));
     });
   }
   // 대화 초상화 = 공통 팩 초상화 시트(기본 표정). 맵에서 말 걸기·오프닝에 쓴다
@@ -314,8 +332,33 @@
   function updateHint() {
     var near = nearTarget();
     var btn = $('btn-map-act');
-    rich(btn, near ? '{!} ' + targetBox().name + (trig.target.npc ? '에게 말 걸기' : ' 조사하기') : '말 걸기 · 조사하기');
+    // 옆에 ?가 뜬 인물이 있으면 버튼에도 그 이름(지도 그림을 못 보는 사람도 누구에게 말 걸 수 있는지 알게)
+    var curious = near ? null : neighbors().filter(function (n) { return n.type === 'npc' && talkReason(n.c); })[0];
+    rich(btn, near ? (trig.target.npc ? '{?} ' + targetBox().name + '에게 말 걸기' : '{!} ' + targetBox().name + ' 조사하기')
+      : curious ? '{?} ' + o.story.characters[curious.c.who].name + '에게 말 걸기' : '말 걸기 · 조사하기');
     btn.classList.toggle('primary', near);
+    updateLabel();
+  }
+  // ? 표시 이유: 'target' 목적지 인물 · 'lines' 이번 걷기에서 할 말 · 'react' 지금까지의 선택에 반응하는 한 줄 · null 없음
+  var talked = {};
+  function talkReason(c) {
+    if (!trig || mode !== 'walk') return null;
+    if (trig.target.npc === c.who) return 'target';
+    if (talked[c.who]) return null;
+    if (trig.castLines && trig.castLines[c.who]) return 'lines';
+    var hit = (WD.idle[c.who] || []).filter(function (l) { return o.evalCond(l.if); })[0];
+    return hit && hit.if ? 'react' : null;
+  }
+  // 지도 설명(aria-label): 목적지와 ?가 뜬 사람을 글로
+  var lastLabel = '';
+  function updateLabel() {
+    if (!trig || !canvas) return;
+    var sc = WD.sceneAt(me.x);
+    var names = cast.filter(function (c) { return WD.sceneAt(c.x) === sc && c.who !== trig.target.npc && talkReason(c); })
+      .map(function (c) { return o.story.characters[c.who].name; });
+    var label = '학교와 마을 지도. 방향키로 걷고 Space로 말을 겁니다. 목적지: ' + targetBox().name + '.'
+      + (names.length ? ' 물음표 말풍선이 뜬 사람(할 말이 있어 보임): ' + names.join(', ') + '.' : '');
+    if (label !== lastLabel) { lastLabel = label; canvas.setAttribute('aria-label', label); }
   }
 
   function skipToTarget() {
@@ -365,7 +408,7 @@
     if (window.PrivacyTalk.isOpen()) { window.PrivacyTalk.close(); return; }
     var r = canvas.getBoundingClientRect();
     var tx = Math.floor((e.clientX - r.left + cam.x) / T), ty = Math.floor((e.clientY - r.top + cam.y) / T);
-    var npc = cast.filter(function (c) { return c.x === tx && c.y === ty; })[0];
+    var npc = cast.filter(function (c) { return c.x === tx && c.y === ty; })[0] || markAt(e.clientX - r.left, e.clientY - r.top);
     var ob = WD.objectAt(tx, ty) || WD.OBJECTS.filter(function (b) { return tx >= b.x && tx < b.x + b.w && ty >= b.y && ty < b.y + b.h; })[0];
     var p;
     if (npc || ob) {
@@ -381,6 +424,13 @@
     if (!p.length) { if (actOnArrive) { actOnArrive = false; faceBox(npc ? { x: npc.x, y: npc.y, w: 1, h: 1 } : ob); act(); } return; }
     path = p;
     if (!me.moving) tryStep(path.shift());
+  }
+  // 물음표 말풍선을 눌러도 그 사람에게 가서 말 걸기(머리 위 그림이라 사람 칸보다 위에 있음)
+  function markAt(x, y) {
+    var marks = talkMarks.slice();
+    if (lastMarker && lastMarker.who && lastMarker.x != null && !lastMarker.off) marks.push(lastMarker);
+    var hit = marks.filter(function (m) { return Math.abs(x - m.x) <= m.w / 2 + 4 && Math.abs(y - m.y) <= m.h / 2 + 4; })[0];
+    return hit ? cast.filter(function (c) { return c.who === hit.who; })[0] : null;
   }
   function faceBox(b) {
     ['up', 'down', 'left', 'right'].forEach(function (dir) { var d = WD.DIRS[dir]; if (boxContains(b)(me.x + d[0], me.y + d[1])) me.dir = dir; });
@@ -499,7 +549,7 @@
     var tint = mode === 'stage' ? stageInfo.tint : trig.tint;
     if (TINT[tint] && !(sc.id === 'room' && tint === 'day')) { ctx.fillStyle = TINT[tint]; ctx.fillRect(0, 0, viewW, viewH); }
     if (fadeUntil > t) { ctx.fillStyle = 'rgba(15,20,18,' + Math.min(1, (fadeUntil - t) / 260) + ')'; ctx.fillRect(0, 0, viewW, viewH); }
-    if (mode === 'walk') drawMarker(t);
+    if (mode === 'walk') { drawTalkMarks(t); drawMarker(t); }
     drawBubble(t);
   }
   // ?debug=grid: 걷는 칸(초록)·막힘(빨강)·출입구(파랑)·조사 지점(노랑)을 그림 위에 겹쳐 본다(사람 눈 확인용)
@@ -586,7 +636,7 @@
     });
     tags = [];
   }
-  // ❗가 들어갈 수 있는 캔버스 안 영역: 위 HUD(시간·할 일·버튼) 아래, 아래 버튼·안내 문구 위
+  // 목적지 표시가 들어갈 수 있는 캔버스 안 영역: 위 HUD(시간·할 일·버튼) 아래, 아래 버튼·안내 문구 위
   var lastMarker = null;
   function safeArea() {
     var cr = canvas.getBoundingClientRect(), top = 6, bottom = viewH - 6;
@@ -615,14 +665,56 @@
     exitCache = { key: key, box: box };
     return box;
   }
+  // 표시 그림 크기: 16칸 그림을 정수 배로(칸 크기의 약 0.8, 최소 2배 = 32px) — 픽셀이 고르게 또렷하도록
+  function markScale() { return Math.max(2, Math.round(T * 0.8 / 16)); }
+  // 그림 하나를 (가운데 x, 가운데 y)에. 그림을 못 불러오면 같은 모양의 글자 상자(크림 바탕·잉크 테두리 + ! ?)
+  function drawMark(kind, mx, my) {
+    var im = MARK[kind], s = markScale();
+    if (im && im.naturalWidth) {
+      var w = im.naturalWidth * s, h = im.naturalHeight * s, sm = ctx.imageSmoothingEnabled;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(im, Math.round(mx - w / 2), Math.round(my - h / 2), w, h);
+      ctx.imageSmoothingEnabled = sm;
+      return { w: w, h: h };
+    }
+    var size = 16 * s;
+    ctx.fillStyle = kind === 'dest' ? '#F3CF72' : '#FFF9E7';
+    roundRect(mx - size / 2, my - size / 2, size, size, kind === 'dest' ? size / 2 : 4); ctx.fill();
+    ctx.strokeStyle = '#294B40'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#294B40'; ctx.font = 'bold ' + Math.round(size * 0.6) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(kind === 'dest' ? '!' : '?', mx, my + 1);
+    return { w: size, h: size };
+  }
+  // 위아래 살짝 흔들림(움직임 줄이기 = 0). 사람마다 박자를 조금 어긋나게
+  function markBob(t, phase) { return o.reduceMotion() ? 0 : Math.round(Math.sin(t / 300 + (phase || 0)) * T * 0.06); }
+  function headY(c) { return c.y * T - cam.y - T * (c.pose === 'sleep' ? HEAD + 0.95 : HEAD + 0.6); } // ? 가운데 자리(머리 꼭대기 위). 엎드린 그림은 한 칸 위 책상에 그려져 더 높이
+  // 목적지 인물이 아닌 ? (목적지 인물의 ?는 drawMarker가 화면 밖 화살표까지 맡는다)
+  var talkMarks = [];
+  function drawTalkMarks(t) {
+    talkMarks = [];
+    var sc = WD.sceneAt(me.x), now = performance.now();
+    cast.forEach(function (c, i) {
+      if (WD.sceneAt(c.x) !== sc || c.who === trig.target.npc) return;
+      var why = talkReason(c);
+      if (!why) return;
+      if (bubbles.some(function (b) { return b.who === c && b.until > now; })) return; // 말하는 중엔 말풍선만
+      var mx = c.x * T - cam.x + T / 2, my = headY(c) + markBob(t, i * 1.7);
+      var d = drawMark('talk', mx, my);
+      talkMarks.push({ who: c.who, why: why, x: mx, y: my, w: d.w, h: d.h, tx: c.x, ty: c.y });
+    });
+    updateLabel(); // 장면이 바뀌거나 말을 걸면 지도 설명 글도 따라 바뀐다(바뀔 때만 다시 씀)
+  }
   function drawMarker(t) {
     var b = targetBox();
     // 목적지가 다른 장면이면, 지금 장면에서 그쪽으로 가는 출입구에(어디로 가야 하는지 바로 보이게)
     if (WD.sceneAt(b.x) !== WD.sceneAt(me.x)) b = exitToward() || b;
-    var bob = o.reduceMotion() ? 0 : Math.sin(t / 220) * T * 0.08;
-    var mx = (b.x + b.w / 2) * T - cam.x, my = b.y * T - cam.y - T * (b.who ? HEAD + 0.65 : 0.55) + bob;
+    var kind = b.who ? 'talk' : 'dest'; // 같은 장면의 목적지 인물 = ?, 나머지(사물·출입구) = 핀
+    var tc = b.who ? cast.filter(function (k) { return k.who === b.who; })[0] : null;
+    if (tc && bubbles.some(function (q) { return q.who === tc && q.until > performance.now(); })) { lastMarker = { x: null, y: null, tx: b.x, ty: b.y, kind: kind, hidden: true }; return; }
+    var bob = markBob(t, 0);
+    var mx = (b.x + b.w / 2) * T - cam.x, my = (tc ? headY(tc) : b.y * T - cam.y - T * 0.55) + bob;
     // 화면 밖이거나 위 안내 상자·아래 버튼에 가리는 자리면, 보이는 띠 안으로 옮기고 방향 화살표를 단다
-    var iconSize = Math.max(32, Math.round(T * 0.8)), sa = safeArea();
+    var iconSize = 16 * markScale(), sa = safeArea();
     // 내 캐릭터(머리 꼭대기 약 0.65칸 위 ~ 발)와 겹치면 내 머리 위로 비켜 선다
     var px0 = me.fx * T - cam.x, pTop = (me.fy - HEAD) * T - cam.y, pBot = (me.fy + 1) * T - cam.y;
     if (Math.abs(mx - (px0 + T / 2)) < (iconSize / 2 + T * 0.35) && my + iconSize / 2 > pTop && my - iconSize / 2 < pBot) my = pTop - iconSize / 2 - 4;
@@ -630,19 +722,9 @@
     mx = Math.max(sa.left + iconSize / 2, Math.min(sa.right - iconSize / 2, mx));
     my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - iconSize / 2, my));
     var off = Math.abs(mx - tx0) > 2 || Math.abs(my - ty0) > 2;
-    lastMarker = { x: mx, y: my, tx: b.x, ty: b.y, off: off };
-    if (questIcon) {
-      // 생성 원본의 투명 여백을 제외한 알파 경계(>16). 원본 PNG는 보존한다.
-      var iw = Math.round(iconSize * 630 / 669);
-      ctx.drawImage(questIcon, 313, 293, 630, 669, Math.round(mx - iw / 2), Math.round(my - iconSize / 2), iw, iconSize);
-    } else {
-      ctx.fillStyle = '#FFF6DB';
-      roundRect(mx - iconSize / 2, my - iconSize / 2, iconSize, iconSize, 4); ctx.fill();
-      ctx.strokeStyle = '#17334C'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = '#9B6100'; ctx.font = 'bold ' + Math.round(T * 0.4) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('!', mx, my + 1);
-    }
-    ctx.fillStyle = '#17334C';
+    var d = drawMark(kind, mx, my);
+    lastMarker = { x: mx, y: my, tx: b.x, ty: b.y, off: off, kind: kind, w: d.w, h: d.h, who: b.who || null };
+    ctx.fillStyle = '#294B40';
     if (off) {
       var ang = Math.atan2((b.y + b.h / 2) * T - cam.y - my, (b.x + b.w / 2) * T - cam.x - mx);
       ctx.save(); ctx.translate(mx + Math.cos(ang) * T * 0.45, my + Math.sin(ang) * T * 0.45); ctx.rotate(ang);
@@ -724,6 +806,7 @@
       route: routeToTarget,
       nearTarget: nearTarget,
       marker: function () { return lastMarker; },
+      talkMarks: function () { return talkMarks.map(function (m) { return { who: m.who, why: m.why, x: m.x, y: m.y }; }); }, // 목적지 인물 말고 ?가 뜬 사람들(마지막 그린 화면 기준)
       cam: function () { return { x: cam.x, y: cam.y, tx: camTarget.x, ty: camTarget.y }; },
       walkFrame: walkFrame,
       tick: function (ms) { loop(lastT + ms); }, // 검증용: 화면 루프를 정해진 시간만큼 한 번 돌림

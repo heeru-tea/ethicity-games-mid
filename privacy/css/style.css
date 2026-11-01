@@ -263,11 +263,13 @@ body[data-view="v-map"] #g-chap { display: none; }
 body[data-view="v-game"] #m-time, body[data-view="v-game"] #m-area, body[data-view="v-game"] .mission { display: none; }
 body[data-view="v-chapter"] .hud { display: none; }
 
-.ico-quest {
-  display: inline-block; height: 1.5em; width: calc(1.5em * 630 / 669); vertical-align: -0.4em; margin: 0 1px;
-  background: url("../assets/icons/quest.png") no-repeat calc(-1.5em * 313 / 669) calc(-1.5em * 293 / 669) / calc(1.5em * 1254 / 669) auto;
-  background-image: image-set(url("../assets/icons/quest.webp") type("image/webp"), url("../assets/icons/quest.png") type("image/png"));
+/* 글 속 지도 표시 그림: 목적지 핀(13×16칸)·물음표 말풍선(15×16칸) — map.js와 같은 그림, 픽셀 그대로 */
+.ico-quest, .ico-talk {
+  display: inline-block; height: 1.5em; vertical-align: -0.4em; margin: 0 1px;
+  background: no-repeat center / contain; image-rendering: pixelated;
 }
+.ico-quest { width: calc(1.5em * 13 / 16); background-image: url("../assets/markers/dest.png"); }
+.ico-talk { width: calc(1.5em * 15 / 16); background-image: url("../assets/markers/talk.png"); }
 /* 짧은 안내 한 줄(문 드나들기·길 안내) */
 .m-say {
   position: absolute; z-index: 4; top: 84px; left: 50%; transform: translateX(-50%); margin: 0;
