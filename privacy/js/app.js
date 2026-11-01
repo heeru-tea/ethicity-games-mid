@@ -169,7 +169,7 @@
     else { img.src = playerAvatarSrc(); img.alt = isOfficialAvatar() ? '내 캐릭터' : '임시 아바타'; }
     if (player.source === 'damaged') { note.hidden = false; note.textContent = '공통 캐릭터 정보를 읽지 못해 ‘' + CFG.defaultNickname + '’로 시작해요.' + (look ? '' : ' 위에서 주인공을 골라 주세요.'); }
     else if (!look) { note.hidden = false; note.textContent = '위에서 주인공을 골라 주세요.'; }
-    else if (player.source === 'default') { note.hidden = false; note.textContent = (look === 'f' ? '다온' : '온유') + '(으)로 시작해요.'; }
+    else if (player.source === 'default') { note.hidden = false; note.textContent = (look === 'f' ? '다온으로' : '온유로') + ' 시작해요.'; }
     else note.hidden = true;
   }
 
@@ -208,6 +208,12 @@
     return n + '장 · ' + story.chapters[n].title;
   }
 
+  // 장면 제목: 문자열, 또는 [{ if, title }] 중 처음 맞는 것(예: 9시 전 개인톡 — 누가 말리는지에 따라)
+  function viewTitle(v, st) {
+    if (!Array.isArray(v.title)) return v.title || '';
+    var hit = v.title.filter(function (t) { return E.evalCond(t.if, st); })[0];
+    return hit ? hit.title : '';
+  }
   function preChoiceState(run) {
     // 반응 표시 중이면, 장면 대사는 선택 전 상태로 판정한다
     return run.reaction && run.history.length ? run.history[run.history.length - 1].snap : run;
@@ -530,7 +536,7 @@
     head.appendChild(ic);
     var ht = el('div', 'head-text');
     ht.appendChild(el('span', 'head-kind', VIEW_KIND[v.type] || ''));
-    ht.appendChild(el('strong', 'head-title', fill(v.title || '')));
+    ht.appendChild(el('strong', 'head-title', fill(viewTitle(v, preChoiceState(run)))));
     head.appendChild(ht);
     if (v.meta) head.appendChild(el('span', 'head-meta', v.meta));
 
@@ -750,7 +756,7 @@
   function sceneDate(id) {
     var sc = story.scenes[id], sys = (sc.lines || []).map(function (l) { return E.normLine(l, story); }).filter(function (l) { return l.who === 'sys'; })[0];
     if (sys) return sys.text.split(' · ')[0];
-    var m = /^(D-d|축제 당일|축제 다음 날)/.exec((sc.view && sc.view.title || '').replace(/^.* · /, ''));
+    var m = /^(D-d|축제 당일|축제 다음 날)/.exec((sc.view && typeof sc.view.title === 'string' ? sc.view.title : '').replace(/^.* · /, ''));
     return m ? m[1] : '';
   }
   function eventDate(eventId, sceneId) {

@@ -199,13 +199,13 @@
         who('haneul', 'yard', 17, 11, 'left'), who('jiho', 'yard', 11, 6, 'down')],
       castLines: {
         haneul: '어, 왔냐? 이번 축제 때 사진 진짜 많이 찍자 ㅋㅋ 다 올려야지!',
-        jiho: '안녕… 나 꾸미기 담당이야. 반짝이 스티커 잔뜩 사 왔어.'
+        jiho: '안녕… 꾸미기 하고 싶은데… 반짝이 스티커 사 왔어.'
       },
       greet: [
         { who: 'saebom', text: '왔구나! 오늘 방과 후부터 축제 준비 시작이야.' },
-        { who: 'saebom', text: '나는 정산이랑 역할표 담당. 공지는 단톡방에 올릴 테니까 꼭 확인해 줘.' },
-        { who: 'saebom', text: '여기 민준이는 소품 담당이야. 손재주가 진짜 좋아.' },
-        { who: 'minjun', text: '…안녕. 소품은 거의 다 돼 가.' },
+        { who: 'saebom', text: '오늘 방과 후에 단톡방에서 역할 정하자. 공지 꼭 봐 줘.' },
+        { who: 'saebom', text: '여기 민준이. 손재주가 진짜 좋아.' },
+        { who: 'minjun', text: '…안녕. 집에 옛날 카메라 모형 있는데… 가져와 볼까.' },
         { who: 'saebom', text: '오는 길에 하늘이랑 지호도 봤지? 우리 반 다 같이 잘해 보자!' }
       ] },
     c1_e1_a: { time: 'D-4 · 하교', mission: '집에 가기 — 마을 길 끝 우리 집, 내 방 침대', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
@@ -323,7 +323,7 @@
     ],
     haneul: [
       { if: 'e6=logout', text: '그때 로그아웃해 준 거 진짜 고마웠다.' },
-      { if: 'e6=post|leave', text: '내 계정에 이상한 거 올린 사람 아직도 못 찾았어 ㅡㅡ' },
+      { if: 'e6=leave || e6b=deny', text: '내 계정에 이상한 거 올린 사람 아직도 못 찾았어 ㅡㅡ' }, // 내가 털어놓았으면(own) 하늘이는 이미 안다
       { if: 'trust.haneul<0', text: '…뭐.' },
       { text: '축제 때 사진 많이 찍자 ㅋㅋ' }
     ],
@@ -335,7 +335,7 @@
     minjun: [
       { if: 'trust.minjun<0', text: '(민준이는 눈을 피했다.)' },
       { if: 'trust.minjun>=1', text: '…고마웠어. 그때.' },
-      { text: '…소품 거의 다 됐어.' }
+      { text: '…소품 뭐 만들지 생각 중이야.' } // 역할을 정하기 전(오프닝)에도 맞는 말
     ],
     teacher: [{ text: '준비 잘 되어 가니? 무슨 일 있으면 언제든 말해.' }],
     friend: [{ text: '너 몇 반이야? 우리 반 부스도 놀러 와~' }]

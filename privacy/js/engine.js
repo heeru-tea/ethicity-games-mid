@@ -10,11 +10,23 @@
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
+  /* ── 계산 플래그: 저장하지 않고 지금까지의 선택으로 그때그때 판정한다(조건 문법 그대로) ──
+   *   hurt.<인물>  내가 그 친구를 해친 적이 있음(사진·번호·캡처·합성·계정) — 피해자가 나를 위로·사과하지 않게 대사를 가른다
+   *   harmed_others 내가 다른 사람의 정보를 퍼뜨린 적이 있음 — 엔딩 C·D와 에필로그에서 책임을 다룬다 */
+  var COMPUTED = {
+    'hurt.minjun': 'e2post=story|group || e2fix=no || e7=join|silent || e7b=none',
+    'hurt.saebom': 'e4=forward || e4b=blame',
+    'hurt.jiho': 'e3=capture',
+    'hurt.haneul': 'e6=post || e6b=deny|cap',
+    harmed_others: 'e4=forward || e6=post || e7=join || e9=share || e2post=story'
+  };
+
   /* ── 조건 ───────────────────────── */
   function getVal(state, key) {
     if (key.indexOf('+') >= 0) {
       return key.split('+').reduce(function (s, k) { return s + Number(getVal(state, k.trim()) || 0); }, 0);
     }
+    if (COMPUTED.hasOwnProperty(key)) return evalCond(COMPUTED[key], state);
     if (key.indexOf('trust.') === 0) return state.trust[key.slice(6)] || 0;
     if (STAT_KEYS.indexOf(key) >= 0) return state.stats[key] || 0;
     return state.flags[key];
@@ -237,6 +249,7 @@
 
   var api = {
     STAT_KEYS: STAT_KEYS,
+    COMPUTED: COMPUTED,
     evalCond: evalCond,
     normLine: normLine,
     visibleLines: visibleLines,

@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  var ODDS = { A: 9.0, B: 43.0, C: 21.6, D: 26.3 }; // 2026-10-31 엔딩 조건 조정 후(check-story 10만 회)
+  var ODDS = { A: 8.9, B: 40.4, C: 17.4, D: 33.3 }; // 2026-11-02 계정 사칭(e6 post) serious+1 후(check-story 10만 회). 이전 A 9.0·B 43.0·C 21.6·D 26.3
   root.PRIVACY_ODDS = ODDS;
   if (typeof module !== 'undefined' && module.exports) module.exports = ODDS;
 })(typeof window !== 'undefined' ? window : globalThis);
