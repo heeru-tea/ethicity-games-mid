@@ -42,7 +42,7 @@
         parts.push(el('p', { class: 'missing-count', text: '이번 가방: ' + DR.Cards.keyLabel(mission, c.keys[0]) + ' ' + DR.UI.comboCount(mission, counts, c) + '장 / 필요 ' + c.need + '장' }));
       });
       (r.contaminated || []).forEach(function (src) {
-        parts.push(el('p', { class: 'missing contam', text: DR.Judge.contaminationLine(mission, src) }));
+        parts.push(el('p', { class: 'missing contam', text: DR.Judge.contaminationLine(mission, src, (r.lingering || []).indexOf(src) >= 0) }));
       });
       var wrong = sorted.filter(function (it) { return it.scene === s.id && !it.correct; });
       if (wrong.length) {

@@ -194,3 +194,39 @@ test('장면 문구가 장면 정답과 모순되지 않음', () => {
   assert.doesNotMatch(byId.S3.cuts.danger, /안전/);        // S3 정답 = 젖었을 뿐
   assert.doesNotMatch(byId.S4.cuts.inconvenience, /젖었을 뿐인/); // S4 정답 = 얕은 침수(막기)
 });
+
+// [1] 결과에서 이름이 나온 가짜(오염 원인)가 아직 가방에 있으면, 개수와 상관없이 그 장면은 통과하지 않는다
+{
+  const { contaminationLine, contaminationLines } = require('../js/judge.js');
+  const fk = (id, n = 1, extra = {}) => Array.from({ length: n }, (_, i) => ({ id: id + i, fakeId: id, ...extra }));
+  test('first submit keeps fakeLimit 2', () => {
+    const r = judge(m1, bagOf(ALL2).concat(fk('f_fountain')), cfg, { named: [] });
+    assert.equal(r.allPass, true);
+    assert.deepEqual(r.scenes[0].lingering, []);
+  });
+  test('a named fake left in the bag keeps its scene failing, with a "still there" line', () => {
+    const first = judge(m1, bagOf(ALL2).concat(fk('f_pool'), fk('f_fountain')), cfg);
+    assert.deepEqual(first.scenes[0].contaminated, ['f_pool', 'f_fountain']);
+    const named = first.scenes.flatMap((s) => s.contaminated);
+    const again = judge(m1, bagOf(ALL2).concat(fk('f_fountain')), cfg, { named });
+    assert.equal(again.scenes[0].pass, false);
+    assert.equal(again.scenes[0].failKind, 'inconvenience');
+    assert.deepEqual(again.scenes[0].lingering, ['f_fountain']);
+    assert.deepEqual(again.scenes[0].contaminated, ['f_fountain']);
+    assert.ok(again.scenes.slice(1).every((s) => s.pass));
+    assert.equal(contaminationLine(m1, 'f_fountain', true), '우리가 넣은 데이터에 분수 광장 사진이 아직 남아 있다.');
+    assert.deepEqual(contaminationLines(m1, again), ['우리가 넣은 데이터에 분수 광장 사진이 아직 남아 있다.']);
+    assert.equal(judge(m1, bagOf(ALL2), cfg, { named }).allPass, true, 'both removed → pass');
+  });
+  test('named player-made mislabel and hazard: still there keeps danger', () => {
+    const m2 = require('../missions/m2.js');
+    const M2 = { can_drink: 2, can_tin: 2, pet_clear: 2, pet_crushed: 2, vinyl_bag: 2, pack_milk: 2, paper_news: 2, trash_misc: 2, battery_aa: 2 };
+    const r = judge(m2, bagOf(M2).concat(fk('f_battery')), cfg, { named: ['f_battery'] });
+    assert.deepEqual(r.scenes.map((s) => s.failKind), ['danger', null, null, 'danger']);
+    const mis = [{ id: 'x', key: 'can_drink', label: 'paper' }];
+    const r2 = judge(m2, bagOf(M2).concat(mis), cfg, { named: ['mis:can_drink:paper'] });
+    assert.equal(r2.scenes[2].pass, false);
+    assert.equal(contaminationLine(m2, 'mis:can_drink:paper', true), "우리가 넣은 데이터에 음료 캔 사진이 아직 '종이' 이름표로 남아 있다.");
+    assert.equal(judge(m2, bagOf(M2).concat([{ id: 'x', key: 'can_drink' }]), cfg, { named: ['mis:can_drink:paper'] }).allPass, true, 'fixed → pass');
+  });
+}
