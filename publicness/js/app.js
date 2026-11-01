@@ -411,8 +411,21 @@
 
   /* ── 효과음(기본 켜짐, 파일 없이 합성). 끈 상태는 이 브라우저에 기억 ─── */
   var audio = null;
+  function audioCtx() { if (!audio) { var C = root.AudioContext || root.webkitAudioContext; if (!C) return null; audio = new C(); } return audio; }
+  /* 휴대폰 효과음 잠김(2026-11-02, 사용자 ‘효과음이 안 난다’): 휴대폰 브라우저는 사용자 입력 안에서 만들거나 resume한 AudioContext만 소리를 낸다.
+   * 운행 중 차임은 입력 밖에서 처음 불려 ‘suspended’로 남았었다 → 첫 pointerdown/keydown/touchend에서 만들고 resume + 무음 한 번 재생(iOS).
+   * iOS 무음 스위치에도 들리게 navigator.audioSession.type = 'playback'(지원할 때만). 돌아가기 시작하면 듣기를 멈춘다 */
+  function unlockAudio() {
+    try { if (root.navigator && root.navigator.audioSession && root.navigator.audioSession.type !== 'playback') root.navigator.audioSession.type = 'playback'; } catch (e) { /* 지원 안 함 */ }
+    var a; try { a = audioCtx(); } catch (e) { a = null; } if (!a) return;
+    try { if (a.state === 'suspended' && a.resume) a.resume(); } catch (e) { /* 다음 입력에서 다시 */ }
+    try { var b = a.createBuffer(1, 1, 22050), src = a.createBufferSource(); src.buffer = b; src.connect(a.destination); src.start(0); } catch (e) { /* 무음 재생 없이 */ }
+    if (a.state === 'running') UNLOCK.forEach(function (ev) { document.removeEventListener(ev, unlockAudio, true); });
+  }
+  var UNLOCK = ['pointerdown', 'keydown', 'touchend'];
+  UNLOCK.forEach(function (ev) { document.addEventListener(ev, unlockAudio, true); });
   function tone(f, start, len, peak, type) {
-    audio = audio || new (root.AudioContext || root.webkitAudioContext)();
+    audioCtx(); if (!audio) return;
     if (audio.state === 'suspended') audio.resume();
     var o = audio.createOscillator(), gn = audio.createGain(), t = audio.currentTime + start;
     o.frequency.value = f; o.type = type || 'sine';
