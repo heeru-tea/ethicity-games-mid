@@ -103,13 +103,17 @@
        *  ④ 이름표와 정류장 마커 사이에는 늘 짧은 연결선
        * 이름표는 인물 얼굴보다 먼저 자리를 잡는다(얼굴이 이름표를 피함). 좌표는 뷰의 project = 무대 CSS px(3D 캔버스는 devicePixelRatio 배율 버퍼를
        * CSS 크기로 늘려 그리므로 같은 좌표계)이고, 무대 크기가 바뀌면(ResizeObserver·창 크기 변경) 다시 배치한다 */
+      /* 간판형(2026-11-01 사용자 선택 A, 좁은 지도 ≤ 520px): 이름표를 정류장(건물) 바로 옆에 붙인다 — 짧은 이름(config short), 연결선 없음,
+       * 더 떨어진 자리(+12·+24px) 후보 없음. 안 겹치는 바로 옆 자리가 없으면 바로 옆 자리 중 가장 덜 겹치는 곳 */
+      var narrow = box.width <= 520;
       var ids = Object.keys(st.nodes), P = {}, L = {}, DIRS = ['S', 'E', 'W', 'N'];
       function inBox(r) { return r.x >= 2 && r.y >= 2 && r.x + r.w <= box.width - 2 && r.y + r.h <= box.height - 2; }
       ids.forEach(function (id) {
         var n = st.nodes[id], el = document.createElement('div'), wait = st.waiting[id] || 0;
         P[id] = project(n.x, n.y);
         el.className = 'net-label'; el.dataset.node = id;
-        el.appendChild(document.createElement('span')).textContent = n.name;
+        el.appendChild(document.createElement('span')).textContent = narrow && n.short ? n.short : n.name;
+        if (narrow && n.short) { el.title = n.name; el.setAttribute('aria-label', n.name); }
         if (st.newNodes.indexOf(id) >= 0) { var nb = document.createElement('span'); nb.className = 'net-new'; nb.textContent = '새 정류장'; el.appendChild(nb); el.classList.add('is-new'); }
         if (st.showWait && wait > 0) {
           var w = document.createElement('span'); w.className = 'net-wait' + (wait >= T.waitDanger ? ' danger' : wait >= T.waitCaution ? ' caution' : '');
@@ -133,7 +137,7 @@
       ids.forEach(function (id) {
         var lab = L[id], p = P[id], order = [lab.dir].concat(DIRS.filter(function (d) { return d !== lab.dir; })), cands = [];
         order.forEach(function (d) { cands.push(slot(id, d, 0)); }); ['SE', 'SW', 'NE', 'NW'].forEach(function (d) { cands.push(slot(id, d, 0)); });
-        [12, 24].forEach(function (e) { order.forEach(function (d) { cands.push(slot(id, d, e)); }); });
+        if (!narrow) [12, 24].forEach(function (e) { order.forEach(function (d) { cands.push(slot(id, d, e)); }); });
         var inside = cands.filter(inBox); if (!inside.length) inside = [cands[0]].map(function (r) { return { x: Math.min(Math.max(2, r.x), box.width - r.w - 2), y: Math.min(Math.max(2, r.y), box.height - r.h - 2), w: r.w, h: r.h, dir: r.dir }; });
         function others(q) { return !(q.kind === 'stop' && q.id === id); }
         function hits(r, hud) { return placed.some(function (q) { return others(q) && (hud || q.kind !== 'hud') && overlap(r, q); }); }
@@ -149,7 +153,7 @@
         lab.el.style.left = best.x + 'px'; lab.el.style.top = best.y + 'px'; lab.el.dataset.dir = best.dir;
         // 짧은 연결선: 마커 가장자리 → 이름표의 가장 가까운 점
         var bx = Math.max(best.x, Math.min(p.left, best.x + best.w)), by = Math.max(best.y, Math.min(p.top, best.y + best.h)), dd = Math.hypot(bx - p.left, by - p.top);
-        if (dd > T.stop + 1) svgEl('line', { 'class': 'leader', 'data-node': id, x1: p.left + (bx - p.left) / dd * T.stop, y1: p.top + (by - p.top) / dd * T.stop, x2: bx, y2: by }, gLead);
+        if (!narrow && dd > T.stop + 1) svgEl('line', { 'class': 'leader', 'data-node': id, x1: p.left + (bx - p.left) / dd * T.stop, y1: p.top + (by - p.top) / dd * T.stop, x2: bx, y2: by }, gLead);
         placed.push({ x: best.x, y: best.y, w: best.w, h: best.h, kind: 'label', id: id });
       });
       // 인물 얼굴 자리(이름표 다음): 출발 정류장 옆 — 위 → 왼쪽 위 → 오른쪽 위 → 왼쪽 → 오른쪽 → 아래, 노선 선·마커·번호 원·이름표를 피한다

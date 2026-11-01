@@ -94,13 +94,16 @@ try {
     });
     let r = await m();
     assert.ok(r.out.every(x => x.own <= 40), '모든 이름표가 자기 정류장 40px 안: ' + r.out.map(x => x.id + Math.round(x.own)).join(' '));
-    assert.ok(r.out.every(x => x.leader), '이름표–정류장 연결선'); assert.equal(r.overl, 0, '이름표끼리 안 겹침');
+    // 2026-11-01 간판형(좁은 지도): 연결선 없이 바로 옆(공공서비스 고리 정류장은 고리 바깥 34px 안), 짧은 이름 + 전체 이름 aria-label
+    assert.ok(r.out.every(x => x.own <= 34), '간판형 — 바로 옆: ' + r.out.map(x => x.id + Math.round(x.own)).join(' '));
+    assert.equal(await page.locator('.net-leaders line').count(), 0, '좁은 지도엔 연결선 없음'); assert.equal(r.overl, 0, '이름표끼리 안 겹침');
+    assert.equal(await page.locator('.net-label[data-node="D"]').getAttribute('aria-label'), '병원·공공서비스'); assert.equal(await page.locator('.net-label[data-node="D"] > span').first().innerText(), '병원');
     if (r.canvas) assert.equal(r.canvas[0], r.canvas[1] * Math.min(r.canvas[2], 2), '3D 캔버스 버퍼 = CSS 크기 × min(DPR,2), 이름표는 CSS 좌표');
     await page.screenshot({ path: `${SHOT}/_shot-playtest-p0-3-after-390${q ? '-2d' : ''}.png` });
     // 화면 크기가 바뀌면 다시 배치
     await page.setViewportSize({ width: 820, height: 1180 }); await page.waitForTimeout(900); r = await m();
     assert.ok(r.out.every(x => x.own <= 40), '크기 바꾼 뒤에도 자기 정류장 옆'); assert.equal(r.overl, 0);
-    ok((q || '3d') + ' P0-3 390px DPR3 이름표가 자기 정류장 40px 안·연결선·겹침 없음, 820px로 바꾸면 다시 배치');
+    ok((q || '3d') + ' P0-3 390px DPR3 간판형 이름표(바로 옆·연결선 없음·짧은 이름)·겹침 없음, 820px로 바꾸면 다시 배치');
     assert.deepEqual(page.errors, []); await page.close();
   }
   {
