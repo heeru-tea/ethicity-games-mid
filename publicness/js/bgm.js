@@ -1,13 +1,13 @@
 /*
  * 배경음악(BGM) — 2026-11-01. 곡은 fal ElevenLabs Music(가사 없음)으로 만든 두 곡:
  *   계획·결과·타이틀·엔딩 = audio/bgm/b2-plan.mp3(잔잔), 운행 = audio/bgm/b3-run.mp3(통통 튀는 곡)
- * 효과음 스위치(#opt-sound)와 따로 #opt-bgm, 저장 키 ethicity.publicness.bgm('1'/'0', 기본 켜짐 — 효과음과 같은 결정).
+ * 효과음 스위치(#opt-sound)와 따로 #opt-bgm, 저장 키 ethicity.publicness.bgm('1'/'0', 기본 켜짐 — 효과음과 같은 결정). 볼륨 0.14(사용자: 처음 0.3의 절반 미만).
  * 배속(1×·2×)과 무관하게 같은 빠르기. 화면이 바뀌면 0.6초 동안 줄였다 키움(같은 곡이면 이어서). 탭이 숨으면 멈춤.
  * 브라우저는 첫 클릭·키 입력 전에는 소리를 막으므로, 그때 다시 시도한다. App.go를 감싸 화면 이름(data-screen)을 받는다.
  */
 (function (root) {
   'use strict';
-  var PB = root.PB, KEY = 'ethicity.publicness.bgm', VOL = 0.3, FADE = 600;
+  var PB = root.PB, KEY = 'ethicity.publicness.bgm', VOL = 0.14, FADE = 600;
   var TRACK = { plan: 'audio/bgm/b2-plan.mp3', run: 'audio/bgm/b3-run.mp3' };
   function trackFor(screen) { return screen === 'run' ? 'run' : 'plan'; }
   var on = read(), audio = null, cur = null, want = null, fadeT = null;
