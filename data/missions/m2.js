@@ -5,7 +5,9 @@
  * hazard:true = 위험물(건전지). 이름표가 틀린 위험물이 장면에 쌓이면 그 장면은 '위험'으로 실패한다(압착기 화재).
  * fakes = 이름표가 틀린 카드(2 임무 주제: 검수에서 고칠 수 있다). truth = 진짜 종류(null이면 어떤 이름표도 맞지 않는다 → 빼기만).
  * conveyor = 결과 화면에서 처음 보는 물건(학습 카드에 안 쓴 변형 3~4). bin = 맞는 함, wrongBin = 틀릴 때 가는 함,
- *            causes = 틀리는 원인(조합 id: 그 조합이 빠짐 / 가짜 id: 그 가짜가 이 물건의 장면을 오염 / 'contaminated:S#': 그 장면이 무엇으로든 오염).
+ *            causes = 틀리는 원인(조합 id: 그 조합이 빠짐 / 가짜 id: 그 가짜가 이 물건의 장면을 오염 / 'contaminated:S#': 그 장면이 무엇으로든 오염 /
+ *            'danger:S#': 그 장면이 '위험'으로 실패). 장면마다 건전지 물건이 하나씩 있어 '위험' 장면 = 그 장면에서 비상 정지(테스트로 고정).
+ * scenes[].art.wrongBin = 결과 컷(불편)에서 물건이 잘못 들어간 함 — 컷 문구와 맞춘다.
  * ⚠️ 분리배출 내용은 실제 규칙과 맞아야 한다(2026-11 확인: 영수증 감열지·칫솔 = 종량제, 건전지 = 전지류 따로,
  *    종이팩은 종이와 따로, 투명 페트는 라벨 떼고 찌그러뜨려 따로 — 찌그러진 투명 페트도 투명 페트).
  */
@@ -52,7 +54,7 @@
       can_tin: 3, pet_crushed: 3, trash_misc: 3, battery_aa: 3
     },
     scenes: [
-      { id: 'S1', title: '음료 캔과 통조림 캔', emphasis: 'normal', art: { place: 'sorting', focus: ['can_drink', 'can_tin'] },
+      { id: 'S1', title: '음료 캔과 통조림 캔', emphasis: 'normal', art: { place: 'sorting', focus: ['can_drink', 'can_tin'], wrongBin: 'vinyl' },
         combos: [
           { id: 'S1_can_drink', keys: ['can_drink'], need: 2, danger: false, missingLine: '우리가 넣은 데이터에는 음료 캔이 부족했다.' },
           { id: 'S1_can_tin', keys: ['can_tin'], need: 2, danger: false, boundary: true, missingLine: '우리가 넣은 데이터에는 통조림 캔이 없었다.' }
@@ -62,7 +64,7 @@
           danger: '캔 사이에 섞인 건전지가 압착기로 들어갔다. 불꽃이 튀자 감독관이 비상 정지 버튼을 눌렀다.',
           inconvenience: '캔이 엉뚱한 함으로 갔다. 선별장 직원이 손으로 다시 골라낸다.'
         } },
-      { id: 'S2', title: '찌그러진 페트병과 비닐', emphasis: 'normal', art: { place: 'sorting', focus: ['pet_crushed', 'vinyl_bag'] },
+      { id: 'S2', title: '찌그러진 페트병과 비닐', emphasis: 'normal', art: { place: 'sorting', focus: ['pet_crushed', 'vinyl_bag'], wrongBin: 'trash' },
         combos: [
           { id: 'S2_pet_clear', keys: ['pet_clear'], need: 2, danger: false, missingLine: '우리가 넣은 데이터에는 투명 페트병이 부족했다.' },
           { id: 'S2_pet_crushed', keys: ['pet_crushed'], need: 2, danger: false, boundary: true, missingLine: '우리가 넣은 데이터에는 찌그러진 페트병이 없었다.' },
@@ -73,7 +75,7 @@
           danger: '페트 사이에 섞인 건전지가 압착기로 들어갔다. 불꽃이 튀자 감독관이 비상 정지 버튼을 눌렀다.',
           inconvenience: '찌그러진 페트병과 비닐이 엉뚱한 함으로 갔다. 선별장 직원이 손으로 다시 골라낸다.'
         } },
-      { id: 'S3', title: '우유팩·신문지·영수증', emphasis: 'normal', art: { place: 'sorting', focus: ['pack_milk', 'f_receipt'] },
+      { id: 'S3', title: '우유팩·신문지·영수증', emphasis: 'normal', art: { place: 'sorting', focus: ['pack_milk', 'f_receipt'], wrongBin: 'paper' },
         combos: [
           { id: 'S3_pack_milk', keys: ['pack_milk'], need: 2, danger: false, missingLine: '우리가 넣은 데이터에는 우유팩이 부족했다.' },
           { id: 'S3_paper_news', keys: ['paper_news'], need: 2, danger: false, missingLine: '우리가 넣은 데이터에는 신문지와 종이 상자가 부족했다.' },
@@ -84,7 +86,7 @@
           danger: '종이 사이에 섞인 건전지가 압착기로 들어갔다. 불꽃이 튀자 감독관이 비상 정지 버튼을 눌렀다.',
           inconvenience: '종이 함에 영수증과 우유팩이 섞였다. 그 종이 더미는 재활용이 어려워 선별장 직원이 다시 골라낸다.'
         } },
-      { id: 'S4', title: '캔 사이에 섞인 건전지', emphasis: 'low', art: { place: 'sorting', focus: ['can_drink', 'battery_aa'] },
+      { id: 'S4', title: '캔 사이에 섞인 건전지', emphasis: 'low', art: { place: 'sorting', focus: ['can_drink', 'battery_aa'], wrongBin: 'trash' },
         combos: [
           { id: 'S4_battery_aa', keys: ['battery_aa'], need: 2, danger: true, missingLine: '우리가 넣은 데이터에는 건전지가 없었다.' },
           { id: 'S4_can_drink', keys: ['can_drink'], need: 2, danger: false, missingLine: '우리가 넣은 데이터에는 음료 캔이 부족했다.' }
@@ -95,7 +97,7 @@
           inconvenience: '건전지는 골라냈지만, 멀쩡한 캔까지 엉뚱한 함으로 보냈다. 선별장 직원이 손으로 다시 골라낸다.'
         } }
     ],
-    // 결과 화면의 컨베이어 — 지나가는 순서대로. 건전지(위험물)가 틀린 함으로 가면 비상 정지
+    // 결과 화면의 컨베이어 — 지나가는 순서대로(14개). 건전지(위험물)가 틀린 함으로 가면 비상 정지
     conveyor: [
       { id: 'cv1', art: 'can_drink', variant: 3, scene: 'S1', bin: 'can', wrongBin: 'vinyl', causes: ['S1_can_drink', 'contaminated:S1'] },
       { id: 'cv2', art: 'pet_clear', variant: 3, scene: 'S2', bin: 'pet', wrongBin: 'vinyl', causes: ['S2_pet_clear', 'contaminated:S2'] },
@@ -104,11 +106,13 @@
       { id: 'cv5', art: 'paper_news', variant: 3, scene: 'S3', bin: 'paper', wrongBin: 'trash', causes: ['S3_paper_news'] },
       { id: 'cv6', art: 'vinyl_bag', variant: 3, scene: 'S2', bin: 'vinyl', wrongBin: 'trash', causes: ['S2_vinyl_bag', 'f_cat'] },
       { id: 'cv7', art: 'f_receipt', variant: 3, scene: 'S3', bin: 'trash', wrongBin: 'paper', causes: ['f_receipt', 'S3_trash_misc'] },
+      { id: 'cv13', art: 'battery_aa', variant: 5, scene: 'S3', bin: 'battery', wrongBin: 'paper', causes: ['danger:S3'] },
       { id: 'cv8', art: 'pet_crushed', variant: 3, scene: 'S2', bin: 'pet', wrongBin: 'trash', causes: ['S2_pet_crushed'] },
-      { id: 'cv9', art: 'battery_aa', variant: 3, scene: 'S1', bin: 'battery', wrongBin: 'can', causes: ['f_battery'] },
+      { id: 'cv14', art: 'battery_aa', variant: 6, scene: 'S2', bin: 'battery', wrongBin: 'pet', causes: ['danger:S2'] },
+      { id: 'cv9', art: 'battery_aa', variant: 3, scene: 'S1', bin: 'battery', wrongBin: 'can', causes: ['f_battery', 'danger:S1'] },
       { id: 'cv10', art: 'f_toothbrush', variant: 3, scene: 'S2', bin: 'trash', wrongBin: 'pet', causes: ['f_toothbrush'] },
-      { id: 'cv11', art: 'can_drink', variant: 4, scene: 'S4', bin: 'can', wrongBin: 'trash', causes: ['S4_can_drink'] },
-      { id: 'cv12', art: 'battery_aa', variant: 4, scene: 'S4', bin: 'battery', wrongBin: 'can', causes: ['S4_battery_aa', 'f_battery', 'contaminated:S4'] }
+      { id: 'cv11', art: 'can_drink', variant: 4, scene: 'S4', bin: 'can', wrongBin: 'trash', causes: ['S4_can_drink', 'contaminated:S4'] },
+      { id: 'cv12', art: 'battery_aa', variant: 4, scene: 'S4', bin: 'battery', wrongBin: 'can', causes: ['S4_battery_aa', 'f_battery', 'danger:S4'] }
     ],
     story: {
       intro: [
@@ -128,7 +132,7 @@
       },
       supervisorQuestion: '카드마다 붙은 이름표, 그림이랑 맞는지 다 봤어?',
       conveyorIntro: { who: 'supervisor', text: '그럼, 실제로 돌려 보자.' },
-      emergency: { who: 'supervisor', text: '비상 정지! 캔 함에 건전지가 들어갔어.' },
+      emergency: { who: 'supervisor', text: '비상 정지! {bin} 함에 건전지가 들어갔어.' }, // {bin} = 건전지가 들어간 함
       responsibility: '승인한 건 나니까, 나도 같이 책임질게.',
       clientPass: [{ who: 'sorter', text: '오늘은 손으로 다시 고를 게 거의 없겠어요. 고마워요.' }],
       clientFail: [{ who: 'sorter', text: '아직 몇 개는 제가 다시 골라야겠네요. 한 번 더 부탁해요.' }],

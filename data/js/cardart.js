@@ -828,6 +828,7 @@
     var focus = (s.art.focus || []).slice(0, 2);
     var labels = [];
     focus.forEach(function (id) { var l = truthLabelOf(mission, id); if (labels.indexOf(l) < 0) labels.push(l); });
+    if (s.art.wrongBin && labels.indexOf(s.art.wrongBin) < 0) labels.push(s.art.wrongBin); // 불편 컷에서 물건이 잘못 들어간 함(컷 문구와 맞춤)
     ['trash', 'paper', 'can'].forEach(function (l) { if (labels.length < 3 && labels.indexOf(l) < 0) labels.push(l); });
     var bw = S * 0.2, binX = [S * 0.06, S * 0.32, S * 0.58], binY = S * 0.72;
     labels.forEach(function (l, k) { drawBin(g, S, mission, l, binX[k], binY, bw); });
@@ -842,7 +843,7 @@
       badge(g, S, '#5be3a1', 'check');
     } else if (outcome === 'inconvenience') {
       var id0 = focus[0], right = truthLabelOf(mission, id0);
-      var wrong = labels.filter(function (l) { return l !== right; })[0];
+      var wrong = s.art.wrongBin || labels.filter(function (l) { return l !== right; })[0];
       atBin(id0, wrong);
       if (focus[1]) on(focus[1], S * 0.4, by - size * 0.32, 1);
       var wb = labels.indexOf(wrong);

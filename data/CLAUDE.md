@@ -1,7 +1,7 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
 ## ★지금 상태 (2026-11-01)
-- **2 임무 「분리배출 분류 AI」 완성**(계획 Task 6~10, 로컬 커밋 — push는 사용자 검토 뒤). 흐름: 대화 → 브리핑 → 달리기 → 검수(이름표 고치기) → 감독관 → **컨베이어 실제 분류**(`js/ui-conveyor.js`) → 장면별 결과(잘못 간 물건 썸네일) → 보충/다시 제출 → 선배 → 마무리. 1 임무 마무리에 [다음 임무로], 타이틀에 **임무 고르기**(1·2 임무).
+- **2 임무 「분리배출 분류 AI」 완성**(계획 Task 6~10, 로컬 커밋 — push는 사용자 검토 뒤). 흐름: 대화 → 브리핑 → 달리기 → 검수(이름표 고치기) → 감독관 → **컨베이어 실제 분류**(`js/ui-conveyor.js`) → 장면별 결과(잘못 간 물건 썸네일) → 보충/다시 제출 → 선배 → 마무리. 1 임무 마무리에 [다음 임무로], 타이틀에 **임무 고르기**(1·2 임무, 저장된 진행이 있으면 먼저 묻는다).
 - **임무 기록 한 곳**: `DR.App.records[임무] = { cleared, passed, firstTry, supplements, firstFails:[{scene,title,kind}] }`, 저장소 `ethicity.data.save`의 `records`에도(새로고침 뒤에도 "몇 개 깼는지"). 2 임무 브리핑 한 줄·3 임무 정체 공개·(검토 중인) 도시 복구 화면이 읽는다. '처음부터'(clear)에서 지워진다.
 - **3·4 임무 = 설계 초안만**(`docs/specs/2026-11-01-data-runner-m3-m4-design.md`, 사용자 승인 전 구현 금지). 문서 끝 열린 질문부터.
 - 진행 기록: `.superpowers/sdd/2026-10-28-data-runner-fakes-m2/progress.md`(Ruling 목록).
@@ -37,12 +37,12 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (131)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (15개: boot·cardart·fakes·fire·flow·hero·keys·m1·**m2**·portraits·readability·run·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분)
+- 단위: `node --test "data/tests/*.test.mjs"` (135)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (15개: boot·cardart·fakes·fire·flow·hero·keys·m1·**m2**·portraits·readability·run·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
-- ⚠️ 컨베이어 원인 규칙: 가짜 원인은 **물건 자기 장면**의 오염만 본다(통과한 장면의 물건은 늘 맞는 함). 원인을 늘릴 때 `conveyor.test.mjs` 무작위 가방 테스트가 지켜 준다.
+- ⚠️ 컨베이어 원인 규칙: 가짜 원인은 **물건 자기 장면**의 오염만 본다(통과한 장면의 물건은 늘 맞는 함). `danger:S#` 원인 = 그 장면이 위험으로 실패 → 장면마다 건전지 물건이 하나씩 있어 **위험 장면 = 그 장면에서 비상 정지**(리뷰 I1). 원인을 늘릴 때 `conveyor.test.mjs` 무작위 가방 테스트(통과 장면은 모두 맞음·위험⇔비상 정지)가 지켜 준다.
 
 ## 남은 일
 - **팀 플레이 피드백**(기획서 §11 체크리스트) → `config.js` 수치 조정. 미확인: 실기기 손맛·터치 실기기·저사양 PC 프레임.

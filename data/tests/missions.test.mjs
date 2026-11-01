@@ -139,9 +139,19 @@ test('m2 well-formed', () => {
     assert.ok(labelIds.has(it.bin) && labelIds.has(it.wrongBin) && it.bin !== it.wrongBin, it.id);
     assert.ok(it.variant >= 3, it.id);
     assert.ok(m2.scenes.some((s) => s.id === it.scene), it.id);
-    for (const c of it.causes) assert.ok(comboIds.has(c) || fakeIds.has(c) || /^contaminated:S[1-4]$/.test(c), it.id + ' ' + c);
+    for (const c of it.causes) assert.ok(comboIds.has(c) || fakeIds.has(c) || /^(contaminated|danger):S[1-4]$/.test(c), it.id + ' ' + c);
   }
   assert.ok(m2.conveyor.length >= 10 && m2.conveyor.length <= 14);
+  for (const s of m2.scenes) assert.ok(m2.conveyor.some((it) => it.scene === s.id && it.art === 'battery_aa' && it.causes.includes('danger:' + s.id)), 'battery item per scene ' + s.id);
+});
+
+test('m2 scene art names the wrong bin its inconvenience cut shows (review)', () => {
+  for (const s of m2.scenes) {
+    assert.ok(m2.labels.some((l) => l.id === s.art.wrongBin), s.id);
+    const right = m2.cardTypes[s.art.focus[0]] ? m2.cardTypes[s.art.focus[0]].label : m2.cardTypes[m2.fakes.find((f) => f.id === s.art.focus[0]).truth].label;
+    assert.notEqual(s.art.wrongBin, right, s.id);
+  }
+  assert.equal(m2.scenes[2].art.wrongBin, 'paper'); // S3 문구: 종이 함에 영수증과 우유팩이 섞였다
 });
 
 test('m2 conveyor bins match the real sorting rules', () => {

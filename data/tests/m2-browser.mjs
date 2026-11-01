@@ -112,6 +112,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
   }
 }
 // 2부 — 컨베이어 실제 분류(spec §5.5)
+const CV_N = 14; // missions/m2.js conveyor 물건 수(missions.test가 10~14로 고정)
 const NO_NUMBERS = /\d+\s*\/\s*\d+|%|\d+\s*개/;
 async function toConveyor(page, fill, step) {
   await toInspect(page, fill);
@@ -132,8 +133,8 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 
       assert.equal(await page.locator('#screen-conveyor .cv-bin').count(), 7, 'seven bins');
       if (small) assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 375 && document.getElementById('screen-conveyor').scrollWidth <= 375), 'conveyor fits 375');
       await page.locator('#btn-cv-skip').click();
-      assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), 12, 'all placed after skip');
-      assert.equal(await page.locator('#screen-conveyor .cv-item[data-correct="true"]').count(), 12, 'all correct');
+      assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), CV_N, 'all placed after skip');
+      assert.equal(await page.locator('#screen-conveyor .cv-item[data-correct="true"]').count(), CV_N, 'all correct');
       assert.ok(!NO_NUMBERS.test(await page.locator('#screen-conveyor').innerText()), 'no numbers');
       await page.screenshot({ path: shotPath('conveyor-end-' + viewport.width) });
       await page.locator('#btn-cv-next').click();
@@ -181,7 +182,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 
     await page.screenshot({ path: shotPath('conveyor-stop-1280') });
     await page.locator('#btn-cv-resume').click();
     await page.locator('#btn-cv-next').waitFor({ state: 'visible', timeout: 6000 });
-    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), 12);
+    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), CV_N);
     assert.ok(!(await page.locator('#cv-stop').isVisible()));
     const bad = await page.locator('#screen-conveyor .cv-item[data-correct="false"]').evaluateAll((els) => els.map((e) => e.dataset.id));
     assert.ok(bad.includes('cv12'), 'battery S4 wrong');
@@ -198,7 +199,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 
     await page.locator('#cv-stop').waitFor({ state: 'visible', timeout: 6000 });
     await page.locator('#btn-cv-skip').click();
     assert.ok(!(await page.locator('#cv-stop').isVisible()), 'stop closed by skip');
-    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), 12);
+    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), CV_N);
     // 정지 창 없이 끝나도 책임 대사는 끝 화면에 남는다
     assert.ok((await page.locator('#screen-conveyor').innerText()).includes('나도 같이 책임질게'));
     await page.evaluate(() => { const b = document.getElementById('btn-cv-next'); b.click(); b.click(); });
@@ -215,7 +216,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 
   try {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await toConveyor(page, { ...M2_ALL2, battery_aa: 0 });
-    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), 12, 'all in bins at once');
+    assert.equal(await page.locator('#screen-conveyor .cv-bin .cv-item').count(), CV_N, 'all in bins at once');
     assert.ok(await page.locator('#btn-cv-next').isVisible());
     assert.ok(!(await page.locator('#cv-stop').isVisible()));
     assert.deepEqual(errors, []);
@@ -289,6 +290,29 @@ async function finishFromSenior(page) {
     await page.locator('#btn-m2').click();
     await page.locator('#screen-story').waitFor({ state: 'visible' });
     assert.deepEqual(await page.evaluate(() => ({ bag: DR.App.state.bag.length, s: DR.App.state.supplements, m: DR.App.state.mission })), { bag: 0, s: 0, m: 'm2' });
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
+// 리뷰 I2 — 저장된 진행이 있으면 임무 고르기 전에 확인(취소하면 저장 그대로)
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m1' });
+  try {
+    await page.locator('#btn-skip').click();
+    await page.locator('#screen-briefing').waitFor({ state: 'visible' });
+    await page.evaluate(() => DR.App.go('title'));
+    assert.equal(await page.locator('#btn-continue').count(), 1, 'save exists');
+    await page.locator('#btn-m2').click();
+    const dlg = page.locator('dialog.modal');
+    await dlg.waitFor({ state: 'visible', timeout: 3000 });
+    assert.ok((await dlg.innerText()).includes('저장된 진행'), 'asks before overwriting');
+    await dlg.locator('button', { hasText: '취소' }).click();
+    assert.equal(await page.evaluate(() => DR.App.screen), 'title');
+    assert.equal(await page.evaluate(() => DR.Save.load().mission), 'm1', 'save kept on cancel');
+    await page.locator('#btn-m2').click();
+    await page.locator('dialog.modal button', { hasText: '2 임무 시작' }).click();
+    await page.locator('#screen-story').waitFor({ state: 'visible' });
+    assert.equal(await page.evaluate(() => DR.App.state.mission), 'm2');
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 }

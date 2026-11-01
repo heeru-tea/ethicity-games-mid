@@ -86,3 +86,38 @@ test('passing scene items are all correct (random bags)', () => {
     }
   }
 });
+
+// 리뷰 I1: 장면이 '위험'이면 그 장면에 비상 정지 물건이 있고, 위험이 아니면 없다(컨베이어와 장면 결과가 어긋나지 않게)
+const consistent = (bag) => {
+  const r = judge(m2, bag, cfg), out = Conveyor.sort(m2, r);
+  for (const s of r.scenes) assert.equal(s.failKind === 'danger', out.some((o) => o.scene === s.id && o.emergency), s.id + ' ' + JSON.stringify(r.scenes.map((x) => x.failKind)));
+  return { r, out };
+};
+test('danger scene <=> emergency item in that scene (targeted bags)', () => {
+  // 건전지 가짜를 '일반쓰레기'로 잘못 고침 → S3 위험 → S3에서 비상 정지
+  const { r, out } = consistent(bagOf(M2_ALL2).concat(fakesOf('f_battery', 2, { label: 'trash' })));
+  assert.equal(r.scenes[2].failKind, 'danger');
+  assert.ok(out.some((o) => o.scene === 'S3' && o.emergency));
+  // 고양이 2장을 '캔'으로 → S1·S4 불편, 비상 정지 없음
+  const c = consistent(bagOf(M2_ALL2).concat(fakesOf('f_cat', 2, { label: 'can' })));
+  assert.equal(c.out.some((o) => o.emergency), false);
+  consistent(bagOf(M2_ALL2).concat(fakesOf('f_battery', 2, { label: 'pet' })));
+  consistent(bagOf({ ...M2_ALL2, battery_aa: 0 }));
+  consistent(bagOf(M2_ALL2).concat(fakesOf('f_battery', 2)));
+});
+test('danger scene <=> emergency item in that scene (random bags)', () => {
+  const rng = Rng.create(7);
+  const keys = Object.keys(m2.cardTypes), labels = m2.labels.map((l) => l.id);
+  for (let n = 0; n < 80; n++) {
+    const bag = [];
+    for (let i = 0; i < 30; i++) {
+      if (rng.next() < 0.25) bag.push({ id: 'f' + i, fakeId: m2.fakes[Math.floor(rng.next() * m2.fakes.length)].id });
+      else bag.push({ id: 'k' + i, key: keys[Math.floor(rng.next() * keys.length)] });
+      if (rng.next() < 0.15) bag[bag.length - 1].label = labels[Math.floor(rng.next() * labels.length)];
+    }
+    consistent(bag);
+  }
+});
+test('emergency line names the bin the battery went into', () => {
+  assert.match(m2.story.emergency.text, /\{bin\}/);
+});
