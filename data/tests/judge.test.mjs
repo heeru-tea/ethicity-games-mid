@@ -80,7 +80,7 @@ test('tutorial: 8 dogs 2 cats fails, 3 and 3 passes', () => {
 
 test('missingLines follows scene order', () => {
   const r = judge(m1, bagOf({ day_deep: 2, day_shallow: 2 }), cfg);
-  assert.equal(missingLines(m1, r)[0], m1.scenes[1].combos[0].missingLine);
+  assert.equal(missingLines(m1, r)[0], '우리가 넣은 데이터에는 물에 젖었을 뿐인 낮 도로가 없었다.');
 });
 
 test('missingLines does not repeat a shared line', () => {
@@ -228,5 +228,36 @@ test('장면 문구가 장면 정답과 모순되지 않음', () => {
     assert.equal(r2.scenes[2].pass, false);
     assert.equal(contaminationLine(m2, 'mis:can_drink:paper', true), "우리가 넣은 데이터에 음료 캔 사진이 아직 '종이' 이름표로 남아 있다.");
     assert.equal(judge(m2, bagOf(M2).concat([{ id: 'x', key: 'can_drink' }]), cfg, { named: ['mis:can_drink:paper'] }).allPass, true, 'fixed → pass');
+  });
+}
+
+// [2] 빠진 조합 문구: 가진 개수가 0이면 "…없었다", 0보다 크고 모자라면 "…부족했다"(두 임무·튜토리얼 모든 조합)
+{
+  const { missingLine, fixedNotes } = require('../js/judge.js');
+  const m2 = require('../missions/m2.js');
+  const M2 = { can_drink: 2, can_tin: 2, pet_clear: 2, pet_crushed: 2, vinyl_bag: 2, pack_milk: 2, paper_news: 2, trash_misc: 2, battery_aa: 2 };
+  test('missingLine: 0 → 없었다, some → 부족했다, with the right 이/가', () => {
+    for (const m of [m1, m2, tutorial]) for (const s of m.scenes) for (const c of s.combos) {
+      assert.match(missingLine(m, c.id, 0), /^우리가 넣은 데이터에는 .+[이가] 없었다\.$/, c.id);
+      assert.match(missingLine(m, c.id, 1), /^우리가 넣은 데이터에는 .+[이가] 부족했다\.$/, c.id);
+    }
+    assert.equal(missingLine(m2, 'S4_battery_aa', 0), '우리가 넣은 데이터에는 건전지가 없었다.');
+    assert.equal(missingLine(m2, 'S1_can_tin', 1), '우리가 넣은 데이터에는 통조림 캔이 부족했다.');
+    assert.equal(missingLine(m1, 'S4_night_muddy', 1), '우리가 넣은 데이터에는 흙탕물에 얕게 잠긴 밤 도로가 부족했다.');
+  });
+  test('missingLines uses the counts the judge saw', () => {
+    const r0 = judge(m2, bagOf({ ...M2, battery_aa: 0 }), cfg);
+    assert.deepEqual(missingLines(m2, r0), ['우리가 넣은 데이터에는 건전지가 없었다.']);
+    const r1 = judge(m2, bagOf({ ...M2, battery_aa: 1 }), cfg);
+    assert.deepEqual(missingLines(m2, r1), ['우리가 넣은 데이터에는 건전지가 부족했다.']);
+  });
+  test('fixedNotes: a label fixed right but too few → the cause is the count, not the label', () => {
+    const bag = bagOf({ ...M2, battery_aa: 0 }).concat([{ id: 'fb', fakeId: 'f_battery', label: 'battery' }]);
+    const r = judge(m2, bag, cfg);
+    assert.equal(r.scenes[3].failKind, 'danger');
+    assert.deepEqual(fixedNotes(m2, bag, r), { S4: ['이름표는 맞게 고쳤지만, 건전지 사진이 1장뿐이라 AI가 건전지를 배우지 못했다.'] });
+    assert.deepEqual(fixedNotes(m2, bagOf({ ...M2, battery_aa: 1 }), judge(m2, bagOf({ ...M2, battery_aa: 1 }), cfg)), {}, 'no fixed card → no note');
+    const tin = bagOf({ ...M2, can_tin: 0 }).concat([{ id: 't', key: 'can_tin', label: 'trash' }].map((c) => ({ ...c, label: 'can' })));
+    assert.deepEqual(fixedNotes(m2, tin, judge(m2, tin, cfg)), {}, 'untouched (label equals original) is not a fix');
   });
 }

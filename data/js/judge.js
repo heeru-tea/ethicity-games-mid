@@ -85,14 +85,47 @@
     return { scenes: scenes, mislabeled: t.mislabeled, allPass: scenes.every(function (s) { return s.pass; }) };
   }
 
-  // 빠진 조합의 결과 문구(장면 순서, 같은 문구는 한 번만)
+  function comboOf(mission, id) {
+    for (var i = 0; i < mission.scenes.length; i++) for (var k = 0; k < mission.scenes[i].combos.length; k++) if (mission.scenes[i].combos[k].id === id) return mission.scenes[i].combos[k];
+    return null;
+  }
+  // 받침 있으면 a, 없으면 b(이/가, 을/를)
+  function josa(word, a, b) {
+    var c = word.charCodeAt(word.length - 1) - 0xAC00;
+    return c >= 0 && c <= 11171 && c % 28 !== 0 ? a : b;
+  }
+  // 빠진 조합 문구: 가진 개수가 0이면 "…없었다", 0보다 크고 모자라면 "…부족했다"(have = 화면이 보여 주는 그 개수)
+  function missingLine(mission, comboId, have) {
+    var c = comboOf(mission, comboId);
+    if (!c) return '';
+    return '우리가 넣은 데이터에는 ' + c.what + josa(c.what, '이', '가') + (have > 0 ? ' 부족했다.' : ' 없었다.');
+  }
+
+  // 이름표를 맞게 고친 카드가 있는데도 개수가 모자란 조합 → 원인은 이름표가 아니라 개수(장면 id → 문구들)
+  function fixedNotes(mission, bag, result) {
+    var C = cardsApi(), out = {};
+    result.scenes.forEach(function (s) {
+      if (s.pass) return;
+      s.missing.forEach(function (id) {
+        var c = comboOf(mission, id);
+        var fixed = (bag || []).some(function (card) {
+          return card.label !== undefined && !card.ambiguousId && card.label !== C.originalLabel(mission, card) &&
+            !C.isMislabeled(mission, card) && c.keys.indexOf(C.truthKey(mission, card)) >= 0;
+        });
+        if (!fixed) return;
+        var t = mission.cardTypes[c.keys[0]], name = (t && t.name) || c.what, have = (s.missingHave || {})[id] || 0;
+        (out[s.id] = out[s.id] || []).push('이름표는 맞게 고쳤지만, ' + name + ' 사진이 ' + have + '장뿐이라 AI가 ' + name + josa(name, '을', '를') + ' 배우지 못했다.');
+      });
+    });
+    return out;
+  }
+
+  // 빠진 조합의 결과 문구(장면 순서, 같은 문구는 한 번만) — 판정이 센 개수로 없었다/부족했다
   function missingLines(mission, result) {
-    var byId = {};
-    mission.scenes.forEach(function (s) { s.combos.forEach(function (c) { byId[c.id] = c; }); });
     var out = [];
     result.scenes.forEach(function (s) {
       s.missing.forEach(function (id) {
-        var line = byId[id] && byId[id].missingLine;
+        var line = missingLine(mission, id, (s.missingHave || {})[id] || 0);
         if (line && out.indexOf(line) < 0) out.push(line);
       });
     });
@@ -146,7 +179,7 @@
     return out;
   }
 
-  var api = { judge: judge, missingLines: missingLines, shortfall: shortfall, contaminationLine: contaminationLine, contaminationLines: contaminationLines };
+  var api = { judge: judge, missingLine: missingLine, fixedNotes: fixedNotes, missingLines: missingLines, shortfall: shortfall, contaminationLine: contaminationLine, contaminationLines: contaminationLines };
   root.DR = root.DR || {};
   root.DR.Judge = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
