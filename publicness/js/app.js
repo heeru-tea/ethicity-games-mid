@@ -208,9 +208,9 @@
     var roads = [];
     var key = s.phase + ':' + nodes.length;
     if (App._sceneKey !== key) {
-      // Decorative terrain only: route distance and accessibility remain unchanged.
-      var river = [];
-      if(s.mode === 'default')for(var y=-30;y<=30;y+=.15)river.push({x:-3.9+.45*Math.sin(y*.48),y:y});
+      // 강: config.river(기본 세팅만). 건너는 구간은 Graph가 거리 × factor로 계산한다
+      var river = [], R = s.config.river;
+      if(R)for(var y=-30;y<=30;y+=.15)river.push({x:R.x+R.amp*Math.sin(y*R.freq),y:y});
       var frame = s.config.nodes.filter(function (n) { return n.id !== 'N' || g.has('N'); });
       v.setScene({ nodes: nodes, frame: frame, roads: roads, phase: s.phase, river: river, load: PB.Demand.stopLoad(s.config, s.phase, s.seed), boundary: nodes.some(function(n){return n.id==='N';}) ? {x:Math.sign(nodes.filter(function(n){return n.id==='N';})[0].x)*6.4} : null }); App._sceneKey = key;
     }

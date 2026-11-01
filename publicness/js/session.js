@@ -39,6 +39,7 @@
     else seed = config.defaultSeed;
     if (mode !== 'default' && config.map) {
       config = clone(config);
+      delete config.river; // 강 장식·건너기 규칙은 기본 세팅만(랜덤 지도는 정류장이 섞여 강 위치와 무관)
       if(config.challenge&&!config.challengeApplied){
         var challenge=config.challenge;config.challengeApplied=true;
         config.phases=config.phases.concat(challenge.phases);

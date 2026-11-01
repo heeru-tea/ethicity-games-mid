@@ -120,6 +120,7 @@
     var box = $('#help-rules'); if (!box) return; box.textContent = '';
     var s = A.s, cfg = s ? s.config : PB.config, F = cfg.finance, rows = [];
     if (s) rows.push(['버스·노선', '이번 단계는 버스 ' + s.owned + '대 · 노선 최대 ' + S.routeLimit(s) + '개로 운영해요. 출발하면 ' + A.clock(0) + '~' + A.clock(cfg.bus.window) + '의 하루 운행이 시작돼요.']);
+    if (cfg.river) rows.push(['강 건너기', '강을 건너는 구간(외곽 마을·복지관 쪽)은 다리로 돌아가서, 지도에서 보는 것보다 ' + cfg.river.factor + '배 멀어요. 시간·연료비 모두 그만큼 더 들어요.']);
     rows.push(['기본 지원', '기본 제공 차량 1대마다 ' + A.won(F.basePerBus) + '(보유비 대당 ' + A.won(F.holding) + '의 일부) · 보유비는 쉬어도 들어요.']);
     rows.push(['공공서비스 수행분', s ? PB.UI.Econ.conditionText(s) : '외곽 마을·병원에 실제로 달리는 버스가 운행 시간 안에 ' + F.service.minStops + '회 이상 정차하면 곳마다 ' + A.won(F.service.amount) + '(승객 수와 무관, 단계 정산 때 지급)']);
     rows.push(['추가 임차', '이번 단계에만 1대 ' + A.won(F.lease.fee) + ', 최대 ' + F.lease.perPhase + '대 · 다음 단계에 자동으로 다시 빌리지 않아요.']);

@@ -24,6 +24,8 @@
     },
     // Fixed design pixels, independent of viewport. All engine time values are seconds.
     map: { pixelsPerUnit: 110, pixelsPerSecond: 110 },
+    // 강(기본 세팅만): 중심선 x = x + amp·sin(y·freq). 강을 건너는 구간은 다리로 돌아가므로 거리·시간 × factor(2026-11-01 사용자 지시 — 외곽 마을·복지관이 ‘지도에서 보는 것보다 멀다’)
+    river: { x: -3.9, amp: 0.45, freq: 0.48, factor: 1.5 },
 
     // 생활권과 정류장 (PRD §4). x,y = 고정 카메라 배치용 평면 좌표(지도 1칸 = 1km). 2026-10-27 세로 ×1.3으로 펼침(옛 y × 1.3, 상대 위치 유지)
     nodes: [
