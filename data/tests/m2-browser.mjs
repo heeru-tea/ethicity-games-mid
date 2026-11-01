@@ -222,4 +222,75 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 
   } finally { await browser.close(); }
 }
 
+// 3부 — 임무 고르기·1→2 임무 잇기·기록 한 줄(spec §5.1·§6)
+const briefText = (page) => page.locator('#screen-briefing').innerText();
+async function finishFromSenior(page) {
+  await page.locator('#btn-skip').click(); // 선배 대사
+  await page.locator('#btn-skip').click(); // 마무리 대사
+  await page.locator('#screen-outro').waitFor({ state: 'visible', timeout: 4000 });
+}
+
+// m2 direct entry — 1 임무 기록이 없으면 기본 브리핑
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 } });
+  try {
+    await page.locator('#btn-m2').click();
+    await page.locator('#btn-skip').click();
+    await page.locator('#screen-briefing').waitFor({ state: 'visible' });
+    const rl = await page.evaluate(() => DR.Missions.m2.story.recordLine);
+    const t = await briefText(page);
+    assert.ok(!t.includes(rl.firstTry) && !t.includes(rl.supplemented), 'no record line without m1 record');
+    assert.equal(await page.locator('#screen-briefing .brief-scene').count(), 4);
+    assert.equal(await page.locator('#screen-briefing .legend li').count(), 7, 'seven bins in legend');
+    await page.screenshot({ path: shotPath('m2-briefing-1280') });
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
+// m1 to m2 — 1 임무 첫 판 통과 → 마무리 [다음 임무로] → 2 임무 브리핑에 기록 한 줄
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m1' });
+  try {
+    const ALL2 = { day_deep: 2, day_shallow: 2, day_wet: 2, day_dry: 2, night_wet: 2, night_neon: 2, night_deep: 2, night_shallow: 2, night_muddy: 2 };
+    await toInspect(page, ALL2);
+    await submitAndConfirm(page);
+    const res = await throughResults(page);
+    assert.ok(res.every((r) => r.outcome === 'pass'));
+    await finishFromSenior(page);
+    assert.ok((await page.locator('#screen-outro').innerText()).includes('침수 판별 AI 완료'), 'kicker names the mission');
+    assert.deepEqual(await page.evaluate(() => DR.App.records.m1), { cleared: true, passed: true, firstTry: true, supplements: 0, firstFails: [] });
+    assert.deepEqual(await page.evaluate(() => DR.Save.records().m1.cleared), true, 'record saved');
+    assert.ok(await page.locator('#btn-again').isVisible(), 'title button too');
+    await page.locator('#btn-next-mission').click();
+    await page.locator('#btn-skip').click();
+    await page.locator('#screen-briefing').waitFor({ state: 'visible' });
+    const rl = await page.evaluate(() => DR.Missions.m2.story.recordLine);
+    assert.ok((await briefText(page)).includes(rl.firstTry), 'record line (first try)');
+    assert.equal(await page.evaluate(() => DR.App.state.mission), 'm2');
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
+// m2 replay — 2 임무를 끝내고 타이틀 → 다시 2 임무: 가방 비고 보충 0, 실패 장면 기록
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m2' });
+  try {
+    await toInspect(page, { ...M2_ALL2, can_tin: 0 });
+    await page.evaluate(() => { DR.config.maxSupplements = 0; }); // 실패해도 바로 마무리
+    await submitAndConfirm(page);
+    await throughResults(page);
+    await finishFromSenior(page);
+    assert.equal(await page.locator('#btn-next-mission').count(), 0, 'no next mission after m2 (m3 not built)');
+    const rec = await page.evaluate(() => DR.App.records.m2);
+    assert.equal(rec.firstTry, false);
+    assert.deepEqual(rec.firstFails, [{ scene: 'S1', title: '음료 캔과 통조림 캔', kind: 'inconvenience' }]);
+    await page.locator('#btn-again').click();
+    await page.locator('#screen-title').waitFor({ state: 'visible' });
+    await page.locator('#btn-m2').click();
+    await page.locator('#screen-story').waitFor({ state: 'visible' });
+    assert.deepEqual(await page.evaluate(() => ({ bag: DR.App.state.bag.length, s: DR.App.state.supplements, m: DR.App.state.mission })), { bag: 0, s: 0, m: 'm2' });
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+
 console.log('PASS m2');

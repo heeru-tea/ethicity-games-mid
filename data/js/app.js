@@ -90,9 +90,18 @@
   /* ---------- 임무 ---------- */
   function startMission(id) {
     var m = DR.Missions[id];
-    App.state = { mission: id, bag: [], supplements: 0, firstTry: null, seed: seedFor(m), record: null, needRevealed: false, newIds: [] };
+    App.state = { mission: id, bag: [], supplements: 0, firstTry: null, firstFails: [], seed: seedFor(m), record: null, needRevealed: false, newIds: [] };
     DR.UI.dialogue(m.story.intro, function () { missionBriefing(m); });
   }
+  // 이전 임무(next가 이 임무인 것)의 기록에 따른 브리핑 한 줄. 기록이 없으면(임무 고르기로 바로 들어옴) null
+  function recordLineFor(m) {
+    if (!m.story.recordLine) return null;
+    var prev = Object.keys(DR.Missions).filter(function (k) { return DR.Missions[k].next === m.id; })[0];
+    var rec = prev && App.records[prev];
+    if (!rec) return null;
+    return rec.firstTry ? m.story.recordLine.firstTry : m.story.recordLine.supplemented;
+  }
+
   function missionBriefing(m) {
     checkpoint('briefing');
     DR.UI.briefing(m, function () {
@@ -101,7 +110,7 @@
         App.state.bag = bag;
         App.afterRun(m);
       });
-    });
+    }, recordLineFor(m));
   }
 
   // 이어하기: 저장된 체크포인트 화면으로 바로(P4)
@@ -109,7 +118,7 @@
     var m = DR.Missions[save.mission];
     if (!m) { go('title'); return; }
     App.state = { mission: save.mission, bag: save.bag, supplements: save.supplements, firstTry: save.firstTry,
-      seed: save.seed === undefined ? seedFor(m) : save.seed, record: null, needRevealed: save.needRevealed, newIds: save.newIds };
+      seed: save.seed === undefined ? seedFor(m) : save.seed, record: null, needRevealed: save.needRevealed, newIds: save.newIds, firstFails: save.firstFails || [] };
     if (save.screen === 'briefing') { if (save.mission === 'tutorial') tutorialBriefing(); else missionBriefing(m); }
     else if (save.screen === 'inspect') review(m);
     else if (save.screen === 'result') judgeAndShow(m);
@@ -131,7 +140,13 @@
   function judgeAndShow(m) {
     var r = DR.Judge.judge(m, App.state.bag, DR.config);
     App.lastJudge = r;
-    if (App.state.firstTry === null) App.state.firstTry = r.allPass;
+    if (App.state.firstTry === null) {
+      App.state.firstTry = r.allPass;
+      // 첫 판에 놓친 장면(3 임무 정체 공개가 '누구나 하는 실수'의 예로 읽는다)
+      App.state.firstFails = r.scenes.filter(function (s) { return !s.pass; }).map(function (s) {
+        return { scene: s.id, title: m.scenes.filter(function (x) { return x.id === s.id; })[0].title, kind: s.failKind };
+      });
+    }
     App.state.needRevealed = true; // 첫 결과부터 필요 장수 공개(P3)
     checkpoint('result');
     function showResult() {
@@ -167,11 +182,17 @@
     });
   }
 
+  // 임무 끝: 기록을 한 곳(DR.App.records + 저장소 records)에 남긴다 — 다음 임무 브리핑 한 줄, 3 임무 정체 공개, (검토 중인) 도시 복구 화면이 읽는다
   function finishMission(m) {
     App.state.record = { firstTry: App.state.firstTry, supplements: App.state.supplements };
+    var rec = { cleared: true, passed: !!(App.lastJudge && App.lastJudge.allPass), firstTry: App.state.firstTry === true,
+      supplements: App.state.supplements, firstFails: App.state.firstFails || [] };
+    App.records[m.id] = rec;
     DR.Save.finish();
+    DR.Save.setRecord(m.id, rec);
+    var next = m.next && DR.Missions[m.next] ? function () { startMission(m.next); } : null;
     DR.UI.dialogue(m.story.senior, function () {
-      DR.UI.outro(m.story.outro, function () { DR.Sfx.play('ui'); go('title'); });
+      DR.UI.outro(m.story.outro, function () { DR.Sfx.play('ui'); go('title'); }, { kicker: m.title + ' 완료', next: next });
     });
   }
 
@@ -203,7 +224,7 @@
   }
 
   var App = {
-    screen: 'title', state: null, lastJudge: null, course: null,
+    screen: 'title', state: null, lastJudge: null, course: null, records: DR.Save.records(),
     go: go, startTutorial: startTutorial, startMission: startMission, afterRun: afterRun, debugFill: debugFill, resume: resume,
     mission: function () { return App.state ? DR.Missions[App.state.mission] : null; }
   };

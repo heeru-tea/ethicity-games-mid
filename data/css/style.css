@@ -286,3 +286,7 @@ body { overflow: hidden; word-break: keep-all; }
   .cv-bin-items .cv-item { width: 34px; height: 34px; }
 }
 @media (prefers-reduced-motion: reduce) { .cv-belt.run, .cv-belt .cv-item { animation: none; } .cv-claw { transition: none; } }
+
+/* ---------- 타이틀: 임무 고르기 ---------- */
+.title-missions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+.title-missions-label { font-size: 14px; color: var(--ink-2); margin-right: 4px; }

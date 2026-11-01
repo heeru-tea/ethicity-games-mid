@@ -95,8 +95,23 @@
     box.appendChild(el('div', { class: 'hero-companion' }, [DR.UI.characterPortrait('robot', 88), el('span', { text: 'AI 봇' })]));
   }
 
+  // 임무 고르기 — 팀원이 반복해서 볼 때 앞을 다시 하지 않게(spec §6). 고르면 그 임무 도입부터(저장된 진행은 브리핑에서 덮어씀)
+  function renderMissionPick() {
+    var box = document.getElementById('title-missions');
+    if (!box) return;
+    box.innerHTML = '';
+    box.appendChild(el('span', { class: 'title-missions-label', text: '임무 고르기' }));
+    [['m1', '1 임무 · 침수 판별'], ['m2', '2 임무 · 분리배출']].forEach(function (p) {
+      if (!DR.Missions[p[0]]) return;
+      var b = el('button', { id: 'btn-' + p[0], class: 'btn btn-small', type: 'button', text: p[1] });
+      b.addEventListener('click', function () { DR.Sfx.unlock(); DR.Sfx.play('ui'); DR.App.startMission(p[0]); });
+      box.appendChild(b);
+    });
+  }
+
   function renderTitle() {
     renderHeroPick();
+    renderMissionPick();
     var box = document.getElementById('title-actions');
     if (!box) return;
     box.innerHTML = '';
