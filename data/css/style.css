@@ -229,3 +229,10 @@ body { overflow: hidden; word-break: keep-all; }
 .hero-chip { display: flex; flex-direction: column; align-items: center; gap: 4px; border-radius: 12px; padding: 8px; }
 .hero-chip::before { display: none; }
 .hero-companion { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px; font-size: 15px; color: var(--ink-2); }
+
+/* ---------- 2 임무: 이름표 고치기 ---------- */
+.bag-card.fixed { border-color: var(--cyan); }
+.bag-fixed { position: absolute; top: 4px; right: 4px; font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: var(--cyan); color: #10093a; }
+.relabel .btn-label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 8px; }
+.relabel .bag-icons { margin: 0; }
+.relabel .bag-icons img { width: 18px; height: 18px; }
