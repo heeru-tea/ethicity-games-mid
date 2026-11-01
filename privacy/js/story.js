@@ -965,6 +965,7 @@
         view: { type: 'place', title: '2학년 3반 교실 · 다음 날 아침', cg: 'classroom-reaction' },
         lines: [
           'narr: 다음 날 아침. 교실 문을 열자 몇 명이 휴대폰 화면을 내렸다.',
+          'narr: 어젯밤 영상은 우리 반 단톡방에도 올라와 있었다. 그 자리에 없던 새봄이도, 하늘이도, 민준이도 이미 본 얼굴이었다.',
           'haneul: 야… 너 이런 애였어? 영상 보고 놀랐어.',
           { who: 'saebom', text: '다친 데는 없어? 그런데 어제 거기까지 간 건 걱정돼.', if: 'trust.saebom>=0' },
           { who: 'saebom', text: '…그 영상, 우리 반 단톡에도 올라왔더라. 나는 따로 할 말 없어.', if: 'trust.saebom<0' },

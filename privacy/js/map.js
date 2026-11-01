@@ -269,7 +269,11 @@
       busy = true;
       say('');
       var who0 = t.type === 'npc' ? t.c.who : null;
-      var greet = [].concat(trig.greet || []).map(function (g) { return typeof g === 'string' ? personLine(who0, g) : personLine(g.who || null, g.text); });
+      // greet 줄의 met: 이 걷기에서 그 인물들을 모두 마주쳤을 때(지나가며 인사 말풍선·말 걸기)만 text, 아니면 alt(없으면 줄 생략)
+      var greet = [].concat(trig.greet || []).map(function (g) {
+        if (g && g.met && !g.met.every(function (w) { return passGreeted[w] || talked[w]; })) return g.alt ? { who: g.who, text: g.alt } : null;
+        return g;
+      }).filter(Boolean).map(function (g) { return typeof g === 'string' ? personLine(who0, g) : personLine(g.who || null, g.text); });
       var g0 = gen;
       talk(greet).then(function () { busy = false; if (active && mode === 'walk' && gen === g0) o.onEnter(); });
       return;

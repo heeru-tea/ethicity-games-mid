@@ -589,7 +589,7 @@
       ok(ci === 6 && view() === 'v-chapter' && !$('#stage').hidden, '1장 끝: 장 카드가 맵 무대 위에');
       var lis = $$('#c-summary .trust-list li');
       ok(lis.length >= 4 && lis.every(function (li) { return li.lastElementChild && li.lastElementChild.matches('.spr.face'); }), '관계 줄마다 오른쪽 끝에 얼굴 (' + lis.length + '줄)');
-      ok(lis.every(function (li) { return !!li.querySelector('.trust-mark'); }), '가까워짐·그대로·멀어짐 표식');
+      ok(lis.every(function (li) { return !!li.querySelector('.trust-mark'); }), '믿음 생김·그대로·줄어듦 표식');
       var mj = $('#c-summary .trust-list li[data-who="minjun"] .spr.face');
       var gl = 0; while (mj && !mj.classList.contains('loaded') && gl++ < 100) await wait(30);
       ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /characters-official\/minjun-portraits\.png/.test(mj.style.backgroundImage), '민준 줄엔 공통 규격 민준 초상화');
@@ -909,10 +909,10 @@
       var mark0 = st.chapterMarks[0].trust;
       var okBonds = bonds.length === ST.trustable.length && bonds.every(function (b) {
         var w = b.getAttribute('data-who'), d = st.trust[w] - (mark0[w] || 0);
-        var word = d > 0 ? '친해짐' : d < 0 ? '멀어짐' : '그대로';
+        var word = d > 0 ? '믿음이 생김' : d < 0 ? '믿음이 줄어듦' : '그대로';
         return !!b.querySelector('.spr.face') && b.textContent.indexOf(ST.characters[w].name) >= 0 && b.textContent.indexOf(word) >= 0;
       });
-      ok(okBonds, '친구마다 얼굴 + 친해짐/그대로/멀어짐(실제 관계 변화와 일치) ' + bonds.map(function (b) { return b.textContent; }).join(' / '));
+      ok(okBonds, '친구마다 얼굴 + 믿음이 생김/그대로/줄어듦(실제 신뢰 변화와 일치) ' + bonds.map(function (b) { return b.textContent; }).join(' / '));
       ok(/엔딩 D/.test($('#finale .finale-end').textContent), '마지막에 엔딩 이름');
       ok(!!$('#finale .finale-odds') && $('#finale .finale-odds').textContent.indexOf(window.PRIVACY_ODDS.D + '%') >= 0 && /아무거나 골랐다면/.test($('#finale .finale-odds').textContent), '“아무거나 골랐다면” 확률: ' + ($('#finale .finale-odds') || {}).textContent);
       $('#finale-go').click(); await wait(50);
@@ -1119,6 +1119,27 @@
       ok(!$('#menu').hidden, '메뉴 열림');
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait();
       ok($('#menu').hidden, 'Esc로 메뉴 닫힘');
+    }
+
+    else if (s === 'greet-met' || s === 'greet-met-2') {
+      // 오프닝 새봄의 "오는 길에 하늘이랑 지호도 봤지?"는 이 걷기에서 둘 다 마주쳤을 때만(지나가며 인사·말 걸기), 아니면 다른 줄
+      var TW = window.PRIVACY_WORLD, TM = PrivacyMap.debug;
+      $('#btn-new').click(); await wait(300);
+      var cls = TW.SCENES.filter(function (c) { return c.id === 'classroom'; })[0], yard = TW.SCENES.filter(function (c) { return c.id === 'yard'; })[0];
+      if (s === 'greet-met-2') { // 마당에서 하늘·지호 곁을 지나감(말은 안 걸음)
+        var hc = castOf('haneul'), jc = castOf('jiho');
+        TM.place(yard.ox + 14, 8, 'down'); await wait(50);
+        ok(await walkToCell(hc.x, hc.y + 1), '하늘 곁 지나가기');
+        ok(await walkToCell(jc.x, jc.y + 1), '지호 곁 지나가기');
+      }
+      TM.place(cls.ox + 15, 12, 'up'); await wait(50);
+      var sb = castOf('saebom');
+      ok(await walkToCell(sb.x, sb.y + 1), '새봄 앞까지 걸어감');
+      key('ArrowUp'); key('ArrowUp', 'keyup'); await wait(50);
+      key(' '); await wait(100);
+      var tx = $('#talk .talk-text').textContent;
+      if (s === 'greet-met') ok(!$('#talk').hidden && /마당에 있더라/.test(tx) && !/봤지\?/.test(tx), '둘을 안 마주쳤으면 "봤지?" 대신 다른 줄: …' + tx.slice(-50));
+      else ok(!$('#talk').hidden && /봤지\?/.test(tx) && !/마당에 있더라/.test(tx), '둘 다 지나쳤으면 "오는 길에 하늘이랑 지호도 봤지?": …' + tx.slice(-50));
     }
 
     else if (s === 'route-bad') {

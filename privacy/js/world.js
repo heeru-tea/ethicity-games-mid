@@ -206,7 +206,8 @@
         { who: 'saebom', text: '오늘 방과 후에 단톡방에서 역할 정하자. 공지 꼭 봐 줘.' },
         { who: 'saebom', text: '여기 민준이. 손재주가 진짜 좋아.' },
         { who: 'minjun', text: '…안녕. 집에 옛날 카메라 모형 있는데… 가져와 볼까.' },
-        { who: 'saebom', text: '오는 길에 하늘이랑 지호도 봤지? 우리 반 다 같이 잘해 보자!' }
+        { who: 'saebom', text: '오는 길에 하늘이랑 지호도 봤지? 우리 반 다 같이 잘해 보자!', met: ['haneul', 'jiho'],
+          alt: '하늘이랑 지호는 아까 마당에 있더라. 우리 반 다 같이 잘해 보자!' } // met: 이 걷기에서 둘 다 마주쳤을 때만(지나가며 인사·말 걸기), 아니면 alt
       ] },
     c1_e1_a: { time: 'D-4 · 하교', mission: '집에 가기 — 마을 길 끝 우리 집, 내 방 침대', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
       cast: [who('saebom', 'classroom', 12, 8, 'down'), who('haneul', 'classroom', 19, 9, 'left')],

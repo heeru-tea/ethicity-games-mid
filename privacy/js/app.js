@@ -668,7 +668,7 @@
   }
 
   /* ── 장 전환 ───────────────────────── */
-  var TRUST_WORD = function (d) { return d > 0 ? '가까워졌다 ↑' : d < 0 ? '멀어졌다 ↓' : '그대로 →'; };
+  var TRUST_WORD = function (d) { return d > 0 ? '믿음이 생김 ↑' : d < 0 ? '믿음이 줄어듦 ↓' : '그대로 →'; }; // 관계 수치는 친밀감이 아니라 신뢰
 
   function statRows(fromStats, toStats, onlyChanged) {
     var dl = el('dl', 'stat-list');
@@ -732,7 +732,7 @@
       a.appendChild(el('h3', null, '이번 장의 흐름'));
       a.appendChild(statRows(mark.stats, run.stats, true));
       var b = el('div');
-      b.appendChild(el('h3', null, '친구들과의 사이'));
+      b.appendChild(el('h3', null, '친구들의 믿음'));
       b.appendChild(trustRows(mark.trust, run.trust));
       grid.appendChild(a); grid.appendChild(b);
       sum.appendChild(grid);
@@ -750,7 +750,7 @@
   function endingOf(code) { return story.endings.filter(function (e) { return e.code === code; })[0]; }
   function cardText(end) { return story.title + ' · 엔딩 ' + end.code + ' 「' + end.title + '」 — ' + end.summary; }
 
-  /* ── 엔딩 연출(프로스트펑크식): 검은 화면 → 두 문장 → 9개 사건의 내 선택 → 친구들과의 사이 → 엔딩 이름 ── */
+  /* ── 엔딩 연출(프로스트펑크식): 검은 화면 → 두 문장 → 9개 사건의 내 선택 → 친구들의 믿음 → 엔딩 이름 ── */
   var finaleTimer = null, finaleState = null;
   // 날짜 = 그 사건에서 처음 고른 장면의 시각(장면에 시각 줄이 없으면 같은 사건의 앞 장면에서). 예: 고민 대화는 털어놓은 D-2가 아니라 고른 D-1
   function sceneDate(id) {
@@ -801,7 +801,7 @@
       });
     });
     inner.appendChild(picks);
-    inner.appendChild(add(el('p', 'finale-sub', '친구들과의 사이')));
+    inner.appendChild(add(el('p', 'finale-sub', '친구들의 믿음')));
     var bonds = el('ul', 'finale-bonds');
     story.trustable.forEach(function (k) {
       var d = (run.trust[k] || 0) - ((run.chapterMarks[0] && run.chapterMarks[0].trust[k]) || 0);
@@ -809,7 +809,7 @@
       li.setAttribute('data-who', k);
       li.appendChild(window.PrivacySprite.el(k, { face: true, scale: 2, initial: story.characters[k].initial }));
       li.appendChild(el('span', 'finale-name', story.characters[k].name));
-      li.appendChild(el('span', 'finale-word' + (d > 0 ? ' up' : d < 0 ? ' down' : ''), d > 0 ? '친해짐' : d < 0 ? '멀어짐' : '그대로'));
+      li.appendChild(el('span', 'finale-word' + (d > 0 ? ' up' : d < 0 ? ' down' : ''), d > 0 ? '믿음이 생김' : d < 0 ? '믿음이 줄어듦' : '그대로'));
       bonds.appendChild(li);
     });
     inner.appendChild(bonds);
@@ -890,7 +890,7 @@
     a.appendChild(el('h3', null, '선택이 남긴 흔적'));
     a.appendChild(statRows({}, run.stats, false));
     var b = el('div');
-    b.appendChild(el('h3', null, '친구들과의 사이 (처음과 비교)'));
+    b.appendChild(el('h3', null, '친구들의 믿음 (처음과 비교)'));
     b.appendChild(trustRows(run.chapterMarks[0].trust, run.trust));
     grid.appendChild(a); grid.appendChild(b);
     st.appendChild(grid);
