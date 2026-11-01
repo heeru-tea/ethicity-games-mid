@@ -40,6 +40,7 @@ window.PRIVACY_WEBP = {
  "assets/outdoor/rabbit.png": 1,
  "assets/outdoor/squirrel.png": 1,
  "assets/outdoor/tree.png": 1,
+ "assets/photos/minjun-sleep.png": 1,
  "assets/portraits/dohyun.png": 1,
  "assets/portraits/hayun.png": 1,
  "assets/portraits/minjun.png": 1,

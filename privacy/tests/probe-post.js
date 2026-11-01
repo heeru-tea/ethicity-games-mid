@@ -509,7 +509,9 @@
       var ph = $('#g-log .photo');
       ok(!!ph && ph.classList.contains('blurred'), '사진은 흐리게 가려진 채 올라옴');
       var pim = ph && ph.querySelector('img');
-      ok(!!pim && /minjun_sleep\.(png|webp)/.test(pim.getAttribute('src') || '') && !!pim.alt, '납품 전엔 맵 그림(엎드린 민준)으로 대신·대체 텍스트: ' + (pim && pim.getAttribute('src')));
+      await wait(300);
+      ok(!!pim && /assets\/photos\/minjun-sleep\.(png|webp)/.test(pim.getAttribute('src') || '') && !!pim.alt && pim.complete && pim.naturalWidth === 1200 && pim.naturalHeight === 900, '현재 민준 디자인의 실제 사진 로드·1200×900·대체 텍스트: ' + (pim && pim.getAttribute('src')));
+      ok(!ph.classList.contains('pixel'), '사진에 맵 스프라이트 확대 스타일 미적용');
       ok(!/보여 주지 않아요/.test($('#g-log').textContent), '“보여 주지 않아요” 문구 없음');
       var rv = ph && ph.querySelector('.photo-reveal');
       ok(!!rv && /눌러서 보기/.test(rv.textContent), '눌러서 보기 버튼');

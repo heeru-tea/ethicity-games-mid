@@ -1,0 +1,10 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "assets/characters-official/minjun-portraits.png",
+  "prompt": "Use case: illustration-story, identity-preserve. Create one finished in-game phone photograph illustration for Korean privacy education game. Reference image is Minjun's exact current character identity, NOT a layout to reproduce. Single landscape 4:3 opaque illustration, ideally 1200x900. Match his recognizable tousled short blue-black/navy hair silhouette, warm skin, soft round youthful face, charcoal gray unzipped hoodie over plain white T-shirt, dark green crossbody pouch strap. No glasses, no uniform vest, no bright blue hair. He is 14, asleep at a school desk during after-school festival crafts, seated leaning fully forward with BOTH forearms folded on tabletop and cheek resting on forearms. Eyes closed, relaxed mouth closed; partial side face visible enough to recognize him. Small accidental light turquoise craft-paint smudge and two tiny glitter specks on visible cheek, no written markings. Medium close shot from a classmate's phone slightly above and oblique, subtle candid tilt, head/arms/upper torso prominently filling center, desk in foreground. A few colored paper scraps, capped glue stick and closed scissors off to side, understated blurred empty classroom desks and afternoon window light behind. Warm quiet natural daylight. Translate the reference into polished clean nonpixel Korean webtoon game CG, soft restrained cel shading and crisp detailed linework, retaining cute recognizable facial proportions but with a natural seated body. This is a fictional illustrated phone photo, not a photorealistic human or a sprite atlas. No phone border, no UI, no labels, no text, no watermark, no other people, no drool, no mockery. Clearly show a comfortable head resting on folded arms and anatomically coherent shoulders and hands.",
+  "output": "minjun-sleep.png",
+  "dimensions": [
+    1200,
+    900
+  ]
+}
