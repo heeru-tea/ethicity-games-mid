@@ -1,16 +1,17 @@
-const test=require('node:test'),assert=require('node:assert/strict'),E=require('../engine.js'),C=require('../claims.js');
-test('all 27 final action combinations reach the ending; first choices survive',()=>{
+const test=require('node:test'),assert=require('node:assert/strict'),E=require('../engine.js');
+function play(pick,judge){let s=E.initial();
+ for(let n=0;n<13;n++){assert.equal(s.scene,n);const k=E.caseKey(n),step=E.stepOf(n);
+  if(step==='check'){for(const id of E.checks[k])s=E.reduce(s,{type:'check',id});s=E.reduce(s,{type:'judge',stamp:judge(k)});}
+  if(step==='choose'){s=E.reduce(s,{type:'choose',id:pick[k]});assert.equal(s.scene,n+1);continue;}
+  assert.equal(E.canAdvance(s),true,'scene '+n);s=E.reduce(s,{type:'next'});}
+ return E.reduce(s,{type:'ask',id:'unknown'});}
+test('all 18 choice combinations reach the ending and survive reload',()=>{let count=0;
  for(const photo of E.choices.photo)for(const writing of E.choices.writing)for(const face of E.choices.face){
-  let s=E.initial();
-  for(let n=0;n<=13;n++){
-   assert.equal(s.scene,n);
-   for(const id of E.requirements[n]?.evidence||[])s=E.reduce(s,{type:'read',id});
-   const key={4:'photo',8:'writing',12:'face'}[n];
-   if(key){const target={photo,writing,face}[key];s=E.reduce(s,{type:'choose',id:E.choices[key][0]});s=E.reduce(s,{type:'choose',id:target});s=E.reduce(s,{type:'solve',id:'effect',correct:true});s=E.reduce(s,{type:'confirm'});if(target==='manual')s=E.reduce(s,{type:'crop',rect:[0,0,1536,1024]});assert.equal(s.cases[key].first,target);assert.equal(s.cases[key].final,target);}
-   else for(const id of E.requirements[n]?.tasks||[]){const c=C.find(n,id);s=E.reduce(s,c?{type:'judge',id,evidence:c.evidence,stamp:c.stamp}:{type:'solve',id,correct:true});}
-   assert.equal(E.canAdvance(s),true);s=E.reduce(s,{type:'next'});
-  }
-  assert.equal(s.completed,true);assert.equal(E.outcome(s,'face').restricted,face!=='release');
-  assert.deepEqual(E.restore(JSON.stringify(s)),s,'completed play must survive reload including f1/f3 task ids');
- }
+  const s=play({photo,writing,face},k=>E.answers[k]);count++;
+  assert.equal(s.completed,true);assert.equal(E.outcome(s,'face').restricted,face!=='release');assert.equal(E.outcome(s,'writing').excluded,writing==='detector');
+  assert.deepEqual(E.restore(JSON.stringify(s)),s);}
+ assert.equal(count,18);
+});
+test('wrong judgments do not block the story; every stamp can be carried to the ending',()=>{
+ for(const stamp of E.stamps){const s=play({photo:'auto',writing:'detector',face:'maintain'},()=>stamp);assert.equal(s.completed,true);assert.deepEqual(Object.values(s.judgments),[stamp,stamp,stamp]);}
 });

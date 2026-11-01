@@ -1,28 +1,31 @@
+// 저장·이어하기·이전 판 저장 호환
 const test=require('node:test'),assert=require('node:assert/strict'),E=require('../engine.js');
-test('unconfirmed choices never change the visible outcome',()=>{
- let s=E.initial();s.scene=12;s=E.reduce(s,{type:'choose',id:'release'});
- assert.equal(E.outcome(s,'face').id,null);
- s=E.reduce(s,{type:'solve',id:'effect',correct:true});s=E.reduce(s,{type:'confirm'});
- s=E.reduce(s,{type:'choose',id:'maintain'});assert.equal(E.outcome(s,'face').id,'release');
- s=E.reduce(s,{type:'cancel-choice'});assert.equal(s.cases.face.pending,null);assert.equal(s.cases.face.first,'release');
+test('corrupt or impossible saves reset safely',()=>{
+ for(const raw of [null,'{bad',{},{version:2},{version:1,revision:4,scene:999},{version:1,revision:4,scene:2,furthest:2,evidence:['P1'],judgments:{},cases:{},question:null,completed:false}])assert.deepEqual(E.restore(raw),E.initial());
+ let s=E.initial();s.scene=4;s.furthest=4;assert.deepEqual(E.restore(JSON.stringify(s)),E.initial(),'result scene without a choice');
+ s=E.initial();s.completed=true;assert.deepEqual(E.restore(JSON.stringify(s)),E.initial(),'completed without question');
 });
-test('manual crop executes after commitment and blocks advancing until everyone is included',()=>{
- let s=E.initial();s.scene=4;s=E.reduce(s,{type:'choose',id:'manual'});s=E.reduce(s,{type:'solve',id:'effect',correct:true});
- assert.equal(E.canConfirm(s),true);s=E.reduce(s,{type:'confirm'});assert.equal(s.cases.photo.first,'manual');assert.equal(E.canAdvance(s),false);
- s=E.reduce(s,{type:'crop',rect:[0,0,1536,1024]});assert.equal(E.canAdvance(s),true);
+test('progress mid-case round-trips exactly',()=>{
+ let s=E.initial();s=E.reduce(s,{type:'next'});s=E.reduce(s,{type:'next'});s=E.reduce(s,{type:'check',id:'photo-original'});
+ assert.equal(s.scene,2);assert.deepEqual(E.restore(JSON.stringify(s)),s);
 });
-test('claim requires both the correct evidence and stamp, errors encourage help',()=>{
- let s=E.initial();s.scene=11;for(const id of ['F1','F2','F3'])s=E.reduce(s,{type:'read',id});
- s=E.reduce(s,{type:'judge',id:'f-confirm',evidence:'F2',stamp:'different'});assert.equal(s.tasks['11:f-confirm'],undefined);
- s=E.reduce(s,{type:'judge',id:'f-confirm',evidence:'F1',stamp:'confirmed'});assert.equal(s.attempts['11:f-confirm'],2);
- s=E.reduce(s,{type:'judge',id:'f-confirm',evidence:'F1',stamp:'different'});assert.equal(s.tasks['11:f-confirm'],'independent');assert.equal(s.claims['11:f-confirm'].evidence,'F1');
+test('revision 3 save (claim-card version) continues by case without inventing judgments',()=>{
+ const old={version:1,revision:3,scene:7,furthest:7,evidence:['P1','P2','P3','W1','W2'],tasks:{'3:p-rule':'independent'},claims:{},attempts:{},assistedScenes:[],
+  cases:{photo:{first:'auto',final:'manual',pending:null,help:false},writing:{first:null,final:null,pending:null,help:false},face:{first:null,final:null,pending:null,help:false}},crop:[0,0,1536,1024],completed:false};
+ const s=E.restore(old);
+ assert.equal(s.revision,4);assert.deepEqual(s.cases.photo,{first:'auto',final:'all'});
+ assert.equal(s.judgments.photo,'legacy');assert.equal(s.judgments.writing,null);
+ assert.equal(s.scene,E.sceneOf('writing','hook'),'resumes at the start of the unfinished writing case');
+ assert.ok(s.evidence.includes('writing-guide')&&!s.evidence.includes('writing-history'));
+ assert.deepEqual(E.restore(JSON.stringify(s)),s);
 });
-test('legacy v1 S07 preserves progress without inventing new claim results',()=>{
- let old=E.initial();delete old.revision;delete old.claims;delete old.attempts;old.scene=7;old.furthest=7;old.evidence=['P1','P2','P3','W1','W2','W3'];old.cases.photo={first:'auto',final:'manual',pending:null,help:false};old.crop=[0,0,1536,1024];old.tasks={'7:w-limit':'independent'};
- const s=E.restore(old);assert.equal(s.scene,7);assert.equal(s.cases.photo.first,'manual');assert.deepEqual(s.claims,{});assert.equal(s.tasks['7:w-limit'],'independent');
+test('revision 3 completed save keeps all choices and lands on the ending',()=>{
+ const c=(f)=>({first:f,final:f,pending:null,help:false});
+ const old={version:1,revision:3,scene:13,furthest:13,evidence:['P1','P2','P3','W1','W2','W3','F1','F2','F3'],tasks:{},claims:{},attempts:{},assistedScenes:[],cases:{photo:c('dami'),writing:c('review'),face:c('release')},crop:[550,300,500,500],completed:true};
+ let s=E.restore(old);assert.equal(s.cases.photo.final,null,'removed photo option must be chosen again');assert.equal(s.scene,E.sceneOf('photo','choose'));
+ old.cases.photo=c('auto');s=E.restore(old);assert.equal(s.scene,13);assert.equal(s.completed,false);assert.equal(s.cases.face.final,'release');
 });
-
-test('rechoosing and cancelling legacy confirmed helped action preserves its assessment',()=>{
- let s=E.initial();s.scene=8;s.cases.writing={first:'review',final:'review',pending:null,help:true};s.tasks['8:effect']='helped';
- s=E.reduce(s,{type:'choose',id:'draft'});s=E.reduce(s,{type:'cancel-choice'});assert.equal(s.tasks['8:effect'],'helped');
+test('legacy save without revision marks first choice as reconstructed',()=>{
+ const old={version:1,scene:4,furthest:4,evidence:['P1','P2','P3'],tasks:{},cases:{photo:{first:null,final:'auto',pending:null,help:false},writing:{first:null,final:null,pending:null,help:false},face:{first:null,final:null,pending:null,help:false}},crop:[900,50,600,400],completed:false};
+ const s=E.restore(old);assert.equal(s.cases.photo.legacyFirst,true);assert.equal(s.scene,E.sceneOf('photo','result'));
 });
