@@ -70,6 +70,7 @@
   }
 
   // 대화창이 열려 있으면 ▼를 눌러 끝까지 넘긴다
+  function realLis() { return $$('#g-log li').filter(function (li) { return !li.classList.contains('typing'); }); } // '입력 중…' 줄 빼고
   async function passTalk(o) { var g = 0; while ($('#talk') && !$('#talk').hidden && g++ < 60) { if (o) o.talkLines = (o.talkLines || 0) + $$('#talk .talk-text p').length; $('#btn-talk-next').click(); await wait(20); } }
   function key(k, type) { document.dispatchEvent(new KeyboardEvent(type || 'keydown', { key: k, bubbles: true })); }
   var ARROW = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
@@ -644,7 +645,7 @@
       var pr = $('#talk-portrait').getBoundingClientRect(), tr = $('#talk').getBoundingClientRect(), mc = $('#v-map .map-controls').getBoundingClientRect();
       ok(pr.bottom <= tr.top + 16 && pr.bottom <= mc.top, '초상화는 대화창 위에 서고 아래 버튼을 가리지 않음');
       var sawMinjun = false, gg = 0;
-      while (!$('#talk').hidden && gg++ < 20) { if (/minjun-portraits\.png/.test(pv() || '')) sawMinjun = true; $('#btn-talk-next').click(); await wait(30); }
+      while (!$('#talk').hidden && gg++ < 60) { if (/minjun-portraits\.png/.test(pv() || '')) sawMinjun = true; $('#btn-talk-next').click(); await wait(30); }
       ok(sawMinjun, '민준이 말하는 줄에선 민준 초상화');
       ok(pv() === null, '대사가 끝나면 초상화도 사라짐');
       PrivacyApp.setSpeed('instant');
@@ -1101,23 +1102,107 @@
     else if (s === 'normal-speed') {
       $('#btn-new').click(); await wait();
       var tLines = [];
-      new MutationObserver(function () { var n = $$('#g-log li').length; if (n > tLines.length) tLines.push(performance.now()); }).observe($('#g-log'), { childList: true });
+      new MutationObserver(function () { var n = realLis().length; if (n > tLines.length) tLines.push(performance.now()); }).observe($('#g-log'), { childList: true });
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk();
-      var gw = 0; while (!$$('#g-log li').length && gw++ < 200) await wait(20);
-      var shown = $$('#g-log li').length;
+      var gw = 0; while (!realLis().length && gw++ < 200) await wait(20);
+      var shown = realLis().length;
       await wait(1700);
       ok(tLines.length >= 2 && tLines[1] - tLines[0] >= 1300, '메시지가 하나씩 천천히(간격 ' + (tLines.length >= 2 ? Math.round(tLines[1] - tLines[0]) : '?') + 'ms ≥ 1.3초)');
       ok(shown >= 1 && shown < 8 && !!$('.skip-btn'), '대사가 차례로 나옴(100ms 뒤 ' + shown + '줄)');
-      $('#g-log').click(); await wait();
-      ok($$('#g-log li').length === 8 && $$('#g-dock .choice').length === 3, '화면 누르면 모두 보기 → 선택지');
+      $('.skip-btn').click(); await wait();
+      ok(realLis().length === 8 && !$('#g-log li.typing') && !$('#g-log .type-rest') && $$('#g-dock .choice').length === 3, '모두 보기 → 남은 대사 한꺼번에 → 선택지');
       $$('#g-dock .choice')[0].click();
-      var gn = 0; while (!$('#btn-next') && gn++ < 160) await wait(50); // 반응 줄도 1.5초 간격으로 하나씩
+      var gn = 0; while (!$('#btn-next') && gn++ < 400) await wait(50); // 반응 줄도 하나씩(입력 중… → 주르륵 → 쉼)
       ok(!!$('#btn-next'), '반응 표시 뒤 계속 버튼');
       ok(document.activeElement === $('#btn-next'), '계속 버튼에 키보드 포커스');
       $('#btn-menu').click(); await wait();
       ok(!$('#menu').hidden, '메뉴 열림');
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait();
       ok($('#menu').hidden, 'Esc로 메뉴 닫힘');
+    }
+
+    else if (s === 'typing') {
+      // 1) 대화창(오프닝 소개): 첫 누르기 = 이 줄 다 보이기, 다음 누르기 = 다음 줄
+      $('#btn-new').click(); await wait(30);
+      $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(30);
+      var tt = $('#talk .talk-text');
+      ok(!$('#talk').hidden && PrivacyTalk.typing() && !!tt.querySelector('.type-rest'), '대화창 글자가 한 글자씩 나오는 중');
+      ok(tt.getAttribute('aria-hidden') === 'true' && $('#talk .talk-live').textContent === '' && !$('#talk').hasAttribute('aria-live'), '치는 동안은 화면 읽기에 안 읽힘(대화창 자체는 aria-live 아님)');
+      var full1 = tt.textContent, part1 = tt.querySelector('p span').textContent;
+      ok(part1.length < full1.length, '보이는 글자가 전체보다 짧음 ' + part1.length + '/' + full1.length);
+      $('#btn-talk-next').click(); await wait();
+      ok(!$('#talk').hidden && !PrivacyTalk.typing() && tt.textContent === full1 && !tt.querySelector('.type-rest'), '첫 누르기: 같은 줄을 다 보여 줌(넘기지 않음)');
+      ok(!tt.hasAttribute('aria-hidden') && $('#talk .talk-live').textContent.indexOf(full1) >= 0, '다 보인 줄은 한 번 읽힘: ' + $('#talk .talk-live').textContent);
+      $('#btn-talk-next').click(); await wait();
+      ok($('#talk').hidden || tt.textContent !== full1, '두 번째 누르기: 다음 줄로(누른 것을 버리지 않음)');
+      if (!$('#talk').hidden && PrivacyTalk.typing()) { var full2 = tt.textContent; key(' '); await wait(); ok(!PrivacyTalk.typing() && tt.textContent === full2 && !$('#talk').hidden, 'Space도 첫 번째는 완성'); }
+      await passTalk();
+      // 2) 폰 단톡(pro_1): '입력 중…' → 주르륵 → 누르면 완성 → 다시 누르면 다음 메시지
+      var added = [];
+      new MutationObserver(function (ms) {
+        ms.forEach(function (m) { Array.prototype.forEach.call(m.addedNodes, function (n) { if (n.tagName === 'LI') added.push(n.classList.contains('typing') ? 'dots' : n.classList.contains('msg') ? 'msg' : 'etc'); }); });
+      }).observe($('#g-log'), { childList: true });
+      var gw = 0; while (!$('#g-log .type-rest') && gw++ < 600) await wait(10);
+      var li = ($('#g-log .type-rest') || document.body).closest('li');
+      ok(!!li, '말풍선 글자가 주르륵 나오기 시작');
+      if (li) {
+        var fullT = li.querySelector('.bubble p').textContent, before = realLis().length;
+        ok(li.getAttribute('aria-hidden') === 'true', '치는 중인 말풍선은 화면 읽기에서 숨김');
+        ok(li.querySelector('.bubble p span').textContent.length < fullT.length, '보이는 글자가 아직 일부');
+        ok(added.indexOf('dots') >= 0 && added.indexOf('dots') < added.indexOf('msg'), '친구 메시지 앞에 “입력 중…”: ' + added.join(','));
+        ok(!$('#g-log li.typing') || /입력 중/.test($('#g-log li.typing').textContent), '“입력 중…” 글자');
+        $('#g-log').click(); await wait();
+        ok(!$('#g-log .type-rest') && li.querySelector('.bubble p').textContent === fullT && realLis().length === before, '첫 누르기: 지금 메시지를 다 보여 줌(다음으로 안 넘어감)');
+        ok(!li.hasAttribute('aria-hidden'), '다 보인 말풍선은 숨김 해제');
+        $('#g-log').click(); await wait();
+        ok(realLis().length === before + 1, '두 번째 누르기: 바로 다음 메시지 ' + before + '→' + realLis().length);
+        if ($('#g-log .type-rest')) { var n2 = realLis().length, f2 = $('#g-log .type-rest').closest('p').textContent; key(' '); await wait(); ok(!$('#g-log .type-rest') && realLis().length === n2 && $$('#g-log .bubble p').some(function (p) { return p.textContent === f2; }), 'Space도 첫 번째는 완성'); }
+      }
+      // 3) 나머지는 그냥 두고 속도 재기: 글자당 약 30ms, 긴 메시지도 1.5초 안
+      var dur = [], cur = null, t0 = 0;
+      gw = 0;
+      while (!$$('#g-dock .choice').length && gw++ < 3000) {
+        var r = $('#g-log .type-rest');
+        var p = r ? r.closest('p, li') : null;
+        if (p !== cur) { if (cur) dur.push({ len: Array.from(cur.textContent).length, ms: performance.now() - t0 }); cur = p; t0 = performance.now(); }
+        await wait(5);
+      }
+      if (cur) dur.push({ len: Array.from(cur.textContent).length, ms: performance.now() - t0 });
+      var maxMs = Math.max.apply(null, dur.map(function (d) { return d.ms; }).concat([0]));
+      var shortOnes = dur.slice(1).filter(function (d) { return d.len >= 8 && d.len <= 40; });
+      var perChar = shortOnes.map(function (d) { return d.ms / d.len; });
+      ok(dur.length >= 3, '타자 효과로 나온 줄 ' + dur.length + '개');
+      ok(maxMs <= 1700, '가장 긴 줄도 1.5초 안팎(' + Math.round(maxMs) + 'ms): ' + dur.map(function (d) { return d.len + '자 ' + Math.round(d.ms); }).join(' / '));
+      ok(perChar.length && perChar.every(function (x) { return x >= 20 && x <= 45; }), '짧은 줄은 글자당 25~35ms 안팎: ' + perChar.map(function (x) { return x.toFixed(1); }).join(','));
+      // 4) 화면 읽기: 다 쳐진 메시지만, 메시지마다 한 번
+      var lives = $$('#g-live p').map(function (q) { return q.textContent; }), lis = realLis();
+      ok(!$('#g-log').hasAttribute('aria-live') && $('#g-live').getAttribute('aria-live') === 'polite', '한 글자씩 바뀌는 로그는 aria-live 아님, 따로 읽기 칸');
+      ok(lives.length === lis.length, '읽히는 문장 수 = 메시지 수(한 번씩) ' + lives.length + '/' + lis.length);
+      ok(lis.every(function (x, i) { var t = (x.querySelector('.bubble p') || x).textContent; return !!lives[i] && lives[i].indexOf(t) >= 0; }), '읽히는 문장은 완성된 전체 글자');
+      ok(!lis.some(function (x) { return x.hasAttribute('aria-hidden'); }), '다 끝나면 숨긴 말풍선 없음');
+      // 4-2) 아주 긴 줄(100자)도 1.5초에 끝남(글자당 시간을 줄임)
+      var lb = document.createElement('p'), tS = performance.now(), tE = 0;
+      PrivacyTyper.start(lb, new Array(101).join('가'), function () { tE = performance.now(); });
+      gw = 0; while (!tE && gw++ < 400) await wait(10);
+      ok(tE && tE - tS >= 1300 && tE - tS <= 1650 && lb.textContent.length === 100, '100자 줄도 약 1.5초(' + Math.round(tE - tS) + 'ms)');
+      // 5) 선택 뒤 반응 줄도 같은 방식, 끝나면 계속 버튼
+      $$('#g-dock .choice')[0].click();
+      var sawR = false; gw = 0; while (!$('#btn-next') && gw++ < 2000) { if ($('#g-log .type-rest')) sawR = true; await wait(10); }
+      ok(sawR && !!$('#btn-next') && !$('#g-log .type-rest'), '반응 줄도 주르륵 → 계속 버튼');
+    }
+
+    else if (s === 'typing-reduce' || s === 'typing-os-reduce') {
+      var sawType = false, sawDots = false;
+      new MutationObserver(function () { if (document.querySelector('.type-rest')) sawType = true; if (document.querySelector('#g-log li.typing')) sawDots = true; }).observe(document.body, { childList: true, subtree: true });
+      ok(!PrivacyTyper.enabled(), '타자 효과 꺼짐(' + (s === 'typing-reduce' ? '게임 메뉴 움직임 줄이기' : '기기 동작 줄이기') + ')');
+      $('#btn-new').click(); await wait(30);
+      $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(30);
+      ok(!$('#talk').hidden && !PrivacyTalk.typing() && !$('#talk .type-rest') && /\S/.test($('#talk .talk-live').textContent), '대화창 줄이 바로 다 보이고 한 번 읽힘');
+      await passTalk();
+      var gw = 0; while (!$$('#g-dock .choice').length && gw++ < 3000) await wait(10);
+      ok($$('#g-dock .choice').length === 3, '선택지까지 진행');
+      ok(!sawType && !sawDots, '한 글자씩·입력 중 표시 없이 메시지가 통째로');
+      ok($$('#g-live p').length === $$('#g-log li').length, '메시지마다 한 번 읽힘 ' + $$('#g-live p').length + '/' + $$('#g-log li').length);
     }
 
     else if (s.indexOf('shot-') === 0) { // 스크린샷용: 특정 지점까지 진행 후 멈춤(결과 출력 없음)
@@ -1132,6 +1217,24 @@
         document.body.appendChild(cv); await wait(300); return;
       }
       if (s === 'shot-warning') { $('#btn-new').click(); await wait(1200); return; } // 시작 직후 주의 화면
+      if (s === 'shot-chat-a' || s === 'shot-chat-b' || s === 'shot-chat-c') { // 채팅 장면(한 번에 보기): 민준 DM · 하늘 DM(캡처) · 신상 스토리
+        $('#btn-new').click(); await play(R.D, { upto: { 'shot-chat-a': 5, 'shot-chat-b': 7, 'shot-chat-c': 21 }[s] }); await wait(600); return;
+      }
+      if (s === 'shot-chat-dots' || s === 'shot-chat-typing') { // 단톡 타자 효과를 멈춰 찍기: '입력 중…' / 글자 반쯤
+        $('#btn-new').click(); await wait(30);
+        $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk();
+        var gq = 0;
+        while (gq++ < 3000) {
+          var tr = $('#g-log .type-rest');
+          // 입력 중: 세 줄이 다 보인 뒤 쉬는 사이에 멈추면, 이미 걸린 타이머가 '입력 중…'을 띄우고 거기서 선다
+          if (s === 'shot-chat-dots' && realLis().length >= 3 && !tr && !$('#g-log li.typing')) break;
+          // 글자 반쯤: 네 번째 줄 이후, 남은 글자가 15자 넘게 있을 때(0.3초 더 기다려 나타나는 움직임이 끝나게)
+          if (s === 'shot-chat-typing' && tr && realLis().length >= 4 && tr.textContent.length > 15) { await wait(300); break; }
+          await wait(5);
+        }
+        window.setTimeout = function () { return 0; }; // 새 타이머를 막아 이 순간에서 찍는다
+        return;
+      }
       if (s === 'shot-photo') { $('#btn-new').click(); await play(R.A, { upto: 4 }); await wait(600); return; } // 하늘 DM의 흐린 사진
       if (s === 'shot-start-noname') { await wait(300); return; } // 공통 정보 없는 시작 화면(이름 입력칸)
       if (/^shot-marks-/.test(s)) { // 지도 표시(목적지 핀·? 말풍선) 확인용: 그 자리로 순간이동

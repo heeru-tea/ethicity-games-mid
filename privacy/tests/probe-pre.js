@@ -65,6 +65,8 @@
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'talk-marks-motion': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"speed":"instant","reduceMotion":false,"look":"f"}'); break;
     case 'normal-speed': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"look":"m"}'); break;
+    case 'typing': case 'typing-os-reduce': case 'shot-chat-dots': case 'shot-chat-typing': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"look":"m"}'); break;
+    case 'typing-reduce': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"look":"m","reduceMotion":true}'); break;
     case 'shot-map': case 'shot-road': case 'shot-start': case 'shot-game': case 'shot-react': case 'shot-ending': case 'shot-path': case 'shot-chapter': case 'shot-hood': case 'shot-gate': case 'shot-south': case 'shot-edge': case 'shot-opening': case 'shot-portrait': case 'shot-talk': case 'shot-front': case 'shot-photo': case 'shot-house': case 'shot-warning': case 'shot-yard': case 'shot-booth': case 'shot-yard-overview': case 'shot-nf-confront': case 'shot-nf-rec': case 'shot-nf-class':
       window.__probe.PLAYER = JSON.stringify({ character: 'char_03', nickname: '반짝이는 고래와 은하수 너머의 친구들' });
       localStorage.setItem('ethicity.player', window.__probe.PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
