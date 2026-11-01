@@ -148,7 +148,17 @@
     ob('notice', '게시판', 'yard', 18, 1, 3, 4, '게시판: 솔빛축제 부스 배치도와 일정표가 붙어 있다.', { wall: true }),
     ob('tent1', '레트로 사진관 천막', 'yard', 6, 10, 4, 4, '우리 반 부스 ‘레트로 사진관’. 1컷 500원.'),
     ob('tent2', '옆 반 천막', 'yard', 10, 10, 4, 4, '옆 반 부스. 솜사탕 냄새가 난다.'),
-    ob('store', '학교 매점', 'yard', 20, 12, 4, 3, '매점. 오늘은 컵떡볶이가 제일 잘 팔린다.'),
+    ob('store', '학교 매점', 'yard', 20, 12, 4, 3, '매점. 오늘은 컵떡볶이가 제일 잘 팔린다.', {
+      // 날마다 잘 팔리는 간식이 바뀐다(걷기 구간 time의 ' · ' 앞 = 날). 상표 이름은 쓰지 않는다
+      looks: {
+        'D-4': '매점. 오늘은 컵떡볶이가 제일 잘 팔린다.',
+        'D-3': '매점. 오늘은 아이스크림이 제일 잘 팔린다. 냉장고가 벌써 반쯤 비었다.',
+        'D-2': '매점. 오늘은 치즈 과자가 인기다. 마지막 한 봉지가 남았다.',
+        'D-1': '매점. 축제 준비하는 애들이 초코우유를 몇 개씩 사 간다.',
+        '축제 당일': '매점. 축제라서 슬러시 기계 앞에 줄이 길다.',
+        '축제 다음 날': '매점. 오늘은 소시지빵이 제일 먼저 다 팔렸다.',
+        '다음 주 월요일': '매점. 월요일 아침이라 삼각김밥이 잘 나간다.'
+      } }),
     ob('lamp', '가로등', 'village', 18, 13, 1, 1, '가로등이 막 켜졌다.'),
     ob('mailbox', '노란 우편함', 'village', 26, 12, 1, 2, '노란 우편함. 여기가 우리 집이다.'),
     ob('bed', '침대', 'room', 2, 4, 7, 8, '내 침대. 아직 잘 시간은 아니다.'),
@@ -395,8 +405,14 @@
     }
     return null;
   }
+  // 조사 문구: 날마다 바뀌는 사물(looks: { 'D-4': …, '축제 당일': … })은 걷기 구간 time('D-1 · 오후')의 날 부분으로 고른다
+  function lookFor(o, time) {
+    if (!o) return '';
+    var day = String(time || '').split(' · ')[0];
+    return (o.looks && o.looks[day]) || o.look || o.name;
+  }
   var WORLD = {
-    W: W, H: H, VERSION: VERSION, SW: SW, SH: SH, CELL: CELL, SCENES: SCENES, sceneAt: sceneAt, grid: grid,
+    W: W, H: H, VERSION: VERSION, lookFor: lookFor, SW: SW, SH: SH, CELL: CELL, SCENES: SCENES, sceneAt: sceneAt, grid: grid,
     TILES: TILES, DOORS: DOORS, OBJECTS: OBJECTS, SPAWNS: SPAWNS,
     triggers: TRIGGERS, idle: IDLE, DIRS: DIRS, PLACES: PLACES, STAGES: STAGES,
     tile: tile, objectAt: objectAt, walkable: walkable, stepFrom: stepFrom,

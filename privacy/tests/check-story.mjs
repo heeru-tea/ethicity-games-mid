@@ -368,6 +368,15 @@ for (const id of TRIGGER_ORDER) {
     }
     if (!ok) err('조사 지점 옆에 설 칸이 없음: ' + o.id);
   }
+  // 매점은 날마다 잘 팔리는 간식이 바뀐다: 걷기 구간의 모든 날에 문구가 있고, 날마다 다르며, 상표 이름이 없다
+  const store = WORLD.object('store');
+  const days = [...new Set(Object.values(WORLD.triggers).map((t) => String(t.time).split(' · ')[0]))];
+  for (const d of days) if (!store.looks || !store.looks[d]) err('매점 문구가 없는 날: ' + d);
+  const storeTexts = Object.values(WORLD.triggers).map((t) => WORLD.lookFor(store, t.time));
+  if (new Set(days.map((d) => WORLD.lookFor(store, d + ' · 오후'))).size !== days.length) err('매점 문구가 날마다 다르지 않음');
+  const BRAND = /치토스|새우깡|포카칩|꼬북칩|빼빼로|초코파이|홈런볼|맛동산|칸쵸|메로나|월드콘|비비빅|죠스바|스크류바|바나나맛/;
+  for (const t of storeTexts) if (!t || BRAND.test(t)) err('매점 문구가 비었거나 상표 이름: ' + t);
+  if (WORLD.lookFor(WORLD.object('bed'), 'D-4 · 하교') !== WORLD.object('bed').look) err('날 문구가 없는 사물은 기본 문구여야 함');
 }
 
 // ── 6c. 장면 무대 검사 ─────────────────────

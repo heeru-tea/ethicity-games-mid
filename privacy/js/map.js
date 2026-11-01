@@ -266,7 +266,7 @@
       var own = trig.castLines && trig.castLines[n.c.who]; // 이 걷기 구간에서만 하는 말(오프닝 자기소개 등)
       talk([personLine(n.c.who, own || hit.text)]);
     } else {
-      talk([{ who: null, name: null, text: n.ob.look || n.ob.name }]);
+      talk([{ who: null, name: null, text: WD.lookFor(n.ob, trig && trig.time) }]); // 매점처럼 날마다 바뀌는 문구
     }
   }
   // 'saebom: 대사' 형식이면 말한 사람을 그 이름으로, 아니면 기본 화자로
