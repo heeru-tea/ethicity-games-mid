@@ -22,3 +22,5 @@ Workspace observation: privacy/js/story.js and privacy/tests/probe-post.js chang
 
 Task 3: complete — final browser paths careful/trusting/help all reached endings and survived reload; blocked storage playable; corrupt storage safe; no page errors or external requests during play. 14 scenes checked at 375px without horizontal overflow or missing scene images. Art gallery image load check passed. S01 1440px/390px captures, S12 release and mobile S05/ending visually inspected.
 Final status: implementation and generated assets remain uncommitted in transparency/. No merge, push or public deployment performed. No deferred code-review findings. Actual learner outcomes/duration and screen-reader/Safari/Firefox use remain unverified.
+
+2026-11-02 읽기 부담 개선: 사건마다 궁금한 것 → 직접 확인(누르고 찾기 + 세 갈래 판단 하나) → 선택 → 결과 네 화면. 주장 네 개 판정·도움 경로·범위 슬라이더 제거, 자료 번호 숨김, 수첩 자동 기록. 저장 revision 4, revision 3 이하 저장은 사건 단위로 옮김. 검증은 README ‘검증’ 참고(단위 14, 브라우저 경로 2 + 점검 4). 1366×768 화면당 글자 수 평균 567→155, 최대 1127→378.
