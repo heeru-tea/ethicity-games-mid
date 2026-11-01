@@ -8,10 +8,10 @@
  let state=E.restore(raw);
  if(preview){state=E.initial();state.scene=1;state.furthest=1;}
  // 화면에만 쓰는 상태(저장하지 않음): 지금 펼친 자료, 눌러 본 사진 구역, 잘못 누른 곳에 대한 짧은 안내.
- let view=null,regions=new Set(),tapHint='',resumed=!preview&&state.scene>0,lastFocus=null,skipFocusReturn=false;
+ let view=null,regions=new Set(),tapHint='',justJudged=null,resumed=!preview&&state.scene>0,lastFocus=null,skipFocusReturn=false;
  const photo=new Image();photo.src=A.photo;photo.onload=paint;
  const modal=$('#modal');
- const STEP_LABELS={hook:'궁금한 것',check:'직접 확인',choose:'선택',result:'결과'};
+ const STEP_LABELS={hook:'궁금한 것',check:'직접 확인',choose:'선택',result:'결과',follow:'후속 조사'};
  const FACE_NAMES=['다람쥐 친구','루루','담이','모아','강아지 친구'];
  const pct=(v,t)=>(v/t*100).toFixed(3)+'%';
  const rectStyle=([x,y,w,h])=>`left:${pct(x,1536)};top:${pct(y,1024)};width:${pct(w,1536)};height:${pct(h,1024)}`;
@@ -19,7 +19,7 @@
  function save(){if(!preview)try{localStorage.setItem(KEY,JSON.stringify(state));saveOK=true;}catch{saveOK=false;}
   $('#save-status').textContent=preview?'S01 미리보기 · 진행 저장 안 함':saveOK?'이 기기에 자동 저장 · '+nickname:'저장할 수 없어 이 창에서만 진행해요. 창을 닫으면 기록이 사라져요.';}
  function send(a){const before=state.scene;state=E.reduce(state,a);if(state.scene!==before)arrive();save();render(state.scene!==before);}
- function arrive(){view=null;regions=new Set();tapHint='';resumed=false;}
+ function arrive(){view=null;regions=new Set();tapHint='';justJudged=null;resumed=false;}
  function btn(label,act,attrs='',cls=''){return `<button ${cls?`class="${cls}"`:''} data-act="${act}" ${attrs}>${label}</button>`;}
  function line([who,text],cls=''){return `<p class="line ${cls}"><span class="who">${esc(D.names[who])}</span> ${esc(text)}</p>`;}
  function more(text){return text?`<details class="more"><summary>자세히 보기</summary><p>${esc(text)}</p></details>`:'';}
@@ -41,12 +41,12 @@
  // 자료 화면. 눌러서 차이를 찾게 한다.
  function itemView(k,id){
   const done=state.evidence.includes(id);
-  if(id==='photo-original')return `<div class="photo-frame"><img src="${A.photo}" alt="다섯 친구가 모두 나온 축제 원본 사진"><span class="crop-border dashed" style="${rectStyle(E.AUTO)}"><span class="crop-label">자동으로 남긴 부분</span></span>${E.faces.map((f,i)=>`<button class="face-spot ${done&&i===2?'found':''}" data-act="spot" data-id="${i}" style="${rectStyle(f)}" aria-label="${FACE_NAMES[i]} 얼굴"></button>`).join('')}</div>`;
+  if(id==='photo-original')return `<div class="photo-frame"><img src="${A.photo}" alt="다섯 친구가 모두 나온 축제 원본 사진"><span class="crop-border dashed" style="${rectStyle(E.AUTO)}"><span class="crop-label">자동으로 남긴 부분</span></span>${E.faces.map((f,i)=>`<button class="face-spot ${done&&i===2?'found':''}" data-act="spot" data-id="${i}" style="${rectStyle(f)}" aria-label="얼굴 ${i+1}"></button>`).join('')}</div>`;
   if(id==='photo-rule'){const all=done||regions.size===3,names=['왼쪽','가운데','오른쪽'],score=[2,5,8];
    return `<div class="photo-frame"><img src="${A.photo}" alt="축제 원본 사진. 세 구역으로 나뉘어 있다.">${all?`<span class="crop-border" style="${rectStyle(E.AUTO)}"></span><span class="center-dot" style="left:${pct(1200,1536)};top:${pct(250,1024)}"></span>`:''}<div class="regions">${names.map((n,i)=>{const open=all||regions.has(i);return `<button class="region ${open?'open':''}" data-act="region" data-id="${i}" aria-label="${n} 구역 점수${open?' '+score[i]+'점':' 보기'}"><span>${n} ${open?score[i]:'?'}</span></button>`;}).join('')}</div></div><p class="caption">${esc(D.cases.photo.checks[1].guide)}</p>${all?'<p class="caption">노란 테두리: 실제로 잘린 범위 · 점: 자르기 중심</p>':''}`;}
   if(id==='writing-guide')return `<div class="document"><p class="doc-label">AI 안내 · 글 검사기</p><ul>${D.cases.writing.checks[0].guide.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`;
-  if(id==='writing-history'){const rec=(key,label)=>btn(`<span class="doc-label">${label}</span>${key==='revision'&&done?`<mark>${esc(D.drafts[key])}</mark>`:esc(D.drafts[key])}`,'record',`data-id="${key}"`,'record');
-   return `<div class="document compact"><p class="doc-label">검사기가 표시한 문장</p><p><mark>${esc(D.drafts.revision)}</mark></p></div><div class="records">${rec('draft','초안')}${rec('memo','메모')}${rec('revision','수정본')}</div>`;}
+  if(id==='writing-history'){const rec=r=>btn(`<span class="doc-label">${esc(r.time)} · ${esc(r.kind)}</span>${r.target&&done?`<mark>${esc(r.text)}</mark>`:esc(r.text)}`,'record',`data-id="${r.id}"`,'record');
+   return `<div class="document compact"><p class="doc-label">검사기가 표시한 문장</p><p><mark>${esc(D.drafts.revision)}</mark></p></div><div class="records">${D.history.map(rec).join('')}</div>`;}
   if(id==='face-alert')return `<div class="document"><p class="doc-label">알림 기록 · 빵집 앱</p><p>${esc(D.alertText)}</p></div>`;
   if(id==='face-clerk')return `<div class="document compact"><p class="doc-label">알림 기록</p><p>${esc(D.alertText)}</p></div><div class="document"><p class="doc-label">점원의 말</p><p class="segments">${D.cases.face.clerkSegments.map(s=>btn(done&&s.found?`<mark>${esc(s.text)}</mark>`:esc(s.text),'segment',`data-id="${s.id}"`,'segment')).join(' ')}</p></div>`;
   if(id==='face-photo')return `<img class="evidence-photo" src="${A.faces}" alt="흐리고 문틀과 반사에 일부 가려진 가상의 고양이 얼굴 비교 사진">`;
@@ -67,15 +67,17 @@
   if(step==='check'){h=head(meta,c.question);const item=c.checks.find(x=>x.id===view);v=item?itemView(k,item.id):defaultView(k);
    b=`<div class="items" role="group" aria-label="확인할 자료">${c.checks.map(x=>btn(esc(x.label)+(state.evidence.includes(x.id)?' <span class="seen">· 확인함</span>':''),'item',`data-id="${x.id}" aria-pressed="${view===x.id}"`)).join('')}</div>`;
    if(!item)b+=`<p class="task">자료를 눌러 직접 확인해 봐.</p>`;
-   else{b+=`<p class="task">${esc(item.task)}</p>`;if(tapHint)b+=`<p class="tap-hint" role="status">${esc(tapHint)}</p>`;if(state.evidence.includes(item.id))b+=`<div class="finding" role="status">${item.finding.map(l=>line(l)).join('')}${more(item.more)}</div>`;}
+   else{if(!state.evidence.includes(item.id))b+=`<p class="task">${esc(item.task)}</p>`;if(tapHint)b+=`<p class="tap-hint" role="status">${esc(tapHint)}</p>`;if(state.evidence.includes(item.id))b+=`<div class="finding" role="status">${item.finding.map(l=>line(l)).join('')}${more(item.more)}</div>`;}
    if(E.checked(state,k))b+=judgeBlock(k);
    const left=c.checks.filter(x=>!state.evidence.includes(x.id)).map(x=>x.name);
-   b+=nav(true,btn('어떻게 할지 고르기','next',E.canAdvance(state)?'':'disabled','primary'))+(E.canAdvance(state)?'':`<p class="hint">${left.length?'남은 자료: '+esc(left.join(', ')):'위의 말을 판단하면 다음으로 갈 수 있어.'}</p>`);}
+   b+=nav(true,btn('어떻게 할지 고르기','next',E.canAdvance(state)?'':'disabled','primary'))+(E.canAdvance(state)?'':`<p class="hint">${left.length?'남은 자료: '+esc(left.join(', ')):'아래 말 세 개를 판단하면 다음으로 갈 수 있어.'}</p>`);}
   if(step==='choose'){const cur=state.cases[k].final;h=head(meta,c.choose.question);v=caseStage(k,{result:!!cur});
    b=`<div class="options${k==='photo'?' photo-options':''}">${c.choose.options.map(o=>btn((k==='photo'?canvas(o.id==='all'?E.ALL:E.AUTO,o.label):'')+`<span>${esc(o.label)}</span>`,'choose',`data-id="${o.id}" aria-pressed="${cur===o.id}"`,'option')).join('')}</div>`;
    b+=`<p class="hint">${cur?'다시 고를 수 있어. 처음 고른 것도 수첩에 남아.':'고르면 바로 결과를 볼 수 있어.'}</p>`+nav(true,cur?btn('결과 다시 보기','next','','primary'):'');}
   if(step==='result'){const o=c.choose.options.find(x=>x.id===state.cases[k].final);h=head(meta,o.title);v=caseStage(k,{result:true});
-   b=`<p class="status">${esc(o.status)}</p>`+o.reaction.map(l=>line(l)).join('')+line(['moa',o.feedback],'moa')+`<p class="unknown"><strong>아직 모르는 점</strong> ${esc(o.unknown||c.unknown)}</p>`+more([o.more,c.more].filter(Boolean).join(' '))+nav(false,`<span class="nav-pair">${btn('다른 선택 해 보기','rechoose')}${btn(k==='face'?'마지막 장면으로':'다음 사건','next','','primary')}</span>`)+`<p class="hint">결과는 수첩에 자동으로 적혔어.</p>`;}
+   b=`<p class="status">${esc(o.status)}</p>`+o.reaction.map(l=>line(l)).join('')+line(['moa',o.feedback],'moa')+more([o.more,c.more].filter(Boolean).join(' '))+nav(false,`<span class="nav-pair">${btn('다른 선택 해 보기','rechoose')}${btn('더 조사하기','next','','primary')}</span>`)+`<p class="hint">결과는 수첩에 자동으로 적혔어.</p>`;}
+  if(step==='follow'){const f=c.follow;h=head(meta,f.question)+f.lines.map(l=>line(l)).join('')+(E.followReady(state,k)?'':`<p class="task">${esc(f.task)}</p>`);v=followView(k);
+   b=followBody(k)+nav(true,btn(k==='face'?'마지막 장면으로':'다음 사건','next',E.canAdvance(state)?'':'disabled','primary'));}
   if(step==='end'){const e=D.ending;h=head(meta,e.title);v=stage(0,['moa','lulu','dami'],{boxes:'window'});
    b=e.lines.map(l=>line(l)).join('')+`<p class="question">${esc(e.question)}</p><div class="options">${e.asks.map(([id,t])=>btn(esc(t),'ask',`data-id="${id}" aria-pressed="${state.question===id&&view===null||view===id}"`,'option')).join('')}</div>`;
    const asked=view||state.question;
@@ -88,23 +90,56 @@
   if(moved){$('h1').focus({preventScroll:true});window.scrollTo(0,0);}
   else if(focus){const t=$('#app').querySelector(focus);(t&&!t.disabled?t:$('#work')).focus({preventScroll:true});}
  }
- function judgeBlock(k){const j=D.cases[k].judge,picked=state.judgments[k];
-  if(picked==='legacy')return `<section class="judge"><p class="question-label">이 말은 맞을까?</p>${line([j.who,j.text])}<p class="hint">이전 판에서 이 사건의 판단을 마쳤어. 정리: ${esc(D.stamps[E.answers[k]])}.</p></section>`;
-  return `<section class="judge"><p class="question-label">이 말은 맞을까?</p>${line([j.who,j.text])}<div class="stamps" role="group" aria-label="판단">${Object.entries(D.stamps).map(([id,label])=>btn(esc(label),'judge',`data-id="${id}" aria-pressed="${picked===id}" ${picked?'disabled':''}`)).join('')}</div>${picked?`<div class="finding" role="status"><p>${esc(j.feedback[picked])}</p><p>${esc(j.after)}</p></div>`:''}</section>`;}
+ function stampButtons(act,picked){return `<div class="stamps" role="group" aria-label="판단">${Object.entries(D.stamps).map(([id,label])=>btn(esc(label),act,`data-id="${id}" aria-pressed="${picked===id}" ${picked?'disabled':''}`)).join('')}</div>`;}
+ function verdict(j,picked,answer){return picked===answer?j.right:`${j.wrong} 정리: ${D.stamps[answer]}.`;}
+ function judgeBlock(k){const c=D.cases[k],js=state.judgments[k],cur=E.currentJudgment(state,k),idx=justJudged!==null?justJudged:cur;
+  if(idx<0)return `<section class="judge"><p class="question-label">판단 3개를 마쳤어</p><p>${esc(c.after)}</p></section>`;
+  const j=c.judges[idx],picked=js[idx]&&js[idx]!=='legacy'?js[idx]:null,answer=E.answers[k][idx];
+  let h=`<section class="judge"><p class="question-label">이 말은 맞을까? · ${idx+1}/3</p>${line([j.who,j.text])}${stampButtons('judge',picked)}`;
+  if(js[idx]==='legacy')h+='<p class="hint">이전 저장에서 넘어와 아직 하지 않은 판단이야. 지금 해 볼 수 있어.</p>';
+  if(picked){h+=`<div class="finding" role="status"><p>${esc(verdict(j,picked,answer))}</p></div>`;h+=E.currentJudgment(state,k)>=0?btn('다음 말 보기','judge-next'):`<p>${esc(c.after)}</p>`;}
+  return h+'</section>';}
+ // 후속 조사
+ const tally=()=>{const counts=[0,0,0,0,0];for(const r of E.FOLLOW_CROPS)for(const i of E.cutFaces(r))counts[i]++;return counts.map((n,i)=>[FACE_NAMES[i],n]).sort((a,b)=>b[1]-a[1]);};
+ function followView(k){const f=D.cases[k].follow,fs=state.follows[k],locked=!!fs.judgment&&fs.judgment!=='legacy';
+  if(k==='photo')return `<div class="follow-grid">${E.FOLLOW_CROPS.map((r,i)=>{const id='p'+(i+1),m=fs.marks[id];return `<figure class="follow-photo">${canvas(r,'사진 '+(i+1))}<figcaption>사진 ${i+1}</figcaption><div class="mark-row" role="group" aria-label="사진 ${i+1}에 담이가 나왔나">${btn('나왔어','mark',`data-id="${id}" data-value="shown" aria-pressed="${m==='shown'}" ${locked?'disabled':''}`)}${btn('잘렸어','mark',`data-id="${id}" data-value="cut" aria-pressed="${m==='cut'}" ${locked?'disabled':''}`)}</div></figure>`;}).join('')}</div><p class="caption">${esc(f.note)}</p>`;
+  if(k==='writing'){const ran=fs.marks.run==='done';return `<div class="document"><p class="doc-label">${esc(f.docLabel)}${ran?' · 검사 결과':''}</p><p>${f.sentences.map((t,i)=>ran&&f.flagged.includes(i)?`<mark>${esc(t)}</mark>`:esc(t)).join(' ')}</p>${ran?'<p class="caption">노란 표시: AI 작성 의심</p>':''}</div>`;}
+  return `<div class="document compact"><p class="doc-label">${esc(f.docLabel)}</p></div><div class="records">${f.rows.map(r=>{const open=fs.marks[r.id]==='open';return btn(`<span class="doc-label">${esc(r.status)}</span>${esc(r.item)}${open?`<span class="proof">근거: ${esc(r.proof)}</span>`:''}`,'row',`data-id="${r.id}" aria-expanded="${open}"`,'record');}).join('')}</div>`;}
+ function followFact(k){const f=D.cases[k].follow,fs=state.follows[k];
+  if(k==='photo'){const t=tally(),mine=E.followMarks.photo.ids.filter(id=>fs.marks[id]==='cut').length;return `여섯 장 가운데 담이가 잘린 사진은 ${E.truth.filter(x=>x==='cut').length}장이다. 잘린 횟수: ${t.map(([n,c])=>n+' '+c).join(' · ')}. (내가 ‘잘렸어’로 고른 사진 ${mine}장)`;}
+  if(k==='writing')return '선생님이 5년 전에 쓴 글을 같은 검사기에 넣자, 세 문장 가운데 두 문장에 ‘AI 작성 의심’ 표시가 붙었다.';
+  const n=s=>f.rows.filter(r=>r.status===s).length;return `점검표 ${f.rows.length}개 가운데 완료 ${n('완료')}개, 진행 중 ${n('진행 중')}개, 예정 ${n('예정')}개이고, 예정 항목에는 점검 기록이 없다.`;}
+ function followBody(k){const f=D.cases[k].follow,fs=state.follows[k],m=E.followMarks[k],done=m.ids.filter(id=>fs.marks[id]).length;let b='';
+  if(k==='writing')b+=btn('검사기에 넣기','run',fs.marks.run?'disabled':'');
+  else if(!E.followReady(state,k))b+=`<p class="hint">${done}/${m.ids.length} ${k==='photo'?'장 골랐어':'개 확인했어'}.</p>`;
+  if(!E.followReady(state,k))return b;
+  if(k==='photo'){const wrong=m.ids.map((id,i)=>fs.marks[id]!==E.truth[i]?i+1:null).filter(Boolean);b+=`<div class="finding" role="status"><p>${esc(followFact(k).replace(/ \(내가.*$/,''))}</p><p>${wrong.length?`네 표시와 기록이 다른 사진: ${wrong.join(', ')}번`:'네 표시는 기록과 같아.'}</p></div>`;}
+  else b+=`<div class="finding" role="status"><p>${esc(followFact(k))}</p></div>`;
+  const j=f.judge,picked=fs.judgment&&fs.judgment!=='legacy'?fs.judgment:null,answer=E.followAnswers[k];
+  b+=`<section class="judge"><p class="question-label">이 말은 맞을까?</p>${line([j.who,j.text])}${stampButtons('follow-judge',picked)}`;
+  if(fs.judgment==='legacy')b+='<p class="hint">이전 저장에서 넘어와 아직 하지 않은 조사야. 지금 해 볼 수 있어.</p>';
+  if(picked)b+=`<div class="finding" role="status"><p>${esc(verdict(j,picked,answer))}</p></div><p class="unknown"><strong>아직 모르는 점</strong> ${esc(f.unknown)}</p>${more(f.more)}`;
+  return b+'</section>';}
  function focusSelector(){const el=document.activeElement;if(!el||!$('#app').contains(el))return null;const parts=['data-act','data-id'].filter(a=>el.hasAttribute(a)).map(a=>`[${a}="${CSS.escape(el.getAttribute(a))}"]`);return parts.length?el.tagName.toLowerCase()+parts.join(''):null;}
 
  function open(title,html){lastFocus=document.activeElement;$('#modal-title').textContent=title;$('#modal-body').innerHTML=html;if(!modal.open)modal.showModal();paint();}
  function close(){modal.close();}
  // 수첩: 활동 결과를 자동으로 적는다. 열어 보는 것은 선택.
  function notebook(){let h='<p class="hint">확인한 것과 고른 것이 자동으로 적혀. 판단 칸은 네가 고른 그대로 남아.</p>';
-  for(const k of E.CASES){const c=D.cases[k],cs=state.cases[k],j=state.judgments[k],seen=c.checks.filter(x=>state.evidence.includes(x.id)),label=id=>c.choose.options.find(o=>o.id===id)?.label;
+  const pickText=(text,p,answer)=>`“${esc(text)}” → ${p==='legacy'?'이전 저장에서 넘어와 아직 안 함':'내가 고른 칸: '+esc(D.stamps[p])+(p!==answer?` (정리: ${esc(D.stamps[answer])})`:'')}`;
+  for(const k of E.CASES){const c=D.cases[k],cs=state.cases[k],js=state.judgments[k],fs=state.follows[k],seen=c.checks.filter(x=>state.evidence.includes(x.id)),label=id=>c.choose.options.find(o=>o.id===id)?.label;
    h+=`<section class="note-case"><h3>${esc(c.name)}</h3>`;
    if(!seen.length&&!cs.final){h+='<p class="hint">아직 시작하지 않았어.</p></section>';continue;}
-   h+=`<dl><dt>궁금한 것</dt><dd>${esc(c.question)}</dd><dt>확인한 것</dt><dd>${seen.map(x=>esc(x.finding.map(l=>l[1]).join(' '))).join('<br>')||'아직 없음'}</dd>`;
-   h+=`<dt>내 판단</dt><dd>${j?`“${esc(c.judge.text)}” → ${j==='legacy'?'이전 판에서 판단함':'내가 고른 칸: '+esc(D.stamps[j])}${j!=='legacy'&&j!==E.answers[k]?` (자료로 정리하면: ${esc(D.stamps[E.answers[k]])})`:''}`:'아직 안 함'}</dd>`;
+   h+=`<dl><dt>궁금한 것</dt><dd>${esc(c.question)}</dd><dt>확인한 것</dt><dd>${seen.map(x=>esc(x.fact)).join('<br>')||'아직 없음'}</dd>`;
+   h+=`<dt>내 판단</dt><dd>${js.some(Boolean)?js.map((p,i)=>p?`${i+1}. ${pickText(c.judges[i].text,p,E.answers[k][i])}`:'').filter(Boolean).join('<br>'):'아직 안 함'}</dd>`;
    h+=`<dt>처음 고른 것</dt><dd>${esc(label(cs.first)||'아직 안 고름')}${cs.legacyFirst?' (이전 저장에서는 마지막 선택만 남아 있었어)':''}</dd><dt>마지막으로 고른 것</dt><dd>${esc(label(cs.final)||'아직 안 고름')}</dd>`;
-   if(cs.final){const o=c.choose.options.find(x=>x.id===cs.final);h+=`<dt>아직 모르는 점</dt><dd>${esc(o.unknown||c.unknown)}</dd>`;}
-   h+='</dl>';if(cs.final&&state.furthest>=E.sceneOf(k,'choose'))h+=btn('이 사건 다시 골라 보기','revisit',`data-scene="${E.sceneOf(k,'choose')}"`);h+='</section>';}
+   if(fs.judgment||E.followReady(state,k)){h+=`<dt>후속 조사</dt><dd>${E.followReady(state,k)?esc(followFact(k))+'<br>':''}${fs.judgment?pickText(c.follow.judge.text,fs.judgment,E.followAnswers[k]):''}</dd>`;
+    if(fs.judgment&&fs.judgment!=='legacy')h+=`<dt>아직 모르는 점</dt><dd>${esc(c.follow.unknown)}</dd>`;}
+   h+='</dl>';
+   if(js.includes('legacy'))h+=btn('남은 판단 해 보기','revisit',`data-scene="${E.sceneOf(k,'check')}"`);
+   if(fs.judgment==='legacy')h+=btn('후속 조사 해 보기','revisit',`data-scene="${E.sceneOf(k,'follow')}"`);
+   if(cs.final&&state.furthest>=E.sceneOf(k,'choose'))h+=btn('이 사건 다시 골라 보기','revisit',`data-scene="${E.sceneOf(k,'choose')}"`);
+   h+='</section>';}
   open('내 수첩',h);}
  function sources(){open('참고한 실제 사례',`<p>도시·동물·대사·문서·수치·선택 결과는 모두 창작이에요. 실제 기업의 모델이나 내부 문서를 재현하지 않았어요.</p><ul><li><a target="_blank" rel="noopener" href="https://www.nist.gov/publications/four-principles-explainable-artificial-intelligence">NIST (2021)</a>: 설명·이해 가능성·설명 정확성·지식 한계의 개념 참고.</li><li><a target="_blank" rel="noopener" href="https://blog.x.com/engineering/en_us/topics/insights/2021/sharing-learnings-about-our-image-cropping-algorithm">Twitter (2021)</a>: 자동 자르기와 사용자 통제 문제 참고.</li><li><a target="_blank" rel="noopener" href="https://www.vanderbilt.edu/brightspace/2023/08/16/guidance-on-ai-detection-and-why-were-disabling-turnitins-ai-detector/">Vanderbilt (2023)</a>: AI 탐지 기능 비활성화 발표와 신뢰성·설명 부족 우려 참고.</li><li><a target="_blank" rel="noopener" href="https://www.ftc.gov/news-events/news/press-releases/2023/12/rite-aid-banned-using-ai-facial-recognition-after-ftc-says-retailer-deployed-technology-without">FTC (2023)</a>: Rite Aid에 대한 규제기관의 주장과 제안된 합의 명령 발표 참고. 주장을 모두 법적으로 확정된 사실로 표현하지 않으며, 2023년 발표를 현재의 법적·운영 상태로 단정하지 않아요.</li></ul><p class="hint">링크를 열 때만 외부 사이트로 이동해요. 게임 진행이나 선택은 외부로 보내지 않아요.</p>`);}
  function reset(){state=E.initial();arrive();skipFocusReturn=true;save();render(true);}
@@ -116,11 +151,16 @@
   if(act==='back'){send({type:'revisit',scene:state.scene-1});return;}
   if(act==='item'){view=b.dataset.id;tapHint='';const plain=['writing-guide','face-alert','face-photo'];if(plain.includes(view)&&!state.evidence.includes(view)){send({type:'check',id:view});}else render();
    const vis=$('.visual');if(vis&&vis.getBoundingClientRect().top<0)vis.scrollIntoView({block:'start'});return;}
-  if(act==='spot'){if(b.dataset.id==='2'){tapHint='';send({type:'check',id:'photo-original'});}else{tapHint=`그건 ${FACE_NAMES[b.dataset.id]}야. 이 친구도 원본에 있어. 담이는 어디 있었을까?`;render();}return;}
+  if(act==='spot'){if(b.dataset.id==='2'){tapHint='';send({type:'check',id:'photo-original'});}else{tapHint='그 친구는 담이가 아니야. 담이는 원본 어디에 있었을까?';render();}return;}
   if(act==='region'){regions.add(Number(b.dataset.id));if(regions.size===3)send({type:'check',id:'photo-rule'});else render();return;}
-  if(act==='record'){if(b.dataset.id==='revision'){tapHint='';send({type:'check',id:'writing-history'});}else{tapHint=b.dataset.id==='draft'?'이건 처음 쓴 초안이야. 표시된 문장과 비교해 봐.':'이건 루루가 남긴 메모야. 메모를 보고 고친 문장은 어디 있을까?';render();}return;}
+  if(act==='record'){const r=D.history.find(x=>x.id===b.dataset.id);if(r.target){tapHint='';send({type:'check',id:'writing-history'});}else{tapHint=r.hint;render();}return;}
   if(act==='segment'){const s=D.cases.face.clerkSegments.find(x=>x.id===b.dataset.id);if(s.found){tapHint=s.id==='rule'?s.found:'';send({type:'check',id:'face-clerk'});}else{tapHint=s.hint;render();}return;}
-  if(act==='judge'){send({type:'judge',stamp:b.dataset.id});return;}
+  if(act==='judge'){justJudged=E.currentJudgment(state,k);send({type:'judge',stamp:b.dataset.id});return;}
+  if(act==='judge-next'){justJudged=null;render();$('#work .judge [data-act="judge"]')?.focus({preventScroll:true});return;}
+  if(act==='mark'){send({type:'mark',id:b.dataset.id,value:b.dataset.value});return;}
+  if(act==='run'){send({type:'mark',id:'run',value:'done'});return;}
+  if(act==='row'){send({type:'mark',id:b.dataset.id,value:'open'});return;}
+  if(act==='follow-judge'){send({type:'follow-judge',stamp:b.dataset.id});return;}
   if(act==='choose'){send({type:'choose',id:b.dataset.id});return;}
   if(act==='rechoose'){send({type:'revisit',scene:state.scene-1});return;}
   if(act==='ask'){view=b.dataset.id;send({type:'ask',id:b.dataset.id});return;}

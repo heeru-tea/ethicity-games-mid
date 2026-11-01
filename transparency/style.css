@@ -146,3 +146,13 @@ dialog::backdrop{background:#131921b8}
  footer span{display:block}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* 후속 조사 */
+.follow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.follow-photo{margin:0}
+.follow-photo canvas{width:100%;height:auto;display:block;border-radius:6px;background:#e8e2d4}
+.follow-photo figcaption{font-size:.85rem;color:var(--muted);margin:4px 0}
+.mark-row{display:flex;gap:4px}
+.mark-row button{flex:1;min-height:40px;padding:6px 8px;font-size:.88rem;text-align:center}
+.proof{display:block;color:var(--muted);font-size:.92rem;margin-top:4px}
+@media(max-width:520px){.follow-grid{grid-template-columns:1fr 1fr}}

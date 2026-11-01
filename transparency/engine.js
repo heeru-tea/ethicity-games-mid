@@ -1,38 +1,58 @@
 (function(root){
  'use strict';
- // 장면 0 = 프롤로그, 1~4 사진, 5~8 글 검사, 9~12 얼굴 인식, 13 = 마지막.
- // 사건마다 네 단계: hook(궁금한 것) → check(직접 확인 + 판단 하나) → choose(선택) → result(결과).
- const CASES=['photo','writing','face'],STEPS=['hook','check','choose','result'];
+ // 저장 version 2. 사건마다 다섯 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사).
+ // 장면 번호는 LAYOUT에서 계산한다. 사건 4·5를 붙일 때는 CASES·STEPS·checks·choices·answers만 늘리면 된다.
+ const CASES=['photo','writing','face'];
+ const FIVE=['hook','check','choose','result','follow'];
+ const STEPS={photo:FIVE,writing:FIVE,face:FIVE};
+ const LAYOUT=[{step:'intro',k:null}];for(const k of CASES)for(const step of STEPS[k])LAYOUT.push({step,k});LAYOUT.push({step:'end',k:null});
+ const END=LAYOUT.length-1;
  const checks={photo:['photo-original','photo-rule'],writing:['writing-guide','writing-history'],face:['face-alert','face-clerk','face-photo']};
  const choices={photo:['auto','all'],writing:['detector','review','draft'],face:['maintain','release','crowd']};
  const stamps=['confirmed','unknown','different'];
- const answers={photo:'confirmed',writing:'unknown',face:'different'};
+ // 사건마다 판단 셋. 세 칸이 사건마다 한 번씩 정답이 된다.
+ const answers={photo:['confirmed','different','unknown'],writing:['unknown','confirmed','different'],face:['different','confirmed','unknown']};
+ const followAnswers={photo:'different',writing:'confirmed',face:'unknown'};
+ const followMarks={photo:{ids:['p1','p2','p3','p4','p5','p6'],values:['shown','cut']},writing:{ids:['run'],values:['done']},face:{ids:['r1','r2','r3','r4'],values:['open']}};
  const questions=['input','criteria','unknown'];
  const AUTO=[900,50,600,400],ALL=[190,0,1200,800];
  const faces=[[300,210,220,180],[460,35,240,300],[695,350,165,150],[815,55,220,230],[1050,105,230,210]];
- function caseKey(scene){return scene>=1&&scene<=12?CASES[Math.floor((scene-1)/4)]:null;}
- function stepOf(scene){return scene===0?'intro':scene===13?'end':STEPS[(scene-1)%4];}
- function sceneOf(key,step){return 1+CASES.indexOf(key)*4+STEPS.indexOf(step);}
- function initial(){return {version:1,revision:4,scene:0,furthest:0,evidence:[],judgments:{photo:null,writing:null,face:null},cases:{photo:{first:null,final:null},writing:{first:null,final:null},face:{first:null,final:null}},question:null,completed:false};}
+ // 후속 조사용 사진 6장: 같은 원본을 자동으로 다르게 자른 결과(새 그림 대신 기존 원본을 쓴다).
+ const FOLLOW_CROPS=[AUTO,[300,0,900,600],[0,60,660,440],[636,24,900,600],[860,0,676,451],[240,0,1050,700]];
+ const inside=([x,y,w,h],[fx,fy,fw,fh])=>fx>=x&&fy>=y&&fx+fw<=x+w&&fy+fh<=y+h;
+ function cutFaces(rect){return faces.map((f,i)=>inside(rect,f)?null:i).filter(i=>i!==null);}
+ const truth=FOLLOW_CROPS.map(r=>cutFaces(r).includes(2)?'cut':'shown');
+ function caseKey(scene){return LAYOUT[scene]?.k||null;}
+ function stepOf(scene){return LAYOUT[scene]?.step;}
+ function sceneOf(key,step){return LAYOUT.findIndex(x=>x.k===key&&x.step===step);}
  const clone=v=>JSON.parse(JSON.stringify(v));
+ const each=f=>Object.fromEntries(CASES.map(k=>[k,f(k)]));
+ function initial(){return {version:2,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),question:null,completed:false};}
  function checked(s,key){return checks[key].every(id=>s.evidence.includes(id));}
- function judged(s,key){return checked(s,key)&&!!s.judgments[key];}
- function allFaces(rect){const [x,y,w,h]=rect;return faces.every(([fx,fy,fw,fh])=>fx>=x&&fy>=y&&fx+fw<=x+w&&fy+fh<=y+h);}
+ function judged(s,key){return checked(s,key)&&s.judgments[key].every(Boolean);}
+ // 지금 판단할 칸: 비어 있거나 이전 저장에서 넘어와 하지 않은('legacy') 첫 칸.
+ function currentJudgment(s,key){return s.judgments[key].findIndex(j=>j===null||j==='legacy');}
+ function followReady(s,key){const m=followMarks[key],f=s.follows[key];return m.ids.every(id=>m.values.includes(f.marks[id]));}
+ function followDone(s,key){const f=s.follows[key];return f.judgment==='legacy'||(!!f.judgment&&followReady(s,key));}
+ function allFaces(rect){return faces.every(f=>inside(rect,f));}
  function canAdvance(s){
   const k=caseKey(s.scene),step=stepOf(s.scene);
   if(step==='intro'||step==='hook')return true;
   if(step==='check')return judged(s,k);
   if(step==='choose'||step==='result')return !!s.cases[k].final;
+  if(step==='follow')return followDone(s,k);
   return false; // 마지막 장면은 질문(ask)으로 끝난다.
  }
  function reduce(state,action){
   const s=clone(state),k=caseKey(s.scene),step=stepOf(s.scene);
-  if(action.type==='check'&&k&&checks[k].includes(action.id)&&!s.evidence.includes(action.id))s.evidence.push(action.id);
-  if(action.type==='judge'&&step==='check'&&checked(s,k)&&!s.judgments[k]&&stamps.includes(action.stamp))s.judgments[k]=action.stamp;
+  if(action.type==='check'&&k&&step==='check'&&checks[k].includes(action.id)&&!s.evidence.includes(action.id))s.evidence.push(action.id);
+  if(action.type==='judge'&&step==='check'&&checked(s,k)&&stamps.includes(action.stamp)){const i=currentJudgment(s,k);if(i>=0)s.judgments[k][i]=action.stamp;}
   if(action.type==='choose'&&step==='choose'&&judged(s,k)&&choices[k].includes(action.id)){
    const c=s.cases[k];if(!c.first)c.first=action.id;c.final=action.id;s.scene++;s.furthest=Math.max(s.furthest,s.scene);
   }
-  if(action.type==='next'&&s.scene<13&&canAdvance(s)){s.scene++;s.furthest=Math.max(s.furthest,s.scene);}
+  if(action.type==='mark'&&step==='follow'){const m=followMarks[k],f=s.follows[k];if(m.ids.includes(action.id)&&m.values.includes(action.value)&&(f.judgment===null||f.judgment==='legacy'))f.marks[action.id]=action.value;}
+  if(action.type==='follow-judge'&&step==='follow'&&followReady(s,k)&&stamps.includes(action.stamp)){const f=s.follows[k];if(f.judgment===null||f.judgment==='legacy')f.judgment=action.stamp;}
+  if(action.type==='next'&&s.scene<END&&canAdvance(s)){s.scene++;s.furthest=Math.max(s.furthest,s.scene);}
   if(action.type==='revisit'&&Number.isInteger(action.scene)&&action.scene>=0&&action.scene<=s.furthest)s.scene=action.scene;
   if(action.type==='ask'&&step==='end'&&questions.includes(action.id)&&CASES.every(c=>s.cases[c].final)){if(!s.question)s.question=action.id;s.completed=true;}
   return s;
@@ -40,56 +60,100 @@
  function outcome(s,key){const id=s.cases[key].final;return {id,restricted:key==='face'?id!=='release':undefined,excluded:key==='writing'?id==='detector':undefined,rect:key==='photo'?(id==='all'?ALL:AUTO):undefined};}
  // 진행 위치가 앞 단계 조건과 맞는지 검사한다(손상·조작된 저장 방지).
  function consistent(v){
-  for(const key of CASES){const c=v.cases[key];
-   if(c.final&&!c.first)return false;if(c.first&&!c.final)return false;
-   if(v.judgments[key]&&!checked(v,key))return false;
-   if(v.furthest>=sceneOf(key,'choose')&&!judged(v,key))return false;
+  for(const key of CASES){const c=v.cases[key],f=v.follows[key];
+   if(!!c.final!==!!c.first)return false;
+   if(v.judgments[key].some(Boolean)&&!checked(v,key))return false;
+   const i=v.judgments[key].findIndex(j=>j===null);if(i>=0&&v.judgments[key].slice(i).some(Boolean))return false;
+   if(f.judgment&&f.judgment!=='legacy'&&!followReady(v,key))return false;
+   if(v.furthest>sceneOf(key,'check')&&!judged(v,key))return false;
    if(v.furthest>=sceneOf(key,'result')&&!c.final)return false;
+   if(v.furthest>sceneOf(key,'follow')&&!followDone(v,key))return false;
   }
   if(v.question&&!CASES.every(c=>v.cases[c].final))return false;
   if(v.completed!==!!v.question)return false;
   return true;
  }
- // revision 3 이전 저장(주장 판정 방식)을 새 흐름으로 옮긴다. 장면 의미가 바뀌었으므로 사건 단위로만 이어 간다.
- function migrate(v){
-  const s=initial(),ev={P1:'photo-original',P2:'photo-rule',P3:'photo-rule',W2:'writing-guide',W3:'writing-history',F1:'face-alert',F3:'face-clerk',F2:'face-photo'};
-  if(!Array.isArray(v.evidence)||!v.cases||typeof v.cases!=='object'||!Number.isInteger(v.scene)||v.scene<0||v.scene>13)return initial();
+ // ── 이전 저장(version 1) ────────────────────────────────────────────
+ // version 1 revision 4: 장면 0 프롤로그, 1~4 사진, 5~8 글, 9~12 얼굴, 13 마지막. 사건마다 판단 하나.
+ const STEPS4=['hook','check','choose','result'];
+ const key4=n=>n>=1&&n<=12?CASES[Math.floor((n-1)/4)]:null,step4=n=>n===0?'intro':n===13?'end':STEPS4[(n-1)%4],scene4=(k,st)=>1+CASES.indexOf(k)*4+STEPS4.indexOf(st);
+ function initial4(){return {revision:4,scene:0,furthest:0,evidence:[],judgments:{photo:null,writing:null,face:null},cases:each(()=>({first:null,final:null})),question:null,completed:false};}
+ function consistent4(v){
+  for(const key of CASES){const c=v.cases[key];
+   if(!!c.final!==!!c.first)return false;
+   if(v.judgments[key]&&!checked(v,key))return false;
+   if(v.furthest>=scene4(key,'choose')&&!(checked(v,key)&&v.judgments[key]))return false;
+   if(v.furthest>=scene4(key,'result')&&!c.final)return false;
+  }
+  if(v.question&&!CASES.every(c=>v.cases[c].final))return false;
+  return v.completed===!!v.question;
+ }
+ // revision 3 이전(주장 판정 방식) → revision 4 모양.
+ function migrate3(v){
+  const s=initial4(),ev={P1:'photo-original',P2:'photo-rule',P3:'photo-rule',W2:'writing-guide',W3:'writing-history',F1:'face-alert',F3:'face-clerk',F2:'face-photo'};
+  if(!Array.isArray(v.evidence)||!v.cases||typeof v.cases!=='object'||!Number.isInteger(v.scene)||v.scene<0||v.scene>13)return null;
   s.evidence=[...new Set(v.evidence.map(id=>ev[id]).filter(Boolean))];
   const map={photo:{manual:'all',auto:'auto'},writing:{detector:'detector',review:'review',draft:'draft'},face:{crowd:'crowd',release:'release',maintain:'maintain'}};
-  const oldIdx=v.scene===0?-1:v.scene===13?3:CASES.indexOf(caseKey(v.scene));
+  const oldIdx=v.scene===0?-1:v.scene===13?3:CASES.indexOf(key4(v.scene));
   CASES.forEach((key,i)=>{const c=v.cases[key]||{},fin=map[key][c.final]||null,first=map[key][c.first]||null;
    if(fin){s.cases[key]={first:first||fin,final:fin};if(!first||c.legacyFirst)s.cases[key].legacyFirst=true;}
-   // 이전 판은 판단 방식이 달랐다. 그 사건을 지나갔다면 판단은 '이전 판에서 함'(legacy)으로 둔다.
-   // 이전 판도 자료를 모두 연 뒤에만 조치를 고를 수 있었으므로, 조치가 있으면 자료 확인도 한 것으로 본다.
    if(fin&&!checked(s,key))s.evidence.push(...checks[key].filter(id=>!s.evidence.includes(id)));
    if(checked(s,key)&&(fin||i<oldIdx))s.judgments[key]='legacy';
   });
   const w=CASES.findIndex(key=>!s.cases[key].final),walk=w<0?3:w;
   if(oldIdx<0&&walk===0)s.scene=0;
-  else if(walk>oldIdx)s.scene=oldIdx<0?0:sceneOf(CASES[oldIdx],'result');
+  else if(walk>oldIdx)s.scene=oldIdx<0?0:scene4(CASES[oldIdx],'result');
   else if(walk===3)s.scene=13;
-  else s.scene=sceneOf(CASES[walk],judged(s,CASES[walk])?'choose':'hook');
+  else s.scene=scene4(CASES[walk],checked(s,CASES[walk])&&s.judgments[CASES[walk]]?'choose':'hook');
   s.furthest=s.scene;
+  return consistent4(s)?s:null;
+ }
+ function restore4(v){
+  if(!Number.isInteger(v.scene)||v.scene<0||v.scene>13||!Number.isInteger(v.furthest)||v.furthest<v.scene||v.furthest>13)return null;
+  if(!Array.isArray(v.evidence)||v.evidence.some(id=>!CASES.some(k=>checks[k].includes(id))))return null;
+  if(!v.judgments||typeof v.judgments!=='object'||!v.cases||typeof v.cases!=='object'||typeof v.completed!=='boolean')return null;
+  if(v.question!==null&&v.question!==undefined&&!questions.includes(v.question))return null;
+  for(const key of CASES){const c=v.cases[key],j=v.judgments[key];
+   if(!c||typeof c!=='object'||['first','final'].some(p=>c[p]!==null&&!choices[key].includes(c[p])))return null;
+   if(j!==null&&!stamps.includes(j)&&j!=='legacy')return null;
+  }
+  const s=initial4();Object.assign(s,{scene:v.scene,furthest:v.furthest,evidence:[...new Set(v.evidence)],question:v.question??null,completed:v.completed});
+  for(const key of CASES){s.judgments[key]=v.judgments[key];s.cases[key]={first:v.cases[key].first,final:v.cases[key].final};if(v.cases[key].legacyFirst===true)s.cases[key].legacyFirst=true;}
+  return consistent4(s)?s:null;
+ }
+ // revision 4 → version 2. 예전 판단 하나는 새 판단 1번과 같은 문장이다. 새로 생긴 판단 2·3번과 이미 지나간 후속 조사는
+ // 'legacy'(이전 저장에서 넘어와 하지 않음)로 두어 이어하기를 막지 않는다. 그 사건을 다시 열면 해 볼 수 있다.
+ function upgrade(r){
+  const s=initial(),map=n=>n===0?0:n===13?END:sceneOf(key4(n),step4(n));
+  s.scene=map(r.scene);s.furthest=map(r.furthest);s.evidence=r.evidence.slice();s.question=r.question;s.completed=r.completed;
+  for(const key of CASES){const j=r.judgments[key];s.cases[key]=clone(r.cases[key]);
+   if(j)s.judgments[key]=[j,'legacy','legacy'];
+   if(s.furthest>sceneOf(key,'follow'))s.follows[key].judgment='legacy';
+  }
   return consistent(s)?s:initial();
  }
  function restore(raw){
   try{const v=typeof raw==='string'?JSON.parse(raw):raw;
-   if(!v||typeof v!=='object'||v.version!==1)return initial();
-   if(v.revision!==4)return migrate(v);
-   if(!Number.isInteger(v.scene)||v.scene<0||v.scene>13||!Number.isInteger(v.furthest)||v.furthest<v.scene||v.furthest>13)return initial();
+   if(!v||typeof v!=='object')return initial();
+   if(v.version===1){const r=v.revision===4?restore4(v):migrate3(v);return r?upgrade(r):initial();}
+   if(v.version!==2)return initial();
+   if(!Number.isInteger(v.scene)||v.scene<0||v.scene>END||!Number.isInteger(v.furthest)||v.furthest<v.scene||v.furthest>END)return initial();
    if(!Array.isArray(v.evidence)||v.evidence.some(id=>!CASES.some(k=>checks[k].includes(id))))return initial();
-   if(!v.judgments||typeof v.judgments!=='object'||!v.cases||typeof v.cases!=='object'||typeof v.completed!=='boolean')return initial();
+   if(!v.judgments||!v.cases||!v.follows||typeof v.completed!=='boolean')return initial();
    if(v.question!==null&&!questions.includes(v.question))return initial();
-   for(const key of CASES){const c=v.cases[key],j=v.judgments[key];
-    if(!c||typeof c!=='object'||['first','final'].some(p=>c[p]!==null&&!choices[key].includes(c[p])))return initial();
-    if(j!==null&&!stamps.includes(j)&&j!=='legacy')return initial();
-   }
-   if(!consistent(v))return initial();
    const s=initial();s.scene=v.scene;s.furthest=v.furthest;s.evidence=[...new Set(v.evidence)];s.question=v.question;s.completed=v.completed;
-   for(const key of CASES){s.judgments[key]=v.judgments[key];s.cases[key]={first:v.cases[key].first,final:v.cases[key].final};if(v.cases[key].legacyFirst===true)s.cases[key].legacyFirst=true;}
-   return s;
+   for(const key of CASES){const c=v.cases[key],j=v.judgments[key],f=v.follows[key],m=followMarks[key];
+    if(!c||['first','final'].some(p=>c[p]!==null&&!choices[key].includes(c[p])))return initial();
+    if(!Array.isArray(j)||j.length!==3||j.some(x=>x!==null&&x!=='legacy'&&!stamps.includes(x)))return initial();
+    if(!f||!f.marks||typeof f.marks!=='object'||Array.isArray(f.marks)||(f.judgment!==null&&f.judgment!=='legacy'&&!stamps.includes(f.judgment)))return initial();
+    if(Object.entries(f.marks).some(([id,val])=>!m.ids.includes(id)||!m.values.includes(val)))return initial();
+    s.cases[key]={first:c.first,final:c.final};if(c.legacyFirst===true)s.cases[key].legacyFirst=true;
+    s.judgments[key]=j.slice();s.follows[key]={marks:{...f.marks},judgment:f.judgment};
+   }
+   return consistent(s)?s:initial();
   }catch{return initial();}
  }
- const api={initial,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,outcome,allFaces,CASES,checks,choices,stamps,answers,questions,AUTO,ALL,faces};
+ const api={initial,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,outcome,allFaces,cutFaces,
+  CASES,STEPS,LAYOUT,END,checks,choices,stamps,answers,followAnswers,followMarks,questions,AUTO,ALL,faces,FOLLOW_CROPS,truth};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TransparencyEngine=api;
 })(typeof window==='undefined'?globalThis:window);
