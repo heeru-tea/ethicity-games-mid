@@ -7,14 +7,13 @@
     {image:'intro-jun.webp',name:'준',text:'저는 준이에요. 기차에서 내려 일터까지, 아직 한 번 더 가야 해요.'},
     {image:'intro-village.webp',name:'솔잎마을의 AI',text:'솔잎마을에는 서로 다른 하루를 살아가는 사람들이 있습니다. 내가 할 일은 효율적인 노선을 만들고, 누구도 이동에서 소외되지 않게 돕는 것. 모두가 볼일을 마치고 돌아올 수 있도록 첫 노선을 그려 봅시다.'}
   ];
-  /* 단계 사이 인물 컷(2026-11-01 단계 전 설명 줄이기): 한 장, 화면 대사는 25자 안팎 한 줄(text). 원래 대사(full)는 화면 낭독용 사본(#story-full)과
-   * 텍스트 모드 단계 안내(#stage-brief, PB.Cutscene.lines)에 그대로 남는다. 유나·다은은 단체 컷 한 장 */
-  var sol=[{image:'interlude-sol.webp',name:'솔',text:'새로 이사 왔어요. 기차역까지 버스가 있을까요?',full:'저는 솔이에요. 새로 이사 왔어요. 여기서도 기차역에 갈 수 있을까요? 저녁에 돌아오는 버스도 있으면 좋겠어요.'}];
+  /* 단계 사이 인물 컷: 화면에도 원래 대사 그대로(2026-11-01 사용자 — 인물 대사는 줄이지 않는다. 한 줄 요약판은 되돌림) */
+  var sol=[{image:'interlude-sol.webp',name:'솔',text:'저는 솔이에요. 새로 이사 왔어요. 여기서도 기차역에 갈 수 있을까요? 저녁에 돌아오는 버스도 있으면 좋겠어요.'}];
   var baseball=[
-    {image:'interlude-cheer.webp',fallback:'intro-village.webp',name:'유나 · 다은',text:'경기가 끝나면 친구 집까지 가야 해요.',
-     full:'유나 · 치어리더: 저는 유나예요. 오늘 오후에는 종합운동장에서 치어리더로 일해요. 경기가 끝나면 친구 집으로 집들이를 가기로 했어요. 다은 · 야구 팬: 저는 다은이에요. 유나와 터미널에서 함께 왔어요. 오늘 밤에는 밀집 주거지의 친구 집에 가고, 다음 날에는 운동장에 들렀다가 밤에 터미널로 돌아갈 거예요.'}
+    {image:'interlude-cheer.webp',fallback:'intro-village.webp',name:'유나 · 치어리더',text:'저는 유나예요. 오늘 오후에는 종합운동장에서 치어리더로 일해요. 경기가 끝나면 친구 집으로 집들이를 가기로 했어요.'},
+    {image:'interlude-cheer.webp',fallback:'intro-village.webp',name:'다은 · 야구 팬',text:'저는 다은이에요. 유나와 터미널에서 함께 왔어요. 오늘 밤에는 밀집 주거지의 친구 집에 가고, 다음 날에는 운동장에 들렀다가 밤에 터미널로 돌아갈 거예요.'}
   ];
-  var mall=[{image:'interlude-influencer.webp',fallback:'intro-village.webp',name:'진호 · 인플루언서',text:'솔잎몰 개장 날이에요. 집에 갈 버스도 있죠?',full:'안녕하세요, 진호예요! 오늘은 솔잎몰 개장 날이라 신도시에서 버스 타고 가는 길부터 라이브로 보여 드릴 거예요. 다들 몰로 몰릴 텐데… 방송 끝나면 저녁에는 신도시 집으로 돌아가야 해요.'}];
+  var mall=[{image:'interlude-influencer.webp',fallback:'intro-village.webp',name:'진호 · 인플루언서',text:'안녕하세요, 진호예요! 오늘은 솔잎몰 개장 날이라 신도시에서 버스 타고 가는 길부터 라이브로 보여 드릴 거예요. 다들 몰로 몰릴 텐데… 방송 끝나면 저녁에는 신도시 집으로 돌아가야 해요.'}];
   var scenes={intro:intro,sol:sol,baseball:baseball,mall:mall};
   var STAGE_MS=1600,auto=null,IGNORE=['Tab','Shift','Control','Alt','Meta','CapsLock'];
   function $(id){return document.getElementById(id);}

@@ -145,7 +145,9 @@ try {
       await throughCuts(page, rec);
       await page.waitForFunction(() => document.body.dataset.screen === 'plan');
       M.stages.push(rec);
-      assert.ok(rec.clicks <= 2, `${p + 1}단계 결과→지도 클릭 ${rec.clicks}`); assert.equal(rec.screens.length, cutName ? 1 : 0);
+      // 유나·다은(baseball)은 원래 대사 두 컷 그대로(2026-11-01 사용자: 인물 대사는 줄이지 않음) → 그 단계만 3클릭
+      const cutCount = cutName === 'baseball' ? 2 : cutName ? 1 : 0;
+      assert.ok(rec.clicks <= 1 + cutCount, `${p + 1}단계 결과→지도 클릭 ${rec.clicks}`); assert.equal(rec.screens.length, cutCount);
       if (cutName) assert.equal(rec.screens[0].phaseHead, (p + 1) + '단계 · ' + await page.evaluate(n => PB.App.s.config.phases[n - 1], p + 1));
       assert.equal(await page.locator('#reflection-next, #new-resources, #btn-begin-plan').count(), 0, '성찰·변화 화면 없음');
       const banner = await page.locator('#map-banner').textContent(); assert.ok(banner.startsWith((p + 1) + '단계 · '), banner); rec.banner = banner;
