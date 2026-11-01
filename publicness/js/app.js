@@ -159,9 +159,27 @@
   // 오른쪽 패널 접기(운행·결과 지도 화면): 접으면 지도가 전체 폭. 기억은 이 브라우저에만(실패해도 그냥 펼침)
   var PANEL_KEY = 'ethicity.publicness.panelCollapsed';
   App.setPanelCollapsed = function (v) { document.body.classList.toggle('panel-collapsed', !!v); try { localStorage.setItem(PANEL_KEY, v ? '1' : '0'); } catch (e) { /* 이번 창에서만 */ } App.syncPanelToggle(); root.requestAnimationFrame(function () { App.fitFrame(); if (App.view && App.view.refit) App.view.refit(); if (App.net) App.net.redraw(); }); };
+  /* P0-1(2026-11-02): 미니멀(기본) 화면의 운행은 패널이 늘 숨어 있어 ‘패널 접기/펼치기’가 헛돌았다 → 그 화면에서는 버튼이
+   * 패널을 지도 위 서랍(넓은 화면 오른쪽, ≤700px는 아래 시트)으로 연다. 지도 칸 크기는 그대로(겹쳐 덮음). 긴급 조정 창이 떠 있으면 패널이 이미 보이므로 버튼을 숨긴다 */
+  function drawerMode() { var b = document.body.classList; return b.contains('minimal-ui') && !b.contains('minimal-text') && document.body.dataset.screen === 'run'; }
+  App.togglePanel = function () {
+    if (drawerMode()) {
+      var tb = $('#topbar'), open = !document.body.classList.contains('run-drawer');
+      if (tb) document.body.style.setProperty('--drawer-top', Math.max(8, Math.round(tb.getBoundingClientRect().bottom) + 8) + 'px');
+      document.body.classList.toggle('run-drawer', open); App.syncPanelToggle(); return;
+    }
+    App.setPanelCollapsed(!document.body.classList.contains('panel-collapsed'));
+  };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.body.classList.contains('run-drawer') && !document.querySelector('dialog[open]:not(#emergency-dialog)')) { document.body.classList.remove('run-drawer'); App.syncPanelToggle(); } });
   App.syncPanelToggle = function () {
     var b = $('#btn-panel-toggle'), screen = document.body.dataset.screen, can = screen === 'run';
-    if (!b) return; b.hidden = !can; if (!can) { document.body.classList.remove('panel-collapsed'); return; }
+    if (!b) return; b.hidden = !can; if (!can) { document.body.classList.remove('panel-collapsed', 'run-drawer'); return; }
+    if (drawerMode()) {
+      var em = document.body.classList.contains('minimal-emergency'), open = document.body.classList.contains('run-drawer');
+      b.hidden = em; b.textContent = open ? '운행 상황 닫기' : '운행 상황 보기'; b.setAttribute('aria-expanded', String(open && !em)); b.setAttribute('aria-controls', 'panel');
+      return;
+    }
+    document.body.classList.remove('run-drawer');
     var stored = false; try { stored = localStorage.getItem(PANEL_KEY) === '1'; } catch (e) { /* 펼침 */ }
     if (!document.body.dataset.panelInit) { document.body.dataset.panelInit = '1'; document.body.classList.toggle('panel-collapsed', stored); }
     var c = document.body.classList.contains('panel-collapsed'); b.textContent = c ? '패널 펼치기' : '패널 접기'; b.setAttribute('aria-expanded', String(!c)); b.setAttribute('aria-controls', 'panel');
