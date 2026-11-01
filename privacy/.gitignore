@@ -6,3 +6,6 @@ docs/
 # 장면 그림 생성 원본·탈락본(로컬 기록용)
 assets/scenes/*.raw.png
 assets/scenes/*.fal-rejected.png
+
+# 지도 표시 그림 생성 원본·참조(로컬 기록용)
+assets/markers/raw/
