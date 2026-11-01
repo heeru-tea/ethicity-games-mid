@@ -13,7 +13,9 @@
   subsidy:function(){var F=cfgNow().finance;return '기본 지원은 버스 1대에 '+won(F.basePerBus)+', 보유비는 1대에 '+won(F.holding)+'이에요.';},
   finance:function(){var s=PB.App&&PB.App.s;return s&&PB.Session.financeRule(s)==='balance-streak'?'누적 잔액이 '+PB.Session.NEGATIVE_LIMIT+'번 연속 0원 미만이면 운영 계약이 끝나요.':'마지막 단계가 끝난 뒤 누적 잔액이 0원 미만이면 파산이에요.';},
   wait:function(){var c=cfgNow();return c.service&&c.service.maxWait!=null?'한 번 이동에 '+PB.Demand.duration(c,c.service.maxWait)+' 넘게 기다리면 그날은 세지 않아요.':'';},
+  river:function(){var R=cfgNow().river;return R?'강을 건너는 구간은 다리로 돌아가서, 지도에서 보는 것보다 '+R.factor+'배 오래 걸려요.':'';},
   emergency:'버스를 골라 필요한 노선으로 옮기세요.',express:'직행은 7호차로 최대 세 곳을 이어요.',regional:'광역은 9호차로 마을과 대도시를 이어요.'};
+ function crossesRiver(s,r){var g=PB.Session.graph(s);return !!g.river&&r.nodes.some(function(id,i){return i>0&&g.river(r.nodes[i-1],id);});}
  function tipText(k){var v=tips[k];return typeof v==='function'?v():v;}
  function $(s){return document.querySelector(s);}function el(t,cls,text){var n=document.createElement(t);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;}
  function mark(key){seen[key]=true;try{localStorage.setItem(KEY,JSON.stringify(seen));}catch(e){}}
@@ -46,18 +48,7 @@
    var ring=el('div','minimal-service');ring.style.left=p.left+'px';ring.style.top=p.top+'px';ring.setAttribute('role','img');ring.setAttribute('aria-label',c.label+' 공공서비스 '+count+'/'+c.need+'회 정차');ring.title=ring.getAttribute('aria-label');
    for(var i=0;i<c.need;i++){var bar=el('i',i<count?'filled':'');bar.style.transform='rotate('+(i*360/c.need)+'deg) translateY(-27px)';ring.append(bar);}if(count>=c.need)ring.append(el('b',null,'✓'));layer.append(ring);
   });
-  var placedBadges=[];PB.Session.routesInOrder(s).forEach(function(r){if(r.nodes.length<2)return;var n=s.draft.buses.filter(function(b){return b.routeNum===r.num;}).length,h=E.headway(s,r.num,n),p=project(r.nodes[0]),q=project(r.nodes[1]);
-   /* 배차 간격(2026-11-01): 자리가 넉넉하면 ‘◷ 2시간 24분마다’, 구간이 짧으면 ‘◷ 2.4h’. 툴팁·aria-label은 늘 ‘버스가 2시간 24분마다 와요’ */
-   var short=h==null?'◷ —':'◷ '+(Math.round(h*(s.config.day.end-s.config.day.start)/s.config.bus.window/60*10)/10)+'h',long=h==null?short:'◷ '+PB.App.duration(h)+'마다';
-   var badge=el('span','minimal-headway',long);badge.style.left=(p.left+q.left)/2+'px';badge.style.top=((p.top+q.top)/2-22)+'px';badge.style.color=PB.App.routeStyle(r.num).color;
-   badge.title=(h==null?'':'버스가 '+PB.App.duration(h)+'마다 와요 · ')+E.routeLine(s,r.num);badge.setAttribute('aria-label',badge.title);layer.append(badge);
-   function rect(){var w=badge.offsetWidth,h=badge.offsetHeight,x=parseFloat(badge.style.left),y=parseFloat(badge.style.top);return {x:x-w/2,y:y-h/2,w:w,h:h};}
-   function bumps(r){return (PB.App.net?PB.App.net.rects():[]).concat(placedBadges).some(function(o){return r.x<o.x+o.w&&o.x<r.x+r.w&&r.y<o.y+o.h&&o.y<r.y+r.h;});}
-   function at(f){badge.style.left=(p.left+(q.left-p.left)*f)+'px';badge.style.top=(p.top+(q.top-p.top)*f-22)+'px';}
-   // 긴 글은 구간 가운데 → 1/3 → 2/3 자리 중 다른 표시와 안 겹치는 곳에. 구간이 짧거나 다 겹치면 가운데에 짧은 글
-   var fits=badge.offsetWidth<=Math.hypot(q.left-p.left,q.top-p.top)-36&&[0.5,0.36,0.64].some(function(f){at(f);return !bumps(rect());});
-   if(!fits){badge.textContent=short;badge.classList.add('short');if(![0.5,0.36,0.64].some(function(f){at(f);return !bumps(rect());}))at(0.5);}placedBadges.push(rect());
-  });
+  /* 노선 위 배차 간격 표시(◷ N시간마다 / 2.4h)는 2026-11-01 사용자 지시로 뺐다 — 간격은 노선 편집 수지(#route-econ)·끌기 라벨에 남음 */
  }
  function legacyResult(){
   var panel=$('#panel');if(!panel||$('#minimal-result'))return;var details=el('details','minimal-result-details');details.id='minimal-result-details';details.append(el('summary',null,'자세히'));
@@ -85,7 +76,7 @@
   document.querySelectorAll('.depot-bus,#btn-lease').forEach(function(b){b.title=($('#lease-note')?.textContent||'')+' · '+($('.depot-head .depot-cost')?.textContent||'');});
   var message=$('#map-plan-message');if(message&&lastMessage!==message.textContent){if(lastMessage&&root.MINIMAL_UI&&!full)toast(message.textContent);lastMessage=message.textContent;}
   var draft=JSON.stringify(s.draft.routes);if(draft!==lastDraft){lastDraft=draft;if(s.stage==='plan'&&s.draft.routes.some(function(r){return r.nodes.length>1;}))tip('bus');}
-  signals();if(!full&&s.stage==='plan'){var r=PB.UI.routeEdit.active();if(r&&r.num===5)tip('express');else if(r&&r.num===6)tip('regional');else if(seen.bus&&(PB.UI.Econ.plan(s).k.service||[]).some(function(c){return c.stops>0;}))tip('service');}
+  signals();if(!full&&s.stage==='plan'){var r=PB.UI.routeEdit.active();if(r&&r.num===5)tip('express');else if(r&&r.num===6)tip('regional');else if(r&&crossesRiver(s,r))tip('river');else if(seen.bus&&(PB.UI.Econ.plan(s).k.service||[]).some(function(c){return c.stops>0;}))tip('service');}
  }
  function init(){
   var stage=$('#stage'),layer=el('div');layer.id='minimal-signals';stage.append(layer);var t=el('div','minimal-toast');t.id='minimal-toast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');t.hidden=true;stage.append(t);

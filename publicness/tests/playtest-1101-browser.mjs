@@ -173,8 +173,7 @@ try {
   {
     const page = await fresh('no3d=1', { width: 1366, height: 900 });
     await toPlan(page, 2, [{ num: 1, nodes: ['F', 'D', 'A', 'B'], buses: [1] }, { num: 2, nodes: ['B', 'C', 'E'], buses: [2, 3] }]);
-    const hw = await page.evaluate(() => [...document.querySelectorAll('.minimal-headway')].map(b => [b.textContent, b.getAttribute('aria-label')]));
-    assert.ok(hw.length >= 2 && hw.every(([t, a]) => /^◷ (\d+시간( \d+분)?|\d+분)마다$|^◷ [\d.]+h$/.test(t) && /^버스가 .+마다 와요/.test(a)), JSON.stringify(hw)); ok('P1-16 배차 간격 ‘◷ N시간 N분마다’(좁으면 ‘◷ 2.4h’) + aria-label ‘버스가 …마다 와요’: ' + hw.map(x => x[0]).join(', '));
+    assert.equal(await page.locator('.minimal-headway').count(), 0); ok('P1-16 노선 위 배차 간격 표시 없음(2026-11-01 사용자 지시로 삭제)');
     await page.locator('#route-1').click(); await page.waitForTimeout(100); // 계획 알림을 하나 남겨 둔다(다음 단계 첫 화면에서 빈 알림이 뜨던 조건)
     await page.evaluate(() => { PB.Session.startRun(PB.App.s); PB.App.go('run'); }); await page.waitForTimeout(1200);
     const live1 = await page.evaluate(() => ({ text: document.querySelector('#minimal-profit').innerText, v: Number(document.querySelector('#minimal-profit').dataset.live) }));
