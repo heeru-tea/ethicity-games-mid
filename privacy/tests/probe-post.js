@@ -608,13 +608,13 @@
 
     else if (s === 'quest-icon') {
       $('#btn-new').click(); await wait(30);
-      ok($('#v-map').textContent.indexOf('❗') < 0 && $$('#v-map .map-help .ico-quest').length === 1, '맵 안내 문장: ❗ 대신 노란 느낌표 그림');
+      ok($('#v-map').textContent.indexOf('❗') < 0 && $$('#v-map .map-help .ico-quest').length === 1 && $$('#v-map .map-help .ico-talk').length === 1, '맵 안내 문장: 목적지 핀·물음표 말풍선 그림');
       key('ArrowRight'); key('ArrowRight', 'keyup'); await wait(300); // 침대 옆에서 한 칸 비켜 아무것도 없는 곳으로
       $('#btn-map-act').click(); await wait(30);
       ok(!!$('#m-say .ico-quest') && $('#m-say').textContent.indexOf('❗') < 0, '대상 아닌 곳에서 누를 때 안내에도 그림');
       $('#btn-map-skip').click(); await wait(30);
-      ok(!!$('#btn-map-act .ico-quest') && $('#btn-map-act').textContent.indexOf('❗') < 0 && /새봄에게 말 걸기/.test($('#btn-map-act').textContent), '목적지 버튼: 그림 + 새봄에게 말 걸기');
-      ok($$('.ico-quest').every(function (im) { return /quest\.png/.test(getComputedStyle(im).backgroundImage) && im.getAttribute('role') === 'img' && !!im.getAttribute('aria-label'); }), 'quest.png 사용·대체 글자 있음');
+      ok(!!$('#btn-map-act .ico-talk') && $('#btn-map-act').textContent.indexOf('❗') < 0 && /새봄에게 말 걸기/.test($('#btn-map-act').textContent), '목적지 버튼(인물): ? 그림 + 새봄에게 말 걸기');
+      ok($$('.ico-quest').every(function (im) { return /markers\/dest\.png/.test(getComputedStyle(im).backgroundImage) && im.getAttribute('role') === 'img' && !!im.getAttribute('aria-label'); }) && $$('.ico-talk').every(function (im) { return /markers\/talk\.png/.test(getComputedStyle(im).backgroundImage) && im.getAttribute('role') === 'img' && !!im.getAttribute('aria-label'); }), '표시 그림(dest·talk.png) 사용·대체 글자 있음');
     }
 
     else if (s === 'webp' || s === 'webp-fallback') {
@@ -720,6 +720,68 @@
       ok(Math.abs(c3.x - c3.tx) < 1, '움직임 줄이기면 카메라가 바로 따라붙음');
     }
 
+    else if (s === 'talk-marks' || s === 'talk-marks-motion') {
+      // ? 말풍선: 말을 걸어 볼 만한 사람(목적지 인물·이번 걷기에서 할 말·선택에 반응하는 한 줄) 머리 위에만, 말 걸면 사라짐
+      var TW = window.PRIVACY_WORLD, TM = PrivacyMap.debug;
+      function marksNow(ms) { TM.tick(ms || 16); return TM.talkMarks(); }
+      function whoList(ms) { return marksNow(ms).map(function (m) { return m.who + ':' + m.why; }).sort().join(','); }
+      $('#btn-new').click(); await wait(300);
+      var yard = TW.SCENES.filter(function (c) { return c.id === 'yard'; })[0];
+      if (s === 'talk-marks-motion') { // 움직임 허용: 위아래로 살짝 흔들림
+        TM.place(yard.ox + 14, 8, 'down'); await wait(50);
+        var ys = [0, 300, 600, 900].map(function (ms) { var m = marksNow(ms).filter(function (q) { return q.who === 'haneul'; })[0]; return m ? m.y : null; });
+        ok(ys.every(function (v) { return v != null; }) && Math.max.apply(null, ys) - Math.min.apply(null, ys) >= 1, '움직임 허용이면 ?가 위아래로 흔들림 ' + JSON.stringify(ys));
+        ok(TM.marker().kind === 'dest', '목적지(다른 장면)는 핀');
+      } else {
+        // 내 방(첫날 아침): 방에는 아무도 없음 → ? 없음, 목적지(교실의 새봄)는 다른 장면이라 방문에 핀
+        ok(marksNow().length === 0, '내 방엔 ? 없음');
+        ok(TM.marker().kind === 'dest', '다른 장면 목적지 = 핀 ' + JSON.stringify(TM.marker()));
+        // 마당: 오프닝에서 자기소개할 하늘·지호 머리 위에 ?
+        TM.place(yard.ox + 14, 8, 'down'); await wait(50);
+        ok(whoList() === 'haneul:lines,jiho:lines', '마당: 하늘·지호에게 ? ' + whoList());
+        var lbl = $('#m-canvas').getAttribute('aria-label');
+        ok(/물음표/.test(lbl) && /하늘/.test(lbl) && /지호/.test(lbl), '지도 설명 글에도 ?가 뜬 사람 이름: ' + lbl);
+        var y0 = marksNow(0)[0].y, y1 = marksNow(300)[0].y, y2 = marksNow(700)[0].y;
+        ok(y0 === y1 && y1 === y2, '움직임 줄이기면 ?가 흔들리지 않음 ' + [y0, y1, y2]);
+        // 지호 옆으로 걸어가 Space → 대화, 끝나면 지호의 ?만 사라짐
+        var jc = castOf('jiho');
+        ok(await walkToCell(jc.x, jc.y + 1), '지호 옆까지 걸어감');
+        key('ArrowUp'); key('ArrowUp', 'keyup'); await wait(50);
+        ok(/지호에게 말 걸기/.test($('#btn-map-act').textContent) && !!$('#btn-map-act .ico-talk'), '버튼 글자: ? 그림 + 지호에게 말 걸기 ' + $('#btn-map-act').textContent);
+        key(' '); await wait(50);
+        ok(!$('#talk').hidden && /지호/.test($('#talk .talk-name').textContent), '지호와 대화');
+        await passTalk(); await wait(3400); // 말하는 동안 뜬 말풍선(3.2초)이 사라진 뒤
+        ok(whoList(4000) === 'haneul:lines', '말 건 지호의 ?는 사라지고 하늘만 남음 ' + whoList());
+        var st0 = JSON.stringify([PrivacyApp.state().trust, PrivacyApp.state().stats, PrivacyApp.state().flags]);
+        // 하늘의 ?를 눌러도 가서 말 걸기
+        var hm = marksNow().filter(function (m) { return m.who === 'haneul'; })[0], cr = $('#m-canvas').getBoundingClientRect();
+        $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: cr.left + hm.x, clientY: cr.top + hm.y, bubbles: true }));
+        var g = 0; while ($('#talk').hidden && g++ < 300) await wait(20);
+        ok(!$('#talk').hidden && /하늘/.test($('#talk .talk-name').textContent), '? 말풍선을 누르면 걸어가서 하늘에게 말 걸기');
+        await passTalk(); await wait(50);
+        ok(marksNow(4000).length === 0, '둘 다 말 걸면 마당에 ? 없음');
+        ok(JSON.stringify([PrivacyApp.state().trust, PrivacyApp.state().stats, PrivacyApp.state().flags]) === st0 && PrivacyApp.state().mapTarget === 'pro_1', '말 걸기는 관계·점수·플래그를 바꾸지 않음');
+        // 교실: 목적지 새봄 = ?(핀 대신), 할 말 없는 민준은 ? 없음
+        var cls = TW.SCENES[0];
+        TM.place(cls.ox + 15, 12, 'up'); await wait(50); marksNow();
+        var mk = TM.marker();
+        ok(mk.kind === 'talk' && mk.who === 'saebom', '같은 장면의 목적지 인물은 ? ' + JSON.stringify(mk));
+        ok(marksNow().length === 0, '할 말 없는 민준에겐 ? 없음 ' + whoList());
+        // 다른 걷기: 지금 상태에서 조건이 맞는 반응 줄이 있는 사람에게만 ?(목적지 인물 제외)
+        await play(R.A, { upto: 3, stopAtMap: true });
+        TM.place(cls.ox + 15, 15, 'up'); await wait(3400);
+        var trg = TW.triggers[PrivacyApp.state().mapTarget], rs = PrivacyApp.state();
+        var expect = trg.cast.filter(function (c) {
+          if (c.who === trg.target.npc || TW.sceneAt(c.x) !== TW.sceneAt(TM.me().x)) return false;
+          if (trg.castLines && trg.castLines[c.who]) return true;
+          var hit = (TW.idle[c.who] || []).filter(function (l) { return PrivacyEngine.evalCond(l.if, rs); })[0];
+          return !!(hit && hit.if);
+        }).map(function (c) { return c.who; }).sort().join(',');
+        var got = marksNow().map(function (m) { return m.who; }).sort().join(',');
+        ok(got === expect, PrivacyApp.state().mapTarget + ' 시작 장면: ? 대상이 규칙과 같음 [' + got + '] = [' + expect + ']');
+      }
+    }
+
     else if (s === 'marker') {
       // ❗가 위 안내 상자·아래 버튼·안내 문구에 가리지 않는지(화면 좌표로 겹침 검사)
       function markerVisible(label) {
@@ -735,6 +797,7 @@
       }
       $('#btn-new').click(); await wait(300);
       var mk0 = markerVisible('첫날 아침 내 방');
+      ok(!!mk0 && mk0.kind === 'dest', '다른 장면 목적지는 핀(dest) ' + (mk0 && mk0.kind));
       var WDm = window.PRIVACY_WORLD;
       ok(!!mk0 && !!WDm.DOORS[mk0.tx + ',' + mk0.ty] && WDm.sceneAt(mk0.tx).id === 'room', '방 안에서 목적지가 다른 장면이면 ❗는 방문(출입구)에 ' + JSON.stringify(mk0));
       // 집 밖(마을 길)으로 나가면 ❗는 학교로 가는 출입구 쪽
@@ -1071,6 +1134,15 @@
       if (s === 'shot-warning') { $('#btn-new').click(); await wait(1200); return; } // 시작 직후 주의 화면
       if (s === 'shot-photo') { $('#btn-new').click(); await play(R.A, { upto: 4 }); await wait(600); return; } // 하늘 DM의 흐린 사진
       if (s === 'shot-start-noname') { await wait(300); return; } // 공통 정보 없는 시작 화면(이름 입력칸)
+      if (/^shot-marks-/.test(s)) { // 지도 표시(목적지 핀·? 말풍선) 확인용: 그 자리로 순간이동
+        $('#btn-new').click(); await wait(300);
+        var MW = window.PRIVACY_WORLD, MD = PrivacyMap.debug, sox = function (id) { return MW.SCENES.filter(function (c) { return c.id === id; })[0].ox; };
+        if (s === 'shot-marks-sleep') await play(R.A, { upto: 3, stopAtMap: true }); // 사건 2: 엎드려 자는 민준
+        if (s === 'shot-marks-library') await play(R.A, { upto: 10, stopAtMap: true }); // 사건 6: 도서관 공용 PC
+        var spot = { 'shot-marks-yard': ['yard', 14, 9, 'left'], 'shot-marks-class': ['classroom', 15, 13, 'up'], 'shot-marks-sleep': ['classroom', 22, 14, 'right'], 'shot-marks-library': ['library', 16, 11, 'up'], 'shot-marks-room': ['room', 12, 12, 'down'] }[s];
+        if (spot) MD.place(sox(spot[0]) + spot[1], spot[2], spot[3]);
+        await wait(600); return;
+      }
       if (/^shot-nf-/.test(s)) { // 렌즈 안에 갇힌 밤: 대치(선택지) · 촬영(REC) · 교실 반응(선택지)
         var nr = nfRoute(R, NF_FIGHT);
         $('#btn-new').click();
