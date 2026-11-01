@@ -236,7 +236,9 @@
     who('saebom', 'yard', 8, 14, 'up'), who('jiho', 'yard', 11, 14, 'up')];
 
   var STAGES = {
-    pro_1: { place: 'classroom', tint: 'day', card: '방과 후 · 오후 5:30 — 축제 준비 중', me: P('classroom', 15, 10, 'up'), cast: classmates,
+    // 첫 단톡방: 새봄·하늘·지호·민준이 모두 주인공 둘레에(확대 무대에서 한 화면에 보이게 — 2026-11-01 사용자)
+    pro_1: { place: 'classroom', tint: 'day', card: '방과 후 · 오후 5:30 — 축제 준비 중', me: P('classroom', 15, 10, 'up'),
+      cast: [who('saebom', 'classroom', 12, 8, 'down'), who('haneul', 'classroom', 18, 9, 'left'), who('jiho', 'classroom', 11, 11, 'right'), who('minjun', 'classroom', 19, 11, 'left')],
       bubbles: [{ on: '다 올린다', who: 'jiho', text: '…' }, { on: '넌 뭐 할래', who: 'saebom', text: '👀' }] },
     c1_e1_a: { place: 'room', tint: 'evening', cast: [] },
     c1_e1_b: { place: 'room', tint: 'evening', cast: [] },
