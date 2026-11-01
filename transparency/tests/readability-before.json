@@ -1,0 +1,170 @@
+[
+ {
+  "scene": 0,
+  "state": "arrive",
+  "chars": 229,
+  "buttons": 5
+ },
+ {
+  "scene": 0,
+  "state": "done",
+  "chars": 229,
+  "buttons": 5
+ },
+ {
+  "scene": 1,
+  "state": "arrive",
+  "chars": 220,
+  "buttons": 7
+ },
+ {
+  "scene": 1,
+  "state": "done",
+  "chars": 220,
+  "buttons": 7
+ },
+ {
+  "scene": 2,
+  "state": "arrive",
+  "chars": 370,
+  "buttons": 7
+ },
+ {
+  "scene": 2,
+  "state": "done",
+  "chars": 451,
+  "buttons": 13
+ },
+ {
+  "scene": 3,
+  "state": "arrive",
+  "chars": 872,
+  "buttons": 32
+ },
+ {
+  "scene": 3,
+  "state": "done",
+  "chars": 1127,
+  "buttons": 32
+ },
+ {
+  "scene": 4,
+  "state": "arrive",
+  "chars": 464,
+  "buttons": 7
+ },
+ {
+  "scene": 4,
+  "state": "done",
+  "chars": 611,
+  "buttons": 9
+ },
+ {
+  "scene": 5,
+  "state": "arrive",
+  "chars": 229,
+  "buttons": 5
+ },
+ {
+  "scene": 5,
+  "state": "done",
+  "chars": 229,
+  "buttons": 5
+ },
+ {
+  "scene": 6,
+  "state": "arrive",
+  "chars": 351,
+  "buttons": 6
+ },
+ {
+  "scene": 6,
+  "state": "done",
+  "chars": 465,
+  "buttons": 8
+ },
+ {
+  "scene": 7,
+  "state": "arrive",
+  "chars": 827,
+  "buttons": 31
+ },
+ {
+  "scene": 7,
+  "state": "done",
+  "chars": 1058,
+  "buttons": 31
+ },
+ {
+  "scene": 8,
+  "state": "arrive",
+  "chars": 488,
+  "buttons": 6
+ },
+ {
+  "scene": 8,
+  "state": "done",
+  "chars": 621,
+  "buttons": 7
+ },
+ {
+  "scene": 9,
+  "state": "arrive",
+  "chars": 208,
+  "buttons": 5
+ },
+ {
+  "scene": 9,
+  "state": "done",
+  "chars": 208,
+  "buttons": 5
+ },
+ {
+  "scene": 10,
+  "state": "arrive",
+  "chars": 372,
+  "buttons": 6
+ },
+ {
+  "scene": 10,
+  "state": "done",
+  "chars": 446,
+  "buttons": 8
+ },
+ {
+  "scene": 11,
+  "state": "arrive",
+  "chars": 834,
+  "buttons": 31
+ },
+ {
+  "scene": 11,
+  "state": "done",
+  "chars": 1127,
+  "buttons": 31
+ },
+ {
+  "scene": 12,
+  "state": "arrive",
+  "chars": 510,
+  "buttons": 6
+ },
+ {
+  "scene": 12,
+  "state": "done",
+  "chars": 684,
+  "buttons": 7
+ },
+ {
+  "scene": 13,
+  "state": "arrive",
+  "chars": 413,
+  "buttons": 6
+ },
+ {
+  "scene": 13,
+  "state": "done",
+  "chars": 460,
+  "buttons": 10
+ }
+]
