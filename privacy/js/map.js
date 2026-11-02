@@ -39,6 +39,7 @@
   var canvas, ctx, wrap;
   var active = false, raf = null, tmr = null, lastT = 0;
   var camS = null, camT = 0, camTarget = { x: 0, y: 0 }, frameDt = 0; // 걷기 카메라(camS): 데드존 — 가운데 상자를 벗어날 때만 바로 따라감. camTarget = 그 목표(프로브용)
+  var stageTint = null; // 장면 무대의 시간대(STAGES tint, 없으면 시각 줄로 정함)
   var mode = null, stageInfo = null, focus = null, gen = 0; // gen: show()마다 +1(지난 인사말이 새 걷기를 넘기지 않게) // focus: 장면 중 주인공을 둘 화면 위치(비율). 폰·선택 상자에 가리지 않게 // mode: 'walk'(걷기·입력) | 'stage'(장면 무대: 그리기만)
   var run = null, trig = null, targetId = null;
   var cast = [], blocked = {};
@@ -112,6 +113,7 @@
     trig = WD.triggers[targetId];
     cast = trig.cast.slice();
     passGreeted = {}; talked = {}; talkMarks = []; lastLabel = '';
+    streak = { who: null, n: 0 }; $('btn-map-skip').classList.remove('primary');
     blocked = {};
     cast.forEach(function (c) { blocked[c.x + ',' + c.y] = true; loadSprite(c.who, 'char_' + c.who + '.png', window.PrivacyCast.walk(c.who)); });
     var look = o.playerLook();
@@ -130,7 +132,7 @@
 
     $('m-time').textContent = trig.time;
     $('m-mission').textContent = trig.mission;
-    held = []; path = null; actOnArrive = false; busy = false; bubbles = [];
+    held = []; path = null; actOnArrive = false; busy = false; bubbles = []; tapWant = null;
     mode = 'walk'; stageInfo = null; focus = null; gen++; camS = null;
     lastArea = '';
     updateArea();
@@ -146,6 +148,7 @@
   function stage(st, opts) {
     opts = opts || {};
     mode = 'stage'; stageInfo = st; trig = null; targetId = null; focus = opts.focus || null; gen++; camS = null;
+    stageTint = st.tint || WD.timeTint(opts.time); // tint가 없는 무대는 장면 첫 시각 줄(아침·오후·저녁·밤)로
     cast = st.cast.slice(); blocked = {};
     cast.forEach(function (c) { loadSprite(c.who, 'char_' + c.who + '.png', window.PrivacyCast.walk(c.who)); });
     var look = o.playerLook();
@@ -259,11 +262,14 @@
     if (mode !== 'walk') return;
     if (window.PrivacyTalk.isOpen()) { window.PrivacyTalk.next(); return; }
     if (busy || me.moving) return;
-    var ns = neighbors();
-    if (!ns.length) { say('가까이 가서 눌러 보세요. {!}는 갈 곳, {?}는 말 걸어 볼 사람이에요.'); return; }
-    var t = ns.filter(isTarget)[0];
-    var spoke = t || ns[0];
-    if (spoke.type === 'npc') { talked[spoke.c.who] = true; updateLabel(); } // 말 건 사람의 ?는 이번 걷기에서 지운다
+    var spoke = pick();
+    tapWant = null; // 누른 상대에게 한 번 말 걸면 끝
+    if (!spoke) { say('가까이 가서 눌러 보세요. {!}는 갈 곳, {?}는 말 걸어 볼 사람이에요.'); return; }
+    var t = isTarget(spoke) ? spoke : null;
+    var fresh = spoke.type === 'npc' && !!talkReason(spoke.c); // ?가 떠 있던 사람(할 말이 남아 있음)
+    var whoKey = spoke.type === 'npc' ? spoke.c.who : 'obj:' + spoke.ob.id;
+    streak = streak.who === whoKey ? { who: whoKey, n: streak.n + 1 } : { who: whoKey, n: 1 }; // 같은 상대에게 연속 몇 번째인지
+    if (spoke.type === 'npc') { talked[spoke.c.who] = true; updateHint(); } // 말 건 사람의 ?는 이번 걷기에서 지운다(버튼 글자도 바로 따라감)
     if (t) {
       me.dir = t.dir;
       busy = true;
@@ -278,14 +284,23 @@
       talk(greet).then(function () { busy = false; if (active && mode === 'walk' && gen === g0) o.onEnter(); });
       return;
     }
-    var n = ns[0];
+    var n = spoke;
     me.dir = n.dir;
     say('');
     if (n.type === 'npc') {
       var lines = WD.idle[n.c.who] || [{ text: '…' }];
       var hit = lines.filter(function (l) { return o.evalCond(l.if); })[0];
       var own = trig.castLines && trig.castLines[n.c.who]; // 이 걷기 구간에서만 하는 말(오프닝 자기소개 등)
-      talk([personLine(n.c.who, own || hit.text)]);
+      var out = [personLine(n.c.who, own || hit.text)];
+      // 할 말이 끝난 사람(?가 없던 사람)에게 또 말을 걸면: 대사 뒤에 다음 목적지 한 줄. 같은 사람에게 3번째부터는 더 또렷하게
+      var loud = streak.n >= 3;
+      if (!fresh) out.push({ who: null, name: null, text: nudgeText(loud) });
+      var g1 = gen;
+      talk(out).then(function () {
+        if (!loud || fresh || !active || mode !== 'walk' || gen !== g1) return;
+        say('{!} 목적지: ' + targetBox().name + ' — ‘목적지로 바로 가기’를 눌러도 돼요.');
+        $('btn-map-skip').classList.add('primary');
+      });
     } else {
       talk([{ who: null, name: null, text: WD.lookFor(n.ob, trig && trig.time) }]); // 매점처럼 날마다 바뀌는 문구
     }
@@ -333,14 +348,32 @@
       sayTimer = setTimeout(function () { if (n.textContent === text) say(''); else n.classList.remove('fade-out'); }, o.reduceMotion() ? 0 : 500);
     }, 1300);
   }
+  // 말 걸기·조사하기가 향할 상대: 목적지 > ?가 뜬 사람 > (바라보는 쪽부터) 그냥 옆에 있는 사람·사물. 버튼 글자도 같은 상대를 가리킨다
+  //   단, 화면에서 사람·사물을 눌러 걸어간 경우(tapWant)는 누른 그 상대
+  var tapWant = null;
+  function pick() {
+    var ns = neighbors();
+    var tapped = tapWant && ns.filter(function (n) { return tapWant.npc ? n.type === 'npc' && n.c.who === tapWant.npc : n.type === 'obj' && n.ob.id === tapWant.obj; })[0];
+    return tapped || ns.filter(isTarget)[0] || ns.filter(function (n) { return n.type === 'npc' && talkReason(n.c); })[0] || ns[0] || null;
+  }
+  // 다음 목적지 한 줄: 할 일(mission) '집에 가서 쉬기 — 내 방 컴퓨터' → '지금은 집에 가서 쉬자. (내 방 컴퓨터)'
+  var streak = { who: null, n: 0 };
+  function nudgeText(loud) {
+    var parts = String(trig.mission || '').split(' — ');
+    var line = '지금은 ' + parts[0].replace(/기$/, '자') + '.' + (parts[1] ? ' (' + parts[1] + ')' : '');
+    return loud ? '같은 말만 돌아온다. ' + line : line;
+  }
   function updateHint() {
-    var near = nearTarget();
+    var p = pick(), near = !!p && isTarget(p);
     var btn = $('btn-map-act');
-    // 옆에 ?가 뜬 인물이 있으면 버튼에도 그 이름(지도 그림을 못 보는 사람도 누구에게 말 걸 수 있는지 알게)
-    var curious = near ? null : neighbors().filter(function (n) { return n.type === 'npc' && talkReason(n.c); })[0];
-    rich(btn, near ? (trig.target.npc ? '{?} ' + targetBox().name + '에게 말 걸기' : '{!} ' + targetBox().name + ' 조사하기')
-      : curious ? '{?} ' + o.story.characters[curious.c.who].name + '에게 말 걸기' : '말 걸기 · 조사하기');
+    // ?는 지도에 실제로 ?가 뜬 사람(목적지 인물·할 말이 남은 사람)에게만. 그냥 옆에 있는 사람은 이름만, 버튼도 보조 모양(ghost)
+    var asks = !!p && !near && p.type === 'npc' && !!talkReason(p.c);
+    rich(btn, !p ? '말 걸기 · 조사하기'
+      : near ? (trig.target.npc ? '{?} ' + targetBox().name + '에게 말 걸기' : '{!} ' + targetBox().name + ' 조사하기')
+      : p.type === 'npc' ? (asks ? '{?} ' : '') + o.story.characters[p.c.who].name + '에게 말 걸기'
+      : p.ob.name + ' 조사하기');
     btn.classList.toggle('primary', near);
+    btn.classList.toggle('ghost', !near && !asks);
     updateLabel();
   }
   // ? 표시 이유: 'target' 목적지 인물 · 'lines' 이번 걷기에서 할 말 · 'react' 지금까지의 선택에 반응하는 한 줄 · null 없음
@@ -381,7 +414,7 @@
       if (boxContains(b)(me.x + d[0], me.y + d[1])) me.dir = dir;
     });
     savePos(); updateArea(); updateHint();
-    say(b.name + ' 앞에 왔어요. 말 걸기를 눌러 보세요.');
+    say(b.name + ' 앞에 왔어요. ' + (b.obj ? '조사하기' : '말 걸기') + '를 눌러 보세요.'); // 사물이면 '조사하기'
     $('btn-map-act').focus();
   }
 
@@ -395,7 +428,7 @@
       e.preventDefault();
       if (window.PrivacyTalk.isOpen()) { if (busy) return; window.PrivacyTalk.close(); } // 걸으면 대화창은 닫힌다(목적지 인사말은 끝까지)
       if (e.repeat && held.indexOf(dir) >= 0) return; // 길게 누름은 held로 이어 간다
-      path = null; actOnArrive = false;
+      path = null; actOnArrive = false; tapWant = null;
       if (held.indexOf(dir) < 0) held.push(dir);
       if (!me.moving && !busy) { if (!tryStep(dir)) queued = null; }
       else queued = dir; // 걷는 중 짧게 누른 키: 지금 칸이 끝나면 한 칸
@@ -419,9 +452,10 @@
       var box = npc ? { x: npc.x, y: npc.y, w: 1, h: 1 } : ob;
       p = WD.findPath({ x: me.x, y: me.y }, WD.adjacentTo({ contains: boxContains(box) }), blocked);
       actOnArrive = true;
+      tapWant = npc ? { npc: npc.who } : { obj: ob.id };
     } else {
       p = WD.findPath({ x: me.x, y: me.y }, function (x, y) { return x === tx && y === ty; }, blocked);
-      actOnArrive = false;
+      actOnArrive = false; tapWant = null;
     }
     if (!p) { actOnArrive = false; return; }
     held = [];
@@ -485,8 +519,84 @@
     }
     return sceneImg[sc.id];
   }
-  var STAGE_ZOOM = 1.3; // 장면 무대: 폰·선택 상자 옆에 인물이 보이게 조금 당겨 본다(focus로 카메라 이동)
-  var lastScene = null, fadeUntil = 0;
+  var STAGE_ZOOM = 1.3; // 장면 무대: 폰·선택 상자 옆에 인물이 보이게 조금 당겨 본다(보이는 영역 가운데로 카메라 이동)
+  var lastScene = null, fadeUntil = 0, lastView = null;
+  // 장면 무대에서 지도를 가리는 것(폰·모니터 창, 선택 상자, 대화창)을 뺀 '보이는 지도 영역'(캔버스 좌표).
+  // 가리는 상자들의 가장자리로 캔버스를 나눈 사각형 중, 어떤 상자와도 겹치지 않는 가장 넓은 것(넓은 화면: 폰 오른쪽·선택 상자 위 / 휴대폰: 아래 시트 위).
+  var OCCLUDERS = ['#g-phone', '#g-dock', '#talk'];
+  function freeRect() {
+    var cr = canvas.getBoundingClientRect(), boxes = [], xs = [0, viewW], ys = [0, viewH];
+    OCCLUDERS.forEach(function (q) {
+      var e = document.querySelector(q);
+      if (!e || e.hidden || !e.getClientRects().length) return;
+      var b = e.getBoundingClientRect();
+      if (b.width < 8 || b.height < 8) return; // 빈 선택 상자 자리
+      var r = { x0: Math.max(0, b.left - cr.left), y0: Math.max(0, b.top - cr.top), x1: Math.min(viewW, b.right - cr.left), y1: Math.min(viewH, b.bottom - cr.top) };
+      if (r.x1 <= r.x0 || r.y1 <= r.y0) return;
+      boxes.push(r); xs.push(r.x0, r.x1); ys.push(r.y0, r.y1);
+    });
+    var best = { x0: 0, y0: 0, x1: viewW, y1: viewH }, bestA = boxes.length ? -1 : Infinity;
+    for (var a = 0; a < xs.length && boxes.length; a++) for (var b2 = 0; b2 < xs.length; b2++) {
+      if (xs[b2] - xs[a] < 80) continue;
+      for (var c = 0; c < ys.length; c++) for (var d = 0; d < ys.length; d++) {
+        if (ys[d] - ys[c] < 80) continue;
+        var cand = { x0: xs[a], x1: xs[b2], y0: ys[c], y1: ys[d] }, area = (cand.x1 - cand.x0) * (cand.y1 - cand.y0);
+        if (area <= bestA) continue;
+        if (boxes.some(function (o) { return o.x0 < cand.x1 && cand.x0 < o.x1 && o.y0 < cand.y1 && cand.y0 < o.y1; })) continue;
+        best = cand; bestA = area;
+      }
+    }
+    return bestA < 0 ? { x0: 0, y0: 0, x1: viewW, y1: viewH } : best; // 남는 곳이 아주 좁으면 화면 전체 기준
+  }
+  // 카메라 한 축: want = 원하는 카메라 위치, 장면 a0~a0+len, 보이는 영역 v0~v1(캔버스 좌표), full = 캔버스 길이.
+  // 보이는 영역이 장면 안에 들어오게 하고, 되도록 캔버스 전체도 장면 안에(가려진 곳 틈으로도 빈 곳이 안 보이게).
+  function fitAxis(want, a0, len, v0, v1, full) {
+    if (len <= v1 - v0) return a0 + len / 2 - (v0 + v1) / 2; // 장면이 더 작으면 보이는 영역 가운데
+    var lo = a0 - v0, hi = a0 + len - v1;
+    if (len >= full && Math.max(lo, a0) <= Math.min(hi, a0 + len - full)) { lo = Math.max(lo, a0); hi = Math.min(hi, a0 + len - full); }
+    return Math.max(lo, Math.min(hi, want));
+  }
+  // 장면 그림 바깥(장면이 화면보다 작을 때 남는 곳): 검정 대신 같은 그림을 아주 작게 줄였다 키운 흐린 배경 + 살짝 어둡게
+  var blurImg = {};
+  function drawBackdrop(sc, img) {
+    ctx.fillStyle = '#1F2A27';
+    ctx.fillRect(0, 0, viewW, viewH);
+    if (!img) return;
+    var b = blurImg[sc.id];
+    if (!b) {
+      b = blurImg[sc.id] = document.createElement('canvas');
+      b.width = 32; b.height = 18;
+      var bc = b.getContext('2d');
+      bc.imageSmoothingEnabled = true; bc.imageSmoothingQuality = 'high';
+      bc.drawImage(img, 0, 0, 32, 18);
+    }
+    var s = Math.max(viewW / 32, viewH / 18);
+    ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(b, (viewW - 32 * s) / 2, (viewH - 18 * s) / 2, 32 * s, 18 * s);
+    ctx.restore();
+    ctx.fillStyle = 'rgba(15,20,18,0.35)';
+    ctx.fillRect(0, 0, viewW, viewH);
+  }
+  // 저녁·밤(2026-11-02): 장면 그림은 낮 그림이라 옛 옅은 덮개(TINT)만으로는 창밖·햇빛 무늬가 낮처럼 보였다.
+  //   → 인물을 그리기 전에 그림 층에만 색을 곱한다(multiply). 밤 = 남색(창밖 하늘·바닥 햇빛 무늬가 함께 어두워짐), 저녁 = 노을빛.
+  //   밤의 내 방은 책상 불빛(SCENES[].lamp)을 따뜻하게 밝힌다. 인물은 그 위에 그려 알아보기 쉽게 두고, 마지막에 TINT로 시간대만 맞춘다.
+  var SCENE_MUL = { evening: 'rgb(244,200,164)', night: 'rgb(78,92,150)' };
+  function sceneLight(sc, tint, bx, by) {
+    if (!SCENE_MUL[tint]) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = SCENE_MUL[tint];
+    ctx.fillRect(0, 0, viewW, viewH);
+    if (tint === 'night' && sc.lamp) {
+      var lx = bx + sc.lamp.x * T, ly = by + sc.lamp.y * T, lr = sc.lamp.r * T;
+      var g = ctx.createRadialGradient(lx, ly, 0, lx, ly, lr);
+      g.addColorStop(0, 'rgba(255,214,150,0.42)'); g.addColorStop(0.5, 'rgba(255,200,130,0.16)'); g.addColorStop(1, 'rgba(255,190,120,0)');
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = g;
+      ctx.fillRect(lx - lr, ly - lr, lr * 2, lr * 2);
+    }
+    ctx.restore();
+  }
   function draw(t) {
     var sc = WD.sceneAt(Math.round(me.fx)) || WD.SCENES[0];
     if (lastScene && lastScene !== sc.id && !o.reduceMotion()) fadeUntil = t + 260; // 장면이 바뀌면 짧게 어두워졌다 밝아짐
@@ -496,15 +606,18 @@
     T = Math.max(28, fit * (mode === 'stage' ? STAGE_ZOOM : 1));
     var sx0 = sc.ox * T, sw = WD.SW * T, sh = WD.SH * T;
     var px = me.fx * T + T / 2, py = me.fy * T + T / 2;
-    var f = typeof focus === 'function' ? focus() : focus; // 장면 중엔 화면 크기에 따라 매번 다시
     var cx, cy;
     if (mode === 'stage') {
-      var fx = f ? f.x : 0.5, fy = f ? f.y : 0.5;
-      // 주인공을 focus 자리에 두려고 장면 밖(폰·선택 상자 뒤)까지 조금 넘어갈 수 있음
-      // 장면이 화면보다 작아도(휴대폰) 주인공을 focus 자리로 옮길 수 있게, 장면 가장자리가 화면 끝에서 10%까지 들어오는 것을 허용
-      cx = Math.max(sx0 - viewW * 0.9, Math.min(sx0 + sw - viewW * 0.1, px - viewW * fx));
-      cy = Math.max(-viewH * 0.9, Math.min(sh - viewH * 0.1, py - viewH * fy));
-      camS = { x: cx, y: cy };
+      // 장면 무대(2026-11-02 플레이테스트): 폰·선택 상자·대화창에 가리지 않는 '보이는 지도 영역'(freeRect) 가운데쯤에 주인공을 두되,
+      // 카메라는 지금 장면 하나(ox~ox+SW, 0~SH) 안에서만 움직인다 — 장면 밖(검은 빈 곳)을 비추지 않게.
+      // 보이는 영역이 장면보다 크면 장면을 그 영역 가운데에 두고, 남는 곳은 흐린 배경(drawBackdrop)이 채운다.
+      var fr = freeRect();
+      cx = fitAxis(px - (fr.x0 + fr.x1) / 2, sx0, sw, fr.x0, fr.x1, viewW);
+      cy = fitAxis(py - (fr.y0 + (fr.y1 - fr.y0) * 0.62), 0, sh, fr.y0, fr.y1, viewH); // 몸이 칸 위로 2칸쯤 서므로 조금 아래에
+      // 선택 상자가 늦게 나타나 영역이 바뀌면 부드럽게 옮겨 간다(움직임 줄이기·처음·크기 변경은 바로)
+      var k = !camS || camS.T !== T || o.reduceMotion() ? 1 : Math.min(1, frameDt / 140);
+      camS = { x: camS && k < 1 ? camS.x + (cx - camS.x) * k : cx, y: camS && k < 1 ? camS.y + (cy - camS.y) * k : cy, T: T };
+      lastView = { T: T, free: fr, scene: { x0: sx0, y0: 0, x1: sx0 + sw, y1: sh } };
     } else {
       // 걷기: 데드존 카메라(화면 가운데 상자 안에서는 배경이 그대로). 장면이 화면보다 작으면 가운데 고정
       if (!camS || camT !== T || camS.scene !== sc.id) camS = { x: px - viewW / 2, y: py - viewH / 2, scene: sc.id };
@@ -513,13 +626,13 @@
       if (py > ccy + hy) camS.y = py - hy - viewH / 2; else if (py < ccy - hy) camS.y = py + hy - viewH / 2;
       camS.x = sw <= viewW ? sx0 - (viewW - sw) / 2 : Math.max(sx0, Math.min(sx0 + sw - viewW, camS.x));
       camS.y = sh <= viewH ? -(viewH - sh) / 2 : Math.max(0, Math.min(sh - viewH, camS.y));
+      lastView = { T: T, free: { x0: 0, y0: 0, x1: viewW, y1: viewH }, scene: { x0: sx0, y0: 0, x1: sx0 + sw, y1: sh } };
     }
     camTarget.x = camS.x; camTarget.y = camS.y;
     camT = T;
     cam.x = Math.round(camS.x); cam.y = Math.round(camS.y); // 정수 픽셀: 그림이 반 픽셀씩 떨리지 않게
-    ctx.fillStyle = '#1F2A27';
-    ctx.fillRect(0, 0, viewW, viewH);
     var img = sceneImage(sc), bx = Math.round(sx0 - cam.x), by = Math.round(-cam.y);
+    drawBackdrop(sc, img);
     if (img) {
       ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, bx, by, Math.round(sw), Math.round(sh));
@@ -540,6 +653,8 @@
       ctx.fillStyle = '#16201F'; ctx.font = 'bold ' + Math.round(T * 0.32) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(pc.label || '3', lx + T * 0.36, ly + T * 0.27);
     }
+    var tint = mode === 'stage' ? stageTint : trig.tint || WD.timeTint(trig.time);
+    sceneLight(sc, tint, bx, by);
     var list = []; // 앞뒤 순서: { y: 아래쪽 행, fn } — 가구는 그림에 그려져 있으므로 인물만
     cast.forEach(function (c) {
       if (WD.sceneAt(c.x) !== sc) return;
@@ -550,7 +665,6 @@
     tags = [];
     list.forEach(function (d) { d.fn(); });
     drawTags();
-    var tint = mode === 'stage' ? stageInfo.tint : trig.tint;
     if (TINT[tint] && !(sc.id === 'room' && tint === 'day')) { ctx.fillStyle = TINT[tint]; ctx.fillRect(0, 0, viewW, viewH); }
     if (fadeUntil > t) { ctx.fillStyle = 'rgba(15,20,18,' + Math.min(1, (fadeUntil - t) / 260) + ')'; ctx.fillRect(0, 0, viewW, viewH); }
     if (mode === 'walk') { drawTalkMarks(t); drawMarker(t); }
@@ -812,6 +926,14 @@
       marker: function () { return lastMarker; },
       talkMarks: function () { return talkMarks.map(function (m) { return { who: m.who, why: m.why, x: m.x, y: m.y }; }); }, // 목적지 인물 말고 ?가 뜬 사람들(마지막 그린 화면 기준)
       cam: function () { return { x: cam.x, y: cam.y, tx: camTarget.x, ty: camTarget.y }; },
+      // 보이는 지도 영역(free)과 장면 그림이 화면에 놓인 자리(scene, 캔버스 좌표) — 장면 밖이 보이는지(gap) 검사용
+      view: function () {
+        if (!lastView) return null;
+        var s = lastView.scene, f = lastView.free;
+        var sc = { x0: s.x0 - cam.x, y0: s.y0 - cam.y, x1: s.x1 - cam.x, y1: s.y1 - cam.y };
+        return { T: lastView.T, free: f, scene: sc, tint: mode === 'stage' ? stageTint : trig && trig.tint,
+          gap: { left: Math.max(0, sc.x0 - f.x0), right: Math.max(0, f.x1 - sc.x1), top: Math.max(0, sc.y0 - f.y0), bottom: Math.max(0, f.y1 - sc.y1) } };
+      },
       walkFrame: walkFrame,
       tick: function (ms) { loop(lastT + ms); }, // 검증용: 화면 루프를 정해진 시간만큼 한 번 돌림
       routeTo: function (tx, ty) { return WD.findPath({ x: me.x, y: me.y }, function (x, y) { return x === tx && y === ty; }, blocked); },

@@ -18,7 +18,7 @@
     'hurt.saebom': 'e4=forward || e4b=blame',
     'hurt.jiho': 'e3=capture',
     'hurt.haneul': 'e6=post || e6b=deny|cap',
-    harmed_others: 'e4=forward || e6=post || e7=join || e9=share || e2post=story'
+    harmed_others: 'e4=forward || e6=post || e7=join || e9=share || e2post=story || e3=capture || e6b=cap' // 2026-11-02: 지호 대화 캡처 전달·하늘 DM 캡처 전달 추가(엔딩 판정과 무관, 책임 문단만)
   };
 
   /* ── 조건 ───────────────────────── */

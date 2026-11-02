@@ -243,6 +243,23 @@
       if (line.meta) li.appendChild(rich('span', 'set-meta', fill(line.meta)));
       return li;
     }
+    // 속마음(kind:'thought'): 보낸 말풍선이 아니라 회색 들여쓴 해설처럼. 화면 읽기에는 '속마음:'을 앞에 읽힌다
+    if (line.kind === 'thought') {
+      li = el('li', 'ln thought');
+      li.appendChild(el('span', 'sr-only', '속마음: '));
+      li.appendChild(rich('span', null, fill(line.text)));
+      return li;
+    }
+    // 휴대폰 알림(kind:'push'): PC·모니터 창 안에 친구 개인톡이 섞여 보이지 않게, 내 휴대폰에 뜬 알림 카드로
+    if (line.kind === 'push') {
+      li = el('li', 'ln push');
+      var card = el('div', 'push-card');
+      var pn = el('span', 'push-head', '📱 휴대폰 알림 · ' + (story.characters[who] || { name: who }).name + (line.meta ? ' (' + line.meta + ')' : ''));
+      card.appendChild(pn);
+      card.appendChild(rich('p', null, fill(line.text)));
+      li.appendChild(card);
+      return li;
+    }
     if (who === 'sys') { li = el('li', 'ln sys'); li.appendChild(rich('span', null, fill(line.text))); return li; }
     if (who === 'narr') { li = rich('li', 'ln narr', fill(line.text)); return li; }
 
@@ -444,6 +461,8 @@
     var who = line.who || 'narr', t = plain(fill(line.text || ''));
     if (line.kind === 'setting') return t + (line.meta ? ', ' + plain(fill(line.meta)) : '');
     if (line.kind === 'image') return '사진: ' + t;
+    if (line.kind === 'thought') return '속마음: ' + t;
+    if (line.kind === 'push') return '휴대폰 알림, ' + (story.characters[who] || { name: who }).name + (line.meta ? ' ' + plain(fill(line.meta)) : '') + ': ' + t;
     if (who === 'narr' || who === 'sys') return t;
     var name = who === 'me' ? player.nickname + ' (나)' : (story.characters[who] || { name: who }).name;
     return name + ': ' + t + (line.meta ? ' (' + plain(fill(line.meta)) + ')' : '');
@@ -505,8 +524,9 @@
   }
   // 그 자리 대화(장소 장면)는 포켓몬식 대화창으로 한 줄씩
   function talkLines(list) {
-    var items = list.filter(function (l) { return l.who !== 'sys' && !l.kind; }).map(function (l) {
+    var items = list.filter(function (l) { return l.who !== 'sys' && (!l.kind || l.kind === 'thought' || l.kind === 'push'); }).map(function (l) {
       var who = l.who || 'narr';
+      if (l.kind === 'thought') return { who: null, name: '속마음', text: fill(l.text), line: l }; // 대화창에서는 이름 칸에 '속마음'
       if (who === 'narr') return { who: null, name: null, text: fill(l.text), line: l };
       var ch = story.characters[who] || { name: who };
       return { who: who, name: who === 'me' ? player.nickname + ' (나)' : ch.name, text: fill(l.text), line: l };
@@ -558,7 +578,8 @@
       if (animate && st.card) cgShow(null); // 컷 카드 뒤로 앞 장면 그림이 비치지 않게
       stagedScene = run.scene;
       cutPending = true;
-      ready = window.PrivacyMap.stage(st, { card: animate && st.card ? st.card : null, focus: function () { return stageFocus(device); } });
+      ready = window.PrivacyMap.stage(st, { card: animate && st.card ? st.card : null, focus: function () { return stageFocus(device); },
+        time: (E.visibleLines(story, scene.lines, preChoiceState(run)).filter(function (l) { return l.who === 'sys'; })[0] || {}).text || st.card }); // tint 없는 무대의 시간대
     }
     ready.then(function () {
       cutPending = false;
@@ -761,7 +782,8 @@
   function sceneDate(id) {
     var sc = story.scenes[id], sys = (sc.lines || []).map(function (l) { return E.normLine(l, story); }).filter(function (l) { return l.who === 'sys'; })[0];
     if (sys) return sys.text.split(' · ')[0];
-    var m = /^(D-d|축제 당일|축제 다음 날)/.exec((sc.view && typeof sc.view.title === 'string' ? sc.view.title : '').replace(/^.* · /, ''));
+    // (2026-11-02: 'D-d' 오타로 'D-1 오후 6:05' 같은 제목에서 날짜를 못 읽어 '합성된 셀카' 날짜 칸이 비었음 → D-\d+)
+    var m = /^(D-\d+|축제 당일|축제 다음 날)/.exec((sc.view && typeof sc.view.title === 'string' ? sc.view.title : '').replace(/^.* · /, ''));
     return m ? m[1] : '';
   }
   function eventDate(eventId, sceneId) {

@@ -169,6 +169,12 @@ body[data-view="v-game"] .app { padding-top: 12px; padding-bottom: 16px; }
 .ln.sys { text-align: center; }
 .ln.sys span { display: inline-block; font-size: .8rem; color: var(--text-mute); background: var(--surface); border-radius: 999px; padding: 2px 12px; }
 .ln.narr { color: var(--text-mute); font-size: .95rem; padding: 2px 6px; border-left: 3px solid var(--border); }
+/* 속마음(kind:'thought'): 내가 보낸 말풍선과 헷갈리지 않게 회색 들여쓰기(해설과 같은 결, 점선으로 구분) */
+/* 휴대폰 알림(kind:'push'): PC 창 안 대화와 다른 모양(알림 카드) */
+.ln.push .push-card { max-width: 92%; background: rgba(28, 36, 34, 0.94); color: #FFFFFF; border-radius: 16px; padding: 9px 13px; box-shadow: 0 4px 14px rgba(22, 32, 31, 0.28); }
+.ln.push .push-head { display: block; font-size: .78rem; color: rgba(255, 255, 255, 0.72); margin-bottom: 2px; }
+.ln.push p { margin: 0; }
+.ln.thought { color: var(--text-mute); font-size: .95rem; margin-left: 14px; padding: 2px 6px; border-left: 3px dotted var(--border); }
 .ln.msg { display: flex; gap: 8px; align-items: flex-start; max-width: 88%; }
 .ln.msg.me { margin-left: auto; flex-direction: row-reverse; }
 .av {
@@ -355,7 +361,10 @@ body[data-view="v-map"] .talk { bottom: 64px; }
 /* 선택지: 고를 줄에 ▶ */
 #v-game .choice { position: relative; padding-left: 30px; }
 #v-game .choice::before { content: "▶"; position: absolute; left: 10px; top: 14px; font-size: .7rem; color: var(--text); visibility: hidden; }
-#v-game .choice:hover::before, #v-game .choice:focus-visible::before, #v-game .choice:focus::before { visibility: visible; }
+/* ▶는 한 줄에만: 평소엔 키보드 포커스 줄, 마우스가 선택지 위에 있으면 마우스 올린 줄(2026-11-02 — 두 곳에 동시에 뜨던 것) */
+#v-game .choice:focus-visible::before, #v-game .choice:focus::before { visibility: visible; }
+#v-game .choices:hover .choice::before { visibility: hidden; }
+#v-game .choices:hover .choice:hover::before { visibility: visible; }
 
 /* 좁은 무대(휴대폰): 폰은 아래에서 올라오는 시트, 위쪽에 맵이 보인다 */
 @container (max-width: 720px) {

@@ -12,6 +12,8 @@
  *   { kind:'image', text:'…' }                   → 이미지 자리(실제 이미지는 보여 주지 않음)
  *   { kind:'image', text, photo, placeholder, alt } → 흐리게 올라오는 사진(눌러서 보기). photo가 webp 목록에 없으면 placeholder
  *   { kind:'setting', text:'대화 기록 저장', meta:'켜짐' } → 설정 화면 한 줄
+ *   { who:'me', kind:'thought', text:'…' }      → 속마음(보낸 말풍선이 아니라 회색 들여쓴 줄, 화면 읽기 '속마음:'). 괄호로 감싸지 않는다
+ *   { who:'haneul', kind:'push', meta:'개인톡', text:'…' } → 내 휴대폰 알림 카드(PC·모니터 창 안에서 친구 개인톡이 올 때)
  *   {name} 은 플레이어 별명으로 바뀐다(텍스트로만 표시).
  *   [[…]] = 굵게 강조(색은 그대로, js/emph.js). 정보가 어디까지·몇 명에게·무엇이 보이게 됐는지에만, 장면당(장면 대사+반응) 1~2개.
  *     선택지 text·say·prompt에는 쓰지 않는다(정답 신호 금지). check-story가 짝·개수·위치를 검사한다.
@@ -74,7 +76,7 @@
       minimize: '필요한 범위만 공유한 행동',
       repair:   '지우기·멈추기·사과 같은 수습',
       help:     '선생님·보호자·신고로 도움 연결',
-      serious:  '현실의 안전이 위협받은 상황'
+      serious:  '현실의 안전이 위협받거나 위협한 상황' // 신상 공유·합성 전달처럼 내가 위협한 쪽도 센다(2026-11-02)
     },
 
     chapters: {
@@ -109,7 +111,8 @@
         { if: 'e3=anon', text: '지호의 이름과 사정을 빼고 역할 재신청을 제안했다.' },
         { if: 'e3=capture', text: '지호의 대화 캡처가 새봄이에게, 다시 하늘이에게 전달됐다.' },
         { if: 'e3fix=full', text: '전달을 멈추게 하고 지호에게 먼저 사실을 말했다.' },
-        { if: 'e3fix=part', text: '더 퍼지는 것은 막았지만, 지호는 그 사실을 나중에야 알았다.' },
+        { if: ['e3fix=part', 'e9=ask'], text: '더 퍼지는 것은 막았지만, 지호는 그 사실을 나중에야 알았다.' },
+        { if: ['e3fix=part', 'e9!=ask'], text: '더 퍼지는 것은 막았지만, 지호는 아직 그 사실을 모른다.' }, // 사건 9에서 지호에게 묻지 않으면 끝까지 모름
         { if: 'e3fix=none', text: '지호의 비밀이 교실에 알려졌다.' }
       ] },
       e4: { title: '합성된 셀카', topic: '공개된 정보의 재사용', outcomes: [
@@ -686,8 +689,9 @@
         lines: [
           { who: 'friend', text: '뭐 있어? 하늘이 누구랑 싸웠대?', if: 'e6=peek' },
           { who: 'friend', text: '캡처 떠서 나한테 보내 줘 ㅋㅋ', if: 'e6=peek' },
-          { who: 'haneul', text: '(개인톡) 야 내 계정에 누가 이상한 거 올렸어?? [[팔로워 418명한테 다 떴어]]', if: 'e6=post' },
-          { who: 'haneul', text: '(개인톡) 너 아까 도서관 갔었지', if: 'e6=post' }
+          // 공용 PC 창 안이 아니라 내 휴대폰 알림으로(kind:'push')
+          { who: 'haneul', kind: 'push', meta: '개인톡', text: '야 내 계정에 누가 이상한 거 올렸어?? [[팔로워 418명한테 다 떴어]]', if: 'e6=post' },
+          { who: 'haneul', kind: 'push', meta: '개인톡', text: '너 아까 도서관 갔었지', if: 'e6=post' }
         ],
         prompt: '어떻게 할까?',
         choices: [
@@ -777,7 +781,7 @@
         chapter: 3, event: 'e7', label: '이름만 올린 글',
         view: { type: 'dm', title: '민준' },
         lines: [
-          'minjun: 모르는 사람이 내 계정으로 메시지 보냈어',
+          'minjun: 모르는 사람이 나한테 DM 보냈어',
           'minjun: “[[솔빛 2-3 민준]] 맞죠? 나눔 아직 돼요?” 이러는데',
           'minjun: 나 아무것도 올린 적 없거든. 이거 뭐야?'
         ],
@@ -903,7 +907,8 @@
         chapter: 3, event: 'e8', label: '렌즈 안에 갇힌 밤',
         view: { type: 'place', title: '렌즈 안에 갇힌 밤 · 학교 정문 앞', cg: 'arrival' },
         lines: [
-          'narr: 9시, 학교 정문 앞. 가로등 아래 처음 보는 사람 넷이 서 있다. 한 명은 모자와 마스크로 얼굴을 가렸고, 셋은 등을 돌린 채 휴대폰을 보고 있다.',
+          // 인원수는 쓰지 않는다: 도착 그림(arrival)은 복면 1 + 3명, 바로 다음 마주 선 그림(confrontation)은 복면 1 + 4명이라 숫자를 쓰면 한쪽과 어긋난다
+          'narr: 9시, 학교 정문 앞. 가로등 아래 처음 보는 사람 여럿이 서 있다. 한 명은 모자와 마스크로 얼굴을 가렸고, 나머지는 등을 돌린 채 휴대폰을 보고 있다.',
           { who: 'stranger', text: '진짜 왔네? 댓글에서는 할 말 많더니.', cg: 'confrontation' },
           'me: 너도 사람들 앞에서는 말 잘하네.',
           'bystander: 잠깐, 찍고 있어.',
@@ -972,7 +977,7 @@
           { who: 'saebom', text: '다친 데는 없어? 그런데 어제 거기까지 간 건 걱정돼.', if: 'trust.saebom>=0' },
           { who: 'saebom', text: '…그 영상, 우리 반 단톡에도 올라왔더라. 나는 따로 할 말 없어.', if: 'trust.saebom<0' },
           'jiho: 그 영상만 보고 다 안다는 듯이 말하지는 말자.',
-          { who: 'minjun', text: '괜찮아? 밤새 걱정했어…. 나가지 말라고 했잖아. 연락이라도 해 주지.', if: 'trust.minjun>=0 && !hurt.minjun' },
+          { who: 'minjun', text: '괜찮아? 밤새 걱정했어… 나가지 말라고 했잖아. 연락이라도 해 주지.', if: 'trust.minjun>=0 && !hurt.minjun' },
           { who: 'minjun', text: '…영상은 봤어. 그 얘긴 나한테 하지 마.', if: 'trust.minjun>=0 && hurt.minjun' },
           { who: 'minjun', text: '나가지 말라고 했잖아. …됐어, 지금은 그 얘기 하기 싫어.', if: 'trust.minjun<0 && !hurt.minjun' },
           { who: 'narr', text: '민준이는 나를 한 번 보더니, 아무 말 없이 고개를 돌렸다.', if: 'trust.minjun<0 && hurt.minjun' },
@@ -1070,7 +1075,7 @@
           'narr: 어젯밤, 다른 학교 학생으로 보이는 계정이 우리 부스 후기를 올렸다.',
           { who: 'anon', kind: 'post', text: '솔빛 2-3 사진관 개노잼. 꾸민 거 다 싸구려ㅋ 꾸민 애 지호라던데 센스 실화냐', meta: '좋아요 87 · 댓글 23' },
           { who: 'saebom', kind: 'post', text: '이 계정 주인 찾았음. 이름 ○○○ / △△학교 2학년 / □□동 거주 / 얼굴 사진 첨부. 다들 퍼 가 주세요', meta: '새봄의 스토리 · 조회 156' },
-          { who: 'me', text: '(나도 몇 초짜리 영상으로 판단받았는데…. 지금 이 사람에게 똑같이 하고 있는 건 아닐까?)', if: 'e8_video_spread' },
+          { who: 'me', kind: 'thought', text: '나도 몇 초짜리 영상으로 판단받았는데… 지금 이 사람에게 똑같이 하고 있는 건 아닐까?', if: 'e8_video_spread' },
           { who: 'saebom', text: '(개인톡) 이번엔 우리가 당하고만 있으면 안 돼', if: '!hurt.saebom' },
           { who: 'saebom', text: '지호 이름까지 써서 비웃었잖아', if: '!hurt.saebom' },
           { who: 'saebom', text: '나도 저번에 합성 사진 당했잖아', if: '!hurt.saebom' },

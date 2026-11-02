@@ -71,6 +71,8 @@
 
   // 대화창이 열려 있으면 ▼를 눌러 끝까지 넘긴다
   function realLis() { return $$('#g-log li').filter(function (li) { return !li.classList.contains('typing'); }); } // '입력 중…' 줄 빼고
+  // 대화창에서 말하는 사람: 이름 탭, 또는 한 번에 보기로 여러 줄이 쌓였을 때 첫 줄 앞 굵은 이름(2026-11-02: 할 말 끝난 사람은 '다음 목적지' 한 줄이 붙음)
+  function talkWho(re) { var n = $('#talk .talk-name'), b = $('#talk .talk-text p b'); return !!((n && !n.hidden && re.test(n.textContent)) || (b && re.test(b.textContent))); }
   async function passTalk(o) { var g = 0; while ($('#talk') && !$('#talk').hidden && g++ < 60) { if (o) o.talkLines = (o.talkLines || 0) + $$('#talk .talk-text p').length; $('#btn-talk-next').click(); await wait(20); } }
   function key(k, type) { document.dispatchEvent(new KeyboardEvent(type || 'keydown', { key: k, bubbles: true })); }
   var ARROW = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
@@ -293,7 +295,7 @@
       var cs = castOf('saebom'), pt = PrivacyMap.debug.tileToClient(cs.x, cs.y); // 새봄 자리
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pt.x, clientY: pt.y, bubbles: true }));
       var g = 0; while ($('#talk').hidden && g++ < 300) await wait(20);
-      ok(!$('#talk').hidden && /새봄/.test($('#talk .talk-name').textContent), '새봄을 누르면 걸어가서 말 걸기 ' + JSON.stringify([pt, PrivacyMap.debug.me()]));
+      ok(!$('#talk').hidden && talkWho(/새봄/), '새봄을 누르면 걸어가서 말 걸기 ' + JSON.stringify([pt, PrivacyMap.debug.me()]));
       await passTalk();
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk(); await wait();
       ok(view() === 'v-game' && PrivacyApp.state().scene === 'c1_e1_a', '침대에 가면 정산 장면 시작');
@@ -321,7 +323,7 @@
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true }));
       var gt = 0; while ((!$('#talk') || $('#talk').hidden) && gt++ < 300) await wait(20);
       ok(!!$('#talk') && !$('#talk').hidden && /\S/.test($('#talk .talk-text').textContent), '말 걸기 결과가 대화창에 나옴');
-      ok(!!$('#talk .talk-name') && /하늘/.test($('#talk .talk-name').textContent), '대화창 이름 탭');
+      ok(talkWho(/하늘/), '대화창 이름 탭(한 번에 보기로 여러 줄이 쌓이면 첫 줄 앞 이름) ' + $('#talk').textContent.slice(0, 40));
       ok($('#talk').getBoundingClientRect().height >= 118, '한 줄이어도 넉넉한 대화창 높이 ' + Math.round($('#talk').getBoundingClientRect().height));
       key(' '); await wait(30);
       ok($('#talk').hidden && view() === 'v-map', 'Space로 대화창 닫힘, 맵 그대로');
@@ -423,7 +425,7 @@
       await play(R.A, { upto: 1, stopAtMap: true });
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(); await passTalk(); await wait(50);
       var f1 = PrivacyMap.debug.stage();
-      ok(view() === 'v-game' && f1.place === 'room' && f1.tint === 'evening', '하교해 침대 → 내 방 저녁 무대 ' + JSON.stringify(f1));
+      ok(view() === 'v-game' && f1.place === 'room' && f1.tint === 'night', '하교해 침대 → 내 방 밤 무대(저녁 8:12) ' + JSON.stringify(f1));
       await play(R.A, { from: 1, upto: 3 });
       ok(PrivacyApp.state().scene === 'c1_e2_a' && $('#g-phone').hidden && $$('#g-dock .choice').length > 0, '장소 장면: 폰 없이 대화창 → 선택지');
       ok(PrivacyMap.debug.stage().place === 'classroom', '장소 장면 무대: 교실');

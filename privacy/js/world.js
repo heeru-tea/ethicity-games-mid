@@ -50,7 +50,8 @@
       [0, 15, 14, 3], [18, 15, 14, 3]                                             // 아래 덤불·교문 기둥(가운데 길만 열림)
     ], open: [[6, 4], [7, 4], [8, 4], [25, 4], [26, 4], [27, 4], [15, 1], [16, 1], [17, 1], [15, 2], [16, 2], [17, 2], [15, 3], [16, 3], [17, 3], [15, 4], [16, 4], [17, 4]] },
     { id: 'village', name: '마을 길', img: 'assets/scenes/village.png', road: true },
-    { id: 'room', name: '내 방', img: 'assets/scenes/room.png', rects: [
+    { id: 'room', name: '내 방', img: 'assets/scenes/room.png', lamp: { x: 25.5, y: 5.8, r: 9 }, // lamp: 밤에 켜 둔 책상 불빛(map.js sceneLight, 장면 안 칸 좌표)
+      rects: [
       [0, 0, 32, 7], [0, 7, 3, 5], [0, 12, 2, 3], [0, 15, 1, 3], [30, 7, 2, 6], [31, 13, 1, 5], // 벽
       [2, 4, 7, 8],                          // 침대
       [22, 5, 7, 5],                         // 컴퓨터 책상·의자
@@ -267,8 +268,8 @@
     pro_1: { place: 'classroom', tint: 'day', card: '방과 후 · 오후 5:30 — 축제 준비 중', me: P('classroom', 15, 10, 'up'),
       cast: [who('saebom', 'classroom', 12, 8, 'down'), who('haneul', 'classroom', 18, 9, 'left'), who('jiho', 'classroom', 11, 11, 'right'), who('minjun', 'classroom', 19, 11, 'left')],
       bubbles: [{ on: '다 올린다', who: 'jiho', text: '…' }, { on: '넌 뭐 할래', who: 'saebom', text: '👀' }] },
-    c1_e1_a: { place: 'room', tint: 'evening', cast: [] },
-    c1_e1_b: { place: 'room', tint: 'evening', cast: [] },
+    c1_e1_a: { place: 'room', tint: 'night', cast: [] }, // 'D-4 · 저녁 8:12' — 8시 이후는 밤(timeTint와 같은 기준, 2026-11-02)
+    c1_e1_b: { place: 'room', tint: 'night', cast: [] },
     c1_e2_a: { place: 'classroom', tint: 'day', me: P('classroom', 30, 12, 'left'),
       cast: [who('minjun', 'classroom', 29, 11, 'up', { pose: 'sleep' }), who('haneul', 'classroom', 27, 12, 'right'),
         who('saebom', 'classroom', 12, 8, 'down'), who('jiho', 'classroom', 10, 9, 'down')] },
@@ -414,8 +415,19 @@
     var day = String(time || '').split(' · ')[0];
     return (o.looks && o.looks[day]) || o.look || o.name;
   }
+  // 시각 글자 → 시간대. STAGES·TRIGGERS에 tint가 없을 때의 기본값(장면 첫 sys 줄·걷기 time 글자로 정함)
+  //   '밤'·'새벽'·'저녁 8시 이후' = night · '저녁'·'하교' = evening · 그 밖(아침·오전·점심·오후) = day
+  function timeTint(text) {
+    var s = String(text || '');
+    if (/밤|새벽/.test(s)) return 'night';
+    var m = /저녁\s*(\d{1,2})\s*:/.exec(s);
+    if (m) return Number(m[1]) >= 8 ? 'night' : 'evening';
+    if (/저녁|하교/.test(s)) return 'evening';
+    return 'day';
+  }
+
   var WORLD = {
-    W: W, H: H, VERSION: VERSION, lookFor: lookFor, SW: SW, SH: SH, CELL: CELL, SCENES: SCENES, sceneAt: sceneAt, grid: grid,
+    W: W, H: H, VERSION: VERSION, lookFor: lookFor, timeTint: timeTint, SW: SW, SH: SH, CELL: CELL, SCENES: SCENES, sceneAt: sceneAt, grid: grid,
     TILES: TILES, DOORS: DOORS, OBJECTS: OBJECTS, SPAWNS: SPAWNS,
     triggers: TRIGGERS, idle: IDLE, DIRS: DIRS, PLACES: PLACES, STAGES: STAGES,
     tile: tile, objectAt: objectAt, walkable: walkable, stepFrom: stepFrom,
