@@ -1,6 +1,11 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
-## ★지금 상태 (2026-11-02, 새 인물 초상)
+## ★지금 상태 (2026-11-02, 3 임무 그림 3장 연결)
+- **3 임무 카드 썸네일** `assets/title/mission-m3.webp`(`ui-shell.js` MISSION_CARDS — m1·m2와 같은 자리, 미끼 글은 게임이 얹음). **택배 기사 초상** `assets/characters/courier-portraits.png`(2표정, `ui-story.js` SHEETS `courier`) — 이제 도형 초상 쓰는 인물 없음. **정체 공개 장면 그림** `assets/story/reveal-senior.webp`: 대사 줄의 `bg`(그림 경로)를 `DR.UI.dialogue`가 대화창 뒤에 깐다(`.story-bg`, 0.6초 서서히·움직임 줄이기면 바로, `object-position: 90%`로 폰에서도 오른쪽 선배가 보임, 900px 이상이면 대화창을 그림의 빈 왼쪽으로). 데이터는 `m3.story.reveal.bg` 하나 → `app.js revealLines`가 정체 공개 줄마다 붙임(공개 대화 8줄 내내, 마무리 대화엔 없음).
+- 원본·검토용(`*-original*.png`, `preview-all.png`, `README.md.bak`, `bg-*.png`, `og-image.png`, `*-seam-check.png`)과 `tools/`는 저장소에 올리지 않음. ⚠️ `reveal-senior.webp` 수거봇 머리 위에 흐릿한 글자 같은 무늬(4~5자)가 있음 — 그림 수정은 사용자 판단.
+- 테스트: `m3.test`(reveal.bg 파일 존재), `portraits-browser`(courier 칸), `m3-browser`(택배 기사 걱정 칸·임무 카드 썸네일·정체 공개 그림 → `_shot-m3-courier-worried-*`·`_shot-m3-mission-card-1280`·`_shot-m3-reveal-1280/390`). 단위 162.
+
+## 지금 상태 (2026-11-02, 새 인물 초상)
 - **대화 초상**: Codex 시트(`assets/characters/`) — 4표정 supervisor·senior·examiner, 2표정 sorter·client·collector(cast 키 bot). 대사 줄의 `face`(basic·happy·worried·explain, 없으면 기본) → 칸(`ui-story.js` SHEETS·faceIndex). 시트가 없는 인물(택배 기사)은 도형 초상. 단위 162.
 
 ## 지금 상태 (2026-11-02, 시작 화면)
