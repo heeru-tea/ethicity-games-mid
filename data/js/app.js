@@ -66,10 +66,7 @@
 
   /* ---------- 도시 복구(설계 §7) ---------- */
   // 칸 수 = 튜토리얼 + 1~4 임무 중 깬 것(기록 기준, 0~5) — 타이틀 배지도 이것을 쓴다
-  function cityCount() {
-    var s = DR.Save.load();
-    return DR.Save.cityCount(App.records, !!(s && s.tutorialDone));
-  }
+  function cityCount() { return DR.Save.cityCount(App.records); }
   // step = DR.Save.cityStep(…) — null이면(칸이 늘지 않음) 건너뛴다
   function cityScreen(m, step, done) {
     if (!step) { done(); return; }
@@ -212,9 +209,14 @@
   }
   function showdown(m, r) {
     var sd = m.story.showdown, ok = DR.Judge.readable(m, r);
+    // 못 읽은 까닭: 크게 기운 1을 못 배움 → "7 · ✕"(위험) / 표 안 답만 못 배움 → "답 없음 · 사람 채점"(불편) — 장면 결과와 같은 말
+    var s4 = r.scenes.filter(function (s) { return s.id === m.showdownScene; })[0];
+    var sc = m.scenes.filter(function (s) { return s.id === m.showdownScene; })[0];
+    var dangerMissing = sc.combos.some(function (c) { return s4.missing.indexOf(c.id) >= 0 && c.danger; });
+    var read = ok ? true : (dangerMissing ? false : 'hold');
     var lines = sd.ask.map(function (l) { return sheetLine(m, l, null, sd.bg); })
-      .concat([sheetLine(m, ok ? sd.readPass : sd.readFail, ok, sd.bg)])
-      .concat((ok ? sd.pass : sd.fail).map(function (l) { return sheetLine(m, l, ok, sd.bg); }));
+      .concat([sheetLine(m, ok ? sd.readPass : read === 'hold' ? sd.readHold : sd.readFail, read, sd.bg)])
+      .concat((ok ? sd.pass : sd.fail).map(function (l) { return sheetLine(m, l, read, sd.bg); }));
     var mode = null;
     if (ok) {
       if (!r.allPass && App.state.supplements < DR.config.maxSupplements) lines.push(Object.assign({ bg: sd.bg }, sd.passOthers));
@@ -226,16 +228,9 @@
     DR.UI.dialogue(lines, function () {
       if (ok) { App.state.showdownPassed = true; afterResult(m, r); return; }
       App.state.peer = mode === 'removable' ? 'joined' : 'fixed';
-      if (mode === 'resubmit') {
-        // 남은 보충 0번: 달리기 없이 동기 카드를 고정으로 넣고 다시 제출 1회(보충 횟수 밖)
-        var add = DR.Showdown.peerCards(m, App.state.bag, true);
-        App.state.bag = App.state.bag.concat(add);
-        App.state.newIds = add.map(function (c) { return c.id; });
-        App.state.peerPending = false;
-        review(m);
-        return;
-      }
-      App.state.peerPending = true; // 보충 달리기가 끝나면 동기 카드가 가방에 들어온다
+      // 보충 달리기가 끝나면 동기 카드가 가방에 들어온다. 남은 보충 0번(mode 'resubmit')이면 보충 준비가 달리기 없이 다시 제출로만 —
+      // 가방 칸이 모자라면 거기서 비우게 한다(30칸을 넘지 않게, 리뷰 I3). 보충 횟수 밖
+      App.state.peerPending = true;
       prepSupplement(m, r);
     });
   }
@@ -247,8 +242,10 @@
     App.state.newIds = [];
     checkpoint('prep');
     var extra = App.state.peerPending ? DR.Showdown.peerCards(m, App.state.bag, App.state.peer === 'fixed') : [];
+    // 결판에서 못 읽었는데 보충이 남지 않음(설계 §5.6 '0번') → 달리기 없이 동기 카드를 고정으로 넣고 다시 제출 1회, 보충 횟수 밖
+    var outside = App.state.peerPending && App.state.supplements >= DR.config.maxSupplements;
     DR.UI.supplementPrep(m, r, App.state.bag, function (bag, opts) {
-      App.state.supplements++;
+      if (!outside) App.state.supplements++;
       App.state.peerPending = false;
       var extraIds = extra.map(function (c) { return c.id; });
       // 모자란 조합이 없으면(가짜만 뺀 경우) 달리지 않고 다시 제출 — 보충 1회로 센다. 동기 카드가 들어오면 검수에서 먼저 보여 준다
@@ -267,7 +264,7 @@
         App.state.newIds = fresh.map(function (c) { return c.id; }).concat(extraIds);
         review(m);
       }, extra.length);
-    }, { extra: extra, peerFixed: App.state.peer === 'fixed' });
+    }, { extra: extra, peerFixed: App.state.peer === 'fixed', forceResubmit: outside });
   }
 
   // 3 임무 정체 공개: 1·2 임무 첫 판 실수 기록이 있으면 그 장면 이름을 '누구나 하는 실수'의 예로, 없으면 일반 문장

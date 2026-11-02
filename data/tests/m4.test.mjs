@@ -70,7 +70,8 @@ test('label text: 1~5 and the off-choice 7·8', () => {
   // 화면 개수: "?"는 붙인 번호의 보통 종류(맞았는지 드러내지 않음), 7·8은 어느 종류로도 세지 않음
   assert.equal(Cards.displayKey(m4, { ambiguousId: 'q_25', assigned: '2' }), 'neat_2');
   assert.equal(Cards.displayKey(m4, { ambiguousId: 'q_25', assigned: '5' }), 'neat_5');
-  assert.equal(Cards.displayKey(m4, { fakeId: 'x_17' }), null);
+  assert.equal(Cards.displayKey(m4, { fakeId: 'x_17' }), '7', 'counted under its own label 7, like the bag label');
+  assert.deepEqual(Cards.labelCounts(m4, [{ fakeId: 'x_17' }, { fakeId: 'x_17' }, { fakeId: 'x_38' }]), { 7: 2, 8: 1 });
   assert.equal(Cards.displayKey(m4, { fakeId: 'x_25' }), 'neat_5');
 });
 
@@ -405,4 +406,19 @@ test('m4 story: speakers in cast, grader portrait/thumbnail/backdrops exist, no 
   assert.ok(!/바보|한심|틀렸잖|네 탓|잘못했/.test(JSON.stringify(m4.story)), 'no scolding');
   // 선배는 "~라고 생각해"만, 감독관은 단정하지 않는다
   assert.ok(!/AI 때문에 떨어졌다\./.test(JSON.stringify(m4.story)));
+});
+test('showdown with no supplements left: fixed peer cards + one resubmit always read, within 30 slots (review I3)', () => {
+  const cfg0 = { ...cfg, maxSupplements: 0 }, rng = Rng.create(47), keys = Object.keys(m4.cardTypes).filter((k) => k !== 'slant_1');
+  assert.equal(Showdown.peerMode({ supplements: 0 }, cfg0), 'resubmit');
+  for (let n = 0; n < 100; n++) {
+    let bag = Array.from({ length: 30 }, (_, i) => ({ id: 'a' + i, key: keys[Math.floor(rng.next() * keys.length)] }));
+    assert.equal(Judge.readable(m4, judge(m4, bag, cfg)), false);
+    const add = Showdown.peerCards(m4, bag, true);
+    assert.ok(add.every((c) => c.fixed));
+    // 보충 준비(다시 제출만)에서 칸이 모자라면 플레이어가 고정 아닌 카드를 빼야 출발할 수 있다(supplementPrep lack)
+    while (bag.length + add.length > m4.bag) bag.splice(Math.floor(rng.next() * bag.length), 1);
+    bag = bag.concat(add);
+    assert.ok(bag.length <= m4.bag);
+    assert.equal(Judge.readable(m4, judge(m4, bag, cfg)), true, 'bag ' + n);
+  }
 });

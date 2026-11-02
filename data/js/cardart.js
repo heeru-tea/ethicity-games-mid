@@ -997,6 +997,11 @@
         g.fillStyle = read ? '#1f7a4c' : '#b8283a'; g.font = 'bold ' + Math.round(S * 0.13) + 'px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
         g.fillText(read ? '1' : '7', S * 0.66, S * 0.27);
         if (read) stampO(g, S, S * 0.82, S * 0.27, S * 0.06); else stampX(g, S, S * 0.82, S * 0.27, S * 0.05);
+      } else if (read === 'hold') {
+        // 표 끝 칸의 답을 찾지 못함 → '답 없음'(빈 자리) + 사람 채점 도장
+        g.fillStyle = '#8a6d00'; g.font = 'bold ' + Math.round(S * 0.11) + 'px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('—', S * 0.66, S * 0.27);
+        stampHuman(g, S * 0.6, S * 0.82, S * 0.27);
       }
       answerBox(g, S, S * 0.08, S * 0.17, S * 0.36, S * 0.2);
       solutionTable(g, S, r, S * 0.06, S * 0.46, S * 0.88, S * 0.46, '1', 'slant');

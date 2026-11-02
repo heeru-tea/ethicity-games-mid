@@ -24,11 +24,16 @@
     var screen = document.getElementById('screen-city');
     var from = opts.from, to = opts.to, called = false;
     screen.innerHTML = '';
+    screen.classList.remove('city-no-art');
     var before = el('img', { class: 'city-img city-before', src: src(from), alt: '', draggable: 'false' });
     var after = el('img', { class: 'city-img city-after', src: src(to), alt: '도시 복구 ' + to + '/5', draggable: 'false' });
     var art = el('figure', { id: 'city-art', class: 'city-art' }, [before, after]);
-    // 그림이 하나라도 없으면 그림 자리를 숨긴다(점 5칸 + 문구만)
+    // 그림 자리는 두 장이 다 읽힌 뒤에만 보인다(빈 칸이 번쩍였다 사라지지 않게). 하나라도 없으면 계속 숨김(점 5칸 + 문구만)
+    art.hidden = true;
+    var loaded = 0;
+    function onArt() { if (++loaded === 2 && !screen.classList.contains('city-no-art')) art.hidden = false; }
     function noArt() { art.hidden = true; screen.classList.add('city-no-art'); }
+    before.onload = onArt; after.onload = onArt;
     before.onerror = noArt; after.onerror = noArt;
     var row = dots(from, 'city-dots-big');
     var line = el('p', { id: 'city-line', class: 'city-line', text: '도시 ' + to + '/5 — ' + opts.line });

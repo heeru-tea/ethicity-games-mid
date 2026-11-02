@@ -7,7 +7,7 @@ import { openGame, shotPath } from './browser.mjs';
 const MIN = { neat_1: 1, neat_2: 1, neat_3: 1, neat_4: 1, neat_5: 1, flag_1: 2, loop_3: 2, angular_2: 2, round_5: 1, table_4: 2, slant_1: 2 };
 const NO_NUMBERS = /%|\d+\s*개/;
 // 도시 복구 그림(assets/city/city-n.webp)은 아직 없다 → <img> 오류(파일 없음) 콘솔 줄은 예상된 것. 그 밖의 오류는 없어야 한다
-const ONLY = process.env.M4_ONLY || 'ABCDE';
+const ONLY = process.env.M4_ONLY || 'ABCDEF';
 const real = (errors) => errors.filter((e) => !/__missing__/.test(e)); // C는 결판 배경 그림을 일부러 없는 파일로
 
 async function toRun(page) {
@@ -322,6 +322,29 @@ for (const viewport of ONLY.includes('E') ? [{ width: 1280, height: 800 }, { wid
     await page.locator('#title-missions').scrollIntoViewIfNeeded();
     await page.screenshot({ path: shotPath('m4-mission-card-' + viewport.width) });
     assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+// F) 크게 기운 1은 있는데 표 안 답만 없음 → 결판도 장면 결과와 같은 말("답 없음 · 사람 채점", 7이 아니다 — 리뷰 I2)
+if (ONLY.includes('F')) {
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m4' });
+  try {
+    await toRun(page);
+    await fillAndInspect(page, { ...MIN, table_4: 0 });
+    await submit(page);
+    await skipGrade(page);
+    const res = await throughResults(page);
+    assert.equal(res.find((r) => r.scene === 'S4').outcome, 'inconvenience');
+    const t = await dialogueUntil(page, /채점 결과/);
+    assert.match(t, /표 끝 칸의 답을 찾지 못함 · 사람 채점/);
+    assert.equal(await page.locator('#screen-story .story-sheet').getAttribute('data-read'), 'hold');
+    assert.match(await page.locator('#screen-story .story-sheet-read').innerText(), /답 없음/);
+    await page.screenshot({ path: shotPath('m4-showdown-hold-1280') });
+    const rest = await readDialogue(page);
+    assert.ok(rest.includes('봐, 또 지웠잖아.'));
+    // 보충 준비: 표 안 답은 동기 카드로 채워진다고 보인다(리뷰 M4)
+    await page.locator('#screen-prep').waitFor({ state: 'visible' });
+    assert.ok((await page.locator('#prep-failed').innerText()).includes('동기 카드로 채워짐'));
+    assert.deepEqual(real(errors), []);
   } finally { await browser.close(); }
 }
 console.log('PASS m4');

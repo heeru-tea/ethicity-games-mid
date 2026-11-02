@@ -480,3 +480,4 @@ body { overflow: hidden; word-break: keep-all; }
 @media (prefers-reduced-motion: reduce) { .city-after, .city-dots i { transition: none; } }
 /* 좁은 화면: 왼쪽 위 "도시 n/5" 배지 아래로 AI 봇 안내를 조금 내린다 */
 @media (max-width: 700px) { .title-guide { top: -256px; } }
+.story-sheet[data-read="hold"] .story-sheet-read { color: var(--yellow); }

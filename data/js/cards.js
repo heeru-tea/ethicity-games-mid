@@ -155,7 +155,11 @@
   // displayAs: 화면에서 다른 종류와 한 줄로 센다(3 임무 시장 골목 옛 사진 — 옛 사진이라고 따로 보이지 않게)
   function shownAs(mission, k) { var t = k && mission.cardTypes[k]; return t && t.displayAs ? t.displayAs : k; }
   function displayKey(mission, card) {
-    if (!card.ambiguousId && mission.labels) return shownAs(mission, isMislabeled(mission, card) ? commonKeyOfLabel(mission, currentLabel(mission, card)) : truthKey(mission, card));
+    if (!card.ambiguousId && mission.labels) {
+      if (!isMislabeled(mission, card)) return shownAs(mission, truthKey(mission, card));
+      // 어느 종류의 이름표도 아닌 번호(4 임무 7·8)는 그 이름표 자체로 센다(보충 준비 '1장 빼기'에도 나오게, 정체는 드러내지 않음)
+      return shownAs(mission, commonKeyOfLabel(mission, currentLabel(mission, card))) || currentLabel(mission, card);
+    }
     if (!card.ambiguousId) return currentLabel(mission, card);
     if (!card.assigned) return null;
     if (mission.labels) return shownAs(mission, commonKeyOfLabel(mission, card.assigned)); // 4 임무: 붙인 번호의 보통 종류(맞았는지 드러내지 않음)

@@ -26,11 +26,18 @@
     try {
       var raw = st && st.getItem(KEY);
       var o = raw ? JSON.parse(raw) : null;
-      return o && typeof o === 'object' && o.v === 1 ? o : null;
+      if (!(o && typeof o === 'object' && o.v === 1)) return null;
+      // 도시 복구 칸 이전(cityV 없음) 저장: 튜토리얼을 끝냈고 깬 임무가 있으면 튜토리얼 기록을 채워 둔다(한 번, 다음 저장 때 남음)
+      if (!o.cityV) {
+        if (o.tutorialDone && o.records && typeof o.records === 'object' && Object.keys(o.records).length && !o.records.tutorial) o.records.tutorial = { cleared: true };
+        o.cityV = 1;
+      }
+      return o;
     } catch (e) { return null; }
   }
   function write(o, st) {
     if (!st) return false;
+    o.cityV = 1; // 이 저장은 튜토리얼도 기록(records.tutorial)으로 센다
     try { st.setItem(KEY, JSON.stringify(o)); return true; } catch (e) { return false; }
   }
 
@@ -101,12 +108,12 @@
 
   // 도시 복구 칸 수(설계 §7): 튜토리얼 + 1~4 임무 중 깬 것, 0~5. 순서는 상관없다(임무 고르기로 건너뛰어도).
   //   튜토리얼은 기록(records.tutorial)으로 센다 — '처음부터'(clear)는 기록을 지우므로 0칸부터(튜토리얼 건너뛰기 선택지는 tutorialDone으로 남음).
-  //   예전 저장(튜토리얼 기록이 생기기 전): tutorialDone이고 깬 임무가 있으면 튜토리얼도 센다.
+  //   예전 저장은 read()가 한 번 옮겨 둔다(cityV) — 그래서 여기엔 tutorialDone 규칙이 없다('처음부터' 뒤 1 임무만 깨도 2칸이 되던 것, 리뷰 I1).
   var CITY_STAGES = ['m1', 'm2', 'm3', 'm4'];
-  function cityCount(recs, tutorialDone) {
+  function cityCount(recs) {
     recs = recs || {};
     var n = CITY_STAGES.filter(function (id) { return recs[id] && recs[id].cleared; }).length;
-    var tut = recs.tutorial ? !!recs.tutorial.cleared : !!(tutorialDone && n > 0);
+    var tut = !!(recs.tutorial && recs.tutorial.cleared);
     return Math.max(0, Math.min(5, n + (tut ? 1 : 0)));
   }
   // 깬 직후 도시 복구 화면: 칸이 늘었을 때만(다시 깨면 건너뜀). 4 임무 = 도시 재연결, 이야기의 끝이라 늘 →5

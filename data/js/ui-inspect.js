@@ -269,9 +269,10 @@
     var openKinds = {};
 
     function render() {
-      var resubmit = Object.keys(DR.Judge.shortfall(mission, bag.concat(extra), DR.config)).length === 0;
+      // forceResubmit = 보충 횟수 밖 다시 제출(4 임무 결판, 남은 보충 0번) — 달리지 않는다
+      var resubmit = !!(popts && popts.forceResubmit) || Object.keys(DR.Judge.shortfall(mission, bag.concat(extra), DR.config)).length === 0;
       var free = mission.bag - bag.length - extra.length, lack = resubmit ? Math.max(0, -free) : Math.max(0, need - free);
-      var counts = DR.Cards.labelCounts(mission, bag);
+      var counts = DR.Cards.labelCounts(mission, bag), withPeer = extra.length ? DR.Cards.labelCounts(mission, bag.concat(extra)) : counts;
       screen.innerHTML = '';
 
       // 놓친 장면 + 그 장면에서 모자란 카드 종류(아이콘 + 라벨 + 부족 n장)
@@ -282,10 +283,10 @@
         var sc = mission.scenes.filter(function (x) { return x.id === s.id; })[0];
         var shorts = el('ul', { class: 'combo-list' });
         s.missing.forEach(function (id) {
-          var c = comboById[id], have = comboCount(mission, counts, c);
+          var c = comboById[id], have = comboCount(mission, counts, c), filled = have < c.need && comboCount(mission, withPeer, c) >= c.need;
           shorts.appendChild(el('li', { class: 'combo short', 'data-combo': id }, [
             DR.UI.iconStrip(mission, c.keys[0], 20), el('span', { class: 'combo-label', text: DR.Cards.keyLabel(mission, c.keys[0]) }),
-            el('b', { class: 'combo-count', text: have < c.need ? '부족 ' + (c.need - have) + '장' : (mission.changeLog ? '사진을 다시 살펴봐요' : mission.labels ? '이름표를 다시 살펴봐요' : '설명표를 다시 살펴봐요') })
+            el('b', { class: 'combo-count', text: filled ? '동기 카드로 채워짐' : have < c.need ? '부족 ' + (c.need - have) + '장' : (mission.changeLog ? '사진을 다시 살펴봐요' : mission.labels ? '이름표를 다시 살펴봐요' : '설명표를 다시 살펴봐요') })
           ]));
         });
         // 오염으로 실패한 장면: 어느 카드인지는 말하지 않는다 — 사진을 보고 찾게
@@ -298,7 +299,7 @@
       // 종류별 요약: 개수 · 여유 n장 · 1장 빼기
       var summary = el('ul', { id: 'prep-summary', class: 'kind-list' });
       Object.keys(counts).forEach(function (k) {
-        var extra = counts[k] - (needByKey[k] || 0);
+        var extra = needByKey[k] === undefined ? 0 : counts[k] - needByKey[k]; // 어느 조합에도 없는 이름표(4 임무 7·8)는 여유를 말하지 않는다
         var open = !!openKinds[k];
         var minus = el('button', { class: 'btn btn-small', type: 'button', text: open ? '접기' : '1장 빼기', 'aria-expanded': String(open),
           'aria-label': DR.Cards.keyLabel(mission, k) + (open ? ' 사진 접기' : ' 사진 펼쳐서 1장 고르기') });

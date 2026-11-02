@@ -191,6 +191,8 @@
         ],
         readPass: { who: 'guide', text: '채점 결과 — AI가 읽은 답: 1 · ○', face: 'explain' },
         readFail: { who: 'guide', text: '채점 결과 — AI가 읽은 답: 7, 선택지에 없는 번호 · ✕', face: 'explain' },
+        // 크게 기운 1은 읽었는데 표 안 답을 못 배운 경우(S4 불편): 표 끝 칸의 답을 찾지 못함
+        readHold: { who: 'guide', text: '채점 결과 — AI가 읽은 답: 없음, 표 끝 칸의 답을 찾지 못함 · 사람 채점', face: 'explain' },
         pass: [
           { who: 'senior', text: '…읽네. 그때도 이랬으면 달라졌을까.', face: 'worried' },
           { who: 'supervisor', text: '그건 아무도 몰라. 하지만 이제 다음 사람은 지워지지 않아.', face: 'explain' }

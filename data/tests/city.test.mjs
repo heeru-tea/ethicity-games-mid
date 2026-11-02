@@ -9,14 +9,25 @@ const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.
 const C = { cleared: true };
 
 test('cityCount = tutorial + cleared missions (order does not matter), 0..5', () => {
-  assert.equal(Save.cityCount({}, false), 0);
-  assert.equal(Save.cityCount({ tutorial: C }, true), 1, 'tutorial only');
-  assert.equal(Save.cityCount({ m3: C }, false), 1, 'skipped ahead with the mission picker');
-  assert.equal(Save.cityCount({ tutorial: C, m1: C, m2: C, m3: C, m4: C }, true), 5);
-  assert.equal(Save.cityCount({ tutorial: C, m1: C, m2: C, m3: C, m4: C, m9: C }, true), 5, 'never above 5');
-  assert.equal(Save.cityCount({ m2: { cleared: false } }, false), 0);
-  // 예전 저장: 튜토리얼 기록 없이 tutorialDone + 깬 임무가 있으면 튜토리얼도 센다
-  assert.equal(Save.cityCount({ m1: C }, true), 2);
+  assert.equal(Save.cityCount({}), 0);
+  assert.equal(Save.cityCount({ tutorial: C }), 1, 'tutorial only');
+  assert.equal(Save.cityCount({ m3: C }), 1, 'skipped ahead with the mission picker');
+  assert.equal(Save.cityCount({ tutorial: C, m1: C, m2: C, m3: C, m4: C }), 5);
+  assert.equal(Save.cityCount({ tutorial: C, m1: C, m2: C, m3: C, m4: C, m9: C }), 5, 'never above 5');
+  assert.equal(Save.cityCount({ m2: { cleared: false } }), 0);
+});
+
+test('old saves (before the city screen) keep the tutorial cell once; later saves never guess', () => {
+  const st = mem();
+  st.setItem(Save.KEY, JSON.stringify({ v: 1, mission: null, tutorialDone: true, records: { m1: C } }));
+  assert.equal(Save.cityCount(Save.records(st)), 2, 'tutorial + m1');
+  Save.setRecord('m2', C, st);
+  assert.equal(Save.cityCount(Save.records(st)), 3, 'migration stays after the next write');
+  // 새 저장: 튜토리얼 기록이 없으면 튜토리얼은 세지 않는다
+  const st2 = mem();
+  Save.markTutorialDone(st2);
+  Save.setRecord('m1', C, st2);
+  assert.equal(Save.cityCount(Save.records(st2)), 1);
 });
 
 test('"처음부터" (clear) brings the city back to 0, even with the tutorial done', () => {
@@ -24,10 +35,13 @@ test('"처음부터" (clear) brings the city back to 0, even with the tutorial d
   Save.markTutorialDone(st);
   Save.setRecord('tutorial', C, st);
   Save.setRecord('m1', C, st);
-  assert.equal(Save.cityCount(Save.records(st), true), 2);
+  assert.equal(Save.cityCount(Save.records(st)), 2);
   Save.clear(st);
-  assert.equal(Save.cityCount(Save.records(st), Save.load(st).tutorialDone), 0);
+  assert.equal(Save.cityCount(Save.records(st)), 0);
   assert.equal(Save.load(st).tutorialDone, true, 'skip-tutorial option stays');
+  // 리뷰 I1: '처음부터' 뒤 튜토리얼을 건너뛰고 1 임무만 깨면 1칸(2칸이 아니다)
+  Save.setRecord('m1', C, st);
+  assert.equal(Save.cityCount(Save.records(st)), 1);
 });
 
 test('every stage has a city line naming its AI (no numbers, no %)', () => {

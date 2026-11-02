@@ -121,7 +121,8 @@
       if (sheetBox && sheetBox.dataset.key === key) return;
       if (sheetBox) sheetBox.remove();
       var m = root.DR.Missions[sh.mission];
-      var cap = sh.read === true ? 'AI가 읽은 답: 1 · ○' : sh.read === false ? 'AI가 읽은 답: 7 — 선택지에 없는 번호 · ✕' : 'AI가 읽은 답: ?';
+      var cap = sh.read === true ? 'AI가 읽은 답: 1 · ○' : sh.read === false ? 'AI가 읽은 답: 7 — 선택지에 없는 번호 · ✕'
+        : sh.read === 'hold' ? 'AI가 읽은 답: 답 없음 — 표 끝 칸을 못 찾음 · 사람 채점' : 'AI가 읽은 답: ?';
       sheetBox = el('figure', { class: 'story-sheet', 'data-read': String(sh.read) }, [
         el('img', { src: root.DR.CardArt.sheet(m, 'senior', sh.read, 360).toDataURL(), alt: '선배의 옛 답안: 크고 오른쪽으로 기운 1을 풀이 표 끝 칸에 썼다' }),
         el('figcaption', { class: 'story-sheet-read', text: cap })
