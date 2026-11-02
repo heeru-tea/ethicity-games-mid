@@ -132,7 +132,7 @@
         el('p', { class: 'kicker', text: '검수 · ' + mission.title }),
         el('h2', { text: '가방 확인 (' + bag.length + '/' + mission.bag + '칸)' }),
         changeLogBoard(mission),
-        el('p', { class: 'note', text: mission.changeLog ? '카드를 누르면 크게 볼 수 있다. 언제 찍은 사진인지 도시 변경 기록과 맞춰 보고, 지금의 거리가 아닌 사진은 뺀다.' : mission.labels ? '카드를 누르면 크게 볼 수 있다. 그림과 이름표가 안 맞으면 이름표를 고치거나 뺀다.' : '카드를 누르면 크게 볼 수 있다. "?" 카드는 단서를 보고 설명표를 붙이거나, 넣지 않기로 정한다.' }),
+        el('p', { class: 'note', text: mission.inspectNote ? mission.inspectNote : mission.changeLog ? '카드를 누르면 크게 볼 수 있다. 언제 찍은 사진인지 도시 변경 기록과 맞춰 보고, 지금의 거리가 아닌 사진은 뺀다.' : mission.labels ? '카드를 누르면 크게 볼 수 있다. 그림과 이름표가 안 맞으면 이름표를 고치거나 뺀다.' : '카드를 누르면 크게 볼 수 있다. "?" 카드는 단서를 보고 설명표를 붙이거나, 넣지 않기로 정한다.' }),
         notice,
         bagGrid(mission, bag, 'inspect-grid', {
           onOpen: zoom.open, newIds: opts.newIds,
@@ -159,7 +159,7 @@
     function open(card) {
       if (zoomCleanup) zoomCleanup();
       zoomed = card;
-      var A = DR.CardArt, amb = !!card.ambiguousId, label = cardLabel(mission, card);
+      var A = DR.CardArt, amb = !!card.ambiguousId, label = cardLabel(mission, card), digit = mission.labelStyle === 'digit';
       var big = A.card(mission, cardId(card), variantOf(card), 320);
       var inner = [
         el('img', { class: 'zoom-art', src: big.toDataURL(), alt: '카드 원본: ' + label }),
@@ -171,14 +171,19 @@
         q.clues.forEach(function (cl, i) {
           clues.appendChild(el('figure', { class: 'clue' }, [el('img', { src: A.clue(mission, q.id, i, 256).toDataURL(), alt: cl.text }), el('figcaption', { text: cl.text })]));
         });
-        var labels = el('div', { class: 'labels', role: 'group', 'aria-label': '설명표 붙이기' });
+        var labels = el('div', { class: 'labels' + (digit ? ' digit' : ''), role: 'group', 'aria-label': '설명표 붙이기' });
+        // 4 임무(숫자 버튼): 번호 다섯 개가 한 줄, "넣지 않기"는 둘째 줄(누르기 실수 방지)
+        var noneRow = digit ? el('div', { class: 'labels label-none' }) : labels;
         mission.labelOptions.concat([{ id: 'none', text: '넣지 않기' }]).forEach(function (o) {
           var val = o.id === 'none' ? null : o.id;
-          var b = el('button', { class: 'btn btn-label', type: 'button', 'data-label': o.id, text: o.text, 'aria-pressed': card.assigned === val ? 'true' : 'false' });
+          var b = digit && o.id !== 'none'
+            ? el('button', { class: 'btn btn-label btn-digit', type: 'button', 'data-label': o.id, text: o.id, 'aria-label': o.text, 'aria-pressed': card.assigned === val ? 'true' : 'false' })
+            : el('button', { class: 'btn btn-label', type: 'button', 'data-label': o.id, text: o.text, 'aria-pressed': card.assigned === val ? 'true' : 'false' });
           b.addEventListener('click', function () { DR.Sfx.play('ui'); card.assigned = val; rerender(); });
-          labels.appendChild(b);
+          (o.id === 'none' ? noneRow : labels).appendChild(b);
         });
-        inner.push(el('h3', { text: '추가 단서' }), clues, el('h3', { text: '설명표' }), labels);
+        inner.push(el('h3', { text: '추가 단서' }), clues, el('h3', { text: digit ? '번호 붙이기' : '설명표' }), labels);
+        if (noneRow !== labels) inner.push(noneRow);
       }
       if (!amb && mission.changeLog) {
         var date = DR.Cards.dateOf(mission, card, variantOf(card)), cl = changeLogOf(mission, DR.Cards.currentLabel(mission, card));
@@ -187,10 +192,13 @@
       }
       if (!amb && mission.labels && mission.relabel !== false) {
         var cur = DR.Cards.currentLabel(mission, card), orig = DR.Cards.originalLabel(mission, card);
-        var relabel = el('div', { class: 'labels relabel', role: 'group', 'aria-label': '이름표 고치기' });
+        var relabel = el('div', { class: 'labels relabel' + (digit ? ' digit' : ''), role: 'group', 'aria-label': '이름표 고치기' });
         mission.labels.forEach(function (l) {
-          var b = el('button', { class: 'btn btn-label', type: 'button', 'data-relabel': l.id, 'aria-pressed': cur === l.id ? 'true' : 'false' },
-            [DR.UI.iconStrip(mission, [l.id], 18), el('span', { text: l.text })]);
+          // 4 임무(labelStyle 'digit'): 동그라미 숫자 하나만(아이콘·글자를 따로 두지 않음) — 375px 폰에서 다섯 개 한 줄
+          var b = digit
+            ? el('button', { class: 'btn btn-label btn-digit', type: 'button', 'data-relabel': l.id, 'aria-label': l.text, 'aria-pressed': cur === l.id ? 'true' : 'false', text: l.id })
+            : el('button', { class: 'btn btn-label', type: 'button', 'data-relabel': l.id, 'aria-pressed': cur === l.id ? 'true' : 'false' },
+              [DR.UI.iconStrip(mission, [l.id], 18), el('span', { text: l.text })]);
           b.addEventListener('click', function () {
             DR.Sfx.play('ui');
             if (l.id === orig) delete card.label; else card.label = l.id;
@@ -199,7 +207,7 @@
           relabel.appendChild(b);
         });
         inner.push(el('h3', { text: '이름표' }),
-          el('p', { class: 'note', text: '그림과 맞지 않으면 맞는 이름표로 고친다. 맞는 이름표가 없으면 빼자.' }), relabel);
+          el('p', { class: 'note', text: mission.relabelNote || '그림과 맞지 않으면 맞는 이름표로 고친다. 맞는 이름표가 없으면 빼자.' }), relabel);
       }
       var close = el('button', { class: 'btn btn-ghost', type: 'button', text: '닫기' });
       var panel = el('div', { class: 'zoom-panel', role: 'dialog', 'aria-modal': 'true', 'aria-label': '카드 크게 보기: ' + label }, inner.concat([el('div', { class: 'actions' }, [close])]));

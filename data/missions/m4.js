@@ -38,6 +38,8 @@
       { id: '8', text: '8번(선택지에 없는 번호)' }
     ],
     legendNote: '카드 아래 번호는 붙어 있는 이름표다. 이 시험의 선택지는 1~5번.',
+    inspectNote: '카드를 누르면 크게 볼 수 있다. 손글씨와 붙은 번호가 안 맞으면 번호를 고치거나 뺀다. "?" 카드는 단서를 보고 번호를 붙이거나, 넣지 않기로 정한다.',
+    relabelNote: '손글씨와 맞지 않으면 맞는 번호로 고친다. 맞는 번호가 없으면 빼자.',
     cardTypes: {
       neat_1:    { label: '1', icons: ['1'], name: '또박또박 쓴 1', art: { digit: '1', style: 'neat' } },
       neat_2:    { label: '2', icons: ['2'], name: '또박또박 쓴 2', art: { digit: '2', style: 'neat' } },
@@ -133,6 +135,26 @@
         } }
     ],
     peerCards: [{ key: 'slant_1', n: 2 }, { key: 'table_4', n: 2 }],
+    // 결과 화면의 '채점 시연'(2 임무 컨베이어와 같은 원인 규칙, DR.Conveyor.sort) — 처음 보는 답안지, 지나가는 순서대로.
+    //   chose = 학생이 고른 번호, answer = 정답, bin = 맞는 채점('o' ○ / 'x' ✕), wrongBin = 틀릴 때('x' 맞게 쓴 답에 ✕ / 'hold' 사람 채점),
+    //   read = 틀릴 때 AI가 읽은 번호(없으면 못 읽음), hazard = 틀리면 감독관이 멈춤(위험).
+    //   위험 답안지는 위험 원인만 갖는다(위험 장면 ⇔ 멈춤, 테스트로 고정): 조합 빠짐(S2·S4) · 'any:가짜'(그 가짜가 어떤 이름표로든 오염) · 'danger:S#'.
+    //   gr3 = 정말 틀린 답(학생 4번, 정답 2번) — 늘 ✕가 맞는 채점("✕ = 나쁨"이 아니라 "맞는 답에 ✕"가 문제). 선배 답안은 시연에 넣지 않는다(결판에서 따로).
+    grading: [
+      { id: 'gr1', scene: 'S1', art: 'neat_3', variant: 3, chose: '3', answer: '3', bin: 'o', wrongBin: 'hold', causes: ['S1_neat', 'contaminated:S1'] },
+      { id: 'gr4', scene: 'S2', art: 'flag_1', variant: 3, chose: '1', answer: '1', bin: 'o', wrongBin: 'x', read: '7', hazard: true, causes: ['S2_flag_1', 'any:x_17'] },
+      { id: 'gr8', scene: 'S3', art: 'table_4', variant: 3, chose: '4', answer: '4', bin: 'o', wrongBin: 'hold', causes: ['S3_table', 'contaminated:S3'] },
+      { id: 'gr3', scene: 'S1', art: 'neat_4', variant: 4, chose: '4', answer: '2', bin: 'x', wrongBin: 'hold', causes: [] },
+      { id: 'gr5', scene: 'S2', art: 'loop_3', variant: 3, chose: '3', answer: '3', bin: 'o', wrongBin: 'x', read: '8', hazard: true, causes: ['S2_loop_3', 'any:x_38'] },
+      { id: 'gr11', scene: 'S4', art: 'slant_1', variant: 4, chose: '1', answer: '1', bin: 'o', wrongBin: 'x', read: '7', hazard: true, causes: ['S4_slant_1', 'danger:S4'] },
+      { id: 'gr6', scene: 'S2', art: 'angular_2', variant: 3, chose: '2', answer: '2', bin: 'o', wrongBin: 'x', read: '5', hazard: true, causes: ['S2_25', 'any:x_25'] },
+      { id: 'gr9', scene: 'S3', art: 'neat_1', variant: 4, chose: '1', answer: '1', bin: 'o', wrongBin: 'hold', causes: ['S3_neat', 'contaminated:S3'] },
+      { id: 'gr2', scene: 'S1', art: 'neat_1', variant: 5, chose: '1', answer: '1', bin: 'o', wrongBin: 'x', read: '7', hazard: true, causes: ['danger:S1'] },
+      { id: 'gr7', scene: 'S2', art: 'round_5', variant: 3, chose: '5', answer: '5', bin: 'o', wrongBin: 'x', read: '2', hazard: true, causes: ['S2_25'] },
+      { id: 'gr12', scene: 'S4', art: 'table_4', variant: 4, chose: '4', answer: '4', bin: 'o', wrongBin: 'hold', causes: ['S4_table', 'contaminated:S4'] },
+      { id: 'gr10', scene: 'S3', art: 'neat_3', variant: 4, chose: '3', answer: '3', bin: 'o', wrongBin: 'x', read: '8', hazard: true, causes: ['danger:S3'] },
+      { id: 'gr13', scene: 'S2', art: 'loop_3', variant: 5, chose: '3', answer: '3', bin: 'o', wrongBin: 'hold', causes: ['contaminated:S2'] }
+    ],
     story: {
       intro: [
         { who: 'supervisor', text: '마지막이야. 선배가 말한 채점 AI.', face: 'worried' },
@@ -151,6 +173,13 @@
       },
       supervisorQuestion: '드물고 낯선 글씨, 빼 버린 거 없어? 붙은 번호는 다 봤고?',
       responsibility: '승인한 건 나니까, 나도 같이 책임질게.',
+      gradeIntro: { who: 'supervisor', text: '그럼, 실제로 채점해 보자.', face: 'explain' },
+      emergency: { who: 'supervisor', text: '잠깐, 이건 사람이 다시 보자.', face: 'worried' },
+      // 달리기 중 구역에 들어설 때 한 줄(첫 가짜 안내와 같은 알림 틀, 첫 달리기에서만) — 레이스는 없다
+      runLines: [
+        { zone: 'S2', who: 'senior', text: '1을 7로 읽는 기계야. 곧 보게 될걸.', face: 'basic' },
+        { zone: 'S4', who: 'senior', text: '여기부터 내 글씨 같은 것들이야. 담을지 말지는 네가 정해.', face: 'basic' }
+      ],
       clientPass: [{ who: 'grader', text: '오늘은 맞게 쓴 답에 ✕가 하나도 안 찍혔어요.', face: 'basic' }],
       clientFail: [{ who: 'grader', text: '아직 다시 봐야 할 답안이 있어요. 한 번 더 부탁해요.', face: 'worried' }],
       senior: [],

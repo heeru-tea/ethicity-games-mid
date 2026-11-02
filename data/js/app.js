@@ -6,7 +6,7 @@
 (function (root) {
   'use strict';
 
-  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'conveyor', 'guide', 'result', 'prep', 'knockout', 'outro'];
+  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'conveyor', 'guide', 'grade', 'result', 'prep', 'knockout', 'outro'];
   var DR = root.DR;
   var STATIC = ['title', 'run']; // HTML에 고정 구조가 있는 화면(비우지 않음)
 
@@ -172,6 +172,7 @@
     // 2 임무: 장면별 결과 전에 컨베이어 실제 분류(spec §5.5). 1 임무 결과는 그대로
     if (m.conveyor) DR.UI.conveyor(m, r, showResult);
     else if (m.guide) DR.UI.guide(m, r, showResult); // 3 임무: 길 안내 시연
+    else if (m.grading) DR.UI.grade(m, r, showResult); // 4 임무: 채점 시연
     else showResult();
   }
 

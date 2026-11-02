@@ -271,3 +271,65 @@ test('m3 → m4: record line from mission 3, exam name only "새빛 진학 평�
   assert.match(m4.story.recordLine.firstTry, /^3 임무/);
   for (const m of [m3, m4]) assert.ok(!/입학 평가/.test(JSON.stringify(m)));
 });
+
+// 채점 시연(2 임무 컨베이어와 같은 원인 규칙): 답안지마다 원인, 통과 장면은 모두 맞게, 위험 장면 ⇔ 멈춤
+const Conveyor = require('../js/conveyor.js');
+const sortGr = (bag, named) => Conveyor.sort(m4, judge(m4, bag, cfg, { named }), m4.grading);
+test('grading: well-formed sheets, every cause has a sheet, one real wrong answer', () => {
+  const comboIds = new Set(combos(m4).map((c) => c.id)), fakeIds = new Set(m4.fakes.map((f) => f.id));
+  assert.ok(m4.grading.length >= 11 && m4.grading.length <= 14, 'about 12 sheets');
+  for (const g of m4.grading) {
+    assert.ok(m4.cardTypes[g.art], g.id + ' art');
+    assert.ok(['1', '2', '3', '4', '5'].includes(g.chose), g.id);
+    assert.ok(['o', 'x'].includes(g.bin) && ['x', 'hold'].includes(g.wrongBin), g.id);
+    for (const c of g.causes) assert.ok(comboIds.has(c) || /^(contaminated|danger):S[1-4]$/.test(c) || (/^any:/.test(c) && fakeIds.has(c.slice(4))), g.id + ' ' + c);
+    if (g.hazard) { assert.equal(g.wrongBin, 'x', g.id); assert.ok(g.read && g.read !== g.chose, g.id + ' misread'); }
+    if (g.bin === 'o') assert.equal(g.chose, g.answer, g.id);
+  }
+  const causes = new Set(m4.grading.flatMap((g) => g.causes));
+  for (const c of comboIds) assert.ok(causes.has(c), c);
+  for (const f of fakeIds) assert.ok(causes.has(f) || causes.has('any:' + f) || f === 'x_scribble', f);
+  for (const s of ['S1', 'S2', 'S3', 'S4']) assert.ok(causes.has('contaminated:' + s) || causes.has('danger:' + s), s);
+  const real = m4.grading.filter((g) => g.bin === 'x');
+  assert.equal(real.length, 1);
+  assert.deepEqual(real[0].causes, []);
+  assert.notEqual(real[0].chose, real[0].answer);
+  // 선배 답안은 시연에 넣지 않는다(결판에서 따로)
+  assert.ok(!m4.grading.some((g) => g.senior));
+  assert.ok(sortGr(bagOf(MIN)).every((o) => o.correct && !o.emergency));
+});
+test('grading: passing scenes all right, danger scene <=> stop, real wrong answer always right (random bags, relabels too)', () => {
+  const rng = Rng.create(44), keys = Object.keys(m4.cardTypes), L = ['1', '2', '3', '4', '5'];
+  for (let n = 0; n < 400; n++) {
+    const bag = [];
+    for (let i = 0; i < 30; i++) {
+      const x = rng.next();
+      if (x < 0.2) {
+        const c = { id: 'f' + i, fakeId: m4.fakes[Math.floor(rng.next() * m4.fakes.length)].id };
+        if (rng.next() < 0.3) c.label = L[Math.floor(rng.next() * 5)];
+        bag.push(c);
+      } else if (x < 0.25) bag.push({ id: 'q' + i, ambiguousId: m4.ambiguous[Math.floor(rng.next() * 2)].id, assigned: L[Math.floor(rng.next() * 5)] });
+      else {
+        const c = { id: 'k' + i, key: keys[Math.floor(rng.next() * keys.length)] };
+        if (rng.next() < 0.08) c.label = L[Math.floor(rng.next() * 5)];
+        bag.push(c);
+      }
+    }
+    const r = judge(m4, bag, cfg), out = Conveyor.sort(m4, r, m4.grading);
+    for (const s of r.scenes) {
+      if (s.pass) assert.ok(out.filter((o) => o.scene === s.id).every((o) => o.correct), n + ' ' + s.id);
+      assert.equal(s.failKind === 'danger', out.some((o) => o.scene === s.id && o.emergency), n + ' ' + s.id + ' ' + JSON.stringify(s));
+    }
+    const real = out.find((o) => o.correctBin === 'x');
+    assert.ok(real.correct && real.bin === 'x');
+  }
+});
+test("grading: '7' on hooked 1s → the hooked 1 sheet gets ✕ read as 7, with a stop", () => {
+  const out = sortGr(bagOf(MIN).concat(fk('x_17', 2)));
+  const flag = out.find((o) => o.art === 'flag_1');
+  assert.equal(flag.correct, false); assert.equal(flag.bin, 'x'); assert.ok(flag.emergency);
+  assert.equal(m4.grading.find((g) => g.id === flag.id).read, '7');
+  // 표 답을 빼면 사람 채점(멈춤 없음)
+  const t = sortGr(bagOf({ ...MIN, table_4: 0 }));
+  assert.ok(t.filter((o) => !o.correct).every((o) => o.bin === 'hold' && !o.emergency));
+});
