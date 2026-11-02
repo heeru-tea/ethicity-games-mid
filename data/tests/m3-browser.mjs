@@ -113,7 +113,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
       await readDialogue(page);
       await page.locator('#screen-outro').waitFor({ state: 'visible' });
       assert.ok((await page.locator('#screen-outro').innerText()).includes('길 안내 AI 완료'));
-      assert.equal(await page.locator('#btn-next-mission').count(), 0, 'm4 not built yet');
+      assert.equal(await page.locator('#btn-next-mission').count(), 1, 'm3 chains to m4');
       assert.equal(await page.evaluate(() => DR.App.records.m3.cleared), true);
       assert.deepEqual(errors, []);
     } finally { await browser.close(); }

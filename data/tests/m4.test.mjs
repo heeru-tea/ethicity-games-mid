@@ -264,3 +264,10 @@ test('tutorial and missions 1~3 courses unchanged by m4', () => {
   assert.deepEqual(Stream.build(m3, cfg, { seed: 3302, focusCounts: { market_now: 2 } }), before.m3_sup);
   assert.deepEqual(Stream.build(tut, cfg, { seed: 7 }), before.tut_7);
 });
+
+test('m3 → m4: record line from mission 3, exam name only "새빛 진학 평가"', () => {
+  assert.equal(m3.next, 'm4');
+  assert.ok(m4.story.recordLine.firstTry && m4.story.recordLine.supplemented);
+  assert.match(m4.story.recordLine.firstTry, /^3 임무/);
+  for (const m of [m3, m4]) assert.ok(!/입학 평가/.test(JSON.stringify(m)));
+});
