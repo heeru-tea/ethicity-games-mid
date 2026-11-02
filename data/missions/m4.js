@@ -18,7 +18,7 @@
   var NEAT = ['neat_1', 'neat_2', 'neat_3', 'neat_4', 'neat_5'];
 
   var m4 = {
-    id: 'm4', title: '채점 AI', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 4401, fires: 8,
+    id: 'm4', title: '채점 AI', cityLine: '채점 AI까지, 도시가 다시 이어졌다', bag: 30, runSeconds: 90, supplementSeconds: 30, seed: 4401, fires: 8,
     zones: [
       { id: 'S1', title: '또박또박 쓴 답', short: '또박또박' },
       { id: 'S2', title: '흘려 쓴 답', short: '흘려 쓴 답' },

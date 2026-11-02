@@ -177,7 +177,22 @@
     return m + ' · ' + (SCREEN_TEXT[s.screen] || '이어서');
   }
 
+  // 타이틀 구석 "도시 n/5"(설계 §7): 점 5개 + 작은 글. 누를 수 없고 포커스도 안 받는다. 0칸이어도 보인다(5칸을 채우는 게임이라는 예고)
+  function renderCityBadge() {
+    var screen = document.getElementById('screen-title');
+    if (!screen || !DR.UI.cityDots) return;
+    var n = DR.App.cityCount();
+    var badge = document.getElementById('title-city');
+    if (!badge) { badge = el('div', { id: 'title-city', class: 'title-city', role: 'img' }); screen.appendChild(badge); }
+    badge.innerHTML = '';
+    badge.setAttribute('aria-label', '도시 복구 5칸 중 ' + n + '칸');
+    badge.dataset.count = String(n);
+    badge.appendChild(DR.UI.cityDots(n));
+    badge.appendChild(el('span', { class: 'title-city-text', 'aria-hidden': 'true', text: '도시 ' + n + '/5' }));
+  }
+
   function renderTitle() {
+    renderCityBadge();
     renderHeroPick();
     renderMissionPick();
     renderGuide();

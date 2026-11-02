@@ -99,6 +99,22 @@
     return write(o, st);
   }
 
+  // 도시 복구 칸 수(설계 §7): 튜토리얼 + 1~4 임무 중 깬 것, 0~5. 순서는 상관없다(임무 고르기로 건너뛰어도).
+  //   튜토리얼은 기록(records.tutorial)으로 센다 — '처음부터'(clear)는 기록을 지우므로 0칸부터(튜토리얼 건너뛰기 선택지는 tutorialDone으로 남음).
+  //   예전 저장(튜토리얼 기록이 생기기 전): tutorialDone이고 깬 임무가 있으면 튜토리얼도 센다.
+  var CITY_STAGES = ['m1', 'm2', 'm3', 'm4'];
+  function cityCount(recs, tutorialDone) {
+    recs = recs || {};
+    var n = CITY_STAGES.filter(function (id) { return recs[id] && recs[id].cleared; }).length;
+    var tut = recs.tutorial ? !!recs.tutorial.cleared : !!(tutorialDone && n > 0);
+    return Math.max(0, Math.min(5, n + (tut ? 1 : 0)));
+  }
+  // 깬 직후 도시 복구 화면: 칸이 늘었을 때만(다시 깨면 건너뜀). 4 임무 = 도시 재연결, 이야기의 끝이라 늘 →5
+  function cityStep(id, before, after) {
+    if (id === 'm4') return { from: Math.min(before, 4), to: 5 };
+    return after > before ? { from: before, to: after } : null;
+  }
+
   function soundOn(st) {
     st = storage(st);
     try {
@@ -131,7 +147,7 @@
     try { if (st) st.setItem(HERO_KEY, id); } catch (e) { /* 무시 */ }
   }
 
-  var api = { KEY: KEY, SOUND_KEY: SOUND_KEY, BGM_KEY: BGM_KEY, HERO_KEY: HERO_KEY, hero: hero, setHero: setHero, checkpoint: checkpoint, load: load, records: records, setRecord: setRecord, markTutorialDone: markTutorialDone, finish: finish, clear: clear, soundOn: soundOn, setSound: setSound, bgmOn: bgmOn, setBgm: setBgm };
+  var api = { KEY: KEY, SOUND_KEY: SOUND_KEY, BGM_KEY: BGM_KEY, HERO_KEY: HERO_KEY, hero: hero, setHero: setHero, checkpoint: checkpoint, load: load, records: records, setRecord: setRecord, markTutorialDone: markTutorialDone, cityCount: cityCount, cityStep: cityStep, finish: finish, clear: clear, soundOn: soundOn, setSound: setSound, bgmOn: bgmOn, setBgm: setBgm };
   root.DR = root.DR || {};
   root.DR.Save = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

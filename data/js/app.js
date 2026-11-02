@@ -6,7 +6,7 @@
 (function (root) {
   'use strict';
 
-  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'conveyor', 'guide', 'grade', 'result', 'prep', 'knockout', 'outro'];
+  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'conveyor', 'guide', 'grade', 'result', 'prep', 'knockout', 'city', 'outro'];
   var DR = root.DR;
   var STATIC = ['title', 'run']; // HTML에 고정 구조가 있는 화면(비우지 않음)
 
@@ -64,6 +64,18 @@
     });
   }
 
+  /* ---------- 도시 복구(설계 §7) ---------- */
+  // 칸 수 = 튜토리얼 + 1~4 임무 중 깬 것(기록 기준, 0~5) — 타이틀 배지도 이것을 쓴다
+  function cityCount() {
+    var s = DR.Save.load();
+    return DR.Save.cityCount(App.records, !!(s && s.tutorialDone));
+  }
+  // step = DR.Save.cityStep(…) — null이면(칸이 늘지 않음) 건너뛴다
+  function cityScreen(m, step, done) {
+    if (!step) { done(); return; }
+    DR.UI.city({ from: step.from, to: step.to, line: m.cityLine || '' }, done);
+  }
+
   /* ---------- 튜토리얼 ---------- */
   function startTutorial() {
     var m = DR.Missions.tutorial;
@@ -88,11 +100,18 @@
         onRetry: function () { DR.Sfx.play('ui'); tutorialRun(); },
         onNext: function () {
           DR.Sfx.play('ui');
+          // 도시 복구: 튜토리얼 기록을 남기기 전·후 칸 수(마무리 대화 뒤, 1 임무 도입 전에 0 → 1)
+          var before = cityCount();
           DR.Save.markTutorialDone();
+          App.records.tutorial = { cleared: true };
+          DR.Save.setRecord('tutorial', App.records.tutorial);
+          var step = DR.Save.cityStep('tutorial', before, cityCount());
           // 합격 대사에 가방 구성 한 줄(개 n장, 고양이 m장)
           var c = DR.Cards.labelCounts(m, App.state.bag);
           var count = { who: 'examiner', text: m.story.passCount.replace('{dog}', c.dog || 0).replace('{cat}', c.cat || 0), face: 'explain' };
-          DR.UI.dialogue([m.story.outro[0], count].concat(m.story.outro.slice(1)), function () { startMission('m1'); });
+          DR.UI.dialogue([m.story.outro[0], count].concat(m.story.outro.slice(1)), function () {
+            cityScreen(m, step, function () { startMission('m1'); });
+          });
         }
       });
     });
@@ -279,24 +298,27 @@
       '보충 달리기: ' + rec.supplements + '번'
     ];
     if (relabels) summary.push('고친 이름표: ' + fixed + '장');
+    var cityBefore = cityCount();
     App.records[m.id] = rec;
     DR.Save.finish();
     DR.Save.setRecord(m.id, rec);
     var next = m.next && DR.Missions[m.next] ? function () { startMission(m.next); } : null;
     var outroOpts = { kicker: m.title + ' 완료', next: next, summary: summary };
+    var step = DR.Save.cityStep(m.id, cityBefore, cityCount());
     function toOutro() { DR.UI.outro(m.story.outro, function () { DR.Sfx.play('ui'); go('title'); }, outroOpts); }
     if (m.story.after) {
-      // 4 임무: 도시 재연결 → 의뢰인 한 줄 → (동기가 합류한 적 없으면) 동기의 상자 → 해커의 이후(bg) → 마무리(최종 토론 질문)
+      // 4 임무: 도시 재연결(늘 5/5) → 의뢰인 한 줄 → (동기가 합류한 적 없으면) 동기의 상자 → 해커의 이후(bg) → 마무리(최종 토론 질문)
       var lines = (rec.passed ? m.story.reconnect.pass : m.story.reconnect.partial).slice();
       if (App.state.peer === 'none') lines.push(m.story.showdown.peerBox);
       var af = m.story.after;
       lines = lines.concat(af.lines.map(function (l) { return Object.assign({ bg: af.bg }, l); }));
       outroOpts.headline = '도시가 다시 이어졌다';
       outroOpts.questions = m.story.questions;
-      DR.UI.dialogue(lines, toOutro);
+      cityScreen(m, step, function () { DR.UI.dialogue(lines, toOutro); });
       return;
     }
-    DR.UI.dialogue(revealLines(m).concat(m.story.senior), toOutro);
+    // 1~3 임무: 마지막 대화(선배·정체 공개) → 도시 복구(칸이 늘었을 때만) → 임무 완료
+    DR.UI.dialogue(revealLines(m).concat(m.story.senior), function () { cityScreen(m, step, toOutro); });
   }
 
   // 테스트 훅: 달리는 중 현재 코스에서 key(또는 ambiguousId) 카드를 앞에서부터 골라 가방에 넣는다
@@ -328,7 +350,7 @@
 
   var App = {
     screen: 'title', state: null, lastJudge: null, course: null, records: DR.Save.records(),
-    go: go, startTutorial: startTutorial, startMission: startMission, afterRun: afterRun, debugFill: debugFill, resume: resume,
+    go: go, cityCount: cityCount, startTutorial: startTutorial, startMission: startMission, afterRun: afterRun, debugFill: debugFill, resume: resume,
     mission: function () { return App.state ? DR.Missions[App.state.mission] : null; }
   };
   DR.App = App;

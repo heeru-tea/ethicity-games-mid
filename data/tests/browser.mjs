@@ -25,3 +25,7 @@ export async function openGame(opts = {}) {
   await page.goto(pathToFileURL(path.join(DATA_DIR, 'index.html')).href + (opts.query || ''));
   return { browser, page, errors };
 }
+// 도시 복구 화면(깬 직후, 칸이 늘었을 때만)이 떠 있으면 [계속] — 임무 끝 흐름을 지나는 테스트가 쓴다
+export async function passCity(page) {
+  if (await page.locator('#screen-city').isVisible()) await page.locator('#btn-city-next').click();
+}
