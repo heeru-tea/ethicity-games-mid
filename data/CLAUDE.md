@@ -1,6 +1,8 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
-## ★지금 상태 (2026-11-02)
+## ★지금 상태 (2026-11-02, 3 임무)
+- **3 임무 「길 안내 AI」 완성**(계획 `docs/plans/2026-11-02-data-runner-m3.md`, 진행 기록 `.superpowers/sdd/2026-11-02-data-runner-m3/progress.md`). 장소 이름표 4종·모든 카드 촬영 날짜·바뀐 곳의 옛 사진(가짜, 철거 전 육교 = 위험)·시장 골목은 바뀐 적 없어 옛 사진도 지켜야 통과(원칙 2). 검수 = 도시 변경 기록 판 + 크게 보기 날짜(이름표 고치기 없음, `relabel:false`). 결과 = 길 안내 시연(`js/ui-guide.js`) → 장면 결과 → 선배 정체 공개(1·2 임무 첫 판 실수 기록을 "누구나 그래"로, 없으면 일반 문장). 2 → 3 임무 잇기·임무 고르기 3개. 달리기 배경 `RunScenery` city. 4 임무는 아직(설계만).
+- 브라우저 테스트 16개(m3 추가). 메모리가 빠듯할 때 readability·fakes·fire가 시간 초과로 실패할 수 있음 — 혼자 돌리면 통과.
 - **사용자 지시서 3건 반영**: ①가짜 정리가 운에 달리지 않게 — 앞선 결과에서 이름이 나온 가짜(오표기 포함)가 남아 있으면 그 장면은 개수와 상관없이 실패(`judge(…, { named })`, 결과 "…사진이 아직 남아 있다"), 보충 준비에 오염 장면 안내 한 줄(어느 카드인지 말 안 함), 종류별 "1장 빼기" = 사진 펼쳐 직접 고르기. ②결과 문구: 가진 개수 0 → "없었다", 모자라면 "부족했다"(조합 데이터는 `what`, `DR.Judge.missingLine`), 이름표는 맞게 고쳤는데 개수 부족이면 그 원인 줄(`DR.Judge.fixedNotes`), "계속 돌리기", 1 임무 S1 불편 컷 = 물 없는 옆 골목. ③구역 배치 일반화(장면 2개 이상 임무, 데이터 `zones`), 2 임무 구역 HUD + 선별장 배경(`RunScenery` sorting), 1 임무·튜토리얼 코스는 스냅숏과 동일(`tests/fixtures/courses-before-zones.json`).
 
 ## 지금 상태 (2026-11-01)
@@ -40,7 +42,7 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (145)
+- 단위: `node --test "data/tests/*.test.mjs"` (160)
 - 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (15개: boot·cardart·fakes·fire·flow·hero·keys·m1·**m2**·portraits·readability·run·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
