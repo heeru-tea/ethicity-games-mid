@@ -60,7 +60,11 @@ async function gen(id) {
 async function key(file) {
   const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const { width: w, height: h } = info;
-  const isBg = (i) => { const r = data[i], g = data[i + 1], b = data[i + 2]; return r > 150 && b > 150 && g < 110 && Math.abs(r - b) < 90; };
+  // 배경색 = 네 모서리 평균(생성 그림의 마젠타는 #FF00FF가 아니라 진분홍~자주로 흔들림) → 그 색과 가까우면 배경
+  const cs = [0, w - 1, (h - 1) * w, h * w - 1].map((p) => [data[p * 4], data[p * 4 + 1], data[p * 4 + 2]]);
+  const bg = [0, 1, 2].map((k) => cs.reduce((t, c) => t + c[k], 0) / 4);
+  const dist = (i) => Math.hypot(data[i] - bg[0], data[i + 1] - bg[1], data[i + 2] - bg[2]);
+  const isBg = (i) => dist(i) < 70;
   const seen = new Uint8Array(w * h), q = [];
   for (let x = 0; x < w; x++) { q.push(x, (h - 1) * w + x); }
   for (let y = 0; y < h; y++) { q.push(y * w, y * w + w - 1); }
@@ -75,7 +79,7 @@ async function key(file) {
   for (let p = 0; p < w * h; p++) {
     const i = p * 4; if (!data[i + 3]) continue;
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    if (r > 200 && b > 200 && g < 80) { data[i + 3] = 0; continue; }
+    if (dist(i) < 45) { data[i + 3] = 0; continue; } // 그림 안쪽에 갇힌 배경 조각
     if (r > 120 && b > 120 && g < Math.min(r, b) - 50) data[i + 1] = Math.min(255, Math.round((r + b) / 2 - 20)); // 번짐 중화
   }
   return { data, w, h };

@@ -14,14 +14,22 @@ if (!fs.existsSync(BASE)) fs.copyFileSync(path.join(PRIV, 'assets', 'scenes', 'v
 export const PLACE = [
   { file: 'assets/props/duck-white.png', cx: 445, bottom: 793, scale: 1.4, water: true },   // 왼쪽 아래 연못: 엄마 오리
   { file: 'assets/props/duck-yellow1.png', cx: 203, bottom: 874, scale: 1.4, water: true }, // 새끼 오리 둘
-  { file: 'assets/props/duck-yellow2.png', cx: 250, bottom: 884, scale: 1.4, water: true }
+  { file: 'assets/props/duck-yellow2.png', cx: 250, bottom: 884, scale: 1.4, water: true },
+  // prop-art.mjs 동물(w = 줄일 폭): 우리 집 옆 잔디에서 자는 고양이, 벤치 위 참새
+  { file: 'assets/props/cat.png', cx: 1447, bottom: 734, w: 50 },
+  { file: 'assets/props/bird.png', cx: 868, bottom: 792, w: 34 }
 ];
 
 async function sprite(p) {
   const src = path.join(PRIV, p.file);
   if (!fs.existsSync(src)) { console.log('  (없어서 건너뜀) ' + p.file); return []; }
   const m0 = await sharp(src).metadata();
-  const img = await sharp(src).resize({ width: Math.round(m0.width * p.scale), kernel: 'nearest' }).png().toBuffer();
+  let img = await sharp(src).trim().resize({ width: p.w || Math.round(m0.width * p.scale), kernel: p.w ? 'lanczos3' : 'nearest' }).png().toBuffer();
+  if (p.w) { // 크게 줄인 동물: 반투명 가장자리를 0/255로(픽셀 그림처럼 또렷하게)
+    const { data, info } = await sharp(img).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    for (let i = 3; i < data.length; i += 4) data[i] = data[i] >= 110 ? 255 : 0;
+    img = await sharp(data, { raw: info }).png().toBuffer();
+  }
   const m = await sharp(img).metadata();
   const left = Math.round(p.cx - m.width / 2), top = p.bottom - m.height;
   const under = p.water

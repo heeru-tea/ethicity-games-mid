@@ -10,20 +10,30 @@ const BG = path.join(PRIV, '..', 'shared', 'ethicity-elementary-common-v1', 'bac
 export const PLACE = [
   { file: 'assets/schoolyard/booth-photo.png', cx: 405, bottom: 760, w: 205 }, // 레트로 사진관(우리 반)
   { file: 'assets/schoolyard/booth-snack.png', cx: 605, bottom: 760, w: 205 }, // 옆 반
-  { file: 'assets/schoolyard/store.png', cx: 1150, bottom: 785, w: 215 }       // 매점 가판대
+  // 매점(2026-11-01 prop-art.mjs, 정면 3/4·테라코타 지붕): 오른쪽 아래 잔디 뒤쪽에 앉혀 창구가 아래(14줄 서는 자리)를 본다 — world.js store (20,11) 4×3
+  { file: 'assets/props/store.png', cx: 1150, bottom: 734, w: 205, shadowH: 10 },
+  // 작은 동물(구석의 막힌 칸만): 왼쪽 위 나무 그늘 토끼, 왼쪽 벤치 위 다람쥐
+  { file: 'assets/props/rabbit.png', cx: 100, bottom: 492, w: 40 },
+  { file: 'assets/props/squirrel.png', cx: 222, bottom: 784, w: 46, shadowH: 6 }
 ];
 
+async function alphaCrisp(buf) { // 반투명 가장자리 → 0 또는 255(픽셀 그림처럼 또렷하게)
+  const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  for (let i = 3; i < data.length; i += 4) data[i] = data[i] >= 110 ? 255 : 0;
+  return sharp(data, { raw: info }).png().toBuffer();
+}
 async function sprite(p) {
   const trimmed = await sharp(path.join(PRIV, p.file)).trim().png().toBuffer(); // 투명 여백 제거
-  const img = await sharp(trimmed).resize({ width: p.w, kernel: 'nearest' }).png().toBuffer();
+  const img = await sharp(trimmed).resize({ width: p.w, kernel: p.w < 80 ? 'lanczos3' : 'nearest' }).png().toBuffer(); // 아주 작게 줄이는 동물은 부드럽게 줄인 뒤 아래에서 알파를 또렷하게
+  const crisp = p.w < 80 ? await alphaCrisp(img) : img;
   const m = await sharp(img).metadata();
   // 발밑 그림자(바닥에 붙어 보이게)
-  const sh = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${m.width}" height="40"><ellipse cx="${m.width / 2}" cy="20" rx="${m.width * 0.46}" ry="13" fill="rgba(40,50,30,0.28)"/></svg>`);
+  const sh = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${m.width}" height="40"><ellipse cx="${m.width / 2}" cy="20" rx="${m.width * 0.46}" ry="${p.shadowH || 13}" fill="rgba(40,50,30,0.28)"/></svg>`);
   return [
     { input: sh, left: Math.round(p.cx - m.width / 2), top: p.bottom - 22 },
-    { input: img, left: Math.round(p.cx - m.width / 2), top: p.bottom - m.height }
+    { input: crisp, left: Math.round(p.cx - m.width / 2), top: p.bottom - m.height }
   ];
 }
 const layers = (await Promise.all(PLACE.map(sprite))).flat();
 await sharp(BG).composite(layers).png().toFile(path.join(PRIV, 'assets', 'scenes', 'yard.png'));
-console.log('✓ assets/scenes/yard.png (courtyard 원본 + 3개 합성)');
+console.log('✓ assets/scenes/yard.png (courtyard 원본 + ' + PLACE.length + '개 합성)');
