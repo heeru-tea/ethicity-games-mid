@@ -1,6 +1,9 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
-## ★지금 상태 (2026-11-02, 시작 화면)
+## ★지금 상태 (2026-11-02, 새 인물 초상)
+- **대화 초상**: Codex 시트(`assets/characters/`) — 4표정 supervisor·senior·examiner, 2표정 sorter·client·collector(cast 키 bot). 대사 줄의 `face`(basic·happy·worried·explain, 없으면 기본) → 칸(`ui-story.js` SHEETS·faceIndex). 시트가 없는 인물(택배 기사)은 도형 초상. 단위 162.
+
+## 지금 상태 (2026-11-02, 시작 화면)
 - **시작 화면 다시 꾸미기**: `js/title-scene.js`(DR.TitleScene — 배경 4층 패럴랙스·비·반짝임·3D 주인공 제자리 달리기·카드 줍기·글리치·떠나는 전환·봇 말풍선, 30fps 한 루프, 떠나면 stop()으로 3D 정리) + `.tl-*` CSS + `ui-shell.js`(임무 카드·이어하기 위치·봇 안내). 그림 `assets/title/`(README에 게임용 사본·원본 보관 정리). 테스트 공용 `browser.mjs`는 `__DR_FAST_TITLE`로 전환을 건너뜀(`titleFx:true`면 전환 확인). 브라우저 테스트 18개.
 
 ## 지금 상태 (2026-11-02, 사소한 문제 9가지)
@@ -48,7 +51,7 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (161)
+- 단위: `node --test "data/tests/*.test.mjs"` (162)
 - 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (15개: boot·cardart·fakes·fire·flow·hero·keys·m1·**m2**·portraits·readability·run·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
