@@ -52,7 +52,9 @@
     return t === null || labelOfKey(mission, t) !== currentLabel(mission, card);
   }
 
+  // 피해: 가짜에 harm이 적혀 있으면 그것(3 임무 철거 전 육교), 아니면 진짜 종류가 위험물이면 위험
   function harm(mission, card) {
+    if (card.fakeId) { var fd = fakeDef(mission, card.fakeId); if (fd && fd.harm) return fd.harm; }
     var t = truthKey(mission, card);
     return t && mission.cardTypes[t] && mission.cardTypes[t].hazard ? 'danger' : 'inconvenience';
   }
@@ -82,6 +84,12 @@
     var label = currentLabel(mission, card);
     if (mission.labels) return [label];
     return (mission.cardTypes[label] && mission.cardTypes[label].icons) || [];
+  }
+
+  // 촬영 날짜(3 임무): 카드 종류·가짜의 dates에서 변형 번호로 하나. 없으면 null
+  function dateOf(mission, card, variant) {
+    var def = card.key ? mission.cardTypes[card.key] : (card.fakeId ? fakeDef(mission, card.fakeId) : null);
+    return def && def.dates ? def.dates[(variant || 0) % def.dates.length] : null;
   }
 
   function artId(card) { return card.key || card.ambiguousId || card.fakeId; }
@@ -162,7 +170,7 @@
   var api = { labelColors: labelColors, runColor: runColor,
     fakeDef: fakeDef, labelOfKey: labelOfKey, originalLabel: originalLabel, currentLabel: currentLabel, truthKey: truthKey,
     isMislabeled: isMislabeled, harm: harm, sourceId: sourceId, scenesForLabel: scenesForLabel,
-    iconsOf: iconsOf, artId: artId, labelText: labelText,
+    iconsOf: iconsOf, artId: artId, dateOf: dateOf, labelText: labelText,
     keyLabel: keyLabel, cardLabel: cardLabel, displayKey: displayKey, labelCounts: labelCounts
   };
   root.DR = root.DR || {};

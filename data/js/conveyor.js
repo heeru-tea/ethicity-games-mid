@@ -47,7 +47,7 @@
       return {
         id: it.id, art: it.art, variant: it.variant, scene: it.scene,
         bin: correct ? it.bin : it.wrongBin, correctBin: it.bin, correct: correct, cause: cause,
-        emergency: !correct && hazardous(mission, it.art)
+        emergency: !correct && (!!it.hazard || hazardous(mission, it.art))
       };
     });
   }
