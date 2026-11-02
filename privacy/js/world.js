@@ -309,8 +309,10 @@
       bubbles: [{ on: '다들 퍼 가 주세요', who: 'jiho', text: '…!' }, { on: '당하고만 있으면 안 돼', who: 'saebom', text: '😤' }] },
     c3_e9_b: { place: 'classroom', tint: 'day', card: '점심시간 · 교실', cast: only(classmates, ['saebom', 'jiho']),
       bubbles: [{ on: '그냥 넘어가면 억울한데', who: 'saebom', text: '😣' }] },
+    // 에필로그: 반 친구 넷이 담임 선생님 앞에 모두 모인다(확대 무대에서 한 화면에 — 2026-11-02 사용자, 첫 단톡방과 같은 방식)
     ep_1: { place: 'classroom', tint: 'day', me: P('classroom', 16, 9, 'up'),
-      cast: [who('teacher', 'classroom', 17, 7, 'down')].concat(classmates) }
+      cast: [who('teacher', 'classroom', 17, 7, 'down'), who('saebom', 'classroom', 14, 9, 'up'), who('haneul', 'classroom', 18, 9, 'up'),
+        who('jiho', 'classroom', 14, 11, 'up'), who('minjun', 'classroom', 18, 11, 'up')] }
   };
 
   /* ── ❗가 아닌 인물에게 말 걸 때 ─────── */
