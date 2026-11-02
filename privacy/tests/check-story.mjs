@@ -9,6 +9,7 @@ const require = createRequire(import.meta.url);
 const story = require('../js/story.js');
 const E = require('../js/engine.js');
 const WORLD = require('../js/world.js');
+const EM = require('../js/emph.js'); // [[강조]] 표시: 글자 비교는 표시를 뺀 글자로
 story.triggers = WORLD.triggers; // 앱과 같은 연결: 트리거가 있는 장면 앞에 맵 단계
 
 const errors = [];
@@ -139,6 +140,9 @@ function markLines(s) {
 let seed = 20261017;
 const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
 const SAMPLES = Number(process.env.SAMPLES || 100000);
+const EM_MAX = 2; // 장면당(장면 대사 + 반응) 강조 최대 개수 — 많으면 강조가 아니게 된다
+const emCount = (lines) => lines.reduce((n, l) => n + EM.parts(l.text).filter((p) => p.strong).length + (l.meta ? EM.parts(l.meta).filter((p) => p.strong).length : 0), 0);
+const emOver = new Map(), emSeen = new Set();
 function play(pick) {
   let s = E.createState(story);
   const path = [];
@@ -146,13 +150,17 @@ function play(pick) {
     if (step > 400) { err('무한 루프 의심'); break; }
     if (s.screen === 'scene') {
       seenScene.add(s.scene); markLines(s);
+      let em = emCount(E.visibleLines(story, story.scenes[s.scene].lines, s)), at = s.scene;
       if (E.needsChoice(story, s)) {
         const cs = E.visibleChoices(story, story.scenes[s.scene], s);
         const c = pick(s, cs);
         if (!c) return { s, path, fail: s.scene };
         seenChoice.add(`${s.scene}#${c.id}`); path.push(`${s.scene}#${c.id}`);
         s = E.choose(story, s, c.id); s.history = []; markLines(s);
+        em += emCount(E.visibleLines(story, c.react, s)); at += '#' + c.id;
       }
+      if (em) emSeen.add(at);
+      if (em > EM_MAX) emOver.set(at, em);
     }
     s = E.advance(story, s);
   }
@@ -241,13 +249,13 @@ function linesOnRoute(route) {
   let s = E.createState(story), i = 0;
   const seen = [];
   for (let step = 0; s.screen !== 'ending' && step < 800; step++) {
-    if (s.screen === 'scene' && !s.reaction) E.visibleLines(story, story.scenes[s.scene].lines, s).forEach((l) => seen.push({ scene: s.scene, who: l.who, text: l.text }));
+    if (s.screen === 'scene' && !s.reaction) E.visibleLines(story, story.scenes[s.scene].lines, s).forEach((l) => seen.push({ scene: s.scene, who: l.who, text: EM.plain(l.text) }));
     if (s.screen === 'scene' && E.needsChoice(story, s)) {
       const [sc, id] = (route[i] || '').split('#');
       if (sc !== s.scene) return { fail: s.scene + ' / ' + (route[i] || '없음') };
       const c = story.scenes[sc].choices.find((x) => x.id === id);
       s = E.choose(story, s, id); s.history = []; i++;
-      E.visibleLines(story, c.react, s).forEach((l) => seen.push({ scene: sc, who: l.who, text: l.text }));
+      E.visibleLines(story, c.react, s).forEach((l) => seen.push({ scene: sc, who: l.who, text: EM.plain(l.text) }));
     }
     s = E.advance(story, s);
   }
@@ -432,7 +440,7 @@ for (const id of TRIGGER_ORDER) {
 // 모든 장면은 맵 위 한 장소에서 벌어진다: 장소·인물 위치·말풍선 기준 줄이 실제로 맞는지
 function sceneTexts(id) {
   const sc = story.scenes[id], out = [];
-  const add = (l) => { const n = E.normLine(l, story); if (n && n.text) out.push(n.text); };
+  const add = (l) => { const n = E.normLine(l, story); if (n && n.text) out.push(EM.plain(n.text)); };
   (sc.lines || []).forEach(add);
   for (const c of sc.choices || []) { if (c.say) out.push(c.say); (c.react || []).forEach(add); }
   return out;
@@ -461,6 +469,31 @@ for (const id of sceneIds) {
     if (!texts.some((t) => t.indexOf(b.on) >= 0)) err('말풍선 기준 줄 없음: ' + id + ' "' + b.on + '"');
     if (b.who !== 'me' && !st.cast.some((c) => c.who === b.who)) err('말풍선 인물이 무대에 없음: ' + id + '/' + b.who);
   }
+}
+
+// ── 6e. 강조 표시([[…]]) ──────────────────
+// 짝이 맞고 겹치지 않음 / 선택지·내 말·질문·제목에는 없음(정답 신호 금지) / 장면당 2개까지(무작위 완주에서 실제로 보인 것)
+{
+  const bad = (t) => { if (typeof t !== 'string') return false; const ps = EM.parts(t); return ps.some((p) => p.strong && (/\[\[|\]\]/.test(p.text) || !p.text.trim())) || /\[\[|\]\]/.test(ps.filter((p) => !p.strong).map((p) => p.text).join('')); };
+  const lineTexts = (l) => { const n = E.normLine(l, story); return [n.text, n.meta, n.alt]; };
+  for (const [id, sc] of Object.entries(story.scenes)) {
+    (sc.lines || []).forEach((l, i) => lineTexts(l).forEach((t) => { if (bad(t)) err(`강조 표시 짝이 안 맞음: ${id} 대사${i}`); }));
+    for (const c of sc.choices || []) {
+      (c.react || []).forEach((l, i) => lineTexts(l).forEach((t) => { if (bad(t)) err(`강조 표시 짝이 안 맞음: ${id}#${c.id} 반응${i}`); }));
+      [c.text, c.say].forEach((t) => { if (t && EM.has(t)) err(`선택지·내 말에 강조 표시(정답 신호): ${id}#${c.id}`); });
+    }
+    const titles = [sc.prompt, sc.label, ...[].concat((sc.view || {}).title || []).map((x) => (typeof x === 'string' ? x : x.title)), (sc.view || {}).meta];
+    titles.forEach((t) => { if (t && /\[\[|\]\]/.test(t)) err('질문·제목에 강조 표시: ' + id); });
+  }
+  for (const [eid, ev] of Object.entries(story.events)) { if (/\[\[|\]\]/.test(ev.title + ev.topic)) err('사건 제목에 강조 표시: ' + eid); ev.outcomes.forEach((o, i) => { if (bad(o.text)) err(`강조 표시 짝이 안 맞음: 사건 ${eid} 결과${i}`); }); }
+  story.endings.forEach((e) => { if (/\[\[|\]\]/.test(e.title)) err('엔딩 제목에 강조 표시: ' + e.code); [e.summary, ...e.body.map((p) => (typeof p === 'string' ? p : p.text))].forEach((t) => { if (bad(t)) err('강조 표시 짝이 안 맞음: 엔딩 ' + e.code); }); });
+  for (const [k, n] of emOver) err(`한 장면에 강조가 ${n}개(최대 ${EM_MAX}): ${k}`);
+  // 표시 도구 자체: 조각·맨 글자·별명 막기
+  const ps = EM.parts('가 [[28명 방에]] 나 [[둘]]');
+  if (ps.length !== 4 || !ps[1].strong || ps[1].text !== '28명 방에' || EM.plain('가 [[28명 방에]] 나') !== '가 28명 방에 나') err('emph.js parts/plain 오류');
+  if (EM.has(EM.safe('[[별명]]')) || EM.plain(EM.safe('[[별명]]')).replace(/\u200b/g, '') !== '[[별명]]') err('emph.js safe: 별명 속 [[ ]]가 강조로 읽힘');
+  if (EM.plain('짝 없는 [[괄호') !== '짝 없는 [[괄호') err('emph.js: 짝 없는 괄호는 글자 그대로여야 함');
+  console.log(`강조 표시: 장면·반응 조합 ${emSeen.size}곳에서 보임 (장면당 최대 ${EM_MAX}개)`);
 }
 
 // ── 7. 보고 ──────────────────────────────

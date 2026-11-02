@@ -159,7 +159,7 @@
     active = true; resize(); lastT = performance.now(); schedule();
     var c = $('cut');
     if (!opts.card) { c.hidden = true; return Promise.resolve(); }
-    c.textContent = opts.card; c.hidden = false;
+    c.textContent = window.PrivacyEmph ? window.PrivacyEmph.plain(opts.card) : opts.card; c.hidden = false;
     var ms = o.instant() || o.reduceMotion() ? 900 : 1400;
     return new Promise(function (res) { setTimeout(function () { c.hidden = true; res(); }, ms); });
   }
@@ -738,7 +738,7 @@
   // 말풍선: 인물마다 하나씩, 3.2초 뒤 사라짐. 길면 12자에서 자른다
   // weak(자동 '📱…')은 살아 있는 반응 말풍선을 덮지 않는다
   function setBubble(c, text, weak) {
-    text = String(text);
+    text = window.PrivacyEmph ? window.PrivacyEmph.plain(text) : String(text); // 캔버스 말풍선은 맨 글자([[강조]] 기호 없이)
     var now = performance.now();
     if (weak && bubbles.some(function (b) { return b.who === c && !b.weak && b.until > now; })) return;
     bubbles = bubbles.filter(function (b) { return b.who !== c; });

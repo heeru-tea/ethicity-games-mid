@@ -4,7 +4,8 @@
  *   who·name이 없으면 이름 탭 없이(해설·안내). instant면 모든 줄을 한 상자에 쌓고 한 번에 넘긴다.
  * 한 줄씩일 때는 글자가 주르륵 쳐진다(typer.js). 누르기 한 번 = 치는 중이면 그 줄을 다 보여 주기, 다 보였으면 다음 줄.
  *   (다 보인 줄에서 누른 것을 버리지 않는다.) 화면 읽기 프로그램에는 다 쳐진 줄을 한 번만 읽힌다(.talk-live).
- * 글자는 textContent로만 넣는다.
+ * 글자 속 [[…]] = 강조(emph.js, 굵게). 화면 읽기(.talk-live)에는 기호를 뺀 글자만.
+ * 글자는 textContent·text node로만 넣는다.
  */
 (function () {
   'use strict';
@@ -43,12 +44,14 @@
       b.textContent = line.name + ': ';
       p.appendChild(b);
     }
-    p.appendChild(document.createTextNode(line.text));
+    var t = document.createElement('span');
+    window.PrivacyEmph.render(t, line.text);
+    while (t.firstChild) p.appendChild(t.firstChild);
     return p;
   }
 
   function announce(text) { if (liveEl) liveEl.textContent = text; }
-  function spoken(line) { return (line.name ? line.name + ': ' : '') + line.text; }
+  function spoken(line) { return (line.name ? line.name + ': ' : '') + window.PrivacyEmph.plain(line.text); }
 
   function showLine() {
     var line = lines[idx];

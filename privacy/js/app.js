@@ -1,6 +1,7 @@
 /*
  * 화면 처리 — 스토리 데이터(story.js)와 상태 엔진(engine.js)을 화면에 그린다.
- * 모든 이야기 문자열과 별명은 textContent로만 넣는다(HTML로 해석하지 않음).
+ * 모든 이야기 문자열과 별명은 textContent·text node로만 넣는다(HTML로 해석하지 않음).
+ * 이야기 글자 속 [[…]] = 강조(js/emph.js, 굵게만): rich()로 그리고, 화면 읽기·캔버스 말풍선·글자 비교에는 plain().
  */
 (function () {
   'use strict';
@@ -42,7 +43,11 @@
     if (text != null) n.textContent = text;
     return n;
   }
-  function fill(text) { return String(text).replace(/\{name\}/g, player.nickname); }
+  // 강조 그리기: 글자 조각 + <strong class="em"> (HTML 해석 없음)
+  function rich(tag, cls, text) { var n = el(tag, cls); window.PrivacyEmph.render(n, text); return n; }
+  var plain = window.PrivacyEmph.plain;
+  // {name} = 별명. 별명 속 [[ ]]는 강조로 읽히지 않게(safe — 보기에는 같음)
+  function fill(text) { return String(text).replace(/\{name\}/g, window.PrivacyEmph.safe(player.nickname)); }
 
   /* ── 불러오기·저장 ───────────────── */
   function loadAll() {
@@ -228,18 +233,18 @@
       var box = el('div', 'media-box');
       box.appendChild(el('span', 'media-icon', '🖼'));
       box.lastChild.setAttribute('aria-hidden', 'true');
-      box.appendChild(el('span', null, fill(line.text)));
+      box.appendChild(rich('span', null, fill(line.text)));
       li.appendChild(box);
       return li;
     }
     if (line.kind === 'setting') {
       li = el('li', 'ln setting-row');
-      li.appendChild(el('span', 'set-name', fill(line.text)));
-      if (line.meta) li.appendChild(el('span', 'set-meta', fill(line.meta)));
+      li.appendChild(rich('span', 'set-name', fill(line.text)));
+      if (line.meta) li.appendChild(rich('span', 'set-meta', fill(line.meta)));
       return li;
     }
-    if (who === 'sys') { li = el('li', 'ln sys'); li.appendChild(el('span', null, fill(line.text))); return li; }
-    if (who === 'narr') { li = el('li', 'ln narr', fill(line.text)); return li; }
+    if (who === 'sys') { li = el('li', 'ln sys'); li.appendChild(rich('span', null, fill(line.text))); return li; }
+    if (who === 'narr') { li = rich('li', 'ln narr', fill(line.text)); return li; }
 
     var ch = story.characters[who] || { name: who, initial: '?' };
     var isMe = who === 'me';
@@ -249,8 +254,8 @@
     var name = el('span', 'who', isMe ? player.nickname + ' (나)' : ch.name);
     body.appendChild(name);
     var bubble = el('div', 'bubble');
-    bubble.appendChild(el('p', null, fill(line.text)));
-    if (line.meta) bubble.appendChild(el('span', 'post-meta', fill(line.meta)));
+    bubble.appendChild(rich('p', null, fill(line.text)));
+    if (line.meta) bubble.appendChild(rich('span', 'post-meta', fill(line.meta)));
     body.appendChild(bubble);
     li.appendChild(body);
     return li;
@@ -272,7 +277,7 @@
     var real = !!(window.PRIVACY_WEBP || {})[line.photo];
     var fig = el('figure', 'photo blurred' + (real ? '' : ' pixel'));
     var im = document.createElement('img');
-    im.alt = line.alt || fill(line.text);
+    im.alt = line.alt || plain(fill(line.text));
     im.decoding = 'async';
     window.PrivacyImg.load(im, real ? line.photo : line.placeholder);
     fig.appendChild(im);
@@ -280,7 +285,7 @@
     btn.type = 'button';
     btn.addEventListener('click', function () { fig.classList.remove('blurred'); btn.remove(); });
     fig.appendChild(btn);
-    fig.appendChild(el('figcaption', null, fill(line.text)));
+    fig.appendChild(rich('figcaption', null, fill(line.text)));
     return fig;
   }
 
@@ -436,19 +441,19 @@
     return n;
   }
   function sayOf(line) {
-    var who = line.who || 'narr', t = fill(line.text || '');
-    if (line.kind === 'setting') return t + (line.meta ? ', ' + fill(line.meta) : '');
+    var who = line.who || 'narr', t = plain(fill(line.text || ''));
+    if (line.kind === 'setting') return t + (line.meta ? ', ' + plain(fill(line.meta)) : '');
     if (line.kind === 'image') return '사진: ' + t;
     if (who === 'narr' || who === 'sys') return t;
     var name = who === 'me' ? player.nickname + ' (나)' : (story.characters[who] || { name: who }).name;
-    return name + ': ' + t + (line.meta ? ' (' + fill(line.meta) + ')' : '');
+    return name + ': ' + t + (line.meta ? ' (' + plain(fill(line.meta)) + ')' : '');
   }
   // 줄이 나타날 때: 같은 공간 친구 머리 위 말풍선(폰 메시지는 원문 대신 📱…) + 장면에 적어 둔 반응
   function stageBubble(line) {
     if (!line || !progress.run) return;
     var st = WD.STAGES[progress.run.scene];
     if (!st) return;
-    var who = line.who, text = fill(line.text || '');
+    var who = line.who, text = plain(fill(line.text || ''));
     if (who && who !== 'narr' && who !== 'sys' && who !== 'me') {
       window.PrivacyMap.bubble(who, spokenDevice ? text : '📱…', !spokenDevice);
       if (!line.talk) chime();
@@ -708,7 +713,7 @@
     h.appendChild(document.createTextNode(ev.title));
     box.appendChild(h);
     var ul = el('ul');
-    E.eventOutcomes(story, eventId, run).forEach(function (t) { ul.appendChild(el('li', null, fill(t))); });
+    E.eventOutcomes(story, eventId, run).forEach(function (t) { ul.appendChild(rich('li', null, fill(t))); });
     box.appendChild(ul);
     return box;
   }
@@ -748,7 +753,7 @@
 
   /* ── 엔딩 ─────────────────────────── */
   function endingOf(code) { return story.endings.filter(function (e) { return e.code === code; })[0]; }
-  function cardText(end) { return story.title + ' · 엔딩 ' + end.code + ' 「' + end.title + '」 — ' + end.summary; }
+  function cardText(end) { return story.title + ' · 엔딩 ' + end.code + ' 「' + end.title + '」 — ' + plain(end.summary); }
 
   /* ── 엔딩 연출(프로스트펑크식): 검은 화면 → 두 문장 → 9개 사건의 내 선택 → 친구들의 믿음 → 엔딩 이름 ── */
   var finaleTimer = null, finaleState = null;
@@ -870,11 +875,11 @@
     }
     $('e-eyebrow').textContent = '엔딩 ' + end.code;
     $('e-title').textContent = end.title;
-    $('e-summary').textContent = end.summary;
+    window.PrivacyEmph.render($('e-summary'), end.summary);
     var body = $('e-body'); body.textContent = '';
     end.body.forEach(function (p) {
       if (typeof p === 'object' && !E.evalCond(p.if, run)) return; // 조건 줄({ if, text })
-      body.appendChild(el('p', null, fill(typeof p === 'object' ? p.text : p)));
+      body.appendChild(rich('p', null, fill(typeof p === 'object' ? p.text : p)));
     });
 
     var evs = $('e-events'); evs.textContent = '';

@@ -8,7 +8,8 @@
  *   보통 글자당 30ms, 긴 메시지도 1.5초 안에 끝나게 글자당 시간을 줄인다(빠르게: 12ms·0.6초).
  *   아직 안 쳐진 글자는 투명하게 자리만 차지해(.type-rest) 말풍선 크기·줄바꿈이 처음부터 그대로다.
  *   느린 타이머에서도 속도가 같도록, 흐른 시간으로 몇 글자까지 보일지 계산한다.
- * 글자는 textContent로만 넣는다.
+ * 글자 속 [[…]] = 강조(emph.js): 치는 동안에도 굵은 글씨로 나오고 [[ ]] 기호는 보이지 않는다. 글자 수는 기호를 뺀 글자로 센다.
+ * 글자는 textContent·text node로만 넣는다(HTML로 해석하지 않음).
  */
 (function (root) {
   'use strict';
@@ -22,12 +23,18 @@
   function enabled() { return !!RATE[state.speed] && !state.reduce && !osReduce(); }
   function now() { return root.performance && performance.now ? performance.now() : Date.now(); }
   function chars(text) { return Array.from ? Array.from(text) : String(text).split(''); } // 이모지가 반으로 잘리지 않게
+  // 강조 표시를 살려 from~to 글자만 그린다(emph.js가 없으면 맨 글자)
+  function draw(el, text, from, to) {
+    if (root.PrivacyEmph) { root.PrivacyEmph.render(el, text, from, to); return; }
+    el.textContent = chars(text).slice(from || 0, to == null ? undefined : to).join('');
+  }
+  function plainOf(text) { return root.PrivacyEmph ? root.PrivacyEmph.plain(text) : text; }
 
   function start(el, text, onDone) {
     text = String(text == null ? '' : text);
     var h = { active: false, finish: function () {}, cancel: function () {} };
-    var cs = chars(text);
-    if (!enabled() || cs.length < 2) { el.textContent = text; if (onDone) onDone(); return h; }
+    var cs = chars(plainOf(text));
+    if (!enabled() || cs.length < 2) { draw(el, text); if (onDone) onDone(); return h; }
     var r = RATE[state.speed];
     var per = Math.min(r.ms, r.cap / cs.length);
     var shown = document.createElement('span'), rest = document.createElement('span');
@@ -40,10 +47,10 @@
     function paint(k) {
       if (k === n) return;
       n = k;
-      shown.textContent = cs.slice(0, k).join('');
-      rest.textContent = cs.slice(k).join('');
+      draw(shown, text, 0, k);
+      draw(rest, text, k, cs.length);
     }
-    function settle() { clearTimeout(timer); timer = null; h.active = false; el.textContent = text; }
+    function settle() { clearTimeout(timer); timer = null; h.active = false; draw(el, text); }
     function tick() {
       timer = null;
       var k = Math.min(cs.length, 1 + Math.floor((now() - t0) / per));

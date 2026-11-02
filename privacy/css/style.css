@@ -210,6 +210,8 @@ body[data-view="v-game"] .app { padding-top: 12px; padding-bottom: 16px; }
 .enter { animation: rise .28s ease-out; }
 /* 타자 효과(typer.js): 아직 안 쳐진 글자는 자리만 차지 / 친구 메시지 앞 '입력 중…' */
 .type-rest { visibility: hidden; }
+/* 이야기 속 강조([[…]], js/emph.js): 굵게만 — 색은 바꾸지 않는다(정답 신호가 되지 않게) */
+strong.em { font-weight: 800; color: inherit; }
 .ln.msg.typing .bubble { color: var(--text-mute); font-size: .88rem; }
 .ln.msg.typing .dots { animation: typing-pulse 1s ease-in-out infinite; }
 @keyframes typing-pulse { 50% { opacity: .4; } }
