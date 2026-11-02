@@ -124,7 +124,8 @@
   var MISSION_CARDS = [
     ['m1', '1 임무 · 침수 판별', '비 오는 밤, AI는 잠긴 길을 알아볼까?', 'assets/title/mission-m1.webp'],
     ['m2', '2 임무 · 분리배출', '캔 사이에 숨은 건전지, AI가 찾을까?', 'assets/title/mission-m2.webp'],
-    ['m3', '3 임무 · 길 안내', '몇 년 전 사진으로 길을 알려 준다면?', 'assets/title/mission-m3.webp']
+    ['m3', '3 임무 · 길 안내', '몇 년 전 사진으로 길을 알려 준다면?', 'assets/title/mission-m3.webp'],
+    ['m4', '4 임무 · 채점', '맞게 쓴 답에 ✕가 찍힌다면?', 'assets/title/mission-m4.webp']
   ];
   function missionStatus(id) {
     var rec = DR.App && DR.App.records && DR.App.records[id], s = DR.Save.load();

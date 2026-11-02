@@ -180,8 +180,55 @@
         { zone: 'S2', who: 'senior', text: '1을 7로 읽는 기계야. 곧 보게 될걸.', face: 'basic' },
         { zone: 'S4', who: 'senior', text: '여기부터 내 글씨 같은 것들이야. 담을지 말지는 네가 정해.', face: 'basic' }
       ],
-      clientPass: [{ who: 'grader', text: '오늘은 맞게 쓴 답에 ✕가 하나도 안 찍혔어요.', face: 'basic' }],
-      clientFail: [{ who: 'grader', text: '아직 다시 봐야 할 답안이 있어요. 한 번 더 부탁해요.', face: 'worried' }],
+      clientPass: [{ who: 'grader', text: '오늘 답안지는 제가 다시 볼 게 거의 없겠어요.', face: 'basic' }],
+      clientFail: [{ who: 'grader', text: '아직 제가 다시 봐야 할 답안이 있어요. 한 번 더 부탁해요.', face: 'worried' }],
+      // 결판(장면 결과 바로 뒤): 선배의 옛 답안을 우리 AI가 읽나(DR.Judge.readable). bg = 대화 내내 뒤에 까는 장면 그림,
+      //   sheet = 대화창 위에 얹는 선배 답안(코드 그림, 'AI가 읽은 답' — ask 줄은 빈 자리, 그 뒤는 읽은 결과)
+      showdown: {
+        bg: 'assets/story/showdown-senior.webp',
+        ask: [
+          { who: 'senior', text: '새빛 진학 평가 때 내 답안이야. 네 AI로 읽어 봐.', face: 'basic' }
+        ],
+        readPass: { who: 'guide', text: '채점 결과 — AI가 읽은 답: 1 · ○', face: 'explain' },
+        readFail: { who: 'guide', text: '채점 결과 — AI가 읽은 답: 7, 선택지에 없는 번호 · ✕', face: 'explain' },
+        pass: [
+          { who: 'senior', text: '…읽네. 그때도 이랬으면 달라졌을까.', face: 'worried' },
+          { who: 'supervisor', text: '그건 아무도 몰라. 하지만 이제 다음 사람은 지워지지 않아.', face: 'explain' }
+        ],
+        passOthers: { who: 'supervisor', text: '선배 답안은 읽었어. 나머지도 마저 고치자.', face: 'explain' },
+        fail: [
+          { who: 'senior', text: '봐, 또 지웠잖아.', face: 'worried' }
+        ],
+        peerJoin: [
+          { who: 'peer', text: "…잠깐. 나, 1 임무 때부터 '이상한 건 빼자'였잖아. 근데 버리진 못하고 따로 모아 뒀어.", face: 'worried' },
+          { who: 'peer', text: '크게 기운 1 두 장이랑 표 안에 쓴 답 두 장. 보충 달리기가 끝나면 가방에 넣을게.', face: 'basic' }
+        ],
+        peerFixed: { who: 'peer', text: '이번엔 내가 같이 책임질게. 이건 꼭 넣자.', face: 'basic' },
+        peerBox: { who: 'peer', text: '나도 이거 챙겨 왔어. 다음엔 처음부터 넣을게.', face: 'happy' }
+      },
+      // 도시 재연결(도시 복구 5/5) 뒤 의뢰인 한 줄 — 모두 통과면 pass, 다른 장면이 남았으면 partial. 택배 기사 = 3 임무 의뢰인 회수
+      reconnect: {
+        pass: [
+          { who: 'grader', text: '오늘은 맞게 쓴 답에 ✕가 하나도 안 찍혔어요.', face: 'basic' },
+          { who: 'courier', text: '오늘은 한 번에 찾아갔어요.', face: 'basic' }
+        ],
+        partial: [
+          { who: 'grader', text: '선배 답안은 제대로 읽었어요. 남은 답안은 제가 다시 볼게요.', face: 'basic' },
+          { who: 'courier', text: '오늘은 한 번에 찾아갔어요.', face: 'basic' }
+        ]
+      },
+      // 해커의 이후: 화해·사과 장면 없음. 마지막은 말없이 카드를 넘기는 모습(그림)
+      after: {
+        bg: 'assets/story/senior-after.webp',
+        lines: [
+          { who: 'supervisor', text: '러너 자격은 정지야. 대신 네가 끊은 구간, 네 손으로 다시 이어.', face: 'explain' },
+          { who: 'senior', text: '…알아.', face: 'basic' }
+        ]
+      },
+      questions: [
+        'AI를 버리자 / AI가 알아서 한다 / 사람이 책임지고 관리한다 — 너는 어느 쪽이야? 왜?',
+        '우리 학교가 채점 AI를 쓴다면, 꼭 사람이 다시 봐야 하는 답안은 어떤 걸까?'
+      ],
       senior: [],
       outro: [
         { who: 'supervisor', text: '오늘 채점도 실제 AI가 아니라, 단순화한 규칙으로 만든 시뮬레이션이야.', face: 'explain' },

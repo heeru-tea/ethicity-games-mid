@@ -78,9 +78,14 @@
         fixed ? el('span', { class: 'bag-fixed', text: '고침' }) : null
       ]);
       if (opts.onOpen) open.addEventListener('click', function () { opts.onOpen(card); });
-      var rm = el('button', { class: 'btn-remove', type: 'button', text: '빼기', 'aria-label': '빼기: ' + label });
-      rm.addEventListener('click', function () { DR.Sfx.play('ui'); opts.onRemove(card); });
-      grid.appendChild(el('div', { class: 'bag-card' + (amb ? ' ambiguous' : '') + (amb && card.assigned === undefined ? ' undecided' : '') + (isNew ? ' is-new' : '') + (fixed ? ' fixed' : ''), 'data-id': card.id, 'data-key': card.key || card.ambiguousId || card.fakeId }, [open, rm]));
+      // 4 임무 동기 카드(마지막 보충): 빼기 버튼 대신 "동기와 함께 넣음"(누를 수 없음)
+      var rm = card.fixed
+        ? el('span', { class: 'bag-peer-fixed', text: '동기와 함께 넣음' })
+        : el('button', { class: 'btn-remove', type: 'button', text: '빼기', 'aria-label': '빼기: ' + label });
+      if (!card.fixed) rm.addEventListener('click', function () { DR.Sfx.play('ui'); opts.onRemove(card); });
+      var cell = el('div', { class: 'bag-card' + (amb ? ' ambiguous' : '') + (amb && card.assigned === undefined ? ' undecided' : '') + (isNew ? ' is-new' : '') + (fixed ? ' fixed' : '') + (card.fixed ? ' peer-fixed' : ''), 'data-id': card.id, 'data-key': card.key || card.ambiguousId || card.fakeId }, [open, rm]);
+      if (card.peer) cell.setAttribute('data-peer', card.fixed ? 'fixed' : 'joined');
+      grid.appendChild(cell);
     });
     return grid;
   }
@@ -88,7 +93,7 @@
   // 빼기 + 되돌리기(마지막 1장만, 5초)
   function removeWithUndo(mission, bag, card, rerender) {
     var at = bag.indexOf(card);
-    if (at < 0) return;
+    if (at < 0 || card.fixed) return; // 동기와 함께 넣은 카드는 빼지 않는다
     bag.splice(at, 1);
     rerender();
     DR.UI.undoToast('뺐어요: ' + cardLabel(mission, card), function () {
@@ -190,7 +195,8 @@
         if (date) inner.push(el('p', { class: 'zoom-date', text: '촬영: ' + date }));
         if (cl) inner.push(el('p', { class: 'zoom-log', text: '도시 변경 기록 · ' + DR.Cards.labelText(mission, cl.label) + ': ' + (cl.when ? cl.when + ' ' : '') + cl.text }));
       }
-      if (!amb && mission.labels && mission.relabel !== false) {
+      if (card.fixed) inner.push(el('p', { class: 'note zoom-peer', text: '동기와 함께 넣은 카드다. 이번엔 빼거나 번호를 고치지 않는다.' }));
+      else if (!amb && mission.labels && mission.relabel !== false) {
         var cur = DR.Cards.currentLabel(mission, card), orig = DR.Cards.originalLabel(mission, card);
         var relabel = el('div', { class: 'labels relabel' + (digit ? ' digit' : ''), role: 'group', 'aria-label': '이름표 고치기' });
         mission.labels.forEach(function (l) {
@@ -245,7 +251,9 @@
 
   /* ---------- 보충 준비 ---------- */
   // 정리한 뒤 모자란 조합이 없으면(가짜만 빼면 되는 경우) 달리지 않고 다시 제출 — done(bag, { resubmit: true }), spec §3.5
-  function supplementPrep(mission, result, bag, done) {
+  // popts.extra = 보충 달리기 뒤 가방에 들어올 카드(4 임무 동기 카드) — 부족분 계산엔 미리 넣고, 그만큼 칸을 더 비워야 출발
+  function supplementPrep(mission, result, bag, done, popts) {
+    var extra = (popts && popts.extra) || [];
     var screen = document.getElementById('screen-prep');
     var need = Math.min(DR.config.supplementFreeSlots, mission.bag);
     var comboById = {};
@@ -261,8 +269,8 @@
     var openKinds = {};
 
     function render() {
-      var resubmit = Object.keys(DR.Judge.shortfall(mission, bag, DR.config)).length === 0;
-      var free = mission.bag - bag.length, lack = resubmit ? 0 : Math.max(0, need - free);
+      var resubmit = Object.keys(DR.Judge.shortfall(mission, bag.concat(extra), DR.config)).length === 0;
+      var free = mission.bag - bag.length - extra.length, lack = resubmit ? Math.max(0, -free) : Math.max(0, need - free);
       var counts = DR.Cards.labelCounts(mission, bag);
       screen.innerHTML = '';
 
@@ -299,7 +307,7 @@
         if (open) {
           pick = el('div', { class: 'kind-pick', role: 'group', 'aria-label': DR.Cards.keyLabel(mission, k) + ' — 뺄 사진 고르기' });
           bag.forEach(function (card, n) {
-            if (DR.Cards.displayKey(mission, card) !== k) return;
+            if (DR.Cards.displayKey(mission, card) !== k || card.fixed) return;
             var b = el('button', { class: 'kind-pick-card', type: 'button', 'data-id': card.id, 'aria-label': '빼기: ' + cardLabel(mission, card) + ' 사진 ' + (n + 1) }, [
               el('img', { src: thumbUrl(mission, card), alt: '' })
             ]);
@@ -318,6 +326,8 @@
       go.addEventListener('click', function () { DR.Sfx.unlock(); DR.Sfx.play('ui'); DR.UI.clearToast(); zoom.close(); done(bag, { resubmit: resubmit }); });
       var note = resubmit ? '모자란 카드는 없다. 가방을 정리했으면 다시 제출하자.'
         : '이번엔 그 장면에 필요한 카드가 더 자주 나온다. 가방 칸은 그대로라서, 출발하려면 ' + need + '칸 이상 비어 있어야 한다.';
+      var peerNote = extra.length ? el('p', { id: 'prep-peer', class: 'notice', text: '동기가 따로 모아 둔 카드 ' + extra.length + '장이 ' + (resubmit ? '다시 제출하기 전에' : '보충 달리기가 끝나면') + ' 가방에 들어온다(' + extra.length + '칸)' +
+        (popts.peerFixed ? ' — 이번엔 동기와 함께 넣는다.' : ' — 넣을지는 검수에서 정한다.') }) : null;
       var helpBtn = el('button', { id: 'btn-help-prep', class: 'btn btn-ghost btn-help', type: 'button', text: '?', 'aria-label': '도움말' });
       helpBtn.addEventListener('click', function () { DR.Sfx.play('ui'); DR.UI.help(mission); });
       screen.appendChild(helpBtn);
@@ -326,7 +336,8 @@
         el('h2', { text: '놓친 장면' }),
         failed,
         el('p', { class: 'note', text: note }),
-        resubmit ? null : el('p', { id: 'prep-need', class: 'notice', text: lack > 0 ? lack + '칸 더 비워야 해요.' : '출발할 수 있어요.' }),
+        peerNote,
+        resubmit && !lack ? null : el('p', { id: 'prep-need', class: 'notice', text: lack > 0 ? lack + '칸 더 비워야 해요.' : '출발할 수 있어요.' }),
         el('h3', { text: '가방 속 종류별 개수' }),
         summary,
         bagGrid(mission, bag, 'prep-grid', { onOpen: zoom.open, onRemove: function (card) { removeWithUndo(mission, bag, card, render); } }),

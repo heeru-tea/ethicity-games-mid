@@ -34,7 +34,8 @@
     try { st.setItem(KEY, JSON.stringify(o)); return true; } catch (e) { return false; }
   }
 
-  // 저장 내용: 미션 id, 화면, 가방 카드 목록("?" 설명표 포함), 보충 횟수, 튜토리얼 완료, 필요 장수 공개 플래그
+  // 저장 내용: 미션 id, 화면, 가방 카드 목록("?" 설명표·동기 카드 고정 포함), 보충 횟수, 튜토리얼 완료, 필요 장수 공개 플래그,
+  //   4 임무 결판: peer('none'|'joined'|'fixed')·peerPending(보충 뒤 동기 카드가 들어올 차례)·showdownPassed
   function checkpoint(screen, state, flags, st) {
     st = storage(st);
     var prev = read(st) || {};
@@ -43,6 +44,7 @@
       bag: (state.bag || []).map(function (c) { var o = {}; Object.keys(c).forEach(function (k) { if (c[k] !== undefined) o[k] = c[k]; }); return o; }),
       supplements: state.supplements || 0, firstTry: state.firstTry === undefined ? null : state.firstTry,
       seed: state.seed, needRevealed: !!state.needRevealed, newIds: state.newIds || [], firstFails: state.firstFails || [], named: state.named || [],
+      peer: state.peer || 'none', peerPending: !!state.peerPending, showdownPassed: !!state.showdownPassed,
       tutorialDone: !!((flags && flags.tutorialDone) || prev.tutorialDone),
       records: prev.records || {},
       savedAt: Date.now()
@@ -58,7 +60,8 @@
     return {
       mission: o.mission || null, screen: o.screen || null, bag: o.bag || [],
       supplements: o.supplements || 0, firstTry: o.firstTry === undefined ? null : o.firstTry,
-      seed: o.seed, needRevealed: !!o.needRevealed, newIds: o.newIds || [], firstFails: o.firstFails || [], named: o.named || [], tutorialDone: !!o.tutorialDone
+      seed: o.seed, needRevealed: !!o.needRevealed, newIds: o.newIds || [], firstFails: o.firstFails || [], named: o.named || [], tutorialDone: !!o.tutorialDone,
+      peer: o.peer || 'none', peerPending: !!o.peerPending, showdownPassed: !!o.showdownPassed
     };
   }
 

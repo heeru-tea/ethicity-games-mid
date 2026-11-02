@@ -333,3 +333,76 @@ test("grading: '7' on hooked 1s → the hooked 1 sheet gets ✕ read as 7, with 
   const t = sortGr(bagOf({ ...MIN, table_4: 0 }));
   assert.ok(t.filter((o) => !o.correct).every((o) => o.bin === 'hold' && !o.emergency));
 });
+
+// 결판 · 동기 합류 · 보충 보장(설계 §5.6): 보충을 다 써도 못 읽는 경우는 없다
+const Showdown = require('../js/showdown.js');
+test('peer mode by supplements left: 2 = removable, 1 = fixed, 0 = resubmit', () => {
+  const max = cfg.maxSupplements;
+  assert.equal(max, 2);
+  assert.equal(Showdown.peerMode({ supplements: 0 }, cfg), 'removable');
+  assert.equal(Showdown.peerMode({ supplements: 1 }, cfg), 'fixed');
+  assert.equal(Showdown.peerMode({ supplements: 2 }, cfg), 'resubmit');
+});
+test('peer cards: 4 new cards (2 big slanted 1, 2 table answers); already in the bag → only made fixed', () => {
+  const add = Showdown.peerCards(m4, [], false);
+  assert.deepEqual(add.map((c) => c.key).sort(), ['slant_1', 'slant_1', 'table_4', 'table_4']);
+  assert.ok(add.every((c) => c.peer && !c.fixed && /^peer_/.test(c.id)));
+  const bag = add.slice(0, 3).map((c) => ({ ...c, label: '2' })); // 하나는 빠졌고, 남은 건 이름표를 바꿨다
+  const again = Showdown.peerCards(m4, bag, true);
+  assert.equal(again.length, 1, 'only the missing one is new');
+  assert.ok(again[0].fixed);
+  assert.ok(bag.every((c) => c.fixed && c.label === undefined), 'existing ones fixed and back to their own label');
+  // 동기 카드만으로 결판 장면의 조합이 찬다
+  assert.equal(Judge.readable(m4, judge(m4, Showdown.peerCards(m4, [], true), cfg)), true);
+});
+test('showdown guarantee: random bags + random removals (never fixed ones) always end readable', () => {
+  const rng = Rng.create(46), keys = Object.keys(m4.cardTypes), L = ['1', '2', '3', '4', '5'];
+  const pick = (a) => a[Math.floor(rng.next() * a.length)];
+  const randomCard = (id) => (rng.next() < 0.15 ? { id, fakeId: pick(m4.fakes).id } : { id, key: pick(keys) });
+  for (let n = 0; n < 500; n++) {
+    let bag = Array.from({ length: Math.floor(rng.next() * 30) }, (_, i) => randomCard('a' + i));
+    const st = { supplements: 0, peer: 'none' };
+    let rounds = 0, readable = false, extraResubmit = 0;
+    for (;;) {
+      readable = Judge.readable(m4, judge(m4, bag, cfg));
+      if (readable) break;
+      const mode = Showdown.peerMode(st, cfg);
+      st.peer = mode === 'removable' ? 'joined' : 'fixed';
+      const add = Showdown.peerCards(m4, bag, mode !== 'removable');
+      if (mode === 'resubmit') { bag = bag.concat(add); extraResubmit++; assert.ok(extraResubmit <= 1, 'one resubmit outside the count'); continue; }
+      // 보충 준비: 고정이 아닌 카드를 무작위로 빼고(드문 글씨 포함), 이름표도 가끔 바꾼다
+      bag = bag.filter((c) => c.fixed || rng.next() < 0.6);
+      bag.forEach((c) => { if (!c.fixed && !c.fakeId && rng.next() < 0.1) c.label = pick(L); });
+      st.supplements++;
+      // 보충 달리기에서 무작위 카드 + 동기 카드
+      const fresh = Array.from({ length: Math.floor(rng.next() * 8) }, (_, i) => randomCard('s' + st.supplements + '_' + i));
+      bag = bag.concat(fresh).concat(add);
+      // 보충 뒤 검수에서도 고정 아닌 카드는 뺄 수 있다
+      bag = bag.filter((c) => c.fixed || rng.next() < 0.85);
+      rounds++;
+      assert.ok(rounds <= cfg.maxSupplements + 1, 'bag ' + n + ' did not converge');
+    }
+    assert.ok(readable, 'bag ' + n);
+  }
+});
+test('m4 story: speakers in cast, grader portrait/thumbnail/backdrops exist, no shaming', () => {
+  const lines = [];
+  const walk = (v) => { if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object') { if (v.who && v.text) lines.push(v); else Object.values(v).forEach(walk); } };
+  walk(m4.story);
+  assert.ok(lines.length > 25);
+  for (const l of lines) { assert.ok(cast[l.who], l.who); assert.ok([undefined, 'basic', 'happy', 'worried', 'explain'].includes(l.face), l.who + ' ' + l.face); }
+  const sd = m4.story.showdown;
+  assert.equal(sd.bg, 'assets/story/showdown-senior.webp');
+  assert.equal(m4.story.after.bg, 'assets/story/senior-after.webp');
+  for (const f of [sd.bg, m4.story.after.bg, 'assets/characters/grader-portraits.png', 'assets/title/mission-m4.webp']) assert.ok(fs.existsSync(new URL('../' + f, import.meta.url)), f);
+  assert.ok(sd.fail.some((l) => l.text === '봐, 또 지웠잖아.'));
+  assert.ok(sd.pass.some((l) => /읽네/.test(l.text)));
+  assert.ok(sd.peerJoin.some((l) => l.who === 'peer' && /이상한 건 빼자/.test(l.text) && /모아 뒀어/.test(l.text)));
+  assert.match(sd.peerFixed.text, /같이 책임질게/);
+  assert.match(sd.peerBox.text, /챙겨 왔어/);
+  assert.equal(m4.story.questions.length, 2);
+  assert.ok(m4.story.after.lines.some((l) => l.who === 'senior' && l.text === '…알아.'));
+  assert.ok(!/바보|한심|틀렸잖|네 탓|잘못했/.test(JSON.stringify(m4.story)), 'no scolding');
+  // 선배는 "~라고 생각해"만, 감독관은 단정하지 않는다
+  assert.ok(!/AI 때문에 떨어졌다\./.test(JSON.stringify(m4.story)));
+});
