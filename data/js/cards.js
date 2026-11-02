@@ -142,8 +142,10 @@
     }
     return any;
   }
+  // displayAs: 화면에서 다른 종류와 한 줄로 센다(3 임무 시장 골목 옛 사진 — 옛 사진이라고 따로 보이지 않게)
+  function shownAs(mission, k) { var t = k && mission.cardTypes[k]; return t && t.displayAs ? t.displayAs : k; }
   function displayKey(mission, card) {
-    if (!card.ambiguousId && mission.labels) return isMislabeled(mission, card) ? commonKeyOfLabel(mission, currentLabel(mission, card)) : truthKey(mission, card);
+    if (!card.ambiguousId && mission.labels) return shownAs(mission, isMislabeled(mission, card) ? commonKeyOfLabel(mission, currentLabel(mission, card)) : truthKey(mission, card));
     if (!card.ambiguousId) return currentLabel(mission, card);
     if (!card.assigned) return null;
     var q = ambDef(mission, card.ambiguousId), keys = Object.keys(mission.cardTypes);

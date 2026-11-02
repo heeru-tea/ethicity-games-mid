@@ -152,3 +152,23 @@ test('m3 story: speakers, record line from m2, reveal with and without a record'
   assert.ok(!/바보|못했|한심|틀렸잖/.test(JSON.stringify(rv)), 'no shaming');
   assert.ok(rv.before.some((l) => l.who === 'senior' && /불꽃/.test(l.text)), '그 불꽃, 나였어');
 });
+
+// 리뷰 반영
+test('review I1: no kind name marks a photo as old; market photos count as one kind on screen', () => {
+  for (const [k, t] of Object.entries(m3.cardTypes)) assert.ok(!/예전|옛|오래/.test(t.name), k + ' ' + t.name);
+  assert.equal(Cards.displayKey(m3, { key: 'market_old' }), 'market_now');
+  assert.deepEqual(Cards.labelCounts(m3, [{ key: 'market_old' }, { key: 'market_now' }, { key: 'market_old' }]), { market_now: 3 });
+});
+test('review I3/I4: each S1/S2/S3 combo has its own failure line matching what is missing', () => {
+  const r = judge(m3, bagOf({ ...ALL, station_rain: 0 }), cfg).scenes[0];
+  assert.doesNotMatch(r.failLine, /빌딩/, 'rain missing ≠ old building');
+  const m = judge(m3, bagOf({ ...ALL, market_old: 0, market_eve_old: 0 }), cfg).scenes[1];
+  assert.match(m.failLine, /2015년 뒤로 그대로/);
+  for (const id of ['S1_station_now', 'S1_station_rain', 'S2_market', 'S2_market_eve', 'S3_river_now', 'S3_river_night']) {
+    const c = combos(m3).find((x) => x.id === id);
+    assert.ok(c.fail && c.fail.kind === 'inconvenience' && c.fail.line, id);
+  }
+});
+test('review: m3 run hint points at the date, not picture-vs-label', () => {
+  assert.ok(m3.fakeHint && !/이름표/.test(m3.fakeHint));
+});

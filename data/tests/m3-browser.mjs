@@ -186,4 +186,40 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 }
+// 리뷰 반영: 시연 문구는 원인을 단정하지 않는다 · 3 임무 달리기 첫 가짜 안내는 날짜 쪽 · '처음부터'는 메모리 기록도 비운다
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m3' });
+  try {
+    await toRun(page);
+    await page.evaluate(() => { DR.Run.setPaused(true); DR.Run.debugSetHp(99); for (let i = 0; i < 20000 && !DR.Run.peek().fakeHintShown; i++) DR.Run.step(0.02); });
+    assert.equal(await page.locator('#run-hint').innerText(), await page.evaluate(() => DR.Missions.m3.fakeHint));
+    await page.evaluate(() => DR.Run.setPaused(false));
+    await fillAndInspect(page, { ...ALL, market_old: 0, market_eve_old: 0 });
+    // 시장 줄은 '예전 사진' 표시 없이 한 종류
+    assert.doesNotMatch(await page.locator('#inspect-scenes').innerText(), /예전|옛 사진/);
+    await submit(page);
+    await page.locator('#btn-gd-skip').click();
+    const t = await page.locator('#screen-guide').innerText();
+    assert.doesNotMatch(t, /옛 거리를 기준으로/, 'neutral status');
+    assert.doesNotMatch(t, /지금은:/);
+    assert.match(t, /빨간 테두리는 우리 AI가 잘못 안내한 질문이다/);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m1' });
+  try {
+    await page.locator('#btn-skip').click();
+    await page.locator('#screen-briefing').waitFor({ state: 'visible' });
+    await page.evaluate(() => {
+      const rec = { cleared: true, passed: true, firstTry: false, supplements: 1, firstFails: [{ scene: 'S1', title: '낮 주택가 골목 침수', kind: 'danger' }] };
+      DR.App.records.m1 = rec; DR.Save.setRecord('m1', rec); DR.App.go('title');
+    });
+    await page.locator('#btn-fresh').click();
+    await page.locator('dialog.modal button', { hasText: '처음부터' }).click();
+    assert.deepEqual(await page.evaluate(() => DR.App.records), {}, 'in-memory records cleared with the save');
+    assert.deepEqual(await page.evaluate(() => DR.Save.records()), {});
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
 console.log('PASS m3');

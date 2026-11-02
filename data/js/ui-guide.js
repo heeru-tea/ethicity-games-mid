@@ -1,6 +1,6 @@
 /*
  * 3 임무 결과 — 길 안내 시연(2 임무 컨베이어와 같은 순간, 설계 §4.7).
- * 시민 질문이 하나씩 올라오고, 우리 AI가 답한다. 맞게 안내하면 초록, 옛길로 안내하면 빨강 + 지금과 다른 점 한 줄.
+ * 시민 질문이 하나씩 올라오고, 우리 AI가 답한다. 맞게 안내하면 초록, 잘못 안내하면 빨강 + 그 까닭 한 줄(원인을 단정하지 않는다).
  * 어느 답이 틀릴지는 DR.Conveyor.sort(mission.guide 질문, 같은 원인 규칙)가 정한다 — 같은 가방 = 늘 같은 결과, 숫자 없음.
  * 위험(hazard)인 질문이 틀리면 한 번 멈추고 감독관 대사 + 책임 대사 → [계속 돌리기]. 2배속·건너뛰기·움직임 줄이기.
  * done()은 끝난 뒤 [장면별 결과 보기]에서만, 한 번만.
@@ -62,9 +62,9 @@
       var g = byId[it.id], box = shown[it.id].answer;
       if (box.childNodes.length) return;
       box.appendChild(el('p', { class: 'gd-a', text: 'AI: ' + (it.correct ? g.right : g.wrong) }));
-      if (!it.correct && g.note) box.appendChild(el('p', { class: 'gd-note', text: '지금은: ' + g.note }));
+      if (!it.correct && g.note) box.appendChild(el('p', { class: 'gd-note', text: g.note }));
       s.el.classList.add(it.correct ? 'ok' : 'bad');
-      status.textContent = it.correct ? '맞게 안내했다.' : '옛 거리를 기준으로 안내했다.';
+      status.textContent = it.correct ? '맞게 안내했다.' : '잘못 안내했다.';
     }
 
     function next() {
@@ -110,7 +110,7 @@
       stop.hidden = true;
       var anyWrong = items.some(function (it) { return !it.correct; });
       var emergency = items.filter(function (it) { return it.emergency; })[0];
-      status.textContent = anyWrong ? '다 물어봤다. 빨간 테두리는 우리 AI가 옛 거리를 기준으로 안내한 질문이다.' : '다 물어봤다. 모두 지금의 거리로 안내했다.';
+      status.textContent = anyWrong ? '다 물어봤다. 빨간 테두리는 우리 AI가 잘못 안내한 질문이다.' : '다 물어봤다. 모두 지금의 거리로 안내했다.';
       endBox.innerHTML = '';
       if (emergency && !stopShown) {
         endBox.appendChild(DR.UI.line(mission.story.emergency));

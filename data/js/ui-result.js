@@ -53,7 +53,7 @@
         var ql = el('ul', { class: 'result-wrong-list' });
         wrong.forEach(function (it) {
           var g = mission.guide.filter(function (x) { return x.id === it.id; })[0];
-          ql.appendChild(el('li', { text: '“' + g.q + '” → “' + g.wrong + '”' + (g.note ? ' (지금은: ' + g.note + ')' : '') }));
+          ql.appendChild(el('li', { text: '“' + g.q + '” → “' + g.wrong + '”' + (g.note ? ' — ' + g.note : '') }));
         });
         parts.push(el('div', { class: 'result-wrong' }, [el('h3', { text: '길 안내 시연에서 잘못 안내한 질문' }), ql]));
       } else if (wrong.length) {

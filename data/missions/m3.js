@@ -6,6 +6,8 @@
  *         한 장면에 2장 이상이면 오염. 철거 전 육교는 harm:'danger'(없는 육교로 안내 → 사람이 차도로).
  * 시장 골목은 2015년 뒤로 바뀐 적이 없다 → 옛 사진도 지금의 시장 골목이다. 최근 사진은 코스 전체에 2장뿐이라
  * 옛 날짜 카드를 전부 빼면 시장 골목 장면이 실패한다(기획서 원칙 2 — 오래된 자료를 무조건 나쁜 데이터로 취급하지 않는다).
+ * 종류 이름에 '예전·옛' 같은 표시를 쓰지 않는다(옛 사진이라고 미리 알려 주지 않게). market_old는 화면에서 market_now와 한 종류(displayAs).
+ * fakeHint = 달리기 중 첫 가짜 안내(이 임무는 그림과 이름표가 늘 맞고, 단서는 '언제'다).
  * changeLog = 검수 화면의 '도시 변경 기록'(장소마다 한 줄). guide = 결과의 '길 안내 시연' 질문(원인 규칙은 2 임무 컨베이어와 같다).
  * ⚠️ 지하차도·지하보도는 그리지도 쓰지도 않는다(기획서 §10).
  */
@@ -21,6 +23,7 @@
       { id: 'S4', title: '학교 앞 횡단보도', short: '학교 앞' }
     ],
     fakeLate: 'zone', scenery: 'city', relabel: false,
+    fakeHint: '지금도 이런 거리인지 생각해 봐!',
     labels: [
       { id: 'station', text: '역 앞 사거리' },
       { id: 'market', text: '시장 골목' },
@@ -38,8 +41,8 @@
       station_now:    { label: 'station',  icons: ['station'],  name: '역 앞 광장',                 art: { view: 'station', time: 'day' },              dates: ['2025년 9월', '2026년 2월', '2026년 4월'] },
       station_rain:   { label: 'station',  icons: ['station'],  name: '비 오는 밤 역 앞',            art: { view: 'station', time: 'night', rain: true }, dates: ['2025년 11월', '2026년 3월', '2026년 7월'], rare: true },
       market_now:     { label: 'market',   icons: ['market'],   name: '시장 골목',                   art: { view: 'market', time: 'day' },               dates: ['2026년 1월', '2026년 5월', '2026년 8월'], rare: true },
-      market_old:     { label: 'market',   icons: ['market'],   name: '시장 골목 · 예전 사진',        art: { view: 'market', time: 'day' },               dates: ['2016년 5월', '2018년 9월', '2020년 4월'] },
-      market_eve_old: { label: 'market',   icons: ['market'],   name: '저녁 시장 골목 · 예전 사진',   art: { view: 'market', time: 'evening' },           dates: ['2017년 12월', '2018년 6월', '2019년 10월'], rare: true },
+      market_old:     { label: 'market',   icons: ['market'],   name: '시장 골목',                   displayAs: 'market_now', art: { view: 'market', time: 'day' },               dates: ['2016년 5월', '2018년 9월', '2020년 4월'] },
+      market_eve_old: { label: 'market',   icons: ['market'],   name: '저녁 시장 골목',               art: { view: 'market', time: 'evening' },           dates: ['2017년 12월', '2018년 6월', '2019년 10월'], rare: true },
       river_now:      { label: 'river',    icons: ['river'],    name: '강변길',                      art: { view: 'river', time: 'day' },                dates: ['2025년 7월', '2025년 10월', '2026년 5월'] },
       river_night:    { label: 'river',    icons: ['river'],    name: '밤 강변길',                   art: { view: 'river', time: 'night' },              dates: ['2025년 8월', '2026년 1월', '2026년 6월'], rare: true },
       crossing_now:   { label: 'crossing', icons: ['crossing'], name: '학교 앞 횡단보도',             art: { view: 'crossing', time: 'day' },             dates: ['2024년 3월', '2025년 4월', '2026년 3월'] },
@@ -65,18 +68,22 @@
     scenes: [
       { id: 'S1', title: '역 앞 사거리', emphasis: 'normal', art: { view: 'station', time: 'day' },
         combos: [
-          { id: 'S1_station_now', keys: ['station_now'], need: 2, danger: false, what: '지금의 역 앞 광장 사진' },
-          { id: 'S1_station_rain', keys: ['station_rain'], need: 2, danger: false, boundary: true, what: '비 오는 밤 역 앞 사진' }
+          { id: 'S1_station_now', keys: ['station_now'], need: 2, danger: false, what: '지금의 역 앞 광장 사진',
+            fail: { kind: 'inconvenience', line: '지금의 역 앞 광장을 잘 몰라 엉뚱한 길로 안내했다. 택배 기사가 광장을 몇 바퀴 돈다.' } },
+          { id: 'S1_station_rain', keys: ['station_rain'], need: 2, danger: false, boundary: true, what: '비 오는 밤 역 앞 사진',
+            fail: { kind: 'inconvenience', line: '비 오는 밤에는 역 앞을 알아보지 못해 엉뚱한 길로 안내했다.' } }
         ],
         passLine: '광장을 가로지르는 길로 안내했다. 택배 기사가 제시간에 도착한다.',
         cuts: {
           danger: '없어진 건물을 기준으로 안내하다 차도 쪽으로 보냈다. 감독관이 안내를 멈췄다.',
-          inconvenience: '없어진 빌딩 앞에서 꺾으라고 안내했다. 택배 기사가 광장을 몇 바퀴 돈다.'
+          inconvenience: '역 앞에서 엉뚱한 길로 안내했다. 택배 기사가 광장을 몇 바퀴 돈다.'
         } },
       { id: 'S2', title: '시장 골목', emphasis: 'normal', art: { view: 'market', time: 'day' },
         combos: [
-          { id: 'S2_market', keys: ['market_now', 'market_old'], need: 3, danger: false, what: '시장 골목 사진' },
-          { id: 'S2_market_eve', keys: ['market_eve_old'], need: 2, danger: false, boundary: true, what: '저녁 시장 골목 사진' }
+          { id: 'S2_market', keys: ['market_now', 'market_old'], need: 3, danger: false, what: '시장 골목 사진',
+            fail: { kind: 'inconvenience', line: '시장 골목을 알아보지 못해 큰길로 빙 돌아가게 안내했다. 시장 골목은 2015년 뒤로 그대로라, 오래전에 찍은 사진도 지금의 시장 골목이다.' } },
+          { id: 'S2_market_eve', keys: ['market_eve_old'], need: 2, danger: false, boundary: true, what: '저녁 시장 골목 사진',
+            fail: { kind: 'inconvenience', line: '저녁의 시장 골목을 알아보지 못했다. 시장 골목은 2015년 뒤로 그대로라, 오래전에 찍은 저녁 사진도 지금의 시장 골목이다.' } }
         ],
         passLine: '오래된 사진 속 시장 골목도 지금과 같았다. 시장 입구를 바로 알아보고 안내했다.',
         cuts: {
@@ -85,8 +92,10 @@
         } },
       { id: 'S3', title: '새로 난 강변길', emphasis: 'normal', art: { view: 'river', time: 'day' },
         combos: [
-          { id: 'S3_river_now', keys: ['river_now'], need: 2, danger: false, what: '새로 난 강변길 사진' },
-          { id: 'S3_river_night', keys: ['river_night'], need: 2, danger: false, boundary: true, what: '밤 강변길 사진' }
+          { id: 'S3_river_now', keys: ['river_now'], need: 2, danger: false, what: '새로 난 강변길 사진',
+            fail: { kind: 'inconvenience', line: '새 강변길을 몰라 멀리 돌아가는 큰길로 안내했다.' } },
+          { id: 'S3_river_night', keys: ['river_night'], need: 2, danger: false, boundary: true, what: '밤 강변길 사진',
+            fail: { kind: 'inconvenience', line: '밤에는 강변길을 알아보지 못해 큰길로 돌아가게 안내했다.' } }
         ],
         passLine: '새로 난 강변길을 알아보고 지름길로 안내했다.',
         cuts: {

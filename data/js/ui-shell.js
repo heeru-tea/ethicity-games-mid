@@ -62,7 +62,8 @@
 
   /* ---------- 타이틀 ---------- */
   function startChoice(clearFirst) {
-    function begin(fn) { return function () { DR.Sfx.unlock(); if (clearFirst) DR.Save.clear(); fn(); }; }
+    // 처음부터: 저장과 함께 메모리의 임무 기록도 비운다(3 임무 정체 공개가 지운 기록을 인용하지 않게)
+    function begin(fn) { return function () { DR.Sfx.unlock(); if (clearFirst) { DR.Save.clear(); DR.App.records = {}; } fn(); }; }
     var s = DR.Save.load();
     var acts = s && s.tutorialDone
       ? [{ text: '튜토리얼부터', primary: true, onClick: begin(DR.App.startTutorial) },
