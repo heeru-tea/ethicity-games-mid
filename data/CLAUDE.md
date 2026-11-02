@@ -5,8 +5,9 @@
 - 흐름: 대화 → 브리핑 → 달리기(시험장 배경 `RunScenery` exam, S2·S4 들어설 때 선배 한 줄 `story.runLines`) → 검수 → 감독관 → **채점 시연**(`js/ui-grade.js`, 답안지 13장, 원인 규칙 = `DR.Conveyor.sort` + 새 원인 `any:가짜id`) → 장면 결과 → **결판**(`DR.Judge.readable` = S4 조합만, 대사 줄 `sheet` → 대화창 위 선배 답안 `DR.CardArt.sheet`, bg `showdown-senior.webp`) ─ 못 읽음 → "봐, 또 지웠잖아" → 동기 합류(`js/showdown.js`: 남은 보충 2 = NEW·뺄 수 있음 / 1 = 고정 "동기와 함께 넣음" / 0 = 고정 + 다시 제출) → 보충(동기 카드는 달리기 뒤 가방에, 그만큼 칸 비워 둠) → … ─ 읽음 → **도시 재연결 5/5** → 의뢰인(선생님·택배 기사) → (합류한 적 없으면) 동기 "챙겨 왔어" → 해커의 이후(bg `senior-after.webp`) → 마무리(토론 질문 2개, `#outro-questions`).
 - **도시 복구 화면**(`js/ui-city.js`, `#screen-city`): 튜토리얼 끝 0→1, 1~3 임무 마지막 대화 뒤(칸이 늘었을 때만), 4 임무는 늘 →5. 칸 = `DR.Save.cityCount`(records.m1~m4 + records.tutorial, '처음부터'면 0). **그림 `assets/city/city-0..5.webp`는 아직 없음** → `<img>` 오류로 그림 자리 숨기고 점 5칸 + 문구. 파일만 그 이름으로 넣으면 저절로 쓰인다. 타이틀 왼쪽 위 배지 `#title-city`("도시 n/5", role=img).
 - 손글씨 카드 = Canvas 같은 붓(`cardart.js` GLYPHS·PEN — 깃발 1↔7, 고리 3↔8, 각진 2↔5, 둥근 5↔2). 크게 기운 1 = 굵고 일정, 떨림 없음. 동기 "이상한 건 빼자" 한 줄이 1~3 임무 도입에도. 시험 이름 = "새빛 진학 평가"(3 임무도).
+- ⚠️ 사용자 판단: Codex `showdown-senior.webp`의 답안지에 손글씨 "1"과 빨간 ✕가 그려져 있다(설계는 "그림 안 숫자·글자 없음") — 결판에서 읽었을 때(○)도 그림 속 ✕는 그대로. S1·S3도 플레이어가 위험 가짜(7·8·5)를 다른 틀린 번호로 고쳐 2장 쌓으면 위험이 될 수 있다(그 번호로 잘못 배움 = 맞게 쓴 답에 ✕, 의도로 둠). 동기 "챙겨 왔어"는 계획대로 재연결·의뢰인 줄 뒤(설계 §5.6은 "재연결 직전").
 - 저장: 체크포인트에 `peer`·`peerPending`·`showdownPassed`. 4 임무 S4 구역은 짧다(seed 4401에서 약 8초 — 7·8 가짜가 이제 S2에 쌓여서, 설계 §5.9의 23초는 그 전 계산).
-- 테스트: 단위 `m4.test`(26)·`city.test`·`save.test` 추가, 브라우저 `m4-browser`(A 첫 판 S4 실패 → 동기 → 통과 1280·390 / B 첫 판 통과 / C 동기 카드 빼고 마지막 보충 고정 + 결판 그림 없음 / D 375px 버튼 / E 타이틀 배지·임무 카드), `cardart-browser`(→ `_shot-cardart-m4.png`). 앞 임무 브라우저 테스트는 `passCity`로 도시 화면을 지난다.
+- 테스트: 단위 `m4.test`(27)·`city.test`·`save.test`·`reach.test`(4 임무) 추가, 브라우저 `m4-browser`(A 첫 판 S4 실패 → 동기 → 통과 1280·390 / B 첫 판 통과 / C 동기 카드 빼고 마지막 보충 고정 + 결판 그림 없음 / D 375px 버튼 / E 타이틀 배지·임무 카드 / F 표 답만 없음 → 결판 "답 없음 · 사람 채점"), `cardart-browser`(→ `_shot-cardart-m4.png`). 앞 임무 브라우저 테스트는 `passCity`로 도시 화면을 지난다.
 
 ## 지금 상태 (2026-11-02, 달리기 배경음악 「Arcade Rush」)
 - **배경음악** `js/bgm.js`(DR.Bgm) + `assets/bgm/arcade-rush.mp3`(사용자 Suno 곡, 원본 3.9MB → 112kbps 44.1kHz 스테레오 2.3MB·2:46.8, 앞 0.12초·끝 무음 1초 덜고 끝 0.55초 페이드, 마지막 타격음 → 조용한 도입이라 `audio.loop` 그대로). `<audio>`(Audio 객체)라 file://에서도 재생.
@@ -77,7 +78,7 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (170)
+- 단위: `node --test "data/tests/*.test.mjs"` (206)
 - 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (21개: bgm·boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·**m4**·play·polish·portraits·readability·run·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
