@@ -1,6 +1,14 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
-## ★지금 상태 (2026-11-02, 달리기 배경음악 「Arcade Rush」)
+## ★지금 상태 (2026-11-02, 4 임무 「채점 AI」 + 도시 복구 화면 — 이야기 끝까지)
+- **4 임무 완성**(계획 `docs/plans/2026-11-02-data-runner-m4.md` Task 1~7, 설계 §5·§7). `missions/m4.js`: 이름표 = 선택지 번호 1~5(`labels`), 가짜에만 7·8(`labelExtra`), `labelStyle:'digit'`(고치기·"?" 버튼 = 동그라미 숫자 하나, 375px 한 줄), 가짜가 쌓이는 장면은 데이터 `fake.scenes`(`DR.Cards.fakeScenes` — 이름표를 바꾸면 바뀐 이름표 기준). S2·S4 위험 / S1·S3 불편. 크게 기운 1·표 답을 다 빼면 S4는 반드시 실패(테스트).
+- 흐름: 대화 → 브리핑 → 달리기(시험장 배경 `RunScenery` exam, S2·S4 들어설 때 선배 한 줄 `story.runLines`) → 검수 → 감독관 → **채점 시연**(`js/ui-grade.js`, 답안지 13장, 원인 규칙 = `DR.Conveyor.sort` + 새 원인 `any:가짜id`) → 장면 결과 → **결판**(`DR.Judge.readable` = S4 조합만, 대사 줄 `sheet` → 대화창 위 선배 답안 `DR.CardArt.sheet`, bg `showdown-senior.webp`) ─ 못 읽음 → "봐, 또 지웠잖아" → 동기 합류(`js/showdown.js`: 남은 보충 2 = NEW·뺄 수 있음 / 1 = 고정 "동기와 함께 넣음" / 0 = 고정 + 다시 제출) → 보충(동기 카드는 달리기 뒤 가방에, 그만큼 칸 비워 둠) → … ─ 읽음 → **도시 재연결 5/5** → 의뢰인(선생님·택배 기사) → (합류한 적 없으면) 동기 "챙겨 왔어" → 해커의 이후(bg `senior-after.webp`) → 마무리(토론 질문 2개, `#outro-questions`).
+- **도시 복구 화면**(`js/ui-city.js`, `#screen-city`): 튜토리얼 끝 0→1, 1~3 임무 마지막 대화 뒤(칸이 늘었을 때만), 4 임무는 늘 →5. 칸 = `DR.Save.cityCount`(records.m1~m4 + records.tutorial, '처음부터'면 0). **그림 `assets/city/city-0..5.webp`는 아직 없음** → `<img>` 오류로 그림 자리 숨기고 점 5칸 + 문구. 파일만 그 이름으로 넣으면 저절로 쓰인다. 타이틀 왼쪽 위 배지 `#title-city`("도시 n/5", role=img).
+- 손글씨 카드 = Canvas 같은 붓(`cardart.js` GLYPHS·PEN — 깃발 1↔7, 고리 3↔8, 각진 2↔5, 둥근 5↔2). 크게 기운 1 = 굵고 일정, 떨림 없음. 동기 "이상한 건 빼자" 한 줄이 1~3 임무 도입에도. 시험 이름 = "새빛 진학 평가"(3 임무도).
+- 저장: 체크포인트에 `peer`·`peerPending`·`showdownPassed`. 4 임무 S4 구역은 짧다(seed 4401에서 약 8초 — 7·8 가짜가 이제 S2에 쌓여서, 설계 §5.9의 23초는 그 전 계산).
+- 테스트: 단위 `m4.test`(26)·`city.test`·`save.test` 추가, 브라우저 `m4-browser`(A 첫 판 S4 실패 → 동기 → 통과 1280·390 / B 첫 판 통과 / C 동기 카드 빼고 마지막 보충 고정 + 결판 그림 없음 / D 375px 버튼 / E 타이틀 배지·임무 카드), `cardart-browser`(→ `_shot-cardart-m4.png`). 앞 임무 브라우저 테스트는 `passCity`로 도시 화면을 지난다.
+
+## 지금 상태 (2026-11-02, 달리기 배경음악 「Arcade Rush」)
 - **배경음악** `js/bgm.js`(DR.Bgm) + `assets/bgm/arcade-rush.mp3`(사용자 Suno 곡, 원본 3.9MB → 112kbps 44.1kHz 스테레오 2.3MB·2:46.8, 앞 0.12초·끝 무음 1초 덜고 끝 0.55초 페이드, 마지막 타격음 → 조용한 도입이라 `audio.loop` 그대로). `<audio>`(Audio 객체)라 file://에서도 재생.
 - **달리기 화면에서만**(튜토리얼·보충 포함): `app.js go()` → `DR.Bgm.scene(name)`. 볼륨 0.14(시리즈 공통), 0.6초 페이드 인/아웃, 다음 달리기는 멈춘 자리부터. play() 약속이 늦게 풀려도 rise()가 다시 확인(끝난 뒤 울리지 않게). 탭 숨기면 멈춤. 첫 클릭·키 입력 때 막힌 재생 다시 시도 + 소리 없이 한 번 틀었다 멈춤(아이폰 잠금 풀기). 효과음(sfx.js)은 그대로.
 - **켬/끔** = 달리기 **일시정지 메뉴의 "배경음악" 체크**(`ui-shell.js bgmToggle`), 저장 키 `ethicity.data.bgm`('1'/'0', 없으면 켜짐 — `DR.Save.bgmOn/setBgm`, `ethicity.data.save` 형식은 그대로). HUD ♪ 버튼 이름은 "효과음 끄기/켜기"로 바꿈.
@@ -63,13 +71,14 @@
 | `js/run3d.js` | three.js 달리기(r149, `vendor/`) — `step/peek/setPaused/finishNow/debugTake` 테스트 훅 |
 | `js/ui-story.js` · `ui-inspect.js` · `ui-result.js` · `ui-conveyor.js` | 대화·브리핑·검수(크게 보기 공용 = `zoomer`, 2 임무 이름표 고치기)·감독관·결과·보충 준비·마무리·2 임무 컨베이어 |
 | `js/ui-common.js` · `ui-shell.js` | 아이콘 줄·범례·도움말·되돌리기 / 일시정지·타이틀(주인공·임무 고르기) |
+| `js/ui-guide.js` · `ui-grade.js` · `ui-city.js` · `showdown.js` | 3 임무 길 안내 시연 · 4 임무 채점 시연 · 도시 복구 화면 · 4 임무 결판·동기 카드 규칙(순수) |
 | `js/app.js` | 흐름 상태 기계, `?start=` `?run=` 디버그 진입, `DR.App.debugFill` |
 
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
 - 단위: `node --test "data/tests/*.test.mjs"` (170)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (20개: **bgm**·boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·play·polish·portraits·readability·run·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (21개: bgm·boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·**m4**·play·polish·portraits·readability·run·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
@@ -77,5 +86,5 @@
 
 ## 남은 일
 - **팀 플레이 피드백**(기획서 §11 체크리스트) → `config.js` 수치 조정. 미확인: 실기기 손맛·터치 실기기·저사양 PC 프레임.
-- 3·4 임무(설계 초안 승인 대기), 레이스 고스트, 해커 서사. 1 임무 결과를 컨베이어식으로 바꿀지는 2 임무를 해 본 뒤 결정(설계 §2).
+- 3·4 임무 완성(2026-11-02). 남은 것: 도시 복구 그림 6장(Codex, `assets/city/city-0..5.webp`), 레이스 고스트(나중에 얹는 선택 층). 1 임무 결과를 컨베이어식으로 바꿀지는 2 임무를 해 본 뒤 결정(설계 §2).
 - 인물 디자인(다른 팀과 맞추기)·완성 일러스트는 외부 조건.

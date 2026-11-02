@@ -6,6 +6,9 @@ import { openGame, shotPath } from './browser.mjs';
 
 const MIN = { neat_1: 1, neat_2: 1, neat_3: 1, neat_4: 1, neat_5: 1, flag_1: 2, loop_3: 2, angular_2: 2, round_5: 1, table_4: 2, slant_1: 2 };
 const NO_NUMBERS = /%|\d+\s*개/;
+// 도시 복구 그림(assets/city/city-n.webp)은 아직 없다 → <img> 오류(파일 없음) 콘솔 줄은 예상된 것. 그 밖의 오류는 없어야 한다
+const ONLY = process.env.M4_ONLY || 'ABCDE';
+const real = (errors) => errors.filter((e) => !/__missing__/.test(e)); // C는 결판 배경 그림을 일부러 없는 파일로
 
 async function toRun(page) {
   await page.locator('#btn-skip').click();
@@ -69,6 +72,9 @@ async function ending(page, w, shots) {
   assert.match(await page.locator('#city-line').innerText(), /^도시 5\/5 — 채점 AI까지, 도시가 다시 이어졌다$/);
   await page.waitForTimeout(900);
   assert.equal(await page.locator('#screen-city .city-dots i.on').count(), 5);
+  // 그림이 아직 없으면 그림 자리를 숨기고 점 5칸 + 문구(그림이 들어오면 그림이 보인다)
+  const hasArt = await page.evaluate(() => { const i = document.querySelector('#screen-city .city-after'); return !!(i && i.complete && i.naturalWidth); });
+  assert.equal(await page.locator('#city-art').isHidden(), !hasArt);
   if (shots) await page.screenshot({ path: shotPath('city-m4-' + w) });
   await page.locator('#btn-city-next').click();
   const lines = [];
@@ -96,7 +102,7 @@ async function ending(page, w, shots) {
 }
 
 // A) 첫 판에 크게 기운 1을 뺌 → 채점 멈춤 → S4 위험 → 결판 "또 지웠잖아" → 동기 합류(NEW 4장) → 보충 → 결판 "읽네" → 5/5 → 이후 → 마무리
-for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+for (const viewport of ONLY.includes('A') ? [{ width: 1280, height: 800 }, { width: 390, height: 844 }] : []) {
   const w = viewport.width;
   const { browser, page, errors } = await openGame({ viewport, query: '?start=m4', hasTouch: w < 500 });
   try {
@@ -188,12 +194,12 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     const lines = await ending(page, w, true);
     assert.ok(lines.includes('오늘은 맞게 쓴 답에 ✕가 하나도 안 찍혔어요.'));
     assert.ok(!lines.some((t) => /챙겨 왔어/.test(t)), 'peer already joined — no box line');
-    assert.deepEqual(errors, []);
+    assert.deepEqual(real(errors), []);
   } finally { await browser.close(); }
 }
 
 // B) 첫 판 통과 길: 결판 "읽네" 바로 → 동기 "나도 이거 챙겨 왔어"
-{
+if (ONLY.includes('B')) {
   const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m4' });
   try {
     await toRun(page);
@@ -207,11 +213,11 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     assert.ok(sd.some((t) => /읽네/.test(t)) && sd.some((t) => /다음 사람은 지워지지 않아/.test(t)));
     const lines = await ending(page, 1280, false);
     assert.ok(lines.includes('나도 이거 챙겨 왔어. 다음엔 처음부터 넣을게.'), lines.join('\n'));
-    assert.deepEqual(errors, []);
+    assert.deepEqual(real(errors), []);
   } finally { await browser.close(); }
 }
 
-// C) 동기 카드를 빼고 다시 못 읽음 → 마지막 보충은 고정("동기와 함께 넣음") → 결판 통과. 결판 배경 그림이 없어도 흐름은 그대로
+if (ONLY.includes('C')) // C) 동기 카드를 빼고 다시 못 읽음 → 마지막 보충은 고정("동기와 함께 넣음") → 결판 통과. 결판 배경 그림이 없어도 흐름은 그대로
 {
   const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m4' });
   try {
@@ -248,12 +254,12 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     assert.ok(sd2.some((t) => /읽네/.test(t)));
     assert.equal(await page.locator('#screen-story.has-bg').count(), 0);
     await ending(page, 1280, false);
-    assert.deepEqual(errors.filter((e) => !/__missing__|ERR_FILE_NOT_FOUND|Failed to load resource/.test(e)), []);
+    assert.deepEqual(real(errors), []);
   } finally { await browser.close(); }
 }
 
 // D) 375px: 이름표 고치기 버튼 5개 한 줄, "?" 카드 = 번호 5개 한 줄 + "넣지 않기" 둘째 줄
-{
+if (ONLY.includes('D')) {
   const { browser, page, errors } = await openGame({ viewport: { width: 375, height: 740 }, query: '?start=m4', hasTouch: true });
   try {
     await toRun(page);
@@ -283,7 +289,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
 }
 
 // E) 타이틀: "도시 n/5" 배지(기록 계산), 4 임무 카드 썸네일
-for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 760 }]) {
+for (const viewport of ONLY.includes('E') ? [{ width: 1280, height: 800 }, { width: 375, height: 760 }] : []) {
   const { browser, page, errors } = await openGame({ viewport });
   try {
     const badge = page.locator('#title-city');

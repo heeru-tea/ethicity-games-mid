@@ -57,6 +57,9 @@ try {
   for (let i = 0; i < 4 && await page.locator('#screen-story').isVisible(); i++) { talk.push(await page.locator('#screen-story').innerText()); await page.locator('#screen-story .dialog').click(); }
   assert.ok(talk.some((x) => /개 3장, 고양이 4장/.test(x)), 'pass count line');
   assert.equal((await save(page)).tutorialDone, true, 'tutorialDone saved');
+  // 도시 복구 0 → 1/5(튜토리얼 마무리 대화 뒤)
+  await page.locator('#screen-city').waitFor();
+  await passCity(page);
 
   // ── m1
   await page.waitForSelector('#btn-skip'); await skipTalk(page);

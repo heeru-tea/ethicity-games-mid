@@ -478,3 +478,5 @@ body { overflow: hidden; word-break: keep-all; }
   background: rgba(16, 9, 58, .72); pointer-events: none; }
 .title-city-text { font-size: 13px; font-weight: 800; color: #f4f1ff; }
 @media (prefers-reduced-motion: reduce) { .city-after, .city-dots i { transition: none; } }
+/* 좁은 화면: 왼쪽 위 "도시 n/5" 배지 아래로 AI 봇 안내를 조금 내린다 */
+@media (max-width: 700px) { .title-guide { top: -256px; } }
