@@ -162,7 +162,9 @@
 
   var labelColors = { flood_deep: '#527de0', flood_shallow: '#25bdb0', wet: '#d8af32', dry: '#9dc77b', unknown: '#b49ae3',
     // 2 임무 분류함(컨베이어 함 색과 같음)
-    can: '#d9534f', pet: '#3a8fd9', pack: '#25bdb0', paper: '#c9a227', vinyl: '#d977a8', battery: '#2fae6b', trash: '#7d8290' };
+    can: '#d9534f', pet: '#3a8fd9', pack: '#25bdb0', paper: '#c9a227', vinyl: '#d977a8', battery: '#2fae6b', trash: '#7d8290',
+    // 3 임무 장소
+    station: '#d9a066', market: '#e86a5a', river: '#4fb3ff', crossing: '#b0b6c3' };
   function runColor(mission, card) {
     var icons = card.ambiguousId ? ['unknown'] : iconsOf(mission, card);
     return labelColors[icons[icons.length - 1]] || '#8ab5ce';

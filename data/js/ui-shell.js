@@ -101,7 +101,7 @@
     if (!box) return;
     box.innerHTML = '';
     box.appendChild(el('span', { class: 'title-missions-label', text: '임무 고르기' }));
-    [['m1', '1 임무 · 침수 판별'], ['m2', '2 임무 · 분리배출']].forEach(function (p) {
+    [['m1', '1 임무 · 침수 판별'], ['m2', '2 임무 · 분리배출'], ['m3', '3 임무 · 길 안내']].forEach(function (p) {
       if (!DR.Missions[p[0]]) return;
       var b = el('button', { id: 'btn-' + p[0], class: 'btn btn-small', type: 'button', text: p[1] });
       b.addEventListener('click', function () {
