@@ -15,9 +15,10 @@ export const PLACE = [
   { file: 'assets/props/duck-white.png', cx: 445, bottom: 793, scale: 1.4, water: true },   // 왼쪽 아래 연못: 엄마 오리
   { file: 'assets/props/duck-yellow1.png', cx: 203, bottom: 874, scale: 1.4, water: true }, // 새끼 오리 둘
   { file: 'assets/props/duck-yellow2.png', cx: 250, bottom: 884, scale: 1.4, water: true },
-  // prop-art.mjs 동물(w = 줄일 폭): 우리 집 옆 잔디에서 자는 고양이, 벤치 위 참새
+  // prop-art.mjs 동물(w = 줄일 폭): 우리 집 옆 잔디에서 자는 고양이, 벤치 왼쪽 잔디 위 참새(장면 칸 13,15 — 막힌 잔디)
+  //   2026-11-02: 참새가 벤치 등받이 끝에 걸쳐 있었다(cx 868, bottom 792) → 꽃과 벤치 사이 땅으로(가구 위에 두지 않기)
   { file: 'assets/props/cat.png', cx: 1447, bottom: 734, w: 50 },
-  { file: 'assets/props/bird.png', cx: 868, bottom: 792, w: 34 }
+  { file: 'assets/props/bird.png', cx: 725, bottom: 812, w: 34 }
 ];
 
 async function sprite(p) {

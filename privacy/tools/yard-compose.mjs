@@ -12,9 +12,10 @@ export const PLACE = [
   { file: 'assets/schoolyard/booth-snack.png', cx: 605, bottom: 760, w: 205 }, // 옆 반
   // 매점(2026-11-01 prop-art.mjs, 정면 3/4·테라코타 지붕): 오른쪽 아래 잔디 뒤쪽에 앉혀 창구가 아래(14줄 서는 자리)를 본다 — world.js store (20,11) 4×3
   { file: 'assets/props/store.png', cx: 1150, bottom: 734, w: 205, shadowH: 10 },
-  // 작은 동물(구석의 막힌 칸만): 왼쪽 위 나무 그늘 토끼, 왼쪽 벤치 위 다람쥐
+  // 작은 동물(구석의 막힌 칸만): 왼쪽 위 나무 그늘 토끼, 오른쪽 나무 밑동 옆 땅 위 다람쥐(장면 칸 30,10 — 나무 칸이라 이미 막힘)
+  //   2026-11-02: 다람쥐가 왼쪽 벤치 위에 어설프게 올라앉아 있었다(cx 222, bottom 784) → 나무 밑동 옆 땅으로(사용자 지적)
   { file: 'assets/props/rabbit.png', cx: 100, bottom: 492, w: 40 },
-  { file: 'assets/props/squirrel.png', cx: 222, bottom: 784, w: 46, shadowH: 6 }
+  { file: 'assets/props/squirrel.png', cx: 1597, bottom: 578, w: 46, shadowH: 6 }
 ];
 
 async function alphaCrisp(buf) { // 반투명 가장자리 → 0 또는 255(픽셀 그림처럼 또렷하게)
