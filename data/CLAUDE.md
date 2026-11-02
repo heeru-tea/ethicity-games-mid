@@ -1,6 +1,12 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
-## ★지금 상태 (2026-11-02, 3 임무 그림 3장 연결)
+## ★지금 상태 (2026-11-02, 버그 2건 — 다온 고르면 시작 화면 주인공 사라짐 · 비 오는 학교 앞 카드)
+- **시작 화면 주인공 사라짐**: `title-scene.js dispose3d`가 `forceContextLoss()`로 문맥을 잃힌 **같은 캔버스**에 `build3d`가 새 렌더러를 붙여 만들기 실패(mode 'none') → 주인공 바꾸기·시작 화면 돌아오기 때 주인공이 안 그려졌다. 정리할 때 `#title-runner`를 같은 속성의 새 캔버스로 바꿔 둔다. 달리기(`run3d.js`)는 매번 새 캔버스라 해당 없음. 테스트 `title-browser` 마지막 묶음(다온·온유·다온·돌아오기·다온 저장 새로고침마다 3D 캔버스 화소를 readPixels로 셈) → `_shot-title-hero-daon-1428`.
+- **"비 오는 날 학교 앞 카드가 안 나옴"**: 카드는 코스에 늘 있고 잡을 수 있었다(아래 두 테스트). 원인은 그림 — `crossing_rain`(낮+비)이 맑은 날 횡단보도와 거의 같았다(픽셀 차이 35, 다른 장면 조건 쌍은 300+). 이름표도 같은 '학교 앞 횡단보도'라 학생이 찾을 단서가 없었다. `cardart.js`: 비 오는 낮 = 잿빛 먹구름 하늘, 비 그림(`rainOver`) = 전체 어둡게·물웅덩이·노란 우산 쓴 사람·굵은 빗줄기(역 앞 비 오는 밤에도 같이). 차이 35 → 150+.
+- 테스트: `cardart-browser`(한 장면의 두 조합 카드 그림 차이 > 150, 3 임무 장면 4개 모두) · `reach.test`(모든 임무 × seed 16개: 장면마다 필요한 카드를 서로 다른 줄에서 채울 수 있음 + 조합별 보충 코스) · `play-browser`(debugFill 없이 레인 키·Space로 진짜 잡아 3 임무 첫 판 4장면 통과 — 배포 코스 seed 3301 × 온유·다온 + 3317). 단위 169, 브라우저 테스트 19개. `title-browser`의 떠나는 전환 확인은 클릭 뒤 클래스를 늦게 보면 이미 빠져 있어(느린 헤드리스) 실패하던 테스트 쪽 경쟁 → MutationObserver로 기록하게 고침.
+- 참고(고치지 않음): 드문 카드 같은 종류 2장이 한 줄(레인 0·2)에 놓이면 하나만 잡힌다 — 배포 코스 3301의 비 오는 학교 앞 3장 중 잡을 수 있는 건 2장(필요 2장, 여유 없음). 1 임무 코스 스냅숏 때문에 코스 생성은 손대지 않았다.
+
+## 지금 상태 (2026-11-02, 3 임무 그림 3장 연결)
 - **3 임무 카드 썸네일** `assets/title/mission-m3.webp`(`ui-shell.js` MISSION_CARDS — m1·m2와 같은 자리, 미끼 글은 게임이 얹음). **택배 기사 초상** `assets/characters/courier-portraits.png`(2표정, `ui-story.js` SHEETS `courier`) — 이제 도형 초상 쓰는 인물 없음. **정체 공개 장면 그림** `assets/story/reveal-senior.webp`: 대사 줄의 `bg`(그림 경로)를 `DR.UI.dialogue`가 대화창 뒤에 깐다(`.story-bg`, 0.6초 서서히·움직임 줄이기면 바로, `object-position: 90%`로 폰에서도 오른쪽 선배가 보임, 900px 이상이면 대화창을 그림의 빈 왼쪽으로). 데이터는 `m3.story.reveal.bg` 하나 → `app.js revealLines`가 정체 공개 줄마다 붙임(공개 대화 8줄 내내, 마무리 대화엔 없음).
 - 원본·검토용(`*-original*.png`, `preview-all.png`, `README.md.bak`, `bg-*.png`, `og-image.png`, `*-seam-check.png`)과 `tools/`는 저장소에 올리지 않음. ⚠️ `reveal-senior.webp` 수거봇 머리 위에 흐릿한 글자 같은 무늬(4~5자)가 있음 — 그림 수정은 사용자 판단.
 - 테스트: `m3.test`(reveal.bg 파일 존재), `portraits-browser`(courier 칸), `m3-browser`(택배 기사 걱정 칸·임무 카드 썸네일·정체 공개 그림 → `_shot-m3-courier-worried-*`·`_shot-m3-mission-card-1280`·`_shot-m3-reveal-1280/390`). 단위 162.
@@ -56,8 +62,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (162)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (15개: boot·cardart·fakes·fire·flow·hero·keys·m1·**m2**·portraits·readability·run·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (169)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (19개: boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·**play**·polish·portraits·readability·run·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
