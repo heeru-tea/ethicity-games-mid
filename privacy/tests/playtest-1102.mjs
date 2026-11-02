@@ -62,25 +62,39 @@ try {
       await page.close();
     }
   }
-  // P0-2: c3_e8_a(민준 일을 모르는 척) — 하늘이에게 한 번 말 건 뒤 ? 없이 보조 모양, 두 번째부터 다음 목적지, 세 번째는 바로 가기 강조
+  // P0-2: c3_e8_a(민준 일을 모르는 척) — 하늘이에게 한 번 말 건 뒤 ? 없이 보조 모양 → 그날 한마디 n줄 차례로(js/idle-lines.js, 안내 없음)
+  //   → 첫 되풀이에 다음 목적지 한 줄 → 그다음은 목적지 안내 강조(바로 가기 버튼 강조 또는 방향 안내 강조 — 모바일 개편 전후 어느 쪽이든)
   {
     const page = await open(makeRun('c3_e8_a', 'e7b=none && e6=leave || e7b=none && e6b=deny', { map: true }));
-    const r = await page.evaluate(async () => {
+    const { out: r, n } = await page.evaluate(async () => {
       const b = document.getElementById('btn-map-act'), out = [];
       const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+      // 인물 배치가 바뀌어도 하늘이 바로 옆에서 시작: 두 칸 떨어진 곳에서 한 걸음 걸어 다가간다(걸음이 끝나야 버튼 글자가 바뀜)
+      const hc = window.PRIVACY_WORLD.triggers[PrivacyApp.state().mapTarget].cast.filter((k) => k.who === 'haneul')[0];
+      const press = async (key) => { document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })); await sleep(60); document.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true })); await sleep(500); };
+      for (const [dx, dy, dir, key] of [[1, 0, 'left', 'ArrowLeft'], [-1, 0, 'right', 'ArrowRight'], [0, 1, 'up', 'ArrowUp'], [0, -1, 'down', 'ArrowDown']]) {
+        PrivacyMap.debug.place(hc.x + 2 * dx, hc.y + 2 * dy, dir); await sleep(100);
+        const m0 = PrivacyMap.debug.me(); if (m0.x !== hc.x + 2 * dx || m0.y !== hc.y + 2 * dy) continue;
+        await press(key);
+        const m = PrivacyMap.debug.me(); if (m.x === hc.x + dx && m.y === hc.y + dy) break;
+      }
+      const n = PrivacyIdleLines.pool(PrivacyApp.state().mapTarget, 'haneul', (c) => PrivacyEngine.evalCond(c, PrivacyApp.state())).length;
       out.push({ icon: !!b.querySelector('.ico-talk'), txt: b.textContent.trim(), ghost: b.classList.contains('ghost') });
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < n + 3; i++) {
         b.click(); await sleep(300);
         const t = document.querySelector('.talk-text').textContent;
         while (PrivacyTalk.isOpen()) { PrivacyTalk.next(); await sleep(80); }
-        out.push({ talk: t, icon: !!b.querySelector('.ico-talk'), ghost: b.classList.contains('ghost'), skip: document.getElementById('btn-map-skip').classList.contains('primary') });
+        out.push({ talk: t, icon: !!b.querySelector('.ico-talk'), ghost: b.classList.contains('ghost'), skip: document.getElementById('btn-map-skip').classList.contains('primary'),
+          guide: !!(PrivacyMap.debug.guide && PrivacyMap.debug.guide()) });
       }
-      return out;
+      return { out, n };
     });
     ok(r[0].txt === '하늘에게 말 걸기' && r[0].icon && !r[0].ghost, '처음: ?가 뜬 하늘 → ? 그림 ' + JSON.stringify(r[0]));
     ok(!r[1].icon && r[1].ghost && !/지금은/.test(r[1].talk), '첫 말 뒤: ? 없이 보조 모양, 대사만 ' + JSON.stringify(r[1]));
-    ok(/지금은 집에 가서 쉬자/.test(r[2].talk) && !r[2].skip, '두 번째: 다음 목적지 한 줄 ' + r[2].talk);
-    ok(/같은 말만 돌아온다/.test(r[3].talk) && r[3].skip, '세 번째: 목적지 안내 강조 + 바로 가기 버튼 강조 ' + JSON.stringify(r[3]));
+    const days = r.slice(2, n + 2);
+    ok(n >= 2 && days.every((x) => !/지금은/.test(x.talk) && x.ghost && !x.icon) && new Set(days.map((x) => x.talk)).size === n, '그다음 n번: 그날 한마디를 차례로, 안내 없음 ' + days.map((x) => x.talk).join(' / '));
+    ok(/지금은 집에 가서 쉬자/.test(r[n + 2].talk) && !r[n + 2].skip && !r[n + 2].guide, '한마디를 다 쓴 뒤 첫 되풀이: 다음 목적지 한 줄 ' + r[n + 2].talk);
+    ok(/같은 말만 돌아온다/.test(r[n + 3].talk) && (r[n + 3].skip || r[n + 3].guide), '그다음: 목적지 안내 강조 ' + JSON.stringify(r[n + 3]));
     await page.close();
   }
   // P0-3: 속마음은 회색 줄(보낸 말풍선 아님), 화면 읽기에는 '속마음:'

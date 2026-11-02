@@ -293,8 +293,12 @@
       var own = trig.castLines && trig.castLines[n.c.who]; // 이 걷기 구간에서만 하는 말(오프닝 자기소개 등)
       var out = [personLine(n.c.who, own || hit.text)];
       // 할 말이 끝난 사람(?가 없던 사람)에게 또 말을 걸면: 대사 뒤에 다음 목적지 한 줄. 같은 사람에게 3번째부터는 더 또렷하게
-      var loud = streak.n >= 3;
-      if (!fresh) out.push({ who: null, name: null, text: nudgeText(loud) });
+      var loud = streak.n >= 3, nudge = !fresh;
+      // 2026-11-02 요일·상황별 한마디(js/idle-lines.js): ?가 없던 사람은 이 걷기 구간의 줄을 차례로(안내 없이) →
+      //   다 쓴 뒤 첫 번째 되풀이부터 다음 목적지 한 줄, 두 번째 되풀이부터 더 또렷하게. 줄이 없는 사람은 위 옛 방식
+      var dl = !fresh && window.PrivacyIdleLines && window.PrivacyIdleLines.next(targetId, n.c.who, o.evalCond);
+      if (dl) { out[0] = personLine(n.c.who, dl.text); nudge = dl.over > 0; loud = dl.over >= 2; }
+      if (nudge) out.push({ who: null, name: null, text: nudgeText(loud) });
       var g1 = gen;
       talk(out).then(function () {
         if (!loud || fresh || !active || mode !== 'walk' || gen !== g1) return;
