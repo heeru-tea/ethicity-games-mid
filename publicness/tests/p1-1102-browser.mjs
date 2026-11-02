@@ -102,9 +102,11 @@ try {
     const page = await fresh('no3d=1', { width: 1280, height: 800 });
     await play(page, phase);
     await page.locator('#btn-depart').click();
-    const sum = await page.locator('#depart-summary').innerText();
-    assert.ok(await page.locator('#depart-summary').isVisible(), '요약은 접지 않음');
-    assert.match(sum, /주요 인물 기준 충족 예상 \d\/\d명/); assert.match(sum, /노선이 없어 못 떠나는 요청 \d+건/); assert.match(sum, /예상 수지 /);
+    // 2026-11-02 사용자 결정: 출발 확인은 '이대로 출발할까요?'만(예상 요약·운행 구성 없음)
+    await page.locator('#confirm-depart[open]').waitFor();
+    assert.equal(await page.locator('#confirm-depart-h').innerText(), '이대로 출발할까요?');
+    assert.equal(await page.locator('#depart-summary, .depart-plan, #depart-rule').count(), 0, '예상 요약·운행 구성·규칙 문단 없음');
+    assert.doesNotMatch(await page.locator('#confirm-depart').innerText(), /기준 충족|예상 수지|못 떠나는/);
     await page.locator('#confirm-yes').click(); await page.waitForTimeout(600);
     assert.equal(await page.locator('#run-next').getAttribute('aria-label'), '다음 멈춤까지', phase + '단계 버튼 이름');
     const note = await page.evaluate(() => [...document.querySelectorAll('#panel .note')].map(n => n.textContent).find(t => /정원/.test(t)) || '');
