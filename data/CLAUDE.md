@@ -1,6 +1,12 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
-## ★지금 상태 (2026-11-02, 버그 2건 — 다온 고르면 시작 화면 주인공 사라짐 · 비 오는 학교 앞 카드)
+## ★지금 상태 (2026-11-02, 달리기 배경음악 「Arcade Rush」)
+- **배경음악** `js/bgm.js`(DR.Bgm) + `assets/bgm/arcade-rush.mp3`(사용자 Suno 곡, 원본 3.9MB → 112kbps 44.1kHz 스테레오 2.3MB·2:46.8, 앞 0.12초·끝 무음 1초 덜고 끝 0.55초 페이드, 마지막 타격음 → 조용한 도입이라 `audio.loop` 그대로). `<audio>`(Audio 객체)라 file://에서도 재생.
+- **달리기 화면에서만**(튜토리얼·보충 포함): `app.js go()` → `DR.Bgm.scene(name)`. 볼륨 0.14(시리즈 공통), 0.6초 페이드 인/아웃, 다음 달리기는 멈춘 자리부터. play() 약속이 늦게 풀려도 rise()가 다시 확인(끝난 뒤 울리지 않게). 탭 숨기면 멈춤. 첫 클릭·키 입력 때 막힌 재생 다시 시도 + 소리 없이 한 번 틀었다 멈춤(아이폰 잠금 풀기). 효과음(sfx.js)은 그대로.
+- **켬/끔** = 달리기 **일시정지 메뉴의 "배경음악" 체크**(`ui-shell.js bgmToggle`), 저장 키 `ethicity.data.bgm`('1'/'0', 없으면 켜짐 — `DR.Save.bgmOn/setBgm`, `ethicity.data.save` 형식은 그대로). HUD ♪ 버튼 이름은 "효과음 끄기/켜기"로 바꿈.
+- 테스트: `save.test`(키·기본 켜짐·효과음과 따로) · `bgm-browser`(달리기에서 0.14 재생·되풀이·탭 숨김·검수로 가면 서서히 멈춤·결과 무음·보충 이어서·메뉴 끄기 → 무음+새로고침 뒤에도·다시 켜기·타이틀 멈춤·콘솔 오류 없음). 단위 170, 브라우저 테스트 20개. 미확인: 실제 귀로 듣기(이음매·음량), 아이폰 실기기.
+
+## 지금 상태 (2026-11-02, 버그 2건 — 다온 고르면 시작 화면 주인공 사라짐 · 비 오는 학교 앞 카드)
 - **시작 화면 주인공 사라짐**: `title-scene.js dispose3d`가 `forceContextLoss()`로 문맥을 잃힌 **같은 캔버스**에 `build3d`가 새 렌더러를 붙여 만들기 실패(mode 'none') → 주인공 바꾸기·시작 화면 돌아오기 때 주인공이 안 그려졌다. 정리할 때 `#title-runner`를 같은 속성의 새 캔버스로 바꿔 둔다. 달리기(`run3d.js`)는 매번 새 캔버스라 해당 없음. 테스트 `title-browser` 마지막 묶음(다온·온유·다온·돌아오기·다온 저장 새로고침마다 3D 캔버스 화소를 readPixels로 셈) → `_shot-title-hero-daon-1428`.
 - **"비 오는 날 학교 앞 카드가 안 나옴"**: 카드는 코스에 늘 있고 잡을 수 있었다(아래 두 테스트). 원인은 그림 — `crossing_rain`(낮+비)이 맑은 날 횡단보도와 거의 같았다(픽셀 차이 35, 다른 장면 조건 쌍은 300+). 이름표도 같은 '학교 앞 횡단보도'라 학생이 찾을 단서가 없었다. `cardart.js`: 비 오는 낮 = 잿빛 먹구름 하늘, 비 그림(`rainOver`) = 전체 어둡게·물웅덩이·노란 우산 쓴 사람·굵은 빗줄기(역 앞 비 오는 밤에도 같이). 차이 35 → 150+.
 - 테스트: `cardart-browser`(한 장면의 두 조합 카드 그림 차이 > 150, 3 임무 장면 4개 모두) · `reach.test`(모든 임무 × seed 16개: 장면마다 필요한 카드를 서로 다른 줄에서 채울 수 있음 + 조합별 보충 코스) · `play-browser`(debugFill 없이 레인 키·Space로 진짜 잡아 3 임무 첫 판 4장면 통과 — 배포 코스 seed 3301 × 온유·다온 + 3317). 단위 169, 브라우저 테스트 19개. `title-browser`의 떠나는 전환 확인은 클릭 뒤 클래스를 늦게 보면 이미 빠져 있어(느린 헤드리스) 실패하던 테스트 쪽 경쟁 → MutationObserver로 기록하게 고침.
@@ -62,8 +68,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (169)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (19개: boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·**play**·polish·portraits·readability·run·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (170)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (20개: **bgm**·boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·play·polish·portraits·readability·run·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
