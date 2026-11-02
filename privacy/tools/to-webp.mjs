@@ -1,6 +1,8 @@
 // PNG → webp 사본 만들기(윤리시티 privacy 전용). 원본 PNG는 그대로 두고 같은 자리에 .webp를 쓴다.
 //   node privacy/tools/to-webp.mjs assets/school assets/outdoor ... [--q 0.82]
 //   경로는 privacy/ 기준. 폴더면 그 안의 .png 전부(preview.png 제외), 파일이면 그 파일만.
+//   공통 팩 그림(../shared/...png)도 받는다 — 공통 팩은 고치지 않고 webp 사본만 assets/shared-webp/<같은 하위 경로>.webp에 둔다
+//   (2026-11-02: 교실·도서관 배경 PNG 1.7·2.0MB가 느린 학교망에서 장면마다 10초 넘게 빈 화면을 만들어서).
 // 그림 크기(픽셀)는 바꾸지 않는다 — 코드에 박힌 잘라내기 좌표가 그대로 맞도록.
 // 끝나면 js/webp-list.js(게임이 .webp를 고를 목록)를 assets 아래 실제 .webp 파일로 다시 만든다.
 // 헤드리스 Edge의 canvas.toBlob('image/webp')로 인코딩(설치 필요 없음). 로컬 서버로 열어 캔버스 보안 제한을 피한다.
@@ -17,6 +19,9 @@ const args = process.argv.slice(2);
 const qi = args.indexOf('--q');
 const Q = qi >= 0 ? Number(args.splice(qi, 2)[1]) : 0.82;
 const SKIP = /(^|[\\/])(preview|.*-preview)\.png$/;
+const SHARED = '../shared/', SHARED_OUT = 'assets/shared-webp/';
+// privacy/ 기준 png 경로 → webp를 쓸 자리(공통 팩은 사본 폴더로)
+const webpOf = (f) => (f.startsWith(SHARED) ? SHARED_OUT + f.slice(SHARED.length) : f).replace(/\.png$/, '.webp');
 
 const files = [];
 for (const a of args) {
@@ -51,7 +56,8 @@ if (files.length) {
     if (!m) { console.error('✗ 결과 없음(빈 출력): ' + batch.join(', ')); process.exitCode = 1; continue; }
     for (const r of JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'))) {
       if (r.error) { console.error('✗ ' + r.f + ': ' + r.error); process.exitCode = 1; continue; }
-      const src = path.join(PRIV, r.f), dst = src.replace(/\.png$/, '.webp');
+      const src = path.join(PRIV, r.f), dst = path.join(PRIV, webpOf(r.f));
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
       const buf = Buffer.from(r.data, 'base64'), size = fs.statSync(src).size;
       if (buf.length >= size) { console.log(`- ${r.f}: webp가 더 커서 건너뜀(${kb(size)} → ${kb(buf.length)})`); if (fs.existsSync(dst)) fs.rmSync(dst); continue; }
       fs.writeFileSync(dst, buf);
@@ -62,18 +68,23 @@ if (files.length) {
   server.close();
 }
 
-// 게임이 .webp를 고를 목록: assets 아래 .png 옆에 .webp가 있는 것
+// 게임이 .webp를 고를 목록: assets 아래 .png 옆에 .webp가 있는 것(값 1 = 같은 자리 .webp)
+//   + assets/shared-webp/ 아래 webp 사본(값 = 사본 경로, 열쇠 = 공통 팩 원래 주소 ../shared/...png — 원본이 있을 때만)
 const list = [];
 (function walk(dir) {
   for (const n of fs.readdirSync(dir)) {
     const p = path.join(dir, n);
+    const rel = path.relative(PRIV, p).replace(/\\/g, '/');
     if (fs.statSync(p).isDirectory()) walk(p);
-    else if (n.endsWith('.webp') && fs.existsSync(p.replace(/\.webp$/, '.png'))) list.push(path.relative(PRIV, p).replace(/\\/g, '/').replace(/\.webp$/, '.png'));
+    else if (rel.startsWith(SHARED_OUT) && n.endsWith('.webp')) {
+      const key = SHARED + rel.slice(SHARED_OUT.length).replace(/\.webp$/, '.png');
+      if (fs.existsSync(path.join(PRIV, key))) list.push([key, rel]);
+    } else if (n.endsWith('.webp') && fs.existsSync(p.replace(/\.webp$/, '.png'))) list.push([rel.replace(/\.webp$/, '.png'), 1]);
   }
 })(path.join(PRIV, 'assets'));
-list.sort();
+list.sort((a, b) => (a[0] < b[0] ? -1 : 1));
 fs.writeFileSync(path.join(PRIV, 'js', 'webp-list.js'),
-  '/* tools/to-webp.mjs가 만든 목록 — 손으로 고치지 말 것. 여기 있는 .png는 같은 자리의 .webp를 먼저 쓴다 */\n' +
-  'window.PRIVACY_WEBP = ' + JSON.stringify(Object.fromEntries(list.map((k) => [k, 1])), null, 1) + ';\n');
+  '/* tools/to-webp.mjs가 만든 목록 — 손으로 고치지 말 것. 여기 있는 .png는 .webp를 먼저 쓴다(1 = 같은 자리, 문자열 = 그 사본 경로) */\n' +
+  'window.PRIVACY_WEBP = ' + JSON.stringify(Object.fromEntries(list), null, 1) + ';\n');
 if (files.length) console.log(`\n합계: ${kb(before)} → ${kb(after)} (${before ? Math.round((1 - after / before) * 100) : 0}% 감소) · 목록 ${list.length}장`);
 else console.log('목록만 다시 만듦: ' + list.length + '장');

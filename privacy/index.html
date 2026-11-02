@@ -7,8 +7,8 @@
   <meta name="description" content="학급 축제를 준비하는 나흘, 단톡방·SNS·AI 도우미에서 마주치는 프라이버시 선택 게임. 중·고등학생용.">
   <meta name="theme-color" content="#F7FAFA">
   <link rel="icon" href="assets/avatar-default.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+  <!-- 웹폰트는 css/style.css 맨 끝 @font-face(swap)에서 직접 — 글꼴 파일만 jsDelivr(미리 연결) -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -41,12 +41,12 @@
         <legend class="hero-legend">축제까지 나흘. 누구로 걸어갈까?</legend>
         <label class="hero-card" data-look="m">
           <input type="radio" name="look" value="m">
-          <span class="hero-face" role="img" aria-label="둥근 안경에 청록 조끼를 입은 남학생 온유" style="background-image:url('../shared/ethicity-elementary-common-v1/characters/onyu-portraits.png')"></span>
+          <span class="hero-face" role="img" aria-label="둥근 안경에 청록 조끼를 입은 남학생 온유" style="background-image:url('assets/shared-webp/ethicity-elementary-common-v1/characters/onyu-portraits.webp')"></span>
           <span class="hero-name">온유</span>
         </label>
         <label class="hero-card" data-look="f">
           <input type="radio" name="look" value="f">
-          <span class="hero-face" role="img" aria-label="양 갈래 머리에 보라색 후드를 입은 여학생 다온" style="background-image:url('../shared/ethicity-elementary-common-v1/characters/daon-portraits.png')"></span>
+          <span class="hero-face" role="img" aria-label="양 갈래 머리에 보라색 후드를 입은 여학생 다온" style="background-image:url('assets/shared-webp/ethicity-elementary-common-v1/characters/daon-portraits.webp')"></span>
           <span class="hero-name">다온</span>
         </label>
         <p id="look-msg" class="small look-msg" role="alert" hidden>먼저 주인공을 골라 주세요.</p>
@@ -82,7 +82,7 @@
             <li>약 15~20분 · 프롤로그 → 3개 장 → 에필로그</li>
             <li>선택 뒤에 정답·오답을 보여 주지 않아요. 결과는 이야기로 돌아와요.</li>
             <li>게임 속 이름·번호·계좌·학교는 모두 가짜예요. 실제 개인정보를 입력하는 곳은 없어요.</li>
-            <li>소리는 꺼진 채로 시작해요(메뉴에서 메시지 수신음을 켤 수 있어요). 방향키로 걷고 스페이스 키로 말을 걸어요. 숫자 키 1~4로 고르고 엔터 키로 넘겨요.</li>
+            <li>메시지가 오면 작은 알림음이 나요(메뉴 → 효과음에서 끌 수 있어요). 방향키로 걷고 스페이스 키로 말을 걸어요. 숫자 키 1~4로 고르고 엔터 키로 넘겨요.</li>
           </ul>
         </details>
       </div>
@@ -210,7 +210,7 @@
         <label><input type="radio" name="speed" value="instant"> 한 번에</label>
       </fieldset>
       <label class="setting check"><input type="checkbox" id="opt-motion"> 움직임 줄이기 (화면 효과 끄기)</label>
-      <label class="setting check"><input type="checkbox" id="opt-sound"> 효과음 (메시지 수신음)</label>
+      <label class="setting check"><input type="checkbox" id="opt-sound"> 효과음 (메시지 알림음 · 선택 소리)</label>
       <label class="setting check"><input type="checkbox" id="opt-bgm" checked> 배경음악 (이어폰을 쓸 때 추천)</label>
       <div class="menu-actions">
         <button id="btn-menu-home" class="btn" type="button">처음 화면으로 (진행은 저장됨)</button>

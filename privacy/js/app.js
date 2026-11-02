@@ -67,11 +67,15 @@
       }
     } else if (p) noticeMsgs.push('저장된 진행 기록 형식이 맞지 않아 새로 시작해요.');
 
+    settings.sound = true; // 효과음 기본 켜짐(2026-11-02) — 저장된 설정이 있으면 아래에서 다시 정함
     var st = S.readJSON(S.KEYS.settings).value;
     if (st && typeof st === 'object') {
       if (SPEED_MS.hasOwnProperty(st.speed)) settings.speed = st.speed;
       settings.reduceMotion = !!st.reduceMotion;
-      settings.sound = st.sound === true;
+      // 효과음 기본 켜짐(2026-11-02 사용자 결정): 메뉴에서 직접 고른 적(soundSet)이 있을 때만 저장값을 따른다.
+      // 예전엔 기본 꺼짐이 그대로 저장돼(sound:false) 직접 끈 것과 구분이 안 되므로, soundSet 없는 옛 저장은 한 번 새 기본(켜짐)으로
+      settings.soundSet = st.soundSet === true;
+      settings.sound = settings.soundSet ? st.sound === true : true;
       if (st.look === 'm' || st.look === 'f') settings.look = st.look;
       settings.nickname = cleanName(st.nickname);
     } else if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -442,9 +446,22 @@
     if (device === 'none') return { x: 0.5, y: 0.36 };
     return $('stage').clientWidth <= 720 ? { x: 0.5, y: 0.17 } : { x: 0.7, y: 0.36 }; // 넓은 화면: 폰(왼쪽) 오른쪽 빈 곳
   }
-  /* ── 효과음: 공통 팩 WAV(js/sfx.js). 메시지 하나당 'paper' 한 번. 기본 꺼짐 ── */
-  function sfx(id) { if (window.PrivacySfx) { window.PrivacySfx.setEnabled(settings.sound); window.PrivacySfx.play(id); } }
-  function chime() { sfx('paper'); }
+  /* ── 효과음(js/sfx.js). 기본 켜짐(메뉴에서 끔) ──
+   * 메시지 알림: 폰·모니터 창(장면 device가 none이 아님)에 친구·상대가 보낸 줄이 올 때만. 그 장면 첫 줄 = 'msg'(두 음), 이어지는 줄 = 'tick'(작게).
+   * 내가 보낸 줄(me)·해설(narr)·시스템(sys)·속마음(thought)·설정 카드(setting)·장소 대화창 줄(talk)에는 소리 없음. */
+  function sfx(id, force) { if (window.PrivacySfx) { window.PrivacySfx.setEnabled(settings.sound); window.PrivacySfx.play(id, force); } }
+  var chimeScene = null;
+  function incoming(line) {
+    var who = line.who;
+    return !line.talk && !!who && who !== 'me' && who !== 'narr' && who !== 'sys' && line.kind !== 'thought' && line.kind !== 'setting' &&
+      !!progress.run && deviceOf(progress.run.scene) !== 'none';
+  }
+  function chime(line) {
+    if (!incoming(line)) return;
+    var sc = progress.run.scene, first = sc !== chimeScene;
+    chimeScene = sc;
+    sfx(first ? 'msg' : 'tick');
+  }
   window.PrivacySfxDoor = function () { sfx('door'); };
   // 화면에 붙일 줄. _say = 화면 읽기용 한 문장, _typeEl/_text = 타자 효과를 줄 자리(해설·말풍선만)
   function nodeOf(line) {
@@ -475,7 +492,7 @@
     var who = line.who, text = plain(fill(line.text || ''));
     if (who && who !== 'narr' && who !== 'sys' && who !== 'me') {
       window.PrivacyMap.bubble(who, spokenDevice ? text : '📱…', !spokenDevice);
-      if (!line.talk) chime();
+      chime(line);
     }
     (st.bubbles || []).forEach(function (b) { if (text.indexOf(b.on) >= 0) window.PrivacyMap.bubble(b.who, b.text); });
   }
@@ -1101,7 +1118,7 @@
       r.addEventListener('change', function () { settings.speed = r.value; applySettings(); saveSettings(); });
     });
     $('opt-motion').addEventListener('change', function () { settings.reduceMotion = $('opt-motion').checked; applySettings(); saveSettings(); });
-    $('opt-sound').addEventListener('change', function () { settings.sound = $('opt-sound').checked; saveSettings(); if (settings.sound) sfx('tap'); });
+    $('opt-sound').addEventListener('change', function () { settings.sound = $('opt-sound').checked; settings.soundSet = true; saveSettings(); if (settings.sound) sfx('msg', true); }); // 켜면 알림음 미리듣기
     $('btn-menu-home').addEventListener('click', function () { $('menu').hidden = true; renderStart(); });
     $('btn-menu-restart').addEventListener('click', function () {
       $('menu').hidden = true;

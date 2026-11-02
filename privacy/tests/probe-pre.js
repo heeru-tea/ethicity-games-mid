@@ -40,22 +40,26 @@
       Object.defineProperty(HTMLImageElement.prototype, 'src', { configurable: true, get: function () { return wDesc.get.call(this); },
         set: function (v) { wDesc.set.call(this, /\.webp$/.test(String(v)) ? String(v).replace(/[^/]+\.webp$/, '__missing__.webp') : v); } });
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
-    case 'sound': // 소리 장치 흉내: 수신음이 몇 번 났는지 센다
-      window.__plays = [];
+    case 'sound': // 소리 장치 흉내: WAV 재생(__plays)과 합성음 발진기 시작(__osc)을 센다. 저장 없음 = 새 기본(켜짐)
+    case 'sound-old': // 옛 저장: 예전 기본 꺼짐이 그대로 저장된 것(sound:false, soundSet 없음)
+    case 'sound-off': // 메뉴에서 직접 끈 저장(soundSet:true)
+      window.__plays = []; window.__osc = 0;
       HTMLMediaElement.prototype.play = function () { window.__plays.push(String(this.src)); return Promise.resolve(); };
-      Object.defineProperty(window, '__beeps', { configurable: true, get: function () { return window.__plays.filter(function (s) { return /paper\.wav$/.test(s); }).length; } });
       var noop = function () {};
       var param = function () { return { setValueAtTime: noop, linearRampToValueAtTime: noop, exponentialRampToValueAtTime: noop, value: 0 }; };
       var Fake = function () { this.currentTime = 0; this.state = 'running'; this.destination = {}; };
-      Fake.prototype.createOscillator = function () { return { type: '', frequency: param(), connect: function (n) { return n; }, start: function () { window.__beeps++; }, stop: noop }; };
+      Fake.prototype.createOscillator = function () { return { type: '', frequency: param(), connect: function (n) { return n; }, start: function () { window.__osc++; }, stop: noop }; };
       Fake.prototype.createGain = function () { return { gain: param(), connect: function (n) { return n; } }; };
+      Fake.prototype.createBuffer = function () { return {}; };
+      Fake.prototype.createBufferSource = function () { return { connect: noop, start: noop }; };
       Fake.prototype.resume = function () { return Promise.resolve(); };
-      window.AudioContext = Fake; window.webkitAudioContext = Fake; // 옛 합성음 흉내(남겨 둠)
-      localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
+      window.AudioContext = Fake; window.webkitAudioContext = Fake;
+      var sset = scenario === 'sound' ? instant : instant.replace('}', scenario === 'sound-old' ? ',"sound":false}' : ',"sound":false,"soundSet":true}');
+      localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', sset); break;
     case 'no-sprites': // 캐릭터 시트를 못 불러오는 환경 흉내
       var srcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
       Object.defineProperty(HTMLImageElement.prototype, 'src', { configurable: true, get: function () { return srcDesc.get.call(this); },
-        set: function (v) { srcDesc.set.call(this, /char_|minjun_sleep|characters-v3\/|-walk\.png|-portraits\.png|-sleep\.png/.test(String(v)) ? 'assets/__missing__.png' : v); } });
+        set: function (v) { srcDesc.set.call(this, /char_|minjun_sleep|characters-v3\/|-walk\.(png|webp)|-portraits\.(png|webp)|-sleep\.(png|webp)/.test(String(v)) ? 'assets/__missing__.png' : v); } });
       localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', instant); break;
     case 'nf-resume': localStorage.setItem('ethicity.player', PLAYER); localStorage.setItem('ethicity.privacy.settings.v1', '{"look":"m"}'); break;
     case 'nf-noimg': // 나이트폭스 CG를 못 불러오는 환경

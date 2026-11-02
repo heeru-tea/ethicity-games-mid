@@ -498,7 +498,7 @@
       var avs = $$('#g-log .ln.msg:not(.me) .av');
       ok(avs.length > 0, '대화 프로필 있음');
       var named = avs.filter(function (a) { return /saebom|haneul|jiho|minjun|teacher/.test(a.getAttribute('data-who') || ''); });
-      ok(named.length > 0 && named.every(function (a) { var w = a.getAttribute('data-who'); return a.classList.contains('has-face') && new RegExp(w + '-portraits\\.png').test(a.style.backgroundImage); }), '친구 프로필 = 공통 팩 초상화(기본 표정): ' + named.map(function (a) { return a.getAttribute('data-who'); }).join(','));
+      ok(named.length > 0 && named.every(function (a) { var w = a.getAttribute('data-who'); return a.classList.contains('has-face') && new RegExp(w + '-portraits\\.(png|webp)').test(a.style.backgroundImage); }), '친구 프로필 = 공통 팩 초상화(기본 표정): ' + named.map(function (a) { return a.getAttribute('data-who'); }).join(','));
       ok(named.every(function (a) { return a.textContent === '' && !a.querySelector('img'); }), '얼굴이 있으면 이니셜 글자 없음');
       var others = avs.filter(function (a) { return !a.classList.contains('has-face'); });
       ok(others.every(function (a) { return a.textContent.length > 0; }), '그림이 없는 인물은 이니셜');
@@ -556,7 +556,7 @@
       ok(!$('.start-phone'), '메신저 푸시 알림 장식 없음');
       ok(/단톡방 28명, 스토리 조회 312회, 캡처 1장/.test($('#v-start').textContent), '훅 문장 유지');
       var imgs = $$('#look-pick .hero-card .hero-face');
-      ok(imgs.length === 2 && /onyu-portraits\.png/.test(imgs[0].style.backgroundImage) && /daon-portraits\.png/.test(imgs[1].style.backgroundImage), '두 주인공 = 공통 팩 온유·다온 초상화');
+      ok(imgs.length === 2 && /onyu-portraits\.(png|webp)/.test(imgs[0].style.backgroundImage) && /daon-portraits\.(png|webp)/.test(imgs[1].style.backgroundImage), '두 주인공 = 공통 팩 온유·다온 초상화');
       await wait(100);
       var r0 = imgs[0].getBoundingClientRect(), r1 = imgs[1].getBoundingClientRect();
       ok(Math.abs(r0.width - r1.width) < 1 && Math.abs(r0.height - r1.height) < 1 && r0.height >= 150, '두 주인공 같은 비중 ' + [r0.width, r0.height, r1.width, r1.height].map(Math.round));
@@ -596,7 +596,7 @@
       ok(lis.every(function (li) { return !!li.querySelector('.trust-mark'); }), '믿음 생김·그대로·줄어듦 표식');
       var mj = $('#c-summary .trust-list li[data-who="minjun"] .spr.face');
       var gl = 0; while (mj && !mj.classList.contains('loaded') && gl++ < 100) await wait(30);
-      ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /characters-official\/minjun-portraits\.png/.test(mj.style.backgroundImage), '민준 줄엔 공통 규격 민준 초상화');
+      ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /characters-official\/minjun-portraits\.(png|webp)/.test(mj.style.backgroundImage), '민준 줄엔 공통 규격 민준 초상화');
       ok(!!mj && mj.getBoundingClientRect().width >= 60 && mj.getBoundingClientRect().right <= $('#c-summary .trust-list').getBoundingClientRect().right + 1, '얼굴 2배 크기, 줄 안에 들어감');
       $('#btn-chapter-go').click();
       await play(R.A, { from: 6 });
@@ -645,11 +645,11 @@
       $('#btn-new').click(); await wait(30);
       PrivacyApp.setSpeed('normal'); // 한 줄씩(한꺼번에 모드는 초상화 없이)
       $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(50);
-      ok(/saebom-portraits\.png/.test(pv() || ''), '오프닝 소개: 새봄 초상화 ' + pv());
+      ok(/saebom-portraits\.(png|webp)/.test(pv() || ''), '오프닝 소개: 새봄 초상화 ' + pv());
       var pr = $('#talk-portrait').getBoundingClientRect(), tr = $('#talk').getBoundingClientRect(), mc = $('#v-map .map-controls').getBoundingClientRect();
       ok(pr.bottom <= tr.top + 16 && pr.bottom <= mc.top, '초상화는 대화창 위에 서고 아래 버튼을 가리지 않음');
       var sawMinjun = false, gg = 0;
-      while (!$('#talk').hidden && gg++ < 60) { if (/minjun-portraits\.png/.test(pv() || '')) sawMinjun = true; $('#btn-talk-next').click(); await wait(30); }
+      while (!$('#talk').hidden && gg++ < 60) { if (/minjun-portraits\.(png|webp)/.test(pv() || '')) sawMinjun = true; $('#btn-talk-next').click(); await wait(30); }
       ok(sawMinjun, '민준이 말하는 줄에선 민준 초상화');
       ok(pv() === null, '대사가 끝나면 초상화도 사라짐');
       PrivacyApp.setSpeed('instant');
@@ -660,7 +660,7 @@
       var ch2 = castOf('haneul'), pd = PrivacyMap.debug.tileToClient(ch2.x, ch2.y); // 하늘
       $('#m-canvas').dispatchEvent(new PointerEvent('pointerdown', { clientX: pd.x, clientY: pd.y, bubbles: true }));
       var gt = 0; while ($('#talk').hidden && gt++ < 300) await wait(20);
-      ok(/haneul-portraits\.png/.test(pv() || ''), '맵에서 하늘에게 말 걸기: 하늘 초상화');
+      ok(/haneul-portraits\.(png|webp)/.test(pv() || ''), '맵에서 하늘에게 말 걸기: 하늘 초상화');
       key(' '); await wait(30);
       // 사물 조사(해설)엔 초상화 없음: 교탁 바로 아래로 가서 위를 보고 조사
       var td = window.PRIVACY_WORLD.object('tdesk');
@@ -866,26 +866,68 @@
       sessionStorage.removeItem('probe-phase'); sessionStorage.removeItem('probe-carry');
     }
 
-    else if (s === 'sound') {
-      ok(!/"sound":true/.test(ls('ethicity.privacy.settings.v1') || ''), '효과음은 기본 꺼짐');
+    // 2026-11-02 메시지 알림음: 기본 켜짐 · 창이 열린 뒤 첫 친구 메시지 = msg, 이어지는 줄 = tick · 내 말·해설·대화창 줄엔 소리 없음
+    //   sound = 저장 없음(새 기본) / sound-old = 옛 저장 sound:false(직접 고른 적 없음 → 새 기본 켜짐) / sound-off = 메뉴에서 직접 끔(soundSet) → 꺼짐 유지
+    else if (s === 'sound' || s === 'sound-old' || s === 'sound-off') {
+      var sCalls = [], sOrig = PrivacySfx.play;
+      PrivacySfx.play = function (id) { var r = sOrig.apply(this, arguments); sCalls.push({ id: id, played: r, scene: (PrivacyApp.state() || {}).scene, view: view() }); return r; };
+      var msgCalls = function () { return sCalls.filter(function (c) { return c.id === 'msg' || c.id === 'tick'; }); };
+      var lineWho = function (l) { if (typeof l === 'string') { var m = /^([a-z_]+):/.exec(l); return { who: m ? m[1] : 'narr' }; } return { who: l.who || 'narr', kind: l.kind }; };
+      var incomingN = function (list) { return list.map(lineWho).filter(function (l) { return l.who !== 'me' && l.who !== 'narr' && l.who !== 'sys' && l.kind !== 'thought' && l.kind !== 'setting'; }).length; };
+      if (s === 'sound-off') {
+        $('#btn-menu').click(); await wait(); // 체크 상자는 메뉴를 열 때 설정을 반영
+        ok(!!$('#opt-sound') && !$('#opt-sound').checked, '메뉴에서 직접 끈 설정(soundSet)은 새 기본이 와도 꺼짐 그대로');
+        $('#btn-menu-close').click(); await wait();
+        $('#btn-new').click();
+        await play(R.A, { upto: 0 });
+        ok(msgCalls().length > 0 && msgCalls().every(function (c) { return !c.played; }), '꺼져 있으면 메시지가 와도 소리 없음(' + msgCalls().length + '줄 모두 무음)');
+        ok(window.__osc === 0, '합성음도 한 번도 안 냄 ' + window.__osc);
+      } else {
+        $('#btn-menu').click(); await wait(); // 체크 상자는 메뉴를 열 때 설정을 반영
+        ok(!!$('#opt-sound') && $('#opt-sound').checked, s === 'sound' ? '효과음 기본 켜짐(메뉴 체크 표시)' : '옛 저장(sound:false, 직접 고른 적 없음)도 새 기본 = 켜짐');
+        $('#btn-menu-close').click(); await wait();
+        $('#btn-new').click();
+        await play(R.A, { upto: 0 });
+        var c0 = msgCalls().filter(function (c) { return c.scene === 'pro_1'; });
+        ok(c0.length >= 1 && c0[0].id === 'msg' && c0[0].played, '단톡방 창이 열리고 첫 친구 메시지 = 알림음(msg) ' + c0.slice(0, 3).map(function (c) { return c.id + (c.played ? '♪' : ''); }).join(','));
+        ok(c0.filter(function (c) { return c.id === 'msg'; }).length === 1, '같은 창의 다음 메시지는 msg가 아니라 tick: ' + c0.map(function (c) { return c.id; }).join(','));
+        ok(c0.filter(function (c) { return c.played; }).length <= 2, '한꺼번에 온 줄은 겹쳐 울리지 않음(150ms): 실제 재생 ' + c0.filter(function (c) { return c.played; }).length + '번 / ' + c0.length + '줄');
+        ok(window.__osc >= 4, '합성음(두 음 × 바탕·배음) 실제로 냄: 발진기 ' + window.__osc);
+        ok(!msgCalls().some(function (c) { return c.view === 'v-map'; }), '맵·대화창(오프닝 소개)에서는 알림음 없음');
+        if (s === 'sound') {
+          var sc0 = PrivacyApp.state().scene, chId = R.A[0].split('#')[1];
+          var ch0 = PRIVACY_STORY.scenes[sc0].choices.filter(function (c) { return c.id === chId; })[0];
+          var n0 = msgCalls().length;
+          await wait(300);
+          $$('#g-dock .choice').filter(function (b) { return b.getAttribute('data-choice') === chId; })[0].click(); await wait(400);
+          var got = msgCalls().slice(n0), want = incomingN(ch0.react || []);
+          ok(!!ch0.say && want >= 1 && got.length === want && got.every(function (c) { return c.id === 'tick'; }), '선택 뒤 반응: 내 말(say)엔 소리 없음, 친구 줄마다 tick ' + got.length + '/' + want + ' ' + got.map(function (c) { return c.id; }).join(','));
+          await play(R.A, { from: 1, upto: 1 });
+          var c1 = msgCalls().filter(function (c) { return c.scene === 'c1_e1_a'; });
+          ok(c1.length >= 1 && c1[0].id === 'msg' && c1[0].played, '다음 장면 창이 열리면 다시 첫 알림음(msg) ' + c1.map(function (c) { return c.id; }).join(','));
+          $('#btn-menu').click(); await wait();
+          $('#opt-sound').click(); await wait(); // 끄기
+          ok(JSON.parse(ls('ethicity.privacy.settings.v1')).soundSet === true && JSON.parse(ls('ethicity.privacy.settings.v1')).sound === false, '끈 설정이 저장됨(soundSet)');
+          var n2 = sCalls.length;
+          $('#opt-sound').click(); await wait(200); // 다시 켜기 → 미리듣기
+          ok(sCalls.slice(n2).some(function (c) { return c.id === 'msg' && c.played; }), '켜면 알림음 미리듣기 한 번 ' + JSON.stringify(sCalls.slice(n2)));
+          $('#btn-menu-close').click(); await wait();
+        }
+      }
+    }
+
+    // 2026-11-02 느린 망 대책: 공통 팩 그림(교실·도서관 배경·걷기 시트·초상화)도 webp 사본으로, 첫 지도가 뜬 뒤 나머지 장면 그림을 미리 받기
+    else if (s === 'preload') {
+      ok(PrivacyImg.warmState().state === 'idle', '시작 화면에서는 장면 그림을 미리 받지 않음');
       $('#btn-new').click();
-      await play(R.A, { upto: 0 });
-      ok(window.__beeps === 0, '꺼져 있으면 메시지가 와도 소리 없음');
-      $('#btn-menu').click(); await wait();
-      ok(!!$('#opt-sound') && !$('#opt-sound').checked, '메뉴에 효과음 켜기(꺼짐 표시)');
-      $('#opt-sound').click(); await wait();
-      $('#btn-menu-close').click(); await wait();
-      ok(JSON.parse(ls('ethicity.privacy.settings.v1')).sound === true && (function (fx) { return fx.length === 1 && /tap\.wav$/.test(fx[0]); })(window.__plays.filter(function (u) { return !/assets\/bgm\//.test(u); })), '켠 설정이 저장되고 미리듣기(tap) 한 번(배경음악 제외): ' + window.__plays.join(','));
-      await wait(300);
-      var b0 = window.__beeps;
-      $$('#g-dock .choice')[0].click(); await wait(400);
-      var got = window.__beeps - b0;
-      ok(got >= 1 && got <= 3, '친구 메시지가 오면 수신음(한꺼번에 와도 겹치지 않게) ' + got + '번');
-      var gn = 0; while (!$('#btn-next') && gn++ < 100) await wait(20);
-      var b1 = window.__beeps;
-      $('#btn-next').click(); await wait(50);
-      $('#btn-map-skip').click(); await wait(); $('#btn-map-act').click(); await wait(400); await passTalk(); await wait(50);
-      ok(window.__beeps >= b1, '맵·대화창에서는 수신음 강요 없음');
+      var gp = 0; while (PrivacyImg.warmState().state !== 'done' && gp++ < 300) await wait(50);
+      var rn = performance.getEntriesByType('resource').map(function (e) { return decodeURI(new URL(e.name).pathname); });
+      var scs = window.PRIVACY_WORLD.SCENES.map(function (x) { return PrivacyImg.src(x.img); });
+      ok(PrivacyImg.warmState().state === 'done', '장면 그림 미리 받기 끝 ' + JSON.stringify(PrivacyImg.warmState()));
+      ok(scs.every(function (u) { return /\.webp$/.test(u); }), '장면 그림 5장 모두 webp 주소 ' + scs.join(' '));
+      ok(scs.every(function (u) { var a = decodeURI(new URL(u, location.href).pathname); return rn.indexOf(a) >= 0; }), '5장 모두 받아 둠(지도가 그 장면에 가기 전에)');
+      ok(!rn.some(function (n) { return /backgrounds\/(classroom|library)\.png$/.test(n); }), '교실·도서관 PNG(1.7·2.0MB)는 받지 않음');
+      ok(!rn.some(function (n) { return /characters\/[a-z]+-(walk|portraits)\.png$/.test(n); }), '인물 걷기 시트·초상화도 PNG는 받지 않음: ' + rn.filter(function (n) { return /\.png$/.test(n); }).slice(0, 4).join(','));
     }
 
     else if (s === 'finale') {

@@ -561,3 +561,11 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .warning-help strong { color: #fff; }
 .warning-ok { justify-self: center; margin-top: 12px; min-width: 10rem; }
 @keyframes warning-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── 웹폰트(2026-11-02) — 예전엔 jsDelivr CSS 2개(나눔스퀘어·갈무리)를 <link>로 받아 첫 화면을 막고(느린 망에서 왕복 2번),
+   나눔스퀘어는 font-display가 없어 글자가 최대 3초 안 보였다. 쓰는 굵기만 여기서 직접 선언하고 swap(시스템 글꼴로 먼저 보여 줌). 글꼴 파일은 그대로 jsDelivr. */
+@font-face { font-family: 'NanumSquare'; font-weight: 400; font-display: swap; src: url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareR.woff2') format('woff2'), url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareR.woff') format('woff'); }
+@font-face { font-family: 'NanumSquare'; font-weight: 700; font-display: swap; src: url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareB.woff2') format('woff2'), url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareB.woff') format('woff'); }
+@font-face { font-family: 'NanumSquare'; font-weight: 800; font-display: swap; src: url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareEB.woff2') format('woff2'), url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareEB.woff') format('woff'); }
+@font-face { font-family: 'Galmuri11'; font-weight: 400; font-display: swap; src: local('Galmuri11 Regular'), url('https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri11.woff2') format('woff2'); }
+@font-face { font-family: 'Galmuri11'; font-weight: 700; font-display: swap; src: local('Galmuri11 Bold'), url('https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri11-Bold.woff2') format('woff2'); }

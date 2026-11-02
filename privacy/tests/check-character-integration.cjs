@@ -3,7 +3,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
 const assert=require('node:assert/strict');
 const path=require('node:path');
 async function pastWarning(p){const b=p.getByRole('button',{name:'확인했어요'});if(await b.isVisible().catch(()=>false))await b.click();}
-const WALK=/(shared\/ethicity-elementary-common-v1\/characters|assets\/characters-official)\/([a-z_]+)-walk\.png$/;
+const WALK=/(shared\/ethicity-elementary-common-v1\/characters|assets\/characters-official|assets\/shared-webp\/ethicity-elementary-common-v1\/characters)\/([a-z_]+)-walk\.(png|webp)$/; // 2026-11-02 webp 사본도 같은 그림
 (async()=>{
  const {startServer}=await import('./serve.mjs'); const server=await startServer(0);
  const browser=await chromium.launch({channel:'msedge',headless:true});
@@ -16,7 +16,7 @@ const WALK=/(shared\/ethicity-elementary-common-v1\/characters|assets\/character
     window.characterDraws=[];
     const draw=CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage=function(im,...args){
-     if(/-walk\.png$/.test(im?.src||'')) {
+     if(/-walk\.(png|webp)$/.test(im?.src||'')) {
       window.characterDraws.push({src:im.src,args,smooth:this.imageSmoothingEnabled});
       if(window.characterDraws.length>2000)window.characterDraws.shift();
      }
@@ -26,7 +26,7 @@ const WALK=/(shared\/ethicity-elementary-common-v1\/characters|assets\/character
    await page.goto(base);
    await page.locator('label[data-look=m]').click();
    await page.locator('#btn-new').click();await page.waitForTimeout(500);await pastWarning(page);
-   await page.waitForFunction(()=>window.characterDraws.some(d=>d.src.endsWith('/onyu-walk.png')));
+   await page.waitForFunction(()=>window.characterDraws.some(d=>/\/onyu-walk\.(png|webp)$/.test(d.src)));
    // Real keyboard movement in the opening map.
    const before=await page.evaluate(()=>PrivacyMap.debug.me());
    const route=await page.evaluate(()=>PrivacyMap.debug.route());
@@ -45,15 +45,15 @@ const WALK=/(shared\/ethicity-elementary-common-v1\/characters|assets\/character
    });
    // 좁은 화면은 카메라가 주인공 둘레만 보여 준다(옛 테스트와 같이 주인공만 확인)
    const ids=mobile?['daon']:['daon','saebom','jiho','haneul','minjun','teacher','friend'];
-   await page.waitForFunction(ids=>ids.every(id=>window.characterDraws.some(d=>d.src.endsWith('/'+id+'-walk.png'))),ids);
+   await page.waitForFunction(ids=>ids.every(id=>window.characterDraws.some(d=>d.src.endsWith('/'+id+'-walk.png')||d.src.endsWith('/'+id+'-walk.webp'))),ids);
    await page.waitForFunction(()=>document.querySelectorAll('#character-test .loaded').length===6);
    const draws=await page.evaluate(()=>window.characterDraws);
    assert(draws.every(d=>WALK.test(d.src)),'only common-pack (or same-spec minjun) walk sheets');
    assert(draws.every(d=>d.args[2]===96&&d.args[3]===128),'official 96×128 source cells');
    assert(draws.every(d=>!d.smooth),'pixel art drawn without smoothing');
    const faces=await page.evaluate(()=>Array.from(document.querySelectorAll('#character-test .spr')).map(n=>n.style.backgroundImage));
-   assert(faces.every(f=>/-portraits\.png/.test(f)),'faces come from portrait sheets');
-   assert(faces.some(f=>f.includes('robot-portraits.png')),'루미 = 안내 로봇');
+   assert(faces.every(f=>/-portraits\.(png|webp)/.test(f)),'faces come from portrait sheets');
+   assert(faces.some(f=>f.includes('robot-portraits.')),'루미 = 안내 로봇');
    assert.equal(errors.length,0,errors.join('\n'));
    await page.screenshot({path:path.join(__dirname,mobile?'_shot-characters-mobile.png':'_shot-characters-desktop.png'),fullPage:false});
    await page.close(); console.log('PASS actual game: '+(mobile?'mobile':'desktop')+' movement, official sheets, portraits');

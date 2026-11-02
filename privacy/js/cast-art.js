@@ -22,9 +22,11 @@
     return OFFICIAL[who] || CUSTOM[who] ? who : null;
   }
   function dir(i) { return CUSTOM[i] ? OWN : BASE; }
-  function walk(who, look) { var i = id(who, look); return i ? dir(i) + i + '-walk.png' : null; }
-  function portraits(who, look) { var i = id(who, look); return i ? dir(i) + i + '-portraits.png' : null; }
-  function sleep() { return OWN + 'minjun-sleep.png'; }
+  // 2026-11-02: 같은 그림의 webp 사본(tools/to-webp.mjs, q0.9 · 크기 그대로)이 있으면 그 주소 — PNG 4.8MB → 1.6MB. 공통 팩 원본은 그대로
+  function web(p) { return window.PrivacyImg ? window.PrivacyImg.src(p) : p; }
+  function walk(who, look) { var i = id(who, look); return i ? web(dir(i) + i + '-walk.png') : null; }
+  function portraits(who, look) { var i = id(who, look); return i ? web(dir(i) + i + '-portraits.png') : null; }
+  function sleep() { return web(OWN + 'minjun-sleep.png'); }
 
   // 초상화 시트의 한 칸을 요소 배경으로(정사각형 요소 기준)
   function paintPortrait(node, who, look, expr) {
