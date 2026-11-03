@@ -3,6 +3,10 @@
  * 장면마다 그림 1장(논리 1280×720) + 40px 칸 32×18. 출입구 칸을 밟으면 옆 장면으로(짧은 페이드).
  * 인물: 공통 팩 걷기 시트를 공통 런타임과 같은 0.8배(몸 약 2.2칸)로. 로드 실패 시 옛 시트, 이어 임시 도형.
  * 조작: 방향키/WASD 이동, Space/Enter 말 걸기·조사, 화면 탭 = 그 칸까지 걸어가기(인물·사물을 탭하면 가서 말 걸기)
+ *   터치 기기: 왼쪽 아래 가상 조이스틱(8방향·밀어낸 거리로 걷기/빠르게, 메뉴 '조이스틱 표시'로 끔). 키보드와 같은 tryStep을 탄다.
+ * 2026-11-02 모바일: 출입구 칸은 길찾기(WD.findPath)가 밟는 순간 건너편으로 옮겨 '목표 칸'으로 삼을 수 없었다 →
+ *   탭은 tapPath()가 문 옆 칸까지 간 뒤 문 쪽으로 한 걸음, 막힌 칸을 누르면 가장 가까운 갈 수 있는 칸(문 우선). 문 옆에서 말 걸기 버튼 = 나가기.
+ *   목적지로 바로 가기는 ?debug=1(교사 확인용)에서만. 대신 목적지 쪽 출구가 반짝이고, 화면 밖이면 가장자리 핀+화살표.
  */
 (function () {
   'use strict';
@@ -45,6 +49,12 @@
   var cast = [], blocked = {};
   var me = { x: 0, y: 0, dir: 'down', fx: 0, fy: 0, moving: false, t: 0, from: null, to: null, door: null, frame: 0 };
   var held = [], queued = null, path = null, actOnArrive = false, busy = false;
+  // 디버그: ?debug=1 = 걷는 칸·막힘·출입구·조사 지점 색 표시 + '목적지로 바로 가기' 버튼(교사 확인용), ?debug=grid = 색 표시만
+  var DEBUG = { grid: false, skip: false };
+  // 가상 조이스틱: on = 손가락이 닿아 있음, dx·dy = 방향(-1~1), mag = 밀어낸 정도(0~1). lastAxis = 대각선에서 번갈아 걷기용
+  var joy = { on: false, dx: 0, dy: 0, mag: 0, lastAxis: null, id: null, start: null, moved: false, rest: null };
+  var JOY_R = 52, JOY_FAST = 0.75, JOY_DEAD = 0.25; // 받침 반지름(px) · 이만큼 밀면 빠르게 · 이보다 덜 밀면 멈춤
+  var guideUntil = 0; // 같은 상대에게 3번째 말 걸면 잠깐 방향 안내(출구 반짝임·화살표)를 강조
   var bubbles = [], T = 40, viewW = 0, viewH = 0, cam = { x: 0, y: 0 }, dpr = 1;
   var sprites = {}, lastArea = '', lastLook = null;
   var WALK_FILES = {
@@ -113,7 +123,7 @@
     trig = WD.triggers[targetId];
     cast = trig.cast.slice();
     passGreeted = {}; talked = {}; talkMarks = []; lastLabel = '';
-    streak = { who: null, n: 0 }; $('btn-map-skip').classList.remove('primary');
+    streak = { who: null, n: 0 }; guideUntil = 0;
     blocked = {};
     cast.forEach(function (c) { blocked[c.x + ',' + c.y] = true; loadSprite(c.who, 'char_' + c.who + '.png', window.PrivacyCast.walk(c.who)); });
     var look = o.playerLook();
@@ -136,8 +146,11 @@
     mode = 'walk'; stageInfo = null; focus = null; gen++; camS = null;
     lastArea = '';
     updateArea();
-    say(trig.hint || '');
+    // 첫 안내: 터치 기기에서 조이스틱이 보이면 조이스틱으로 안내(world.js 글은 키보드·탭 기준)
+    curHint = trig.hint && joyShown() ? '왼쪽 아래 조이스틱이나 화면을 눌러 걸어요' : trig.hint || '';
+    say(curHint);
     active = true;
+    joyLayout();
     resize();
     if (newDay) dayCard(trig.time);
     updateHint();
@@ -167,7 +180,7 @@
     return new Promise(function (res) { setTimeout(function () { c.hidden = true; res(); }, ms); });
   }
   function clearBubbles() { bubbles = []; }
-  function hide() { active = false; mode = null; held = []; path = null; if (raf) cancelAnimationFrame(raf); clearTimeout(tmr); raf = null; }
+  function hide() { active = false; mode = null; held = []; path = null; joyRelease(); if (raf) cancelAnimationFrame(raf); clearTimeout(tmr); raf = null; }
   // 화면 갱신은 rAF, 탭이 가려지거나 rAF가 멈춘 환경에선 타이머가 대신 진행시킨다
   function schedule() {
     if (!active) return;
@@ -208,20 +221,31 @@
   }
 
   /* ── 이동 ─────────────────────── */
-  function tryStep(dir) {
+  // 한 칸 걷기 — 키보드·탭 경로·조이스틱·말 걸기 버튼(문 앞)이 모두 이 함수를 지난다(같은 충돌·출입구 판정)
+  var curHint = '';
+  function tryStep(dir, fromJoy) {
     me.dir = dir;
     var d = WD.DIRS[dir], nx = me.x + d[0], ny = me.y + d[1];
     if (!WD.walkable(nx, ny, blocked)) return false;
-    if (trig.hint && $('m-say').textContent === trig.hint) say(''); // 첫 걸음을 떼면 안내는 사라진다
+    var door = WD.DOORS[nx + ',' + ny] || null;
+    // 나갈 조건이 있는 출입구(DOORS[].need = story.js 조건 문법, needText = '…해'): 못 나가면 이유를 한 줄로. 지금 지도엔 조건 있는 문이 없다
+    if (door && door.need && !o.evalCond(door.need)) {
+      var why = '먼저 ' + (door.needText || '할 일을 끝내') + '야 해요.';
+      if ($('m-say').textContent !== why) flashSay(why);
+      return false;
+    }
+    if (curHint && $('m-say').textContent === curHint) say(''); // 첫 걸음을 떼면 안내는 사라진다
     me.moving = true; me.t = 0;
+    me.fast = !!fromJoy && joy.mag >= JOY_FAST; // 조이스틱을 끝까지 밀면 빠르게
     me.from = { x: me.x, y: me.y }; me.to = { x: nx, y: ny };
-    me.door = WD.DOORS[nx + ',' + ny] || null;
+    me.door = door;
     return true;
   }
+  function stepMs() { return me.fast ? Math.round(STEP_MS * 0.6) : STEP_MS; }
   function finishStep() {
     me.moving = false;
     me.x = me.to.x; me.y = me.to.y;
-    if (me.door) { if (window.PrivacySfxDoor) window.PrivacySfxDoor(); me.x = me.door.to[0]; me.y = me.door.to[1]; me.dir = me.door.dir; flashSay(me.door.label === '집 안으로' ? '우리 집에 들어왔다.' : '밖으로 나왔다.'); }
+    if (me.door) { if (window.PrivacySfxDoor) window.PrivacySfxDoor(); me.x = me.door.to[0]; me.y = me.door.to[1]; me.dir = me.door.dir; flashSay(me.door.say || (me.door.label === '집 안으로' ? '우리 집에 들어왔다.' : '밖으로 나왔다.')); } // 문마다 도착 문구(world.js door say)
     me.fx = me.x; me.fy = me.y;
     me.frame = (me.frame + 1) % 4;
     me.walked = (me.walked || 0) + 1; // 걸은 칸 수: 걷기 동작을 칸이 바뀌어도 이어 가게
@@ -237,10 +261,11 @@
     }
     if (held.length) { queued = null; tryStep(held[held.length - 1]); }
     else if (queued) { var q = queued; queued = null; tryStep(q); }
+    else if (joy.on) stepJoy();
   }
   function updateArea() {
     var a = WD.areaName(me.x, me.y);
-    if (a !== lastArea) { lastArea = a; $('m-area').textContent = a ? '📍 ' + a : ''; }
+    if (a !== lastArea) { lastArea = a; $('m-area').textContent = a ? '📍 ' + a : ''; if ($('m-say').textContent) sayLayout(); } // HUD 높이가 바뀌면 안내 한 줄도 따라 내려감
   }
 
   /* ── 상호작용 ───────────────────── */
@@ -265,6 +290,7 @@
     var spoke = pick();
     tapWant = null; // 누른 상대에게 한 번 말 걸면 끝
     if (!spoke) { say('가까이 가서 눌러 보세요. {!}는 갈 곳, {?}는 말 걸어 볼 사람이에요.'); return; }
+    if (spoke.type === 'door') { say(''); tryStep(spoke.dir); return; } // 문 매트 옆: 버튼으로도 나간다(걸어서 밟는 것과 같은 tryStep)
     var t = isTarget(spoke) ? spoke : null;
     var fresh = spoke.type === 'npc' && !!talkReason(spoke.c); // ?가 떠 있던 사람(할 말이 남아 있음)
     var whoKey = spoke.type === 'npc' ? spoke.c.who : 'obj:' + spoke.ob.id;
@@ -302,8 +328,10 @@
       var g1 = gen;
       talk(out).then(function () {
         if (!loud || fresh || !active || mode !== 'walk' || gen !== g1) return;
-        say('{!} 목적지: ' + targetBox().name + ' — ‘목적지로 바로 가기’를 눌러도 돼요.');
-        $('btn-map-skip').classList.add('primary');
+        // 3번째부터: 바로 가기 대신 방향 안내를 강조(주인공 옆 화살표 + 출구 반짝임을 몇 초 더 또렷하게)
+        var away = WD.sceneAt(targetBox().x) !== WD.sceneAt(me.x);
+        say('{!} 목적지: ' + targetBox().name + (away ? ' — 반짝이는 출구와 화살표를 따라가요.' : ' — 화살표 쪽으로 가 보세요.'));
+        guideUntil = performance.now() + 6000;
       });
     } else {
       talk([{ who: null, name: null, text: WD.lookFor(n.ob, trig && trig.time) }]); // 매점처럼 날마다 바뀌는 문구
@@ -342,6 +370,7 @@
     $('m-say').classList.remove('fade-out');
     if (text && speaker) setBubble(speaker, text);
     rich($('m-say'), text || '');
+    if (text) sayLayout(); // 보일 때만 자리 계산(매 프레임 계산하면 헤드리스 프로브가 느려졌다)
   }
   // 잠깐 알리는 말(문 드나들기 등): 1.3초 보인 뒤 0.5초에 걸쳐 사라진다(움직임 줄이기면 바로)
   function flashSay(text) {
@@ -358,7 +387,16 @@
   function pick() {
     var ns = neighbors();
     var tapped = tapWant && ns.filter(function (n) { return tapWant.npc ? n.type === 'npc' && n.c.who === tapWant.npc : n.type === 'obj' && n.ob.id === tapWant.obj; })[0];
-    return tapped || ns.filter(isTarget)[0] || ns.filter(function (n) { return n.type === 'npc' && talkReason(n.c); })[0] || ns[0] || null;
+    return tapped || ns.filter(isTarget)[0] || ns.filter(function (n) { return n.type === 'npc' && talkReason(n.c); })[0] || ns[0] || doorNear();
+  }
+  // 바로 옆(바라보는 쪽 먼저)에 출입구 칸이 있으면 { type:'door', door, dir } — 말 걸기 버튼이 '○○ 가기'가 된다
+  function doorNear() {
+    var order = [me.dir, 'up', 'down', 'left', 'right'];
+    for (var i = 0; i < order.length; i++) {
+      var d = WD.DIRS[order[i]], x = me.x + d[0], y = me.y + d[1], door = WD.DOORS[x + ',' + y];
+      if (door && WD.walkable(x, y, blocked)) return { type: 'door', door: door, dir: order[i] };
+    }
+    return null;
   }
   // 다음 목적지 한 줄: 할 일(mission) '집에 가서 쉬기 — 내 방 컴퓨터' → '지금은 집에 가서 쉬자. (내 방 컴퓨터)'
   var streak = { who: null, n: 0 };
@@ -372,12 +410,15 @@
     var btn = $('btn-map-act');
     // ?는 지도에 실제로 ?가 뜬 사람(목적지 인물·할 말이 남은 사람)에게만. 그냥 옆에 있는 사람은 이름만, 버튼도 보조 모양(ghost)
     var asks = !!p && !near && p.type === 'npc' && !!talkReason(p.c);
+    var ex = p && p.type === 'door' ? exitToward() : null;
+    var way = !!ex && p.door.to[0] === ex.door.to[0] && p.door.to[1] === ex.door.to[1]; // 목적지 쪽 출구
     rich(btn, !p ? '말 걸기 · 조사하기'
       : near ? (trig.target.npc ? '{?} ' + targetBox().name + '에게 말 걸기' : '{!} ' + targetBox().name + ' 조사하기')
+      : p.type === 'door' ? (way ? '{!} ' : '') + p.door.label + ' 가기'
       : p.type === 'npc' ? (asks ? '{?} ' : '') + o.story.characters[p.c.who].name + '에게 말 걸기'
       : p.ob.name + ' 조사하기');
-    btn.classList.toggle('primary', near);
-    btn.classList.toggle('ghost', !near && !asks);
+    btn.classList.toggle('primary', near || way);
+    btn.classList.toggle('ghost', !near && !asks && !way);
     updateLabel();
   }
   // ? 표시 이유: 'target' 목적지 인물 · 'lines' 이번 걷기에서 할 말 · 'react' 지금까지의 선택에 반응하는 한 줄 · null 없음
@@ -402,8 +443,10 @@
     if (label !== lastLabel) { lastLabel = label; canvas.setAttribute('aria-label', label); }
   }
 
+  // 목적지로 바로 가기: 일반 플레이에서는 버튼이 숨겨져 있고(index.html hidden) ?debug=1에서만 보인다(교사 확인용).
+  //   검증 프로브(?probe=…)는 숨은 버튼을 눌러 사건 장면으로 빨리 간다. 도착 처리(말 걸기 → o.onEnter)는 걸어서 온 것과 같다.
   function skipToTarget() {
-    if (mode !== 'walk') return;
+    if (mode !== 'walk' || !DEBUG.skip) return;
     if (busy) return;
     var p = routeToTarget();
     if (!p) { say('지금은 그곳으로 갈 수 없어요.'); return; }
@@ -447,35 +490,183 @@
   function onPointer(e) {
     if (mode !== 'walk' || busy) return;
     if (window.PrivacyTalk.isOpen()) { window.PrivacyTalk.close(); return; }
+    if (me.moving && me.door) return; // 문을 지나는 중(건너편 장면으로 옮겨지는 걸음)
+    // 걷는 중에 누르면 지금 걸음이 끝나는 칸에서 새 길을 잇는다(예전엔 떠난 칸에서 계산해 한 칸 어긋났다 — 문 매트 연타)
+    var from = me.moving ? { x: me.to.x, y: me.to.y } : { x: me.x, y: me.y };
     var r = canvas.getBoundingClientRect();
     var tx = Math.floor((e.clientX - r.left + cam.x) / T), ty = Math.floor((e.clientY - r.top + cam.y) / T);
-    var npc = cast.filter(function (c) { return c.x === tx && c.y === ty; })[0] || markAt(e.clientX - r.left, e.clientY - r.top);
-    var ob = WD.objectAt(tx, ty) || WD.OBJECTS.filter(function (b) { return tx >= b.x && tx < b.x + b.w && ty >= b.y && ty < b.y + b.h; })[0];
+    var pin = pinAt(e.clientX - r.left, e.clientY - r.top); // 목적지 핀(사람이 아닌 사물·출입구)을 눌렀으면 그 자리로
+    if (pin) { tx = pin.tx; ty = pin.ty; }
+    var npc = cast.filter(function (c) { return c.x === tx && c.y === ty; })[0] || (pin ? null : markAt(e.clientX - r.left, e.clientY - r.top));
+    var ob = WD.DOORS[tx + ',' + ty] ? null : WD.objectAt(tx, ty) || WD.OBJECTS.filter(function (b) { return tx >= b.x && tx < b.x + b.w && ty >= b.y && ty < b.y + b.h; })[0];
     var p;
     if (npc || ob) {
       var box = npc ? { x: npc.x, y: npc.y, w: 1, h: 1 } : ob;
-      p = WD.findPath({ x: me.x, y: me.y }, WD.adjacentTo({ contains: boxContains(box) }), blocked);
+      p = WD.findPath(from, WD.adjacentTo({ contains: boxContains(box) }), blocked);
       actOnArrive = true;
       tapWant = npc ? { npc: npc.who } : { obj: ob.id };
     } else {
-      p = WD.findPath({ x: me.x, y: me.y }, function (x, y) { return x === tx && y === ty; }, blocked);
+      var tp = tapPath(tx, ty, from);
+      p = tp && tp.dirs;
       actOnArrive = false; tapWant = null;
+      if (tp && !tp.dirs.length && !tp.exact) { flashSay('그곳으로는 갈 수 없어요.'); return; } // 막힌 곳인데 더 가까이 갈 칸도 없음
     }
     if (!p) { actOnArrive = false; return; }
     held = [];
+    if (me.moving) { path = p; return; } // 이 걸음이 끝나면 finishStep이 이어 간다(빈 길이면 도착 처리)
     if (!p.length) { if (actOnArrive) { actOnArrive = false; faceBox(npc ? { x: npc.x, y: npc.y, w: 1, h: 1 } : ob); act(); } return; }
     path = p;
     if (!me.moving) tryStep(path.shift());
   }
   // 물음표 말풍선을 눌러도 그 사람에게 가서 말 걸기(머리 위 그림이라 사람 칸보다 위에 있음)
+  //   화면 밖·HUD 밑이라 옮겨 그린(off) 목적지 인물 ?도 그려진 자리를 누르면 그 사람에게(2026-11-02 모바일: 옮긴 ?를 누르면 그 아래 칸으로 걷기만 했다)
   function markAt(x, y) {
     var marks = talkMarks.slice();
-    if (lastMarker && lastMarker.who && lastMarker.x != null && !lastMarker.off) marks.push(lastMarker);
+    if (lastMarker && lastMarker.who && lastMarker.x != null) marks.push(lastMarker);
     var hit = marks.filter(function (m) { return Math.abs(x - m.x) <= m.w / 2 + 4 && Math.abs(y - m.y) <= m.h / 2 + 4; })[0];
     return hit ? cast.filter(function (c) { return c.who === hit.who; })[0] : null;
   }
+  // 목적지 핀(사물·장소·출입구)을 눌렀나: 핀은 칸 위에 떠 있어 누른 칸이 목적지와 다르다 → 핀이 가리키는 칸 { tx, ty }
+  //   출입구를 가리키는 핀이면 그 출입구 칸(아래 tapPath가 문 옆 칸까지 + 문 쪽 한 걸음으로 지나간다)
+  function pinAt(x, y) {
+    var m = lastMarker;
+    if (!m || m.who || m.x == null || m.hidden) return null;
+    if (Math.abs(x - m.x) > m.w / 2 + 6 || Math.abs(y - m.y) > m.h / 2 + 6) return null;
+    if (WD.DOORS[m.tx + ',' + m.ty]) return { tx: m.tx, ty: m.ty };
+    var b = targetBox();
+    return b.obj ? { tx: b.x, ty: b.y } : null;
+  }
   function faceBox(b) {
     ['up', 'down', 'left', 'right'].forEach(function (dir) { var d = WD.DIRS[dir]; if (boxContains(b)(me.x + d[0], me.y + d[1])) me.dir = dir; });
+  }
+  // 빈 곳을 눌렀을 때 갈 길: 지금 장면 안에서 걸어서 닿는 칸(+ 그 옆 출입구 칸) 중 누른 칸에 가장 가까운 곳.
+  //   WD.findPath는 출입구 칸을 밟는 순간 건너편으로 옮겨서 출입구 칸 자체를 목표로 못 잡는다(옛 버그: 문 매트를 눌러도 반응 없음)
+  //   → 출입구 칸은 '문 옆 칸까지 + 문 쪽 한 걸음'으로. 거리가 같으면 출입구 우선(그림의 매트가 문 칸보다 조금 넓다), 그다음 짧은 길.
+  //   돌려주는 값 { dirs, exact(누른 칸 그대로인가), door } 또는 null
+  function tapPath(tx, ty, from) {
+    from = from || { x: me.x, y: me.y };
+    var sc = WD.sceneAt(from.x), start = from.x + ',' + from.y, prev = {}, seen = {}, q = [{ x: from.x, y: from.y }];
+    function dist(x, y) { return Math.abs(x - tx) + Math.abs(y - ty); }
+    var best = { d: dist(from.x, from.y), door: false, key: start };
+    function better(d, door) { return d < best.d || (d === best.d && door && !best.door); }
+    seen[start] = true;
+    while (q.length) {
+      var cur = q.shift(), ck = cur.x + ',' + cur.y;
+      for (var dir in WD.DIRS) {
+        var v = WD.DIRS[dir], nx = cur.x + v[0], ny = cur.y + v[1], nk = nx + ',' + ny;
+        if (seen[nk] || !WD.walkable(nx, ny, blocked)) continue;
+        seen[nk] = true;
+        if (WD.DOORS[nk]) { if (better(dist(nx, ny), true)) best = { d: dist(nx, ny), door: true, key: ck, dir: dir }; continue; }
+        if (WD.sceneAt(nx) !== sc) continue;
+        prev[nk] = { from: ck, dir: dir };
+        if (better(dist(nx, ny), false)) best = { d: dist(nx, ny), door: false, key: nk };
+        q.push({ x: nx, y: ny });
+      }
+    }
+    var dirs = [], k = best.key;
+    while (prev[k]) { dirs.unshift(prev[k].dir); k = prev[k].from; }
+    if (best.door) dirs.push(best.dir);
+    return { dirs: dirs, exact: best.d === 0, door: best.door };
+  }
+
+  /* ── 가상 조이스틱(터치 기기) ─────────────
+   * #joy = 왼쪽 아래(말 걸기 버튼 위) 보이지 않는 터치 영역. 그 안을 누른 자리에 받침이 나타나고(플로팅), 떼면 기본 자리로 돌아간다.
+   * 평소 40% · 누르는 중 80% 불투명(css). 8방향: 대각선은 가로·세로를 번갈아 한 칸씩(격자 이동), 한쪽이 막히면 다른 쪽.
+   * 살짝 민 만큼 = 걷기, 끝까지(75% 이상) = 빠르게. 이동은 키보드와 같은 tryStep → 충돌·출입구·도착 처리가 같다.
+   * 영역(받침보다 조금 큰 자리)은 걷기 카메라가 피하는 자리라, 주인공·출구는 늘 그 밖에 보인다.
+   */
+  function isTouch() {
+    return ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0 || !!(window.matchMedia && window.matchMedia('(any-pointer: coarse)').matches);
+  }
+  function joyShown() { return isTouch() && (!o.joystick || o.joystick() !== false); }
+  function joyDirs() {
+    if (!joy.on || joy.mag < JOY_DEAD) return [];
+    var ax = Math.abs(joy.dx), ay = Math.abs(joy.dy), h = joy.dx > 0 ? 'right' : 'left', v = joy.dy > 0 ? 'down' : 'up';
+    var ang = Math.atan2(ay, ax) * 180 / Math.PI; // 0 = 가로, 90 = 세로
+    if (ang < 22.5) return [h];
+    if (ang > 67.5) return [v];
+    return joy.lastAxis === 'h' ? [v, h] : [h, v]; // 대각선: 지난 걸음과 다른 축 먼저
+  }
+  function stepJoy() {
+    if (mode !== 'walk' || busy || me.moving) return false;
+    var ds = joyDirs();
+    for (var i = 0; i < ds.length; i++) {
+      if (tryStep(ds[i], true)) { joy.lastAxis = ds[i] === 'left' || ds[i] === 'right' ? 'h' : 'v'; return true; }
+    }
+    if (ds.length) me.dir = ds[0]; // 막혀도 그쪽을 바라본다(말 걸기 상대가 바뀜)
+    return false;
+  }
+  // 받침 기본 자리(영역 왼쪽 아래)와 영역 크기: 말 걸기 버튼 바로 위, 위 HUD 아래까지
+  function joyLayout() {
+    var z = $('joy');
+    if (!z) return;
+    z.hidden = !(joyShown() && mode === 'walk');
+    if (z.hidden) { joy.rest = null; return; }
+    var vm = $('v-map').getBoundingClientRect(), ctl = document.querySelector('#v-map .map-controls').getBoundingClientRect();
+    var hud = $('hud').getBoundingClientRect();
+    if (!vm.height) return; // 아직 화면에 없음
+    var key = [vm.left, vm.top, vm.width, vm.height, ctl.top, ctl.left, hud.bottom].map(Math.round).join(',');
+    if (key === joy.layoutKey && joy.rest) return; // 그대로면 다시 쓰지 않는다(매 프레임 확인)
+    joy.layoutKey = key;
+    // 버튼 줄이 조이스틱 자리(왼쪽 min(46%, 200px))와 가로로 겹칠 때만 그 위로. 가로 화면처럼 버튼이 오른쪽에 있으면 맨 아래 왼쪽
+    var over = ctl.left - vm.left < Math.min(vm.width * 0.46, 200) + 4;
+    var bottom = over ? Math.max(8, vm.bottom - ctl.top + 6) : 8;
+    z.style.bottom = bottom + 'px';
+    z.style.height = (JOY_R * 2 + 28) + 'px';
+    var zr = z.getBoundingClientRect(), cr = canvas.getBoundingClientRect();
+    joy.restAt = { x: 16 + JOY_R, y: zr.height - 6 - JOY_R }; // 영역 안 좌표(받침 가운데)
+    if (!joy.on) joyPut(joy.restAt.x, joy.restAt.y);
+    // 캔버스 좌표의 조이스틱 영역 전체: 걷기 카메라가 이 자리를 피해 주인공·출구를 그 밖에 둔다
+    joy.rest = { x0: zr.left - cr.left, y0: zr.top - cr.top, x1: zr.right - cr.left, y1: zr.bottom - cr.top };
+  }
+  // 짧은 안내 한 줄(#m-say)은 위 HUD 바로 아래에(say()가 글을 띄울 때마다)(360 폭에서 HUD가 3줄이 되면 고정 top 84px이 '지금 할 일'을 덮었다)
+  var sayTop = null;
+  function sayLayout() {
+    var hud = $('hud'), st = $('stage');
+    if (!hud || !st || !hud.getClientRects().length) return;
+    var top = Math.round(hud.getBoundingClientRect().bottom - st.getBoundingClientRect().top + 6);
+    if (top !== sayTop) { sayTop = top; $('m-say').style.top = top + 'px'; }
+  }
+  function joyPut(x, y) { var b = document.querySelector('#joy .joy-base'); if (b) { b.style.left = x + 'px'; b.style.top = y + 'px'; } }
+  function joyKnob(x, y) { var k = document.querySelector('#joy .joy-knob'); if (k) k.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
+  function joyRelease() {
+    joy.on = false; joy.dx = joy.dy = joy.mag = 0; joy.id = null; joy.start = null;
+    var z = $('joy');
+    if (!z) return;
+    z.classList.remove('active');
+    joyKnob(0, 0);
+    if (joy.restAt) joyPut(joy.restAt.x, joy.restAt.y);
+  }
+  function joyDown(e) {
+    if (mode !== 'walk' || overlayOpen() || joy.id !== null) return;
+    e.preventDefault();
+    var z = $('joy'), zr = z.getBoundingClientRect();
+    try { z.setPointerCapture(e.pointerId); } catch (err) { /* 합성 이벤트 */ }
+    // 받침이 영역 밖으로 반쯤 나가지 않게
+    var x = Math.max(JOY_R, Math.min(zr.width - JOY_R, e.clientX - zr.left)), y = Math.max(JOY_R, Math.min(zr.height - JOY_R, e.clientY - zr.top));
+    joy.id = e.pointerId; joy.start = { x: zr.left + x, y: zr.top + y, cx: e.clientX, cy: e.clientY, t: performance.now() }; joy.moved = false;
+    joy.on = true; joy.dx = joy.dy = joy.mag = 0;
+    joyPut(x, y); joyKnob(0, 0);
+    z.classList.add('active');
+  }
+  function joyMove(e) {
+    if (joy.id !== e.pointerId || !joy.on) return;
+    e.preventDefault();
+    var dx = e.clientX - joy.start.x, dy = e.clientY - joy.start.y, len = Math.sqrt(dx * dx + dy * dy);
+    if (Math.abs(e.clientX - joy.start.cx) + Math.abs(e.clientY - joy.start.cy) > 8) joy.moved = true;
+    var k = len > JOY_R ? JOY_R / len : 1;
+    joyKnob(dx * k, dy * k);
+    joy.mag = Math.min(1, len / JOY_R);
+    joy.dx = len ? dx / len : 0; joy.dy = len ? dy / len : 0;
+    if (joy.mag >= JOY_DEAD) {
+      if (window.PrivacyTalk.isOpen()) { if (busy) return; window.PrivacyTalk.close(); } // 걸으면 대화창은 닫힌다(키보드와 같이)
+      path = null; actOnArrive = false; tapWant = null; held = []; queued = null;
+      stepJoy();
+    }
+  }
+  function joyUp(e) {
+    if (joy.id !== e.pointerId) return;
+    joyRelease(); // 톡 눌렀다 뗀 것은 아무 일 없음(땅 탭으로 넘기면 받침 밑 엉뚱한 곳 — 예: 방 출구 — 으로 걸어가 버렸다)
   }
 
   /* ── 그리기 ─────────────────────── */
@@ -488,6 +679,7 @@
     canvas.style.height = cssH + 'px';
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
+    if (cssW !== viewW || cssH !== viewH) camS = null; // 회전·크기 변화 뒤 걷기 카메라를 내 캐릭터 기준으로 다시(가장자리·버튼 밑에 남지 않게)
     viewW = cssW; viewH = cssH;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = false;
@@ -501,10 +693,12 @@
     var dt = Math.max(0, Math.min(1000, t - lastT)); lastT = t;
     frameDt = Math.min(100, dt);
     while (me.moving && dt > 0) {
-      var need = (1 - me.t) * STEP_MS;
+      var need = (1 - me.t) * stepMs();
       if (dt >= need) { dt -= need; me.t = 1; finishStep(); }
-      else { me.t += dt / STEP_MS; dt = 0; }
+      else { me.t += dt / stepMs(); dt = 0; }
     }
+    if (overlayOpen() && (path || held.length || queued || joy.on)) { path = null; held = []; queued = null; actOnArrive = false; tapWant = null; joyRelease(); } // 메뉴 뒤에서 계속 걷지 않게
+    if (!me.moving && joy.on && mode === 'walk' && !busy && !path) stepJoy(); // 막혀 있다가 방향을 바꾸면 바로 다시 걷는다
     if (me.moving) { me.fx = me.from.x + (me.to.x - me.from.x) * me.t; me.fy = me.from.y + (me.to.y - me.from.y) * me.t; }
     draw(t);
     schedule();
@@ -528,17 +722,23 @@
   // 장면 무대에서 지도를 가리는 것(폰·모니터 창, 선택 상자, 대화창)을 뺀 '보이는 지도 영역'(캔버스 좌표).
   // 가리는 상자들의 가장자리로 캔버스를 나눈 사각형 중, 어떤 상자와도 겹치지 않는 가장 넓은 것(넓은 화면: 폰 오른쪽·선택 상자 위 / 휴대폰: 아래 시트 위).
   var OCCLUDERS = ['#g-phone', '#g-dock', '#talk'];
-  function freeRect() {
+  // 걷기 중 지도를 가리는 것: 위 HUD, 아래 말 걸기 버튼 줄, 조이스틱 받침(기본 자리) — 주인공·끝 줄(출구 매트)이 그 밑에 숨지 않게
+  var WALK_OCCLUDERS = ['#hud', '#v-map .map-controls'];
+  function freeRect(sel, extra) {
     var cr = canvas.getBoundingClientRect(), boxes = [], xs = [0, viewW], ys = [0, viewH];
-    OCCLUDERS.forEach(function (q) {
+    function add(r) {
+      r = { x0: Math.max(0, r.x0), y0: Math.max(0, r.y0), x1: Math.min(viewW, r.x1), y1: Math.min(viewH, r.y1) };
+      if (r.x1 <= r.x0 || r.y1 <= r.y0) return;
+      boxes.push(r); xs.push(r.x0, r.x1); ys.push(r.y0, r.y1);
+    }
+    (sel || OCCLUDERS).forEach(function (q) {
       var e = document.querySelector(q);
       if (!e || e.hidden || !e.getClientRects().length) return;
       var b = e.getBoundingClientRect();
       if (b.width < 8 || b.height < 8) return; // 빈 선택 상자 자리
-      var r = { x0: Math.max(0, b.left - cr.left), y0: Math.max(0, b.top - cr.top), x1: Math.min(viewW, b.right - cr.left), y1: Math.min(viewH, b.bottom - cr.top) };
-      if (r.x1 <= r.x0 || r.y1 <= r.y0) return;
-      boxes.push(r); xs.push(r.x0, r.x1); ys.push(r.y0, r.y1);
+      add({ x0: b.left - cr.left, y0: b.top - cr.top, x1: b.right - cr.left, y1: b.bottom - cr.top });
     });
+    (extra || []).forEach(add);
     var best = { x0: 0, y0: 0, x1: viewW, y1: viewH }, bestA = boxes.length ? -1 : Infinity;
     for (var a = 0; a < xs.length && boxes.length; a++) for (var b2 = 0; b2 < xs.length; b2++) {
       if (xs[b2] - xs[a] < 80) continue;
@@ -559,6 +759,13 @@
     var lo = a0 - v0, hi = a0 + len - v1;
     if (len >= full && Math.max(lo, a0) <= Math.min(hi, a0 + len - full)) { lo = Math.max(lo, a0); hi = Math.min(hi, a0 + len - full); }
     return Math.max(lo, Math.min(hi, want));
+  }
+  // 걷기 카메라 한 축: 장면이 캔버스 가운데에 놓여도 가림 상자에 안 걸리면 옛 배치(가운데), 보이는 영역보다 작으면 그 가운데,
+  // 크면 장면 끝이 보이는 영역 안으로 들어오지 않게(가림 상자 밑으로는 흐린 배경이 보일 수 있음) — 끝 칸도 가림 없이 볼 수 있다
+  function walkAxis(want, a0, len, v0, v1, full) {
+    if (len <= full && (full - len) / 2 >= v0 - 0.5 && (full + len) / 2 <= v1 + 0.5) return a0 - (full - len) / 2;
+    if (len <= v1 - v0) return a0 + len / 2 - (v0 + v1) / 2;
+    return Math.max(a0 - v0, Math.min(a0 + len - v1, want));
   }
   // 장면 그림 바깥(장면이 화면보다 작을 때 남는 곳): 검정 대신 같은 그림을 아주 작게 줄였다 키운 흐린 배경 + 살짝 어둡게
   var blurImg = {};
@@ -623,14 +830,19 @@
       camS = { x: camS && k < 1 ? camS.x + (cx - camS.x) * k : cx, y: camS && k < 1 ? camS.y + (cy - camS.y) * k : cy, T: T };
       lastView = { T: T, free: fr, scene: { x0: sx0, y0: 0, x1: sx0 + sw, y1: sh } };
     } else {
-      // 걷기: 데드존 카메라(화면 가운데 상자 안에서는 배경이 그대로). 장면이 화면보다 작으면 가운데 고정
-      if (!camS || camT !== T || camS.scene !== sc.id) camS = { x: px - viewW / 2, y: py - viewH / 2, scene: sc.id };
-      var hx = viewW * 0.25, hy = viewH * 0.2, ccx = camS.x + viewW / 2, ccy = camS.y + viewH / 2;
-      if (px > ccx + hx) camS.x = px - hx - viewW / 2; else if (px < ccx - hx) camS.x = px + hx - viewW / 2;
-      if (py > ccy + hy) camS.y = py - hy - viewH / 2; else if (py < ccy - hy) camS.y = py + hy - viewH / 2;
-      camS.x = sw <= viewW ? sx0 - (viewW - sw) / 2 : Math.max(sx0, Math.min(sx0 + sw - viewW, camS.x));
-      camS.y = sh <= viewH ? -(viewH - sh) / 2 : Math.max(0, Math.min(sh - viewH, camS.y));
-      lastView = { T: T, free: { x0: 0, y0: 0, x1: viewW, y1: viewH }, scene: { x0: sx0, y0: 0, x1: sx0 + sw, y1: sh } };
+      // 걷기: 데드존 카메라(보이는 영역 가운데 상자 안에서는 배경이 그대로).
+      // 보이는 영역(wf) = HUD·버튼 줄·조이스틱 받침을 뺀 가장 넓은 빈 사각형(2026-11-02 모바일: 가로 화면에서 끝 줄 출구 매트가 버튼 밑에 숨었다).
+      // 넓은 화면처럼 장면이 가운데에 그대로 다 보이면 옛 배치 그대로(PC 화면 불변).
+      joyLayout(); // 버튼 글자 줄 수·화면 회전으로 버튼 줄 높이가 바뀌면 조이스틱 자리도 따라간다(바뀔 때만 씀)
+      var wf = freeRect(WALK_OCCLUDERS, joy.rest && !$('joy').hidden ? [joy.rest] : []);
+      var fcx = (wf.x0 + wf.x1) / 2, fcy = (wf.y0 + wf.y1) / 2;
+      if (!camS || camT !== T || camS.scene !== sc.id) camS = { x: px - fcx, y: py - fcy, scene: sc.id };
+      var hx = (wf.x1 - wf.x0) * 0.25, hy = (wf.y1 - wf.y0) * 0.2, ccx = camS.x + fcx, ccy = camS.y + fcy;
+      if (px > ccx + hx) camS.x = px - hx - fcx; else if (px < ccx - hx) camS.x = px + hx - fcx;
+      if (py > ccy + hy) camS.y = py - hy - fcy; else if (py < ccy - hy) camS.y = py + hy - fcy;
+      camS.x = walkAxis(camS.x, sx0, sw, wf.x0, wf.x1, viewW);
+      camS.y = walkAxis(camS.y, 0, sh, wf.y0, wf.y1, viewH);
+      lastView = { T: T, free: wf, scene: { x0: sx0, y0: 0, x1: sx0 + sw, y1: sh } };
     }
     camTarget.x = camS.x; camTarget.y = camS.y;
     camT = T;
@@ -646,7 +858,7 @@
       ctx.fillStyle = 'rgba(60,70,60,0.35)';
       for (var gy = 0; gy < WD.SH; gy++) for (var gx = 0; gx < WD.SW; gx++) if (WD.grid[gy][sc.ox + gx] === '#') ctx.fillRect(bx + gx * T, by + gy * T, T + 1, T + 1);
     }
-    if (window.PRIVACY_DEBUG_GRID) debugGrid(sc, bx, by);
+    if (DEBUG.grid) debugGrid(sc, bx, by);
     // 공용 PC 3번: 그림의 컴퓨터 화면 옆 작은 번호표(목적지이거나 켜진 장면일 때 화면도 밝게)
     var pc = WD.object('pc3');
     if (pc && sc.id === 'library') {
@@ -659,6 +871,7 @@
     }
     var tint = mode === 'stage' ? stageTint : trig.tint || WD.timeTint(trig.time);
     sceneLight(sc, tint, bx, by);
+    if (mode === 'walk') drawExitGlow(t); // 목적지 쪽 출구 칸 반짝임(인물 아래 바닥에)
     var list = []; // 앞뒤 순서: { y: 아래쪽 행, fn } — 가구는 그림에 그려져 있으므로 인물만
     cast.forEach(function (c) {
       if (WD.sceneAt(c.x) !== sc) return;
@@ -671,17 +884,96 @@
     drawTags();
     if (TINT[tint] && !(sc.id === 'room' && tint === 'day')) { ctx.fillStyle = TINT[tint]; ctx.fillRect(0, 0, viewW, viewH); }
     if (fadeUntil > t) { ctx.fillStyle = 'rgba(15,20,18,' + Math.min(1, (fadeUntil - t) / 260) + ')'; ctx.fillRect(0, 0, viewW, viewH); }
-    if (mode === 'walk') { drawTalkMarks(t); drawMarker(t); }
+    if (mode === 'walk') { drawTalkMarks(t); drawMarker(t); drawGuide(t); }
     drawBubble(t);
   }
-  // ?debug=grid: 걷는 칸(초록)·막힘(빨강)·출입구(파랑)·조사 지점(노랑)을 그림 위에 겹쳐 본다(사람 눈 확인용)
+  // ?debug=1 · ?debug=grid: 걷는 칸(초록)·막힘(빨강)·출입구(파랑)·조사 지점(노랑)·사람이 막은 칸(보라)을 그림 위에 겹쳐 본다.
+  //   목적지 쪽 출구는 하늘색 테두리, 내 칸은 흰 테두리, 목적지는 분홍 테두리(교사·작업자 눈 확인용)
   function debugGrid(sc, bx, by) {
-    ctx.save(); ctx.font = Math.round(T * 0.3) + 'px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.save();
     for (var gy = 0; gy < WD.SH; gy++) for (var gx = 0; gx < WD.SW; gx++) {
       var X = sc.ox + gx, door = WD.DOORS[X + ',' + gy], obj = WD.objectAt(X, gy);
-      ctx.fillStyle = door ? 'rgba(40,90,230,0.45)' : obj ? 'rgba(240,200,30,0.4)' : WD.grid[gy][X] === '#' ? 'rgba(220,40,40,0.28)' : 'rgba(40,200,90,0.16)';
+      ctx.fillStyle = door ? 'rgba(40,90,230,0.5)' : obj ? 'rgba(240,200,30,0.42)' : WD.grid[gy][X] === '#' ? 'rgba(220,40,40,0.3)'
+        : blocked[X + ',' + gy] ? 'rgba(150,60,200,0.4)' : 'rgba(40,200,90,0.22)';
       ctx.fillRect(bx + gx * T + 1, by + gy * T + 1, T - 2, T - 2);
     }
+    function outline(x, y, w, h, col) { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.strokeRect(x * T - cam.x + 1, y * T - cam.y + 1, w * T - 2, h * T - 2); }
+    if (mode === 'walk' && trig) {
+      exitCells().forEach(function (c) { outline(c.x, c.y, 1, 1, '#7FE3FF'); });
+      var b = targetBox(); outline(b.x, b.y, b.w, b.h, '#FF5FA2');
+    }
+    outline(me.x, me.y, 1, 1, '#FFFFFF');
+    ctx.restore();
+  }
+  // 목적지 쪽 출구(다른 장면으로 가야 할 때 지금 장면의 출입구 칸 묶음). 같은 장면이면 []
+  function exitCells() {
+    if (mode !== 'walk' || !trig || WD.sceneAt(targetBox().x) === WD.sceneAt(me.x)) return [];
+    var ex = exitToward();
+    if (!ex) return [];
+    if (ex.cells) return ex.cells;
+    var sc = WD.sceneAt(ex.x);
+    ex.cells = Object.keys(WD.DOORS).filter(function (k) {
+      var d = WD.DOORS[k], xy = k.split(',').map(Number);
+      return d.to[0] === ex.door.to[0] && d.to[1] === ex.door.to[1] && WD.sceneAt(xy[0]) === sc;
+    }).map(function (k) { var xy = k.split(',').map(Number); return { x: xy[0], y: xy[1] }; });
+    return ex.cells;
+  }
+  // 출구 반짝임: 금색으로 은은하게 깜빡이는 칸 + 테두리 + 나가는 쪽 화살표(움직임 줄이기면 깜빡임 없이 고정)
+  function drawExitGlow(t) {
+    var cells = exitCells();
+    if (!cells.length) return;
+    var ex = exitToward(), boost = guideUntil > performance.now();
+    var pulse = o.reduceMotion() ? 0.5 : 0.5 + 0.5 * Math.sin(t / 260);
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    ctx.save();
+    cells.forEach(function (c) {
+      var sx = c.x * T - cam.x, sy = c.y * T - cam.y;
+      x0 = Math.min(x0, sx); y0 = Math.min(y0, sy); x1 = Math.max(x1, sx + T); y1 = Math.max(y1, sy + T);
+      ctx.fillStyle = 'rgba(255,214,102,' + ((boost ? 0.34 : 0.2) + 0.2 * pulse).toFixed(3) + ')';
+      ctx.fillRect(sx, sy, T, T);
+    });
+    ctx.lineWidth = boost ? 4 : 3;
+    ctx.strokeStyle = 'rgba(41,75,64,0.85)'; ctx.strokeRect(x0 + 1, y0 + 1, x1 - x0 - 2, y1 - y0 - 2);
+    ctx.lineWidth = boost ? 2.5 : 1.5;
+    ctx.strokeStyle = '#FFE7A3'; ctx.strokeRect(x0 + 3, y0 + 3, x1 - x0 - 6, y1 - y0 - 6);
+    // 반짝이 셋: 테두리 위를 천천히 돈다(움직임 줄이기면 제자리)
+    var per = 2 * (x1 - x0 + y1 - y0);
+    for (var i = 0; i < 3; i++) {
+      var s = ((o.reduceMotion() ? 0 : t / 14) + i * per / 3) % per, sx2, sy2;
+      if (s < x1 - x0) { sx2 = x0 + s; sy2 = y0; } else if ((s -= x1 - x0) < y1 - y0) { sx2 = x1; sy2 = y0 + s; }
+      else if ((s -= y1 - y0) < x1 - x0) { sx2 = x1 - s; sy2 = y1; } else { s -= x1 - x0; sx2 = x0; sy2 = y1 - s; }
+      sparkle(sx2, sy2, T * 0.16);
+    }
+    // 나가는 쪽 화살표(출구 묶음 가운데)
+    var ang = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[ex.dir] || 0;
+    var nudge = o.reduceMotion() ? 0 : Math.sin(t / 200) * T * 0.08;
+    ctx.translate((x0 + x1) / 2 + Math.cos(ang) * nudge, (y0 + y1) / 2 + Math.sin(ang) * nudge); ctx.rotate(ang);
+    arrowShape(T * (boost ? 0.42 : 0.34));
+    ctx.restore();
+  }
+  function sparkle(x, y, r) {
+    ctx.fillStyle = '#FFF6D5';
+    ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.3, y - r * 0.3); ctx.lineTo(x + r, y); ctx.lineTo(x + r * 0.3, y + r * 0.3);
+    ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.3, y + r * 0.3); ctx.lineTo(x - r, y); ctx.lineTo(x - r * 0.3, y - r * 0.3); ctx.closePath(); ctx.fill();
+  }
+  // 오른쪽을 가리키는 굵은 화살표(지금 변환 기준 가운데). 흰 몸 + 짙은 초록 테두리
+  function arrowShape(s) {
+    ctx.beginPath();
+    ctx.moveTo(s, 0); ctx.lineTo(-s * 0.1, -s * 0.85); ctx.lineTo(-s * 0.1, -s * 0.35); ctx.lineTo(-s, -s * 0.35);
+    ctx.lineTo(-s, s * 0.35); ctx.lineTo(-s * 0.1, s * 0.35); ctx.lineTo(-s * 0.1, s * 0.85); ctx.closePath();
+    ctx.fillStyle = '#FFFFFF'; ctx.fill();
+    ctx.lineWidth = Math.max(2, s * 0.16); ctx.strokeStyle = '#294B40'; ctx.lineJoin = 'round'; ctx.stroke();
+  }
+  // 방향 안내 강조(같은 상대에게 3번째 말 건 뒤 6초): 주인공 발치 옆에 목적지(또는 그쪽 출구) 쪽을 가리키는 화살표
+  function drawGuide(t) {
+    if (guideUntil <= performance.now() || !trig) return;
+    var b = targetBox();
+    if (WD.sceneAt(b.x) !== WD.sceneAt(me.x)) b = exitToward() || b;
+    var px = (me.fx + 0.5) * T - cam.x, py = (me.fy + 0.5) * T - cam.y;
+    var ang = Math.atan2((b.y + b.h / 2) * T - cam.y - py, (b.x + b.w / 2) * T - cam.x - px);
+    var r = T * (1.1 + (o.reduceMotion() ? 0 : 0.12 * Math.sin(t / 180)));
+    ctx.save(); ctx.translate(px + Math.cos(ang) * r, py + Math.sin(ang) * r); ctx.rotate(ang);
+    arrowShape(T * 0.45);
     ctx.restore();
   }
   function drawPerson(who, name, fx, fy, dir, frame, pose, moving) {
@@ -738,29 +1030,45 @@
       }
     }
     // 이름표(색이 아니라 글자로 구분) — 내 것은 머리 위, 다른 인물은 발밑. 실제 그리기는 drawTags()에서 겹침을 피해
-    tags.push({ me: who === 'me', label: name.length > 8 ? name.slice(0, 8) + '…' : name, cx: sx + T / 2, y: who === 'me' ? sy - T * (HEAD + 0.35) : sy + T * 0.98 });
+    tags.push({ me: who === 'me', label: name.length > 8 ? name.slice(0, 8) + '…' : name, cx: sx + T / 2, y: who === 'me' ? sy - T * (HEAD + 0.35) : sy + T * 0.98, feet: sy + T * 0.98 });
   }
   var tags = [];
   function drawTags() {
-    var h = T * 0.34, placed = [];
+    var fs = Math.max(12, Math.round(T * 0.26)), h = Math.max(T * 0.34, fs + 6), placed = [], top = mode === 'walk' ? safeArea().top : 0;
     var plaques = window.PrivacySchool && window.PrivacySchool.plaques ? window.PrivacySchool.plaques(T, cam) : [];
     function hit(r) { return placed.concat(plaques).some(function (q) { return r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h; }); }
-    ctx.font = '600 ' + Math.max(11, Math.round(T * 0.26)) + 'px sans-serif';
+    ctx.font = '600 ' + fs + 'px sans-serif';
     tags.sort(function (a, b) { return (b.me ? 1 : 0) - (a.me ? 1 : 0); }); // 내 이름표 먼저 자리 잡기
     tags.forEach(function (t) {
-      var w = ctx.measureText(t.label).width + 8, r = { x: t.cx - w / 2, y: t.y, w: w, h: h };
-      for (var k = 0; k < 3 && hit(r); k++) r.y += (t.me ? -1 : 1) * (h + 2);
+      var w = ctx.measureText(t.label).width + 10, r = { x: t.cx - w / 2, y: t.y, w: w, h: h };
+      if (t.me && r.y < top && t.feet != null) { r.y = t.feet; t.me = 'below'; } // 위 안내 상자에 가리면 내 발밑으로
+      for (var k = 0; k < 3 && hit(r); k++) r.y += (t.me === true ? -1 : 1) * (h + 2);
       placed.push(r);
       ctx.fillStyle = t.me ? 'rgba(15,118,110,0.92)' : 'rgba(22,32,31,0.72)';
       roundRect(r.x, r.y, w, h, 4); ctx.fill();
       ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(t.label, t.cx, r.y + h / 2);
     });
+    lastTags = placed.map(function (r, i) { return { x: r.x, y: r.y, w: r.w, h: r.h, me: !!tags[i].me, label: tags[i].label }; });
     tags = [];
+  }
+  // 이름표와 겹치지 않게(2026-11-02 모바일: 목적지 핀이 내 머리 위로 비켜 서며 내 이름표를 덮었다)
+  //   표시 그림(가운데 mx,my · w×h)이 이름표에 걸리면 그 이름표 위로 올린다. 흔들림 폭만큼 여유를 둔다
+  var lastTags = [];
+  function tagHit(mx, my, w, h, pad) {
+    return lastTags.filter(function (r) { return mx + w / 2 > r.x - 2 && mx - w / 2 < r.x + r.w + 2 && my + h / 2 + pad > r.y && my - h / 2 - pad < r.y + r.h; })[0];
+  }
+  function markPad() { return 3 + (o.reduceMotion() ? 0 : Math.ceil(T * 0.06)); }
+  function aboveTags(mx, my, w, h) {
+    var pad = markPad();
+    for (var k = 0, hit; k < 4 && (hit = tagHit(mx, my, w, h, pad)); k++) my = hit.y - h / 2 - pad;
+    return my;
   }
   // 목적지 표시가 들어갈 수 있는 캔버스 안 영역: 위 HUD(시간·할 일·버튼) 아래, 아래 버튼·안내 문구 위
   var lastMarker = null;
+  var saCache = { t: -1, v: null };
   function safeArea() {
+    if (saCache.t === lastT && saCache.v) return saCache.v; // 한 프레임에 여러 번(이름표·표시) 불려도 한 번만 잰다
     var cr = canvas.getBoundingClientRect(), top = 6, bottom = viewH - 6;
     ['.hud-left', '.hud .bar-actions', '#m-say'].forEach(function (q) {
       var e = document.querySelector(q);
@@ -771,7 +1079,8 @@
       if (e && e.getClientRects().length) bottom = Math.min(bottom, e.getBoundingClientRect().top - cr.top - 8);
     });
     if (bottom - top < 80) { top = 6; bottom = viewH - 6; } // 아주 좁으면 가림보다 표시를 우선
-    return { left: 6, right: viewW - 6, top: top, bottom: bottom };
+    saCache = { t: lastT, v: { left: 6, right: viewW - 6, top: top, bottom: bottom } };
+    return saCache.v;
   }
   // 지금 자리에서 목적지까지 길 위의 첫 출입구 칸(같은 자리·목적지면 다시 계산하지 않음)
   var exitCache = { key: '', box: null };
@@ -781,7 +1090,7 @@
     var p = routeToTarget(), cur = { x: me.x, y: me.y }, box = null;
     for (var i = 0; p && i < p.length; i++) {
       var d = WD.DIRS[p[i]], nx = cur.x + d[0], ny = cur.y + d[1];
-      if (WD.DOORS[nx + ',' + ny]) { box = { x: nx, y: ny, w: 1, h: 1 }; break; }
+      if (WD.DOORS[nx + ',' + ny]) { box = { x: nx, y: ny, w: 1, h: 1, dir: p[i], door: WD.DOORS[nx + ',' + ny] }; break; }
       cur = { x: nx, y: ny };
     }
     exitCache = { key: key, box: box };
@@ -789,6 +1098,7 @@
   }
   // 표시 그림 크기: 16칸 그림을 정수 배로(칸 크기의 약 0.8, 최소 2배 = 32px) — 픽셀이 고르게 또렷하도록
   function markScale() { return Math.max(2, Math.round(T * 0.8 / 16)); }
+  function markSize(kind) { var im = MARK[kind], s = markScale(); return im && im.naturalWidth ? { w: im.naturalWidth * s, h: im.naturalHeight * s } : { w: 16 * s, h: 16 * s }; }
   // 그림 하나를 (가운데 x, 가운데 y)에. 그림을 못 불러오면 같은 모양의 글자 상자(크림 바탕·잉크 테두리 + ! ?)
   function drawMark(kind, mx, my) {
     var im = MARK[kind], s = markScale();
@@ -820,7 +1130,7 @@
       var why = talkReason(c);
       if (!why) return;
       if (bubbles.some(function (b) { return b.who === c && b.until > now; })) return; // 말하는 중엔 말풍선만
-      var mx = c.x * T - cam.x + T / 2, my = headY(c) + markBob(t, i * 1.7);
+      var sz = markSize('talk'), mx = c.x * T - cam.x + T / 2, my = aboveTags(mx, headY(c), sz.w, sz.h) + markBob(t, i * 1.7);
       var d = drawMark('talk', mx, my);
       talkMarks.push({ who: c.who, why: why, x: mx, y: my, w: d.w, h: d.h, tx: c.x, ty: c.y });
     });
@@ -834,15 +1144,22 @@
     var tc = b.who ? cast.filter(function (k) { return k.who === b.who; })[0] : null;
     if (tc && bubbles.some(function (q) { return q.who === tc && q.until > performance.now(); })) { lastMarker = { x: null, y: null, tx: b.x, ty: b.y, kind: kind, hidden: true }; return; }
     var bob = markBob(t, 0);
-    var mx = (b.x + b.w / 2) * T - cam.x, my = (tc ? headY(tc) : b.y * T - cam.y - T * 0.55) + bob;
+    var mx = (b.x + b.w / 2) * T - cam.x, my = tc ? headY(tc) : b.y * T - cam.y - T * 0.55;
     // 화면 밖이거나 위 안내 상자·아래 버튼에 가리는 자리면, 보이는 띠 안으로 옮기고 방향 화살표를 단다
-    var iconSize = 16 * markScale(), sa = safeArea();
-    // 내 캐릭터(머리 꼭대기 약 0.65칸 위 ~ 발)와 겹치면 내 머리 위로 비켜 선다
+    var iconSize = 16 * markScale(), sa = safeArea(), ms = markSize(kind);
+    // 내 캐릭터(머리 꼭대기 약 0.65칸 위 ~ 발)와 겹치면 내 머리 위로 비켜 서고, 내 이름표에 걸리면 이름표 위로(둘 다 보이게)
     var px0 = me.fx * T - cam.x, pTop = (me.fy - HEAD) * T - cam.y, pBot = (me.fy + 1) * T - cam.y;
     if (Math.abs(mx - (px0 + T / 2)) < (iconSize / 2 + T * 0.35) && my + iconSize / 2 > pTop && my - iconSize / 2 < pBot) my = pTop - iconSize / 2 - 4;
+    my = aboveTags(mx, my, ms.w, ms.h) + bob;
     var tx0 = mx, ty0 = my;
     mx = Math.max(sa.left + iconSize / 2, Math.min(sa.right - iconSize / 2, mx));
     my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - iconSize / 2, my));
+    // 화면 위 끝에 붙어 다시 이름표에 걸리면 이름표 옆으로
+    var th = tagHit(mx, my, ms.w, ms.h, markPad());
+    if (th) mx = th.x + th.w + ms.w / 2 + 4 <= sa.right ? th.x + th.w + ms.w / 2 + 4 : th.x - ms.w / 2 - 4;
+    // 조이스틱 받침(기본 자리)에 걸리면 그 위로
+    var jr = joy.rest && !$('joy').hidden ? joy.rest : null;
+    if (jr && mx + ms.w / 2 > jr.x0 && mx - ms.w / 2 < jr.x1 && my + ms.h / 2 > jr.y0 && my - ms.h / 2 < jr.y1) my = jr.y0 - ms.h / 2 - 4;
     var off = Math.abs(mx - tx0) > 2 || Math.abs(my - ty0) > 2;
     var d = drawMark(kind, mx, my);
     lastMarker = { x: mx, y: my, tx: b.x, ty: b.y, off: off, kind: kind, w: d.w, h: d.h, who: b.who || null };
@@ -907,28 +1224,55 @@
   /* ── 초기화 ─────────────────────── */
   function init(options) {
     o = options;
-    window.PRIVACY_DEBUG_GRID = /[?&]debug=grid/.test(location.search); // 걷는 칸 겹쳐 보기
+    var qs = location.search;
+    DEBUG.grid = /[?&]debug=(1|grid)(&|$)/.test(qs);       // 걷는 칸 겹쳐 보기
+    DEBUG.skip = /[?&]debug=1(&|$)/.test(qs) || /[?&]probe=/.test(qs); // 바로 가기: 교사 확인(?debug=1)·검증 프로브만
+    $('btn-map-skip').hidden = !/[?&]debug=1(&|$)/.test(qs); // 일반 플레이(프로브 포함)에서는 안 보인다 — 걸어서만
+    window.PRIVACY_DEBUG_GRID = DEBUG.grid; // 옛 이름(다른 검사용). 2026-11-02: 옛 정규식 끝 단어 경계 기호가 글자 BS(0x08)로 깨져 ?debug=grid가 안 먹던 것 고침
     canvas = $('m-canvas'); wrap = $('m-wrap');
     ctx = canvas.getContext('2d');
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', function () { held = []; queued = null; });
     canvas.addEventListener('pointerdown', onPointer);
-    window.addEventListener('resize', resize);
-    if (window.ResizeObserver) new ResizeObserver(function () { resize(); }).observe(wrap); // 무대 크기가 바뀌어도 캔버스를 맞춘다
-    $('btn-map-act').addEventListener('click', act);
+    window.addEventListener('resize', function () { joyLayout(); resize(); });
+    if (window.ResizeObserver) new ResizeObserver(function () { joyLayout(); resize(); }).observe(wrap); // 무대 크기가 바뀌어도 캔버스를 맞춘다
+    // 말 걸기 버튼: 마우스·키보드(Enter·Space)·보통 터치는 click. 조이스틱을 끌었다 뗀 직후 첫 탭에서 click이 안 오는 일이 있어서
+    //   (2026-11-02 모바일 검사) 터치는 손을 뗀 뒤 click을 잠깐(350ms) 기다렸다가 안 오면 직접 실행한다.
+    //   click보다 먼저 실행하면 대화창이 손가락 밑에 열려 뒤따르는 click이 첫 줄을 넘겨 버린다 → click이 오면 그때 실행
+    var actBtn = $('btn-map-act'), actDown = null, actWait = null, actTouchAt = -1e9;
+    function actNow() { if (actWait) { clearTimeout(actWait); actWait = null; } actTouchAt = performance.now(); act(); }
+    actBtn.addEventListener('pointerdown', function (e) { actDown = e.pointerType === 'mouse' ? null : e.pointerId; });
+    actBtn.addEventListener('pointerup', function (e) {
+      if (e.pointerType === 'mouse' || actDown !== e.pointerId) return;
+      actDown = null; clearTimeout(actWait); actWait = setTimeout(actNow, 350);
+    });
+    actBtn.addEventListener('pointercancel', function () { actDown = null; });
+    actBtn.addEventListener('click', function () { if (actWait) { actNow(); return; } if (performance.now() - actTouchAt < 700) return; act(); });
     $('btn-map-skip').addEventListener('click', skipToTarget);
+    var z = $('joy');
+    if (z) {
+      z.addEventListener('pointerdown', joyDown);
+      z.addEventListener('pointermove', joyMove);
+      z.addEventListener('pointerup', joyUp);
+      z.addEventListener('pointercancel', joyUp);
+      z.addEventListener('lostpointercapture', function (e) { if (joy.id === e.pointerId) joyRelease(); });
+      z.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // 길게 누름 메뉴 막기
+    }
   }
 
   window.PrivacyMap = {
     init: init, show: show, hide: hide, stage: stage, bubble: bubbleFor, clearBubbles: clearBubbles,
+    isTouch: isTouch,
+    setJoystick: function () { if (!joyShown()) joyRelease(); joyLayout(); }, // 메뉴 '조이스틱 표시'가 바뀌면
+    debugMode: function () { return { grid: DEBUG.grid, skip: DEBUG.skip }; },
     // 검증용(읽기 전용 + 경로 계산)
     debug: {
       me: function () { return { x: me.x, y: me.y, dir: me.dir, moving: me.moving, area: WD.areaName(me.x, me.y) }; },
       route: routeToTarget,
       nearTarget: nearTarget,
       marker: function () { return lastMarker; },
-      talkMarks: function () { return talkMarks.map(function (m) { return { who: m.who, why: m.why, x: m.x, y: m.y }; }); }, // 목적지 인물 말고 ?가 뜬 사람들(마지막 그린 화면 기준)
+      talkMarks: function () { return talkMarks.map(function (m) { return { who: m.who, why: m.why, x: m.x, y: m.y, w: m.w, h: m.h }; }); }, // 목적지 인물 말고 ?가 뜬 사람들(마지막 그린 화면 기준)
       cam: function () { return { x: cam.x, y: cam.y, tx: camTarget.x, ty: camTarget.y }; },
       // 보이는 지도 영역(free)과 장면 그림이 화면에 놓인 자리(scene, 캔버스 좌표) — 장면 밖이 보이는지(gap) 검사용
       view: function () {
@@ -939,6 +1283,13 @@
           gap: { left: Math.max(0, sc.x0 - f.x0), right: Math.max(0, f.x1 - sc.x1), top: Math.max(0, sc.y0 - f.y0), bottom: Math.max(0, f.y1 - sc.y1) } };
       },
       walkFrame: walkFrame,
+      // 2026-11-02 모바일 검사용: 이름표·표시 그림·조이스틱 받침·출구 칸(캔버스 좌표), 방향 안내 강조, 조이스틱 상태
+      tags: function () { return lastTags.slice(); },
+      joy: function () { return { shown: joyShown() && !$('joy').hidden, on: joy.on, mag: joy.mag, dx: joy.dx, dy: joy.dy, rest: joy.rest, fast: !!(me.moving && me.fast) }; },
+      exitCells: function () { return exitCells().map(function (c) { return { x: c.x, y: c.y, x0: c.x * T - cam.x, y0: c.y * T - cam.y, x1: (c.x + 1) * T - cam.x, y1: (c.y + 1) * T - cam.y }; }); },
+      meRect: function () { return { x0: me.fx * T - cam.x, y0: (me.fy + 1 - BODY) * T - cam.y, x1: (me.fx + 1) * T - cam.x, y1: (me.fy + 1) * T - cam.y }; },
+      guide: function () { return guideUntil > performance.now(); },
+      tapPath: tapPath,
       tick: function (ms) { loop(lastT + ms); }, // 검증용: 화면 루프를 정해진 시간만큼 한 번 돌림
       routeTo: function (tx, ty) { return WD.findPath({ x: me.x, y: me.y }, function (x, y) { return x === tx && y === ty; }, blocked); },
       place: function (x, y, dir) { place({ x: x, y: y, dir: dir || 'down' }); camS = null; }, // 검증·스크린샷용 순간이동

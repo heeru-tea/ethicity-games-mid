@@ -106,15 +106,16 @@
 
   /* 출입구: 이 칸에 들어서면 다른 장면의 칸으로 옮겨진다 */
   var DOORS = {};
-  function door(cells, scene, to, dir, label) { cells.forEach(function (c) { DOORS[(S[c[0]].ox + c[1]) + ',' + c[2]] = { to: [S[scene].ox + to[0], to[1]], dir: dir, label: label, scene: scene }; }); }
-  door([['classroom', 15, 17], ['classroom', 16, 17]], 'yard', [7, 5], 'down', '마당으로');
-  door([['yard', 6, 4], ['yard', 7, 4], ['yard', 8, 4]], 'classroom', [15, 16], 'up', '교실로');
-  door([['library', 14, 17], ['library', 15, 17], ['library', 16, 17], ['library', 17, 17]], 'yard', [26, 5], 'down', '마당으로');
-  door([['yard', 25, 4], ['yard', 26, 4], ['yard', 27, 4]], 'library', [15, 16], 'up', '도서관으로');
-  door([['yard', 14, 17], ['yard', 15, 17], ['yard', 16, 17], ['yard', 17, 17]], 'village', [1, 6], 'right', '교문 밖으로');
-  door([['village', 0, 5], ['village', 0, 6]], 'yard', [15, 16], 'up', '학교로'); // 그림의 길이 왼쪽 끝에서 들어오는 자리(그 아래는 나무)
-  door([['village', 24, 11], ['village', 25, 11]], 'room', [15, 16], 'up', '집 안으로');
-  door([['room', 14, 17], ['room', 15, 17], ['room', 16, 17], ['room', 17, 17]], 'village', [24, 12], 'down', '밖으로');
+  // say: 건너편에 도착했을 때 무대 위에 잠깐 뜨는 한 줄(map.js finishStep, 2026-11-02 — 예전엔 '집 안으로' 말고는 모두 '밖으로 나왔다.')
+  function door(cells, scene, to, dir, label, say) { cells.forEach(function (c) { DOORS[(S[c[0]].ox + c[1]) + ',' + c[2]] = { to: [S[scene].ox + to[0], to[1]], dir: dir, label: label, scene: scene, say: say }; }); }
+  door([['classroom', 15, 17], ['classroom', 16, 17]], 'yard', [7, 5], 'down', '마당으로', '마당으로 나왔다.');
+  door([['yard', 6, 4], ['yard', 7, 4], ['yard', 8, 4]], 'classroom', [15, 16], 'up', '교실로', '교실에 들어왔다.');
+  door([['library', 14, 17], ['library', 15, 17], ['library', 16, 17], ['library', 17, 17]], 'yard', [26, 5], 'down', '마당으로', '마당으로 나왔다.');
+  door([['yard', 25, 4], ['yard', 26, 4], ['yard', 27, 4]], 'library', [15, 16], 'up', '도서관으로', '도서관에 들어왔다.');
+  door([['yard', 14, 17], ['yard', 15, 17], ['yard', 16, 17], ['yard', 17, 17]], 'village', [1, 6], 'right', '교문 밖으로', '교문 밖으로 나왔다.');
+  door([['village', 0, 5], ['village', 0, 6]], 'yard', [15, 16], 'up', '학교로', '학교에 도착했다.'); // 그림의 길이 왼쪽 끝에서 들어오는 자리(그 아래는 나무)
+  door([['village', 24, 11], ['village', 25, 11]], 'room', [15, 16], 'up', '집 안으로', '우리 집에 들어왔다.');
+  door([['room', 14, 17], ['room', 15, 17], ['room', 16, 17], ['room', 17, 17]], 'village', [24, 12], 'down', '밖으로', '밖으로 나왔다.');
 
   /* 구역 이름(화면 위 표시용): 장면 이름, 마당만 조금 나눔 */
   function areaName(xx, yy) {

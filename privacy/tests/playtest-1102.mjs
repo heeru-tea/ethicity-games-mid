@@ -63,7 +63,7 @@ try {
     }
   }
   // P0-2: c3_e8_a(민준 일을 모르는 척) — 하늘이에게 한 번 말 건 뒤 ? 없이 보조 모양 → 그날 한마디 n줄 차례로(js/idle-lines.js, 안내 없음)
-  //   → 첫 되풀이에 다음 목적지 한 줄 → 그다음은 목적지 안내 강조(바로 가기 버튼 강조 또는 방향 안내 강조 — 모바일 개편 전후 어느 쪽이든)
+  //   → 첫 되풀이에 다음 목적지 한 줄 → 그다음은 방향 안내 강조
   {
     const page = await open(makeRun('c3_e8_a', 'e7b=none && e6=leave || e7b=none && e6b=deny', { map: true }));
     const { out: r, n } = await page.evaluate(async () => {
@@ -84,8 +84,7 @@ try {
         b.click(); await sleep(300);
         const t = document.querySelector('.talk-text').textContent;
         while (PrivacyTalk.isOpen()) { PrivacyTalk.next(); await sleep(80); }
-        out.push({ talk: t, icon: !!b.querySelector('.ico-talk'), ghost: b.classList.contains('ghost'), skip: document.getElementById('btn-map-skip').classList.contains('primary'),
-          guide: !!(PrivacyMap.debug.guide && PrivacyMap.debug.guide()) });
+        out.push({ talk: t, icon: !!b.querySelector('.ico-talk'), ghost: b.classList.contains('ghost'), skip: document.getElementById('btn-map-skip').classList.contains('primary'), guide: PrivacyMap.debug.guide(), say: document.getElementById('m-say').textContent });
       }
       return { out, n };
     });
@@ -93,8 +92,9 @@ try {
     ok(!r[1].icon && r[1].ghost && !/지금은/.test(r[1].talk), '첫 말 뒤: ? 없이 보조 모양, 대사만 ' + JSON.stringify(r[1]));
     const days = r.slice(2, n + 2);
     ok(n >= 2 && days.every((x) => !/지금은/.test(x.talk) && x.ghost && !x.icon) && new Set(days.map((x) => x.talk)).size === n, '그다음 n번: 그날 한마디를 차례로, 안내 없음 ' + days.map((x) => x.talk).join(' / '));
-    ok(/지금은 집에 가서 쉬자/.test(r[n + 2].talk) && !r[n + 2].skip && !r[n + 2].guide, '한마디를 다 쓴 뒤 첫 되풀이: 다음 목적지 한 줄 ' + r[n + 2].talk);
-    ok(/같은 말만 돌아온다/.test(r[n + 3].talk) && (r[n + 3].skip || r[n + 3].guide), '그다음: 목적지 안내 강조 ' + JSON.stringify(r[n + 3]));
+    ok(/지금은 집에 가서 쉬자/.test(r[n + 2].talk) && !r[n + 2].guide, '한마디를 다 쓴 뒤 첫 되풀이: 다음 목적지 한 줄 ' + r[n + 2].talk);
+    // 2026-11-02 모바일: 바로 가기 버튼은 일반 플레이에서 없어짐 → 3번째는 방향 안내(출구 반짝임·주인공 옆 화살표) 강조
+    ok(/같은 말만 돌아온다/.test(r[n + 3].talk) && r[n + 3].guide && !r[n + 3].skip && /반짝이는 출구/.test(r[n + 3].say), '그다음: 목적지 안내 강조 + 방향 안내 강조(바로 가기 아님) ' + JSON.stringify(r[n + 3]));
     await page.close();
   }
   // P0-3: 속마음은 회색 줄(보낸 말풍선 아님), 화면 읽기에는 '속마음:'

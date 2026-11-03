@@ -306,6 +306,70 @@ body[data-view="v-chapter"] .hud { display: none; }
   position: absolute; left: 8px; bottom: 64px; margin: 0; padding: 0 10px; border-radius: 6px;
   background: rgba(255, 255, 255, .8); max-width: calc(100% - 16px);
 }
+/* 가상 조이스틱(터치 기기, 2026-11-02): 말 걸기 버튼 위 왼쪽. 영역(#joy)은 보이지 않고, 누른 자리에 받침이 뜬다.
+   bottom·height는 map.js joyLayout()이 버튼 줄·HUD에 맞춰 정한다. 평소 40% · 누르는 중 80% */
+#v-map .joy {
+  position: absolute; left: 0; bottom: 64px; width: min(46%, 200px); height: 132px;
+  touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+}
+.joy-base {
+  position: absolute; left: 68px; top: 120px; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 50%;
+  background: rgba(255, 255, 255, .5); border: 2px solid var(--text); box-shadow: inset 0 0 0 6px rgba(255, 255, 255, .35);
+  opacity: .4; transition: opacity .15s ease; pointer-events: none;
+}
+.joy.active .joy-base { opacity: .8; }
+.joy-knob {
+  position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--text);
+}
+.reduce-motion .joy-base { transition: none; }
+/* 가로로 눕힌 휴대폰처럼 낮은 화면: 무대가 화면보다 길어 아래(버튼·출구 매트)가 잘리던 것 — 화면 높이에 맞춘다 */
+@media (max-height: 500px) {
+  body[data-view="v-map"] .app, body[data-view="v-game"] .app, body[data-view="v-chapter"] .app { padding: 6px; }
+  .stage { min-height: 0; height: calc(100dvh - 12px); border-radius: 16px; }
+  #v-map .map-help { display: none; }
+  .hud-time { font-size: .7rem; }
+  .mission { font-size: .9rem; line-height: 1.35; }
+  #v-map .map-controls .btn { min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
+  /* 버튼 줄은 오른쪽 아래 작은 칸(지도를 덜 덮게, 왼쪽 아래는 조이스틱) */
+  #v-map .map-controls { left: auto; width: min(46%, 20rem); flex-direction: column; gap: 4px; }
+  #v-map .map-controls .btn { flex: none; }
+  body[data-view="v-map"] .talk { max-height: 52%; }
+  /* 메뉴: 설정(왼쪽)과 버튼(오른쪽) 두 칸 — 스크롤 없이 닫기·처음 화면으로가 보이게 */
+  .overlay { padding: 8px; }
+  #menu .sheet { width: min(100%, 46rem); max-height: calc(100dvh - 16px); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: dense; column-gap: 16px; row-gap: 6px; padding: 12px 16px; align-content: start; }
+  #menu .sheet > * { grid-column: 1; }
+  #menu .sheet > h2 { grid-column: 1 / -1; }
+  #menu .sheet > .menu-actions, #menu .sheet > p, #menu #btn-menu-close { grid-column: 2; }
+  #menu .setting { padding: 4px 10px; }
+  #menu .setting label, #menu .setting.check { min-height: 32px; }
+  /* 시작 화면: 글(왼쪽) · 주인공 카드(오른쪽) 두 칸, 카드 그림을 줄여 '시작하기'가 첫 화면에 */
+  body[data-view="v-start"] .app { padding-top: 10px; }
+  #v-start.title { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; align-items: start; }
+  #v-start.title[hidden] { display: none; }
+  #v-start .title-head { grid-column: 1; grid-row: 1; margin-bottom: 4px; }
+  #v-start .hero-pick { grid-column: 2; grid-row: 1 / span 3; }
+  #v-start .name-field, #v-start .start-actions { grid-column: 1; }
+  #v-start .start-actions { margin-top: 8px; }
+  #v-start .title-foot { grid-column: 1 / -1; margin-top: 16px; }
+  #v-start .logo { font-size: 1.9rem; }
+  #v-start .lead { font-size: .95rem; }
+  .hero-face { width: min(100%, clamp(72px, calc(100dvh - 250px), 150px)); }
+}
+/* 날짜 카드는 보이기만(첫 터치는 지도로 지나간다, 2026-11-02 모바일) */
+.daycard { pointer-events: none; }
+/* 대화창이 열린 동안 걷기 버튼 줄·조이스틱은 숨김(버튼 글자가 대화창 뒤로 반쯤 잘려 보였다) — 대화창을 눌러 넘긴다 */
+.stage:has(#talk:not([hidden])) #v-map .map-controls, .stage:has(#talk:not([hidden])) #joy { visibility: hidden; }
+body[data-view="v-map"] .stage:has(#talk:not([hidden])) .talk { bottom: 8px; }
+/* 좁은 휴대폰 HUD: '이전 선택'·'메뉴'는 한 줄 */
+.hud .bar-actions .btn { white-space: nowrap; }
+@media (max-width: 400px) {
+  .hud .bar-actions { gap: 4px; }
+  .hud .bar-actions .btn { padding: 6px 8px; font-size: .85rem; }
+  .hud-left { padding: 3px 10px 4px; }
+  .mission { font-size: .92rem; line-height: 1.4; }
+  .mission-label { font-size: .66rem; }
+}
 
 /* 대화 초상화: 대화창 위 왼쪽에 반신으로 선다(대화창이 닫히면 함께 사라짐) */
 .talk-portrait {

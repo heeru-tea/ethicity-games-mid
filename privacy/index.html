@@ -110,11 +110,14 @@
 
       <!-- 2-1. 맵 이동 -->
       <section id="v-map" class="view layer" hidden aria-labelledby="m-mission">
+        <!-- 가상 조이스틱(터치 기기만, map.js가 보이기·위치 결정): 이 영역을 누른 자리에 받침이 뜬다 -->
+        <div id="joy" class="joy" hidden aria-hidden="true"><div class="joy-base"><div class="joy-knob"></div></div></div>
         <div class="map-controls">
           <button id="btn-map-act" class="btn" type="button">말 걸기 · 조사하기</button>
-          <button id="btn-map-skip" class="btn ghost" type="button">목적지로 바로 가기</button>
+          <!-- 교사 확인용: ?debug=1 일 때만 보인다(일반 플레이는 걸어서만) -->
+          <button id="btn-map-skip" class="btn ghost" type="button" hidden>목적지로 바로 가기</button>
         </div>
-        <p class="small mute map-help">방향키나 WASD 키로 걷고 스페이스 키로 말 걸기. 휴대폰·태블릿은 가고 싶은 곳을 누르세요. <span class="ico-quest" role="img" aria-label="목적지 표시(느낌표 핀)"></span>는 다음 목적지, <span class="ico-talk" role="img" aria-label="물음표 말풍선"></span>가 뜬 사람은 할 말이 있어 보여요.</p>
+        <p class="small mute map-help">방향키나 WASD 키로 걷고 스페이스 키로 말 걸기. 휴대폰·태블릿은 왼쪽 아래 조이스틱으로 걷거나 가고 싶은 곳을 누르세요. 반짝이는 출구로 나가면 다음 장소예요. <span class="ico-quest" role="img" aria-label="목적지 표시(느낌표 핀)"></span>는 다음 목적지, <span class="ico-talk" role="img" aria-label="물음표 말풍선"></span>가 뜬 사람은 할 말이 있어 보여요.</p>
       </section>
 
       <!-- 2-2. 장면 -->
@@ -212,6 +215,7 @@
       <label class="setting check"><input type="checkbox" id="opt-motion"> 움직임 줄이기 (화면 효과 끄기)</label>
       <label class="setting check"><input type="checkbox" id="opt-sound"> 효과음 (메시지 알림음 · 선택 소리)</label>
       <label class="setting check"><input type="checkbox" id="opt-bgm" checked> 배경음악 (이어폰을 쓸 때 추천)</label>
+      <label class="setting check" id="opt-joystick-row"><input type="checkbox" id="opt-joystick" checked> 조이스틱 표시 (휴대폰·태블릿, 화면 왼쪽 아래)</label>
       <div class="menu-actions">
         <button id="btn-menu-home" class="btn" type="button">처음 화면으로 (진행은 저장됨)</button>
         <button id="btn-menu-restart" class="btn" type="button">처음부터 다시 하기</button>

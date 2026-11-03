@@ -25,7 +25,7 @@
   /* ── 상태 ───────────────────────── */
   var player = S.readPlayer(CFG.defaultNickname);
   var progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };
-  var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false, nickname: '' };
+  var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false, nickname: '', joystick: true }; // joystick: 터치 기기 가상 조이스틱 표시(2026-11-02)
   var NAME_MAX = 10;
   // 이 게임에서만 쓰는 이름(공통 플레이어 정보가 없을 때). 제어 문자·앞뒤 공백을 빼고 10자까지
   function cleanName(v) { return typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, NAME_MAX) : ''; }
@@ -78,6 +78,7 @@
       settings.sound = settings.soundSet ? st.sound === true : true;
       if (st.look === 'm' || st.look === 'f') settings.look = st.look;
       settings.nickname = cleanName(st.nickname);
+      settings.joystick = st.joystick !== false;
     } else if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       settings.reduceMotion = true;
     }
@@ -1053,6 +1054,8 @@
     Array.prototype.forEach.call(document.querySelectorAll('input[name=speed]'), function (r) { r.checked = r.value === settings.speed; });
     $('opt-motion').checked = settings.reduceMotion;
     $('opt-sound').checked = settings.sound;
+    $('opt-joystick').checked = settings.joystick;
+    $('opt-joystick-row').hidden = !window.PrivacyMap.isTouch(); // PC(터치 없음)에서는 조이스틱이 없으니 설정도 숨김
   }
 
   // 새로 시작할 때마다: 어두운 화면에 주의 안내 → '확인했어요'를 눌러야 시작(이어 하기에는 없음)
@@ -1114,11 +1117,13 @@
 
     $('btn-menu').addEventListener('click', function () { syncMenu(); openOverlay('menu'); });
     $('btn-menu-close').addEventListener('click', function () { closeOverlay('menu'); });
+    $('menu').addEventListener('click', function (e) { if (e.target === $('menu')) closeOverlay('menu'); }); // 바깥 어두운 곳을 눌러도 닫힘(2026-11-02 모바일)
     Array.prototype.forEach.call(document.querySelectorAll('input[name=speed]'), function (r) {
       r.addEventListener('change', function () { settings.speed = r.value; applySettings(); saveSettings(); });
     });
     $('opt-motion').addEventListener('change', function () { settings.reduceMotion = $('opt-motion').checked; applySettings(); saveSettings(); });
     $('opt-sound').addEventListener('change', function () { settings.sound = $('opt-sound').checked; settings.soundSet = true; saveSettings(); if (settings.sound) sfx('msg', true); }); // 켜면 알림음 미리듣기
+    $('opt-joystick').addEventListener('change', function () { settings.joystick = $('opt-joystick').checked; saveSettings(); window.PrivacyMap.setJoystick(); });
     $('btn-menu-home').addEventListener('click', function () { $('menu').hidden = true; renderStart(); });
     $('btn-menu-restart').addEventListener('click', function () {
       $('menu').hidden = true;
@@ -1174,6 +1179,7 @@
     evalCond: function (c) { return E.evalCond(c, progress.run); },
     instant: function () { return settings.speed === 'instant'; },
     reduceMotion: function () { return settings.reduceMotion; },
+    joystick: function () { return settings.joystick; },
     loadPos: function () { return progress.pos; },
     savePos: function (p) { progress.pos = p; clearTimeout(posTimer); posTimer = setTimeout(saveProgress, 400); },
     onEnter: function () { clearTimeout(posTimer); setRun(E.advance(story, progress.run)); routeRun(true); }
