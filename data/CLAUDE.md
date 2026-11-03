@@ -1,5 +1,11 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-03, 튜토리얼 개·고양이 카드 = fal 사진 C안)
+- 튜토리얼 개·고양이 카드 그림 = 사진 `assets/cards/animals/d01~d08·c01~c08.webp`(384², 원본 `cards-pilot/plain/` 무손실 → q80 다시 저장, 16장 약 13만 바이트). 카드 번호(uid `c12` → 12) % 8로 고른다(같은 코스 = 같은 사진, 코스·판정·저장은 그대로). 아이콘·이름표는 지금처럼 코드가 얹음. `cardart.js` `card(mission, id, variant, size, n)` — n은 사진 카드만 쓴다(다른 임무 그림·variant 그대로).
+- 미리 받기: 타이틀이 뜬 뒤 0.3초·`go('title'|'briefing'|'run')`(`DR.CardArt.preloadPhotos`, 한 번만, 기다리지 않음). 사진이 아직 없거나 못 읽으면 그 카드는 예전 Canvas 그림. 사진 썸네일(`thumb`)은 24칸 대신 48칸(튜토리얼엔 검수 화면이 없어 지금은 테스트 시트에서만 보임).
+- `e01~e03`(경계 사진)도 같은 폴더에 있지만 **안 씀** — 튜토리얼에 "?" 카드(`ambiguous`)가 없다. 결과·브리핑 장면 그림(보호소 개+고양이)은 아직 Canvas.
+- 테스트: `cardart-browser`(번호별 사진·48칸 썸네일·m1은 Canvas·없는 사진 → Canvas → `_shot-cardart-tutorial.png`), `tutorial-browser`(달리는 카드 사진 = 종류·번호와 맞음, 이름표 → `_shot-run-tutorial-1366/375.png`).
+
 ## ★지금 상태 (2026-11-02, 4 임무 「채점 AI」 + 도시 복구 화면 — 이야기 끝까지)
 - **4 임무 완성**(계획 `docs/plans/2026-11-02-data-runner-m4.md` Task 1~7, 설계 §5·§7). `missions/m4.js`: 이름표 = 선택지 번호 1~5(`labels`), 가짜에만 7·8(`labelExtra`), `labelStyle:'digit'`(고치기·"?" 버튼 = 동그라미 숫자 하나, 375px 한 줄), 가짜가 쌓이는 장면은 데이터 `fake.scenes`(`DR.Cards.fakeScenes` — 이름표를 바꾸면 바뀐 이름표 기준). S2·S4 위험 / S1·S3 불편. 크게 기운 1·표 답을 다 빼면 S4는 반드시 실패(테스트).
 - 흐름: 대화 → 브리핑 → 달리기(시험장 배경 `RunScenery` exam, S2·S4 들어설 때 선배 한 줄 `story.runLines`) → 검수 → 감독관 → **채점 시연**(`js/ui-grade.js`, 답안지 13장, 원인 규칙 = `DR.Conveyor.sort` + 새 원인 `any:가짜id`) → 장면 결과 → **결판**(`DR.Judge.readable` = S4 조합만, 대사 줄 `sheet` → 대화창 위 선배 답안 `DR.CardArt.sheet`, bg `showdown-senior.webp`) ─ 못 읽음 → "봐, 또 지웠잖아" → 동기 합류(`js/showdown.js`: 남은 보충 2 = NEW·뺄 수 있음 / 1 = 고정 "동기와 함께 넣음" / 0 = 고정 + 다시 제출) → 보충(동기 카드는 달리기 뒤 가방에, 그만큼 칸 비워 둠) → … ─ 읽음 → **도시 재연결 5/5** → 의뢰인(선생님·택배 기사) → (합류한 적 없으면) 동기 "챙겨 왔어" → 해커의 이후(bg `senior-after.webp`) → 마무리(토론 질문 2개, `#outro-questions`).
