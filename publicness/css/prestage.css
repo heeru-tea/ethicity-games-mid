@@ -21,7 +21,6 @@
 .net-label .net-new { padding: 0 6px; border-radius: 8px; background: var(--sem-action); color: #fff; font-size: 11px; font-weight: 700; line-height: 1.6; }
 /* ── 새 버스: 대기 칸에서 반짝임 ── */
 .depot-bus.is-new { position: relative; animation: new-bus 0.9s ease-in-out 3; box-shadow: 0 0 0 3px var(--sem-action); }
-.depot-bus.is-new::after { content: attr(data-new); position: absolute; top: -9px; right: -6px; padding: 0 6px; border-radius: 8px; background: var(--sem-action); color: #fff; font-size: 11px; line-height: 1.6; }
 @keyframes new-bus { 50% { box-shadow: 0 0 0 7px #2563eb40; } }
 
 .map-person.is-new { animation: new-face 0.9s ease-in-out 3; box-shadow: 0 0 0 4px var(--sem-action); }

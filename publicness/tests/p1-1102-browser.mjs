@@ -120,7 +120,7 @@ try {
         chips: Object.fromEntries([...document.querySelectorAll('.person-chip')].map(c => [c.dataset.resident, c.querySelector('.person-chip-count').textContent])) }));
       stops.push(r);
       if (r.em) { await page.locator('#emergency-continue').click(); await page.waitForTimeout(200); continue; }
-      assert.match(r.status, /(왕복 완료|오늘 기준 초과)/, '멈춘 이유 = 주요 인물 판정: ' + r.status); assert.doesNotMatch(r.status, /만차|대기 10명/);
+      assert.match(r.status, /(왕복 완료|기준 초과)/, '멈춘 이유 = 주요 인물 판정: ' + r.status); assert.doesNotMatch(r.status, /만차|대기 10명/);
       assert.ok(r.paused, '멈춘 동안 ▶만 강조(배속은 옅게)');
       const loud = await page.evaluate(() => { const cs = e => getComputedStyle(e), play = cs(document.querySelector('#run-pause')); return [...document.querySelectorAll('#run-controls .btn:not(#run-pause)')].filter(b => cs(b).backgroundColor === play.backgroundColor || (cs(b).boxShadow !== 'none' && cs(b).boxShadow === play.boxShadow)).map(b => b.id); });
       assert.deepEqual(loud, [], '멈춘 동안 ▶와 같은 강조는 없음(소리 버튼 포함)');

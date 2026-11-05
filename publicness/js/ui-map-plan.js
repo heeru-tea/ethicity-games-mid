@@ -195,13 +195,16 @@
     head.appendChild(App.el('h3',{id:'depot-h'},'대기 버스'));head.appendChild(App.el('span',{id:'depot-count'},list.length+'대'));
     head.appendChild(App.el('span',{'class':'depot-cost'},'운행하면 1대 운영·연료 약 '+App.won(S.typicalBusCost(App.s))+' 더 · 쉬어도 보유비 '+App.won(App.s.config.finance.holding)));box.appendChild(head);
     var row=App.el('div',{'class':'depot-buses',role:'group','aria-label':'대기 버스 — 고른 뒤 노선을 누르거나 노선으로 끌어 놓으세요'});
+    var newBuses=App.phaseChanges(App.s).newBusIds;
     list.forEach(function(b,i){
       /* 버스 칩(2026-11-02): 그림 + 종류(‘버스’·‘빌린 버스’·‘직행 버스’·‘광역 버스’) — 번호(N호차) 대신. 여러 대면 화면 낭독에 ‘대기 버스 1/2’ */
       var tag=b.leased?'이번 단계만':App.s.config.challengeApplied&&b.id===7?'직행 전용':App.s.config.challengeApplied&&b.id===9?'광역 전용':'',kind=B(b.id,null).replace(/^대기 /,''),t=button('bus-token-'+b.id,'',function(){
         if(performance.now()<(state.ignoreClickUntil||0))return;var on=state.bus===b.id;state.bus=on?null:b.id;state.from=null;redraw();
         if(!on){var bt=document.querySelector('#bus-token-'+b.id);if(bt)bt.focus({preventScroll:true});say(B(b.id,null)+'를 보낼 노선을 누르세요 — 지도의 선, 선 끝 색 점, 노선 버튼 모두 돼요.');}});
       t.className='btn depot-bus';t.dataset.bus=b.id;t.dataset.kind=kind;t.appendChild(sprite());t.appendChild(App.el('span',{'class':'depot-id'},kind));if(tag)t.appendChild(App.el('small',null,tag));
-      t.setAttribute('aria-pressed',String(state.bus===b.id&&state.from==null));t.setAttribute('aria-label',B(b.id,null)+(list.length>1?' '+(i+1)+'/'+list.length:'')+(tag?' · '+tag:'')+' · 고른 뒤 노선을 누르세요');
+      /* 이번 단계에 새로 온 버스: 그림·글자를 덮지 않는 ‘새’ 표(P1-3·P2 — 보유비는 툴팁·이름에) */
+      var freshBus=newBuses.indexOf(b.id)>=0;if(freshBus){t.appendChild(App.el('span',{'class':'new-tag'},'새'));t.classList.add('has-new');}
+      t.setAttribute('aria-pressed',String(state.bus===b.id&&state.from==null));t.setAttribute('aria-label',B(b.id,null)+(freshBus?' · 새 버스 · 보유비 단계당 '+App.won(App.s.config.finance.holding):'')+(list.length>1?' '+(i+1)+'/'+list.length:'')+(tag?' · '+tag:'')+' · 고른 뒤 노선을 누르세요');
       draggable(t,function(){return {id:b.id,from:null};});
       if(b.leased){var w=App.el('span',{'class':'leased-bus'});w.appendChild(t);w.appendChild(button('lease-return-'+b.id,'반납',function(){if(PB.UI.planUnlease(b.id))redraw();}));w.lastChild.classList.add('btn-sm');w.lastChild.setAttribute('aria-label','빌린 버스 반납(이번 단계 임차료 취소)');row.appendChild(w);}
       else row.appendChild(t);
@@ -258,7 +261,7 @@
     var message=panel.querySelector('#plan-message');bar.appendChild(App.el('p',{id:'map-plan-message',role:'status'},state.bus!=null?(state.from!=null?R(state.from)+'의 버스 한 대를 골랐어요. 다른 노선을 누르면 옮기고, ‘대기로 돌리기’로 회수해요.':B(state.bus)+'를 보낼 노선을 누르세요 — 지도의 선, 선 끝 색 점, 노선 버튼 모두 돼요.'):PB.Names.text(message.textContent)));
     var issues=panel.querySelector('#plan-errors'),oldIssues=document.querySelector('#map-strip #plan-errors');if(oldIssues)oldIssues.remove();
     /* 휴대폰 배치(2026-11-02)는 오류 줄을 알림 줄(시간·수지 줄 위 겹침)에 — 정류장 하나만 이은 동안 잠깐 생겼다 사라지는 줄 때문에 지도 크기가 바뀌지 않게 */
-    if(issues.textContent){var bc=document.body.classList,strip=document.getElementById('map-strip');if(strip&&(bc.contains('phone-p')||bc.contains('phone-l'))&&root.innerWidth<=1000)strip.appendChild(issues);else bar.appendChild(issues);}
+    if(issues.textContent){var bc=document.body.classList,strip=document.getElementById('map-strip');if(strip&&(bc.contains('phone-p')||bc.contains('phone-l')||bc.contains('rail')||bc.contains('sheet')))strip.appendChild(issues);else bar.appendChild(issues);}
     var after=document.getElementById('map-strip')||stage;after.parentNode.insertBefore(bar,after.nextSibling); /* 좁은 화면 알림 줄(#map-strip) 다음 */
     document.body.classList.toggle('plan-text-open',state.text);document.body.classList.toggle('bus-picked',state.bus!=null);
     /* AI 제안 패널(2026-11-01 플레이테스트: 지도 오른쪽 절반을 덮어 제안 노선이 밑에 깔리고, 버튼은 스크롤해야 보이고, 닫기·제목이 없었다).
@@ -271,7 +274,7 @@
     var acts=tools.querySelector('#rec-card .row-actions');if(acts){acts.classList.add('ai-pop-actions');pop.appendChild(acts);}
     document.querySelector('#screen-game').appendChild(pop);document.body.classList.toggle('ai-open',!!state.ai);
     // 좁은 화면 시트는 지도 아래 빈 곳만큼만 올라온다(제안 노선이 시트에 덜 가리게). 자리가 260px보다 적으면 CSS 기본(화면 46%)
-    if(state.ai&&root.innerWidth<=850)root.requestAnimationFrame(function(){var sb=document.querySelector('#stage').getBoundingClientRect().bottom,room=Math.floor(root.innerHeight-sb-8);pop.style.maxHeight=room>=260?room+'px':'';});
+    if(state.ai&&root.innerWidth<960)root.requestAnimationFrame(function(){var sb=document.querySelector('#stage').getBoundingClientRect().bottom,room=Math.floor(root.innerHeight-sb-8);pop.style.maxHeight=room>=260?room+'px':'';});
     if(state.ai)root.requestAnimationFrame(placeAi);
     mapPeople(App,stage);var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.id='resident-destination';svg.setAttribute('aria-hidden','true');stage.appendChild(svg);
     if(App.net)App.net.setFaces(PB.Demand.residents(App.s.config,App.s.phase).map(function(rd){return {id:rd.id,node:rd.o,size:40};}));
@@ -291,7 +294,7 @@
   }
   /* P1-1(2026-11-02): 넓은 화면의 AI 제안 패널은 지도를 줄이지 않고 지도 오른쪽 가장자리에 겹쳐 띄운다(지도 틀 안, 위·오른쪽 8px) */
   function placeAi(){var pop=document.querySelector('#plan-ai-popover'),st=document.querySelector('#stage');if(!pop||pop.hidden||!st)return;
-    if(root.innerWidth<=850){pop.style.top=pop.style.right=pop.style.width=pop.style.maxHeight='';return;}
+    if(root.innerWidth<960||document.body.classList.contains('rail')){pop.style.top=pop.style.right=pop.style.width=pop.style.maxHeight='';return;}/* 넓은 화면은 지도 옆 칸(css/mobile.css 지도 틀 고정) */
     var r=st.getBoundingClientRect(),w=Math.min(360,Math.max(280,Math.round(r.width*0.42)));pop.style.top=Math.max(8,Math.round(r.top)+8)+'px';pop.style.right=Math.max(8,Math.round(root.innerWidth-r.right)+8)+'px';pop.style.width=w+'px';pop.style.maxHeight=Math.max(300,Math.round(Math.min(r.bottom,root.innerHeight)-Math.max(8,r.top+8)-8))+'px';}
   root.addEventListener('resize',function(){root.requestAnimationFrame(placeAi);});
   PB.UI.mapLayout=positionPeople;

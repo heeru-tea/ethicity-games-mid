@@ -34,7 +34,7 @@
  function think(App,s,h,last){
   var sec=el('section',{id:'result-think','class':'result-think','aria-labelledby':'result-think-h','data-phase':h.phase});
   sec.appendChild(el('h3',{id:'result-think-h'},'생각해 보기'));
-  var focus=PB.Narrative.thinkFocus(s.config,h.phase,s.current.result.passengers);if(focus.bridge)sec.appendChild(el('p',{'class':'think-bridge',id:'think-bridge'},focus.bridge));/* P0-4: 이번 결과로 고른 연결 문장 */
+  var focus=PB.Narrative.thinkFocus(s.config,h.phase,s.current.result.passengers,h.scores&&h.scores.mobility);if(focus.bridge)sec.appendChild(el('p',{'class':'think-bridge',id:'think-bridge'},focus.bridge));/* P0-4·11-05 P0-3: 이번 결과로 고른 연결 문장(첫 줄 = 자세히의 가장 많이 남은 곳) */
   PB.App.renderLearning(sec,h.phase);
   var ethics=PB.stories.phaseEthics[h.phase-1];
   if(ethics&&focus.ethics){var pr=el('p',{'class':'reflection-prompt',id:'think-prompt'});pr.appendChild(el('b',null,ethics.title+'. '));pr.appendChild(document.createTextNode(ethics.text));sec.appendChild(pr);}
@@ -62,12 +62,22 @@
   // 1. 한 줄 요약 + 큰 숫자 2개
   var rs=h.residents||{},ids=Object.keys(rs).filter(function(id){return rs[id];}),happy=ids.filter(function(id){return rs[id].satisfied;}).length;
   var head=el('section',{id:'result-headline','class':'result-headline','aria-label':'이번 단계 요약'});
-  head.appendChild(el('p',{id:'result-lead','class':'result-lead'},'이동 요청 '+m.N+'건 중 '+m.arrived+'건이 도착했어요.'+(ids.length?' 주요 인물 '+ids.length+'명 중 '+happy+'명이 만족했어요.':'')));
+  /* P2(2026-11-05): 시작 화면의 예정 이동과 결과 건수가 같은 뜻으로 읽히게 ‘기본 139건 + 추가 3건’. 추가 = 도착 뒤 생긴 다음 이동 + 돌발 수요 */
+  var q0=m.requests||{planned:m.N,followUps:0,extra:0},more=(q0.followUps||0)+(q0.extra||0);
+  head.appendChild(el('p',{id:'result-lead','class':'result-lead'},'이동 요청 '+m.N+'건'+(more?'(기본 '+q0.planned+'건 + 추가 '+more+'건)':'')+' 중 '+m.arrived+'건이 도착했어요.'+(ids.length?' 주요 인물 '+ids.length+'명 중 '+happy+'명이 만족했어요.':'')));
+  /* P1-10: 지난 결과에서 고른 목표를 이번 결과에서 다시 짚는다(계산에는 쓰지 않음) */
+  var goalKey=(s.choices||{})[h.phase-1],prev=s.history.filter(function(x){return x.phase===h.phase-1;})[0];
+  if(goalKey&&prev){var pm=prev.metrics,goalLine=goalKey==='longest'?'최장 대기 지난 단계 '+App.duration(pm.maxWait)+' → 이번 '+App.duration(m.maxWait):'도착률 지난 단계 '+PB.Metrics.fmtRate(pm.arrivalRate)+' → 이번 '+PB.Metrics.fmtRate(m.arrivalRate);head.appendChild(el('p',{id:'result-goal'},'이번 목표: '+S.CHOICES[goalKey]+' → 결과: '+goalLine));}
   var big=el('div',{'class':'result-big'});
   [['도착률',PB.Metrics.fmtRate(m.arrivalRate),m.N+'건 중 '+m.arrived+'건','result-stat-arrival'],['이번 단계 수지',(k.total>0?'+':'')+App.won(k.total),'누적 잔액 '+App.won(S.balance(s)),'result-stat-profit']].forEach(function(r){
    var c=el('div',{'class':'result-stat',id:r[3]});c.appendChild(el('span',{'class':'stat-label'},r[0]));var v=c.appendChild(el('strong',{'class':'stat-value'},r[1]));c.appendChild(el('span',{'class':'stat-sub'},r[2]));
    if(r[3]==='result-stat-profit'&&k.total<0)v.classList.add('negative');big.appendChild(c);});
   head.appendChild(big);
+  /* P1-4: 운행 중 → 종료 정산 → 최종 3줄 + 지금 추세로 학기 말 잔액. 숫자는 정산표 그대로 나눠 보이기만 한다 */
+  var sp=PB.UI.Econ.settleParts(k);
+  if(sp){var settle=el('div',{id:'result-settle'}),sline=function(a,b,c){var n=el('p',c?{'class':c}:null);n.appendChild(el('span',null,a));n.appendChild(el('b',null,b));settle.appendChild(n);},sg=PB.UI.Econ.signed;
+   sline('운행 중 (기본 지원 + 운임 − 운영·연료)',sg(sp.running));sline('종료 정산 (보유비 −'+App.won(sp.holding)+(sp.lease?', 임차료 −'+App.won(sp.lease):'')+', 공공서비스 수행분 +'+App.won(sp.service)+')',sg(sp.settle));sline('최종 이번 단계 수지',sg(sp.total),'settle-final');head.appendChild(settle);}
+  var trend=PB.UI.Econ.trendLine(s,'이번 단계');if(trend)head.appendChild(el('p',{id:'result-trend','class':'trend-line'+(trend.warn?' warn':'')},trend.text));
   // 2. 인물 카드
   var people=el('section',{id:'result-people','class':'result-people','aria-labelledby':'result-people-h'});people.appendChild(el('h3',{id:'result-people-h'},'주민들의 하루'));
   if(cards){people.appendChild(cards);people.appendChild(el('p',{'class':'note'},'카드를 누르면 작은 지도에서 그 구간을 보여 줘요.'));}
