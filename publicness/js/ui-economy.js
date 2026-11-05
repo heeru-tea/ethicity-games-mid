@@ -128,3 +128,4 @@
   };
   UI.Econ = E;
 })(window);
+  E.signed = signed;

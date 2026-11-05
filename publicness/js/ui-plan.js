@@ -370,12 +370,27 @@
     var bodyWrap=el('div',{'class':'panel-body'});while(panel.firstChild&&panel.firstChild!==foot)bodyWrap.appendChild(panel.firstChild);panel.insertBefore(bodyWrap,foot);bodyWrap.scrollTop=P.scroll||0;
     P.baseline=snapshot();var r=active();return{selectable:P.preview?[]:nextStops(),selected:P.preview?[]:(r?r.nodes:[]),activeRoute:P.editing,preview:P.preview&&P.rec?P.rec.plan:null};
   };
-  // 출발 확인(2026-11-02 사용자 결정, 재논의 금지): "이대로 출발할까요?"만 묻는다 — 주요 인물 기준 충족 예상·노선 없는 요청·예상 수지 요약,
-  // 운행 구성 목록, 출발 뒤 규칙 문단은 넣지 않는다(P1-5 ① 요약을 되돌림). 예측이 아닌 안전 경고 하나만: 운행하는 버스가 0대면 한 줄
+  /* 출발 확인(2026-11-05 지시서 P0-2 — 11-02 "이대로 출발할까요?만 묻는다" 결정을 사용자 지시서가 뒤집음, 이 커밋만 되돌리면 복구):
+   * 점검 목록 = 운행 버스 0대 · 쉬는 버스와 보유비 · 노선이 없는 정류장(새 정류장 먼저) · 출발지나 목적지가 노선에 없는 인물 · 예상 수지.
+   * 막는 문제(운행 버스 0대)면 제목을 바꾸고 기본 포커스를 ‘노선 고치기’에. 경고는 접지 않고 본문에 최대 3줄, 더 있을 때만 ‘자세히’ — 경고가 없으면 ‘자세히’를 만들지 않는다 */
+  function departLines(s){
+    var c=S.departChecks(s),out=[],W=app().won,N=app().nodeName,F=s.config.finance;
+    function list(a,fmt){return a.slice(0,4).map(fmt).join(', ')+(a.length>4?' 외 '+(a.length-4)+'곳':'');}
+    if(c.noBus)out.push({id:'depart-no-bus',text:'이대로 출발하면 아무도 버스를 탈 수 없어요.'});
+    if(c.resting)out.push({id:'depart-resting',text:'쉬는 버스 '+c.resting+'대 · 이번 단계 보유비 '+c.resting+' x '+W(F.holding)+' = '+W(c.restingCost)+'이 그대로 나가요.'});
+    if(c.restingLeased)out.push({id:'depart-resting-leased',text:'빌린 버스 '+c.restingLeased+'대가 쉬어요 · 임차료 '+W(c.restingLeaseCost)+'이 그대로 나가요.'});
+    if(c.unserved.length)out.push({id:'depart-unserved',text:'노선이 없는 정류장 '+c.unserved.length+'곳: '+list(c.unserved,function(id){return N(id)+(c.newStops.indexOf(id)>=0?'(새)':'');})+'.'});
+    if(c.residents.length)out.push({id:'depart-residents',text:'출발지나 목적지에 노선이 없는 사람: '+c.residents.map(function(r){return r.name+'('+N(r.o)+'→'+N(r.d)+')';}).join(', ')+'.'});
+    return {noBus:c.noBus,lines:out};
+  }
   function departCheck(){
-    var s=st(),body=document.querySelector('#confirm-depart-body');body.textContent='';
-    if(!s.draft.buses.some(function(b){return b.routeNum!=null;}))body.appendChild(el('p',{'class':'callout warn',id:'depart-no-bus'},'운행하는 버스가 없어요. 이대로 출발하면 아무도 버스를 탈 수 없어요.'));
-    document.querySelector('#confirm-depart').showModal();document.querySelector('#confirm-yes').focus();
+    var s=st(),body=document.querySelector('#confirm-depart-body'),c=departLines(s),show=c.lines.slice(0,3),rest=c.lines.slice(3);body.textContent='';
+    document.querySelector('#confirm-depart-h').textContent=c.noBus?'운행하는 버스가 없어요':'이대로 출발할까요?';
+    function put(box,l){box.appendChild(el('li',{id:l.id},l.text));}
+    if(show.length){var ul=el('ul',{id:'depart-checks','class':'callout warn depart-checks'});show.forEach(function(l){put(ul,l);});body.appendChild(ul);}
+    if(rest.length){var more=el('details',{id:'depart-more'});more.appendChild(el('summary',null,'자세히'));var ul2=el('ul',{'class':'depart-checks'});rest.forEach(function(l){put(ul2,l);});more.appendChild(ul2);body.appendChild(more);}
+    if(PB.UI.Econ)body.appendChild(el('p',{id:'depart-profit','class':'note'},'이번 단계 예상 수지 '+PB.UI.Econ.signed(PB.UI.Econ.plan(s).k.total)+' (기본 수요 기준)'));
+    document.querySelector('#confirm-depart').showModal();document.querySelector(c.noBus?'#confirm-no':'#confirm-yes').focus();
   }
   var M=PB.Metrics;
   document.querySelector('#confirm-yes').addEventListener('click',function(){document.querySelector('#confirm-depart').close();if(S.startRun(st()))app().go('run');});

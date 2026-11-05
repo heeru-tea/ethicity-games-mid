@@ -345,6 +345,22 @@
     s.stage = 'run'; s.resumedFromRun = false;
     return s.current.result;
   }
+  /* 출발 전 점검(2026-11-05 P0-2): 예측이 아니라 지금 계획에서 바로 셀 수 있는 사실만 — 문구는 ui-plan departCheck.
+   * 노선이 있어도 버스가 없으면 그 정류장에는 아무도 못 오므로 ‘운행하는 노선’만 센다. 새 정류장을 앞에 */
+  function departChecks(s) {
+    var g = graph(s), buses = s.draft.buses, F = s.config.finance, phase = s.phase;
+    var running = s.draft.routes.filter(function (r) { return r.nodes.length >= 2 && !Graph.validateRoute(g, r).length && buses.some(function (b) { return b.routeNum === r.num; }); });
+    function serves(id) { return running.some(function (r) { return r.nodes.some(function (n, i) { return n === id && r.stops[i]; }); }); }
+    var resting = buses.filter(function (b) { return b.routeNum == null; }), owned = resting.filter(function (b) { return !b.leased; }), leased = resting.filter(function (b) { return b.leased; });
+    var fresh = phase > 1 ? s.config.nodes.filter(function (n) { return n.fromPhase === phase; }).map(function (n) { return n.id; }) : [];
+    var unserved = g.nodes.filter(function (id) { return !serves(id); }), isNew = function (id) { return fresh.indexOf(id) >= 0; };
+    return {
+      noBus: !buses.some(function (b) { return b.routeNum != null; }),
+      resting: owned.length, restingCost: owned.length * F.holding, restingLeased: leased.length, restingLeaseCost: leased.length * F.lease.fee,
+      unserved: unserved.filter(isNew).concat(unserved.filter(function (id) { return !isNew(id); })), newStops: fresh,
+      residents: Demand.residents(s.config, phase).filter(function (rd) { return !serves(rd.o) || !serves(rd.d); }).map(function (rd) { return { id: rd.id, name: rd.name, o: rd.o, d: rd.d }; })
+    };
+  }
   // 긴급 조정 시점(엔진 시간, 10:06·15:03) — 운행 화면(ui-run)도 이 값을 쓴다
   var EMERGENCY_AT=[34,67];
   function emergencyDecision(s,at,busId,routeNum){
@@ -555,7 +571,7 @@
   }
 
   var api = {
-    emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
+    departChecks:departChecks,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
