@@ -3,7 +3,7 @@
  *  · 노선: 흰 테두리(casing) + 노선색, 같은 구간은 차선 간격으로 나란히(뷰의 laneOffset — 지도 클릭 판정과 같은 위치). 선택 노선은 굵게+빛, 다른 노선은 흐리게 하지 않는다
  *  · 정류장: 흰 원 하나 + 그곳에 서는 노선 색 점(원 안). 점이 없으면 서지 않는 곳 — 그 노선은 지나가기만 하므로 정류장·이름표 근처를 흐리게 그린다(.pass, 마스크)
  *  · 교차: 노선마다 자기 흰 테두리를 바로 아래에 깔아 위 노선이 아래 노선을 ‘넘어가게’ 그린다 — 교차점이 환승역처럼 보이지 않게
- *  · 노선 끝: 번호 원(시작 쪽은 옆에 운행 버스 수)
+ *  · 노선 끝: 색 점(번호 표시를 켜면 번호 원). 버스 수는 지도에 글자로 쓰지 않는다(2026-11-05 — 계획 화면 손잡이만 ×N)
  *  · 이름표: 한 스타일(흰 pill), 기본은 마커 아래. 운행·결과에서는 대기 인원 pill ‘👤 N’을 이름표 오른쪽에(주의 주황·위험 빨강)
  *  · 겹침 피하기: 마커·번호 원·이름표를 차례로 놓으며 빈 자리를 고른다. rects()로 다른 층(인물 얼굴·버스 손잡이)도 피할 수 있게 내보낸다
  * 클릭은 아래 지도가 받는다(이 층은 pointer-events: none). 좌표는 뷰의 project(지도 좌표 → 무대 px). */
@@ -120,16 +120,11 @@
       caps.forEach(function (c) {
         var g = c.g = svgEl('g', { 'class': 'net-cap', 'data-route': c.num, 'data-end': c.start ? 'start' : 'end' }, gCap);
         /* 노선 끝 표시 = 숫자 없는 색 점(2026-11-02: 번호 원이 대기 인원 숫자와 나란히 있어 헷갈렸다). 설정 ‘노선 번호 표시’를 켜면 번호가 다시 나온다 */
-        var nums = root.PB.Names && root.PB.Names.showNumbers();
-        svgEl('circle', { cx: c.x, cy: c.y, r: nums ? T.cap : Math.round(T.cap * 0.7), fill: c.color }, g);
+        var nums = root.PB.Names && root.PB.Names.showNumbers(), capR = nums ? T.cap : Math.round(T.cap * 0.7);
+        svgEl('circle', { cx: c.x, cy: c.y, r: capR, fill: c.color }, g);
         if (nums) { var t = svgEl('text', { x: c.x, y: c.y + 4, 'text-anchor': 'middle', fill: lum(c.color) > 0.35 ? '#1A1D24' : '#FFFFFF' }, g); t.textContent = String(c.num); }
-        var w = T.cap * 2;
-        /* 버스 수는 ‘N대’(2026-11-03: 숫자만이면 노선 번호로 읽혔다). 정류장 반대쪽으로 뒤집어 붙여 봤더니 375px 3D 운행에서 이름표끼리 겹쳐서 늘 오른쪽 */
-        var s = null; if (c.start && c.buses != null) { s = svgEl('text', { 'class': 'cap-count', x: c.x + T.cap + 3, y: c.y + 4 }, g); s.textContent = c.buses + '대'; w += 24; }
-        // 시작 쪽은 예전에 계획 화면의 노선 손잡이(번호 원 24px + 버스 수 pill)가 그 위에 놓였어서 그 크기(56×30)만큼 비워 뒀다. 지금 손잡이는 선 옆 빈자리로 가므로(ui-map-plan positionBadges)
-        // 좁은 지도(≤ 520px)에서는 실제 그린 크기(번호 원 + 버스 수 글자)만 막는다 — 남는 56px 칸 때문에 이름표·손잡이가 갈 바로 옆 자리가 없어지던 것(2026-11-01). 넓은 지도는 그대로
-        if (c.start && c.buses != null && s) w = T.cap + 3 + s.getComputedTextLength() + T.cap + 1;
-        placed.push(c.q = c.start && !narrow ? { x: c.x - 16, y: c.y - 15, w: 56, h: 30, kind: 'cap', route: c.num, start: true } : { x: c.x - T.cap - 2, y: c.y - T.cap - 2, w: w + 4, h: T.cap * 2 + 4, kind: 'cap', route: c.num, start: c.start });
+        /* 노선 시작 쪽 버스 수 글자는 없앴다(2026-11-05 사용자 승인 — ‘1대’가 지도마다 붙어 시끄러웠다). 자리도 그린 원 크기만큼만 잡는다 */
+        placed.push(c.q = { x: c.x - capR - 2, y: c.y - capR - 2, w: capR * 2 + 4, h: capR * 2 + 4, kind: 'cap', route: c.num, start: c.start });
       });
       st.caps = caps;
       /* 이름표(+대기 pill) — 2026-11-01 플레이테스트 수정. 390px 지도에서 빈자리를 못 찾으면 78px+이름표 폭까지 멀리 가서(다른 정류장 옆)

@@ -7,7 +7,7 @@ const server = await startServer(0), base = `http://127.0.0.1:${server.address()
 const browser = await chromium.launch({ channel: 'msedge', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const SHOT = process.env.SHOT_DIR || 'publicness/tests';
 const ok = name => console.log('  ok', name);
-// 긴 단계를 나눠 돌릴 때: UX_PART=depart,frame1060,frame1280,run,nolink,p5,misc,tab,goal,tablet (없으면 전부)
+// 긴 단계를 나눠 돌릴 때: UX_PART=depart,frame1060,frame1280,run,nolink,p5,misc,tab,goal,tablet,buscount (없으면 전부)
 const only = process.env.UX_PART, want = k => !only || only.split(',').includes(k);
 const ROUTES = { 1: [[1, ['F', 'C', 'B', 'D']], [2, ['A', 'G']]], 2: [[3, ['E', 'H', 'B', 'A']]], 3: [[4, ['I', 'A']]] };
 async function fresh(viewport, q = 'no3d=1') {
@@ -159,6 +159,27 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1), '계획 화면 스크롤 없음: ' + await page.evaluate(() => document.documentElement.scrollHeight));
     await page.locator('#plan-ai-toggle').click(); await page.waitForTimeout(150); assert.deepEqual(await stage(page), a); await page.locator('#plan-ai-close').click(); await depart(page); assert.deepEqual(await stage(page), a); await toEmergency(page); await page.waitForTimeout(300); assert.deepEqual(await stage(page), a);
     ok('태블릿 820x1180 지도 ' + a.w + 'x' + a.h + ' 고정·계획 스크롤 없음'); assert.deepEqual(page.errors, []); await page.close();
+  }
+  // 지도 버스 수 표시(2026-11-05 사용자 승인): 시작 점 글자 없음 · 손잡이 1대 = 색 점, 2대+ = ×N, 0대 = 버스 없음 · 고른 노선만 ‘버스 N대’ · 운행 중 숫자 없음
+  if (want('buscount')) for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+    const page = await fresh(vp); await play(page, 3);
+    await page.evaluate(() => { const s = PB.App.s; s.draft.buses.forEach(b => { b.routeNum = 1; }); s.draft.buses[1].routeNum = 2; s.draft.buses[2].routeNum = 2; s.draft.buses[3].routeNum = 3; s.draft.buses[0].routeNum = 3; PB.App.render(); document.querySelector('#route-1').click(); }); await page.waitForTimeout(500);
+    const read = () => page.evaluate(() => Object.fromEntries([1, 2, 3, 4].map(n => { const b = document.querySelector('#route-bus-' + n), vis = q => { const e = b && b.querySelector(q); return e && getComputedStyle(e).display !== 'none' ? e.textContent : null; }; return [n, b ? { count: vis('.route-count'), full: vis('.route-full'), buses: b.dataset.buses, idle: b.classList.contains('idle'), aria: b.getAttribute('aria-label') } : null]; })));
+    let r = await read();
+    assert.deepEqual([r[1].count, r[1].full, r[1].idle], ['버스 없음', null, true], '고른 빈 노선도 버스 없음: ' + JSON.stringify(r[1]));
+    assert.deepEqual([r[2].count, r[2].full], ['×2', null], '2대 = ×2'); assert.deepEqual([r[3].count, r[3].full], ['×2', null]);
+    assert.match(r[2].aria, /버스 2대/); assert.match(r[1].aria, /운행 대기/);
+    assert.equal(await page.locator('#net-layer .net-cap text').count(), 0, '시작 점 글자 없음'); assert.equal(await page.locator('#route-2').evaluate(e => e.textContent.includes('버스 2대')), true, '아래 노선 버튼은 그대로');
+    await page.screenshot({ path: SHOT + '/_shot-uiux-buscount-' + vp.width + '.png' });
+    await page.evaluate(() => document.querySelector('#route-2').click()); await page.waitForTimeout(350); r = await read(); assert.deepEqual([r[2].count, r[2].full], [null, '버스 2대'], '고른 노선만 또렷: ' + JSON.stringify(r[2])); assert.deepEqual([r[3].count, r[3].full], ['×2', null]);
+    await page.evaluate(() => { const s = PB.App.s; s.draft.buses[2].routeNum = 1; PB.App.render(); }); await page.waitForTimeout(350); r = await read(); assert.deepEqual([r[1].count, r[1].full], [null, null], '1대 = 색 점만(고르지 않은 노선)');
+    await page.locator('#route-bus-1').focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(150); assert.equal(await page.locator('#route-bus-1').getAttribute('aria-pressed'), 'true', '키보드로 고르기'); await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+    // 노선 번호 표시를 켜도 동작
+    await page.evaluate(() => { const c = document.querySelector('#opt-route-numbers'); c.checked = true; c.dispatchEvent(new Event('change')); }); await page.waitForTimeout(350);
+    assert.equal(await page.locator('#route-bus-1 .route-num').textContent(), '1'); r = await read(); assert.equal(r[3].count, '×2'); assert.equal(await page.locator('#net-layer .net-cap text').first().textContent(), '1');
+    await page.evaluate(() => { const c = document.querySelector('#opt-route-numbers'); c.checked = false; c.dispatchEvent(new Event('change')); }); await page.waitForTimeout(200);
+    await depart(page); assert.equal(await page.locator('#net-layer .net-cap text').count(), 0, '운행 중 지도 숫자 없음'); assert.equal(await page.locator('#stage .route-count:visible, #stage .route-full:visible').count(), 0);
+    await page.screenshot({ path: SHOT + '/_shot-uiux-buscount-run-' + vp.width + '.png' }); assert.deepEqual(page.errors, []); ok('버스 수 표시 ' + vp.width); await page.close();
   }
   console.log('PASS uiux-1105');
 } finally { await browser.close(); server.close(); }

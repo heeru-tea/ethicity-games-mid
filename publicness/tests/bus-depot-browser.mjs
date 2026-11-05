@@ -9,7 +9,7 @@ const buses=p=>p.evaluate(()=>PB.App.s.draft.buses.map(b=>b.routeNum));
 // 보존 검사: 버스 수 = 보유 대수, 대기 표시 숫자 = 쉬는 버스 수, 노선 표시 ×N 합 + 대기 = 전체
 async function conserve(p,label){
  const r=await p.evaluate(()=>{const s=PB.App.s,rest=s.draft.buses.filter(b=>b.routeNum==null).length,shown=Number((document.querySelector('#depot-count')||{}).textContent.replace('대','')),
-  badge=[...document.querySelectorAll('.route-bus')].reduce((a,b)=>a+(parseInt((b.querySelector('.route-count')||{}).textContent,10)||0),0),onDrawn=s.draft.buses.filter(b=>b.routeNum!=null&&document.querySelector('#route-bus-'+b.routeNum)).length;
+  badge=[...document.querySelectorAll('.route-bus')].reduce((a,b)=>a+(parseInt(b.dataset.buses,10)||0),0),onDrawn=s.draft.buses.filter(b=>b.routeNum!=null&&document.querySelector('#route-bus-'+b.routeNum)).length;
   return {n:s.draft.buses.length,owned:s.owned,rest,shown,badge,onDrawn,neg:s.draft.buses.some(b=>b.routeNum!=null&&b.routeNum<0)};});
  assert.equal(r.n,r.owned,label+': 버스 수 = 보유');assert.equal(r.shown,r.rest,label+': 대기 숫자');assert.equal(r.badge,r.onDrawn,label+': ×N 합');assert.ok(r.rest>=0&&!r.neg,label+': 음수 없음');
  return r;

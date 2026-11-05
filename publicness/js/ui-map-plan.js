@@ -231,10 +231,14 @@
         if(!on.length){say(R(r.num)+'은 운행 대기예요 — 대기 버스나 다른 노선의 버스를 옮겨 주세요.');return;}
         var pick=on[on.length-1].id;state.bus=pick;state.from=r.num;redraw();var nb=document.querySelector('#route-bus-'+r.num);if(nb)nb.focus({preventScroll:true});
         say(R(r.num)+'의 버스 한 대를 골랐어요. 다른 노선을 누르면 옮기고, ‘대기로 돌리기’로 회수해요.');});
-      b.className='route-bus'+(on.length?'':' idle');b.dataset.num=r.num;b.style.setProperty('--route',color);
+      /* 손잡이 표시(2026-11-05 사용자 승인): 1대 = 작은 색 점만, 2대 이상 = ‘×2’(숫자만이면 노선 번호로 읽힌다 — 11-03 결정), 0대 = 점선 + ‘버스 없음’.
+       * 고른 노선·끄는 중·놓을 자리인 노선만 ‘버스 N대’로 또렷하게(css). 대수는 늘 aria-label·data-buses에 */
+      var chosen=PB.UI.planEditing&&PB.UI.planEditing()===r.num;
+      b.className='route-bus'+(on.length?'':' idle')+(chosen?' is-active':'');b.dataset.num=r.num;b.dataset.buses=on.length;b.style.setProperty('--route',color);
       // 지도 네트워크층의 노선 시작 번호 원 자리에 겹쳐 놓는다(번호 원 + 옆에 운행 버스 수, 0이면 점선 테두리 = 운행 대기)
       var numEl=b.appendChild(App.el('span',{'class':'route-num'},PB.Names.showNumbers()?String(r.num):''));/* 번호 없는 색 점(설정 ‘노선 번호 표시’면 번호) */if(PB.MapNetwork&&PB.MapNetwork.luminance(color)>0.35)numEl.style.color='#1A1D24';/* 밝은 노선색(노랑·연보라)엔 어두운 숫자 */
-      b.appendChild(App.el('span',{'class':'route-count'},on.length+'대'));
+      if(on.length!==1)b.appendChild(App.el('span',{'class':'route-count'},on.length?'×'+on.length:'버스 없음'));
+      if(on.length)b.appendChild(App.el('span',{'class':'route-full'},'버스 '+on.length+'대'));
       b.setAttribute('aria-pressed',String(state.from===r.num));
       b.setAttribute('aria-label',R(r.num)+' '+(on.length?'버스 '+on.length+'대':'운행 대기 — 버스를 옮겨 주세요')+(state.bus!=null&&state.from!==r.num?' · 눌러서 '+B(state.bus)+' 보내기':on.length?' · 눌러서 한 대 고르기':''));
       b.title=b.getAttribute('aria-label');

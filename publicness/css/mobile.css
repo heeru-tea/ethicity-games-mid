@@ -10,7 +10,7 @@
 .route-tab .route-tab-num { font-weight: 800; }
 #btn-new-route { min-width: 104px; border-style: dashed; }
 /* 노선 끝 손잡이(지도): 숫자 없는 색 점 + 흰 버스 수. 번호 표시를 켜면 예전처럼 번호 원 */
-.route-bus .route-num:empty { width: 16px; height: 16px; border-width: 2px; }
+.route-bus .route-num:empty { width: 14px; height: 14px; border-width: 2px; }
 .route-bus .route-num { flex: none; }
 /* 대기 버스 줄: ‘대기 버스 N대’로 읽히게 제목을 보인다(미니멀 화면은 숨겼었다) */
 .minimal-ui:not(.minimal-text) #depot-h { display: inline !important; }
