@@ -16,6 +16,19 @@
 
   var WD = window.PRIVACY_WORLD;
   var STEP_MS = 110; // 한 칸(40px, 몸 높이의 약 0.45) 걷는 시간 — 옛 48px 칸 150ms와 같은 눈높이 속도
+  // 가상 조이스틱 수치(2026-11-05 사용자 피드백 '조이스틱이 너무 예민함') — 조이스틱 손맛은 여기 한 곳에서만 고친다. 거리는 받침 반지름 대비 비율
+  var JOY = {
+    R: 52,          // 받침 반지름(px)
+    ENTER: 0.38,    // 이만큼(약 20px) 밀어야 입력으로 친다(옛 데드존 0.25 = 13px — 손가락을 올려놓다 스친 정도로 걸었다)
+    LEAVE: 0.26,    // 입력 중에는 이보다 덜 밀어야 놓은 것으로 친다(ENTER와 차이 = 경계에서 걷기·멈춤이 깜빡이지 않게)
+    PUSH: 0.7,      // 이만큼(약 36px) 밀면 방향 돌리는 시간 없이 바로 걷는다
+    TURN_MS: 130,   // 살짝 민 첫 입력은 이 시간 동안 방향만 돌리고 걷지 않는다(옛 0 — 살짝 스쳐도 한 칸 걸었다)
+    DIAG: 12,       // 대각선(가로·세로 번갈아 걷기)으로 보는 폭 = 45° ± 이 각도(옛 ±22.5° — 원의 절반이 대각선이라 곧게 밀어도 한 칸씩 옆으로 튀었다)
+    HOLD_DEG: 10,   // 지금 방향을 유지하는 여유 각도(옛 0 — 경계에서 손가락 떨림만으로 방향이 바뀌었다)
+    FAST: 0.92,     // 이만큼 밀면 빠르게(옛 0.75 — 조금만 힘줘도 빠른 걸음)
+    SLOW: 0.6,      // 이보다 덜 밀면 천천히
+    SLOW_K: 1.3     // 천천히 걸을 때 걸음 시간 배수(옛 없음 = 1)
+  };
   var BODY = 2.24, HEAD = 1.25; // 인물 몸 높이·머리 꼭대기(칸 위쪽에서 몇 칸 위) — 말풍선·이름표·느낌표 자리 기준
   var SPRITE_DIR = 'assets/sprites/';
   /*
@@ -55,8 +68,8 @@
   // 디버그: ?debug=1 = 걷는 칸·막힘·출입구·조사 지점 색 표시 + '목적지로 바로 가기' 버튼(교사 확인용), ?debug=grid = 색 표시만
   var DEBUG = { grid: false, skip: false };
   // 가상 조이스틱: on = 손가락이 닿아 있음, dx·dy = 방향(-1~1), mag = 밀어낸 정도(0~1). lastAxis = 대각선에서 번갈아 걷기용
-  var joy = { on: false, dx: 0, dy: 0, mag: 0, lastAxis: null, id: null, start: null, moved: false, rest: null };
-  var JOY_R = 52, JOY_FAST = 0.75, JOY_DEAD = 0.25; // 받침 반지름(px) · 이만큼 밀면 빠르게 · 이보다 덜 밀면 멈춤
+  // live = ENTER를 넘어 입력 중, walking = 이번 입력에서 걷기 시작함(살짝 민 첫 입력 구분), sector = 지금 방향 'h'|'v'|'d', pushAt = 입력이 시작된 때
+  var joy = { on: false, dx: 0, dy: 0, mag: 0, lastAxis: null, id: null, start: null, rest: null, live: false, walking: false, sector: null, pushAt: 0 };
   var guideUntil = 0; // 같은 상대에게 3번째 말 걸면 잠깐 방향 안내(출구 반짝임·화살표)를 강조
   // 2026-11-03 플레이테스트
   var DOOR_HOLD_MS = 280, stepHold = 0; // 문을 지난 뒤 이때까지 누르고 있던 키·조이스틱으로는 걷지 않는다(문 지나자마자 다시 문으로 들어가는 일 방지). 0 = 멈춤 없음
@@ -245,12 +258,13 @@
     }
     if (curHint && $('m-say').textContent === curHint) say(''); // 첫 걸음을 떼면 안내는 사라진다
     me.moving = true; me.t = 0;
-    me.fast = !!fromJoy && joy.mag >= JOY_FAST; // 조이스틱을 끝까지 밀면 빠르게
+    me.fast = !!fromJoy && joy.mag >= JOY.FAST; // 조이스틱을 끝까지 밀면 빠르게
+    me.slow = !!fromJoy && joy.mag < JOY.SLOW;  // 살짝 밀면 천천히
     me.from = { x: me.x, y: me.y }; me.to = { x: nx, y: ny };
     me.door = door;
     return true;
   }
-  function stepMs() { return me.fast ? Math.round(STEP_MS * 0.6) : STEP_MS; }
+  function stepMs() { return me.fast ? Math.round(STEP_MS * 0.6) : me.slow ? Math.round(STEP_MS * JOY.SLOW_K) : STEP_MS; }
   function holding() { return stepHold > performance.now(); } // 문을 막 지난 한 박자
   function finishStep() {
     me.moving = false;
@@ -518,6 +532,7 @@
       if (window.PrivacyTalk.isOpen()) { if (busy) return; window.PrivacyTalk.close(); } // 걸으면 대화창은 닫힌다(목적지 인사말은 끝까지)
       if (e.repeat && held.indexOf(dir) >= 0) return; // 길게 누름은 held로 이어 간다
       path = null; actOnArrive = false; tapWant = null;
+      if (joy.on) joyRelease(); // 2026-11-05 사용자 피드백: 키를 누르면 조이스틱 입력은 끝(둘이 섞여 번갈아 걷지 않게)
       if (held.indexOf(dir) < 0) held.push(dir);
       if (!me.moving && !busy && !holding()) { if (!tryStep(dir)) queued = null; }
       else queued = dir; // 걷는 중 짧게 누른 키: 지금 칸이 끝나면 한 칸(문을 막 지난 한 박자 동안 누른 키도)
@@ -531,6 +546,7 @@
   }
   function onPointer(e) {
     if (mode !== 'walk' || busy) return;
+    if (joy.on && joy.live) return; // 2026-11-05 사용자 피드백: 조이스틱을 미는 동안 다른 손가락 탭은 받지 않는다(탭 길과 조이스틱이 섞이지 않게)
     if (window.PrivacyTalk.isOpen()) { window.PrivacyTalk.close(); return; }
     if (me.moving && me.door) return; // 문을 지나는 중(건너편 장면으로 옮겨지는 걸음)
     // 걷는 중에 누르면 지금 걸음이 끝나는 칸에서 새 길을 잇는다(예전엔 떠난 칸에서 계산해 한 칸 어긋났다 — 문 매트 연타)
@@ -614,28 +630,45 @@
   /* ── 가상 조이스틱(터치 기기) ─────────────
    * #joy = 왼쪽 아래(말 걸기 버튼 위) 보이지 않는 터치 영역. 그 안을 누른 자리에 받침이 나타나고(플로팅), 떼면 기본 자리로 돌아간다.
    * 평소 40% · 누르는 중 80% 불투명(css). 8방향: 대각선은 가로·세로를 번갈아 한 칸씩(격자 이동), 한쪽이 막히면 다른 쪽.
-   * 살짝 민 만큼 = 걷기, 끝까지(75% 이상) = 빠르게. 이동은 키보드와 같은 tryStep → 충돌·출입구·도착 처리가 같다.
+   * 2026-11-05 사용자 피드백(너무 예민함): 수치는 파일 위쪽 JOY 한 곳. 살짝 민 첫 입력 = 방향만, 계속 밀면 걷기, 끝까지 = 빠르게.
+   *   방향은 지금 칸(sector)을 HOLD_DEG만큼 유지하고, 대각선 폭을 좁혀 곧게 밀 때 옆으로 튀지 않게 했다.
+   *   이동은 키보드와 같은 tryStep → 충돌·출입구·도착 처리가 같다. 문을 지난 한 박자(holding) 동안은 걷지 않는다.
    * 영역(받침보다 조금 큰 자리)은 걷기 카메라가 피하는 자리라, 주인공·출구는 늘 그 밖에 보인다.
    */
   function isTouch() {
     return ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0 || !!(window.matchMedia && window.matchMedia('(any-pointer: coarse)').matches);
   }
   function joyShown() { return isTouch() && (!o.joystick || o.joystick() !== false); }
+  // 각도(0 = 가로, 90 = 세로) → 방향 칸. 지금 칸은 HOLD_DEG만큼 더 넓게 봐서 경계에서 떨려도 바뀌지 않는다
+  function joySector(ang) {
+    var lo = 45 - JOY.DIAG, hi = 45 + JOY.DIAG, keep = JOY.HOLD_DEG, s = joy.sector;
+    if (s === 'h' && ang < lo + keep) return 'h';
+    if (s === 'v' && ang > hi - keep) return 'v';
+    if (s === 'd' && ang >= lo - keep && ang <= hi + keep) return 'd';
+    return ang < lo ? 'h' : ang > hi ? 'v' : 'd';
+  }
   function joyDirs() {
-    if (!joy.on || joy.mag < JOY_DEAD) return [];
+    if (!joy.on || !joy.live) return [];
     var ax = Math.abs(joy.dx), ay = Math.abs(joy.dy), h = joy.dx > 0 ? 'right' : 'left', v = joy.dy > 0 ? 'down' : 'up';
-    var ang = Math.atan2(ay, ax) * 180 / Math.PI; // 0 = 가로, 90 = 세로
-    if (ang < 22.5) return [h];
-    if (ang > 67.5) return [v];
+    joy.sector = joySector(Math.atan2(ay, ax) * 180 / Math.PI);
+    if (joy.sector === 'h') return [h];
+    if (joy.sector === 'v') return [v];
     return joy.lastAxis === 'h' ? [v, h] : [h, v]; // 대각선: 지난 걸음과 다른 축 먼저
   }
+  function joyFace(dir) { if (me.dir !== dir) { me.dir = dir; updateHint(); } } // 말 걸기 상대가 바뀔 수 있어 버튼도 따라간다
   function stepJoy() {
     if (mode !== 'walk' || busy || me.moving || holding()) return false;
     var ds = joyDirs();
+    if (!ds.length) { joy.walking = false; return false; } // 멈춰 선 채 손을 가운데로 돌렸다 = 다음 입력은 다시 첫 입력
+    if (!joy.walking) { // 첫 입력: 살짝 밀면 TURN_MS 동안 방향만(톡 건드리면 돌아보기만), 세게 밀면 바로
+      joyFace(ds[0]);
+      if (joy.mag < JOY.PUSH && performance.now() - joy.pushAt < JOY.TURN_MS) return false;
+      joy.walking = true;
+    }
     for (var i = 0; i < ds.length; i++) {
       if (tryStep(ds[i], true)) { joy.lastAxis = ds[i] === 'left' || ds[i] === 'right' ? 'h' : 'v'; return true; }
     }
-    if (ds.length) me.dir = ds[0]; // 막혀도 그쪽을 바라본다(말 걸기 상대가 바뀜)
+    joyFace(ds[0]); // 막혀도 그쪽을 바라본다(말 걸기 상대가 바뀜)
     return false;
   }
   // 받침 기본 자리(영역 왼쪽 아래)와 영역 크기: 말 걸기 버튼 바로 위, 위 HUD 아래까지
@@ -654,9 +687,9 @@
     var over = ctl.left - vm.left < Math.min(vm.width * 0.46, 200) + 4;
     var bottom = over ? Math.max(8, vm.bottom - ctl.top + 6) : 8;
     z.style.bottom = bottom + 'px';
-    z.style.height = (JOY_R * 2 + 28) + 'px';
+    z.style.height = (JOY.R * 2 + 28) + 'px';
     var zr = z.getBoundingClientRect(), cr = canvas.getBoundingClientRect();
-    joy.restAt = { x: 16 + JOY_R, y: zr.height - 6 - JOY_R }; // 영역 안 좌표(받침 가운데)
+    joy.restAt = { x: 16 + JOY.R, y: zr.height - 6 - JOY.R }; // 영역 안 좌표(받침 가운데)
     if (!joy.on) joyPut(joy.restAt.x, joy.restAt.y);
     // 캔버스 좌표의 조이스틱 영역 전체: 걷기 카메라가 이 자리를 피해 주인공·출구를 그 밖에 둔다
     joy.rest = { x0: zr.left - cr.left, y0: zr.top - cr.top, x1: zr.right - cr.left, y1: zr.bottom - cr.top };
@@ -673,6 +706,7 @@
   function joyKnob(x, y) { var k = document.querySelector('#joy .joy-knob'); if (k) k.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
   function joyRelease() {
     joy.on = false; joy.dx = joy.dy = joy.mag = 0; joy.id = null; joy.start = null;
+    joy.live = false; joy.walking = false; joy.sector = null;
     var z = $('joy');
     if (!z) return;
     z.classList.remove('active');
@@ -685,9 +719,11 @@
     var z = $('joy'), zr = z.getBoundingClientRect();
     try { z.setPointerCapture(e.pointerId); } catch (err) { /* 합성 이벤트 */ }
     // 받침이 영역 밖으로 반쯤 나가지 않게
-    var x = Math.max(JOY_R, Math.min(zr.width - JOY_R, e.clientX - zr.left)), y = Math.max(JOY_R, Math.min(zr.height - JOY_R, e.clientY - zr.top));
-    joy.id = e.pointerId; joy.start = { x: zr.left + x, y: zr.top + y, cx: e.clientX, cy: e.clientY, t: performance.now() }; joy.moved = false;
-    joy.on = true; joy.dx = joy.dy = joy.mag = 0;
+    var x = Math.max(JOY.R, Math.min(zr.width - JOY.R, e.clientX - zr.left)), y = Math.max(JOY.R, Math.min(zr.height - JOY.R, e.clientY - zr.top));
+    // 2026-11-05 사용자 피드백: 민 거리는 손가락이 처음 닿은 자리부터 잰다. 옛 기준(영역 안으로 끌어당긴 받침 가운데)은 영역 가장자리를 누르면 최대 40px쯤 어긋나,
+    //   손가락이 살짝만 떨려도 끝까지 민 것처럼 빠르게 걸었다
+    joy.id = e.pointerId; joy.start = { x: e.clientX, y: e.clientY, t: performance.now() };
+    joy.on = true; joy.dx = joy.dy = joy.mag = 0; joy.live = false; joy.walking = false; joy.sector = null;
     joyPut(x, y); joyKnob(0, 0);
     z.classList.add('active');
   }
@@ -695,16 +731,17 @@
     if (joy.id !== e.pointerId || !joy.on) return;
     e.preventDefault();
     var dx = e.clientX - joy.start.x, dy = e.clientY - joy.start.y, len = Math.sqrt(dx * dx + dy * dy);
-    if (Math.abs(e.clientX - joy.start.cx) + Math.abs(e.clientY - joy.start.cy) > 8) joy.moved = true;
-    var k = len > JOY_R ? JOY_R / len : 1;
+    var k = len > JOY.R ? JOY.R / len : 1;
     joyKnob(dx * k, dy * k);
-    joy.mag = Math.min(1, len / JOY_R);
+    joy.mag = Math.min(1, len / JOY.R);
     joy.dx = len ? dx / len : 0; joy.dy = len ? dy / len : 0;
-    if (joy.mag >= JOY_DEAD) {
-      if (window.PrivacyTalk.isOpen()) { if (busy) return; window.PrivacyTalk.close(); } // 걸으면 대화창은 닫힌다(키보드와 같이)
-      path = null; actOnArrive = false; tapWant = null; held = []; queued = null;
-      stepJoy();
-    }
+    var was = joy.live;
+    joy.live = joy.mag >= (was ? JOY.LEAVE : JOY.ENTER);
+    if (!joy.live) { joy.sector = null; return; } // 놓은 것으로 침(걷던 칸은 마저 걷는다)
+    if (!was) joy.pushAt = performance.now();
+    if (window.PrivacyTalk.isOpen()) { if (busy) return; window.PrivacyTalk.close(); } // 걸으면 대화창은 닫힌다(키보드와 같이)
+    path = null; actOnArrive = false; tapWant = null; held = []; queued = null; // 입력이 섞이지 않게 탭 길·키 예약은 버린다
+    stepJoy();
   }
   function joyUp(e) {
     if (joy.id !== e.pointerId) return;
@@ -1475,7 +1512,8 @@
       pose: function () { return me.pose || null; },
       tint: function () { return mode === 'stage' ? stageTint : walkTint || (trig && trig.tint); },
       drawRect: function () { return { x: me.fx, y: me.fy }; },
-      joy: function () { return { shown: joyShown() && !$('joy').hidden, on: joy.on, mag: joy.mag, dx: joy.dx, dy: joy.dy, rest: joy.rest, fast: !!(me.moving && me.fast) }; },
+      joy: function () { return { shown: joyShown() && !$('joy').hidden, on: joy.on, mag: joy.mag, dx: joy.dx, dy: joy.dy, rest: joy.rest, fast: !!(me.moving && me.fast), slow: !!(me.moving && me.slow), live: joy.live, walking: joy.walking, sector: joy.sector }; },
+      JOY: JOY,
       exitCells: function () { return exitCells().map(function (c) { return { x: c.x, y: c.y, x0: c.x * T - cam.x, y0: c.y * T - cam.y, x1: (c.x + 1) * T - cam.x, y1: (c.y + 1) * T - cam.y }; }); },
       meRect: function () { return { x0: me.fx * T - cam.x, y0: (me.fy + 1 - BODY) * T - cam.y, x1: (me.fx + 1) * T - cam.x, y1: (me.fy + 1) * T - cam.y }; },
       guide: function () { return guideUntil > performance.now(); },
