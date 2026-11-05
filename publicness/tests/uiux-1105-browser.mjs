@@ -7,6 +7,8 @@ const server = await startServer(0), base = `http://127.0.0.1:${server.address()
 const browser = await chromium.launch({ channel: 'msedge', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const SHOT = process.env.SHOT_DIR || 'publicness/tests';
 const ok = name => console.log('  ok', name);
+// 긴 단계를 나눠 돌릴 때: UX_PART=depart,frame1060,frame1280,run,nolink,p5,misc,tab,goal,tablet (없으면 전부)
+const only = process.env.UX_PART, want = k => !only || only.split(',').includes(k);
 const ROUTES = { 1: [[1, ['F', 'C', 'B', 'D']], [2, ['A', 'G']]], 2: [[3, ['E', 'H', 'B', 'A']]], 3: [[4, ['I', 'A']]] };
 async function fresh(viewport, q = 'no3d=1') {
   const page = await browser.newPage({ viewport, reducedMotion: 'reduce' }); page.errors = []; page.on('pageerror', e => page.errors.push(e.message));
@@ -28,7 +30,7 @@ async function toEmergency(page) { for (let i = 0; i < 30 && !(await page.locato
 
 try {
   // ── 1. 노선 없이 출발 ──
-  { const page = await fresh({ width: 1060, height: 977 });
+  if (want('depart')) { const page = await fresh({ width: 1060, height: 977 });
     await play(page, 1).catch(() => {});
     await page.evaluate(() => { const s = PB.App.s; s.draft.routes.forEach(r => { r.nodes = []; r.stops = []; }); s.draft.buses.forEach(b => { b.routeNum = null; }); PB.App.render(); });
     await page.waitForTimeout(200); await page.locator('#btn-depart').click();
@@ -47,6 +49,7 @@ try {
   }
   // ── 지도 틀: 상태를 바꿔도 같은 크기 ──
   for (const vp of [{ width: 1060, height: 977 }, { width: 1280, height: 800 }]) {
+    if (!want('frame' + vp.width)) continue;
     const page = await fresh(vp); await play(page, 1); const sizes = {}; sizes.plan = await stage(page);
     await page.screenshot({ path: `${SHOT}/_shot-uiux-${vp.width}x${vp.height}-p1-plan.png` });
     // P0-1: 정차 = 원 안 색 점, 초록은 병원에 서지 않음
@@ -80,7 +83,7 @@ try {
     assert.deepEqual(page.errors, []); ok(`P1-1 ${vp.width}x${vp.height} 계획·운행·운행 상황·결과 지도·AI·긴급 조정 = ${all[0]}`); await page.close();
   }
   // ── 2. 1단계 운행·결과, 3. 2단계 진입, P1-5, P1-10 ──
-  { const page = await fresh({ width: 1280, height: 800 }); await play(page, 1); await depart(page);
+  if (want('run')) { const page = await fresh({ width: 1280, height: 800 }); await play(page, 1); await depart(page);
     const live = await page.evaluate(() => { const p = document.querySelector('#minimal-profit'); return { title: p.title, running: +p.dataset.running, total: +p.dataset.live }; });
     assert.match(live.title, /운행 종료 때 정산될 항목: 보유비 −40,000원, 공공서비스 수행분 \+0원/); assert.equal(live.running - 40000, live.total, '화면 수지 − 정산 항목 = 정산 수지');
     await page.evaluate(() => document.querySelector('#run-next').click()); await page.waitForFunction(() => PB.UI.runState().hold, null, { timeout: 30000 });
@@ -103,7 +106,7 @@ try {
     ok('P0-1 종합운동장: 빨강 ' + (h.ticks.length ? '점 없음(주황만 정차)' : '빈 원')); assert.deepEqual(page.errors, []); await page.close();
   }
   // ── 노선 없음 말풍선 ──
-  { const page = await fresh({ width: 1280, height: 800 }); await play(page, 1);
+  if (want('nolink')) { const page = await fresh({ width: 1280, height: 800 }); await play(page, 1);
     await page.locator('#btn-depart').click(); await page.locator('#confirm-yes').click(); await page.locator('.bubble[data-kind="noLink"]').first().waitFor({ timeout: 20000 });
     await page.locator('.bubble[data-kind="noLink"]').first().click({ force: true }); const hint = await page.locator('.bubble-hint').first().textContent(); assert.match(hint, /서는 노선이 없어요|만나는 정류장이 없어요/);
     const pure = await page.evaluate(() => PB.Hud.linkHint(PB.Hud.routesNow(), 'F', 'G')); assert.match(pure, /^빨강과 초록이 만나는 정류장이 없어요/, pure);
@@ -111,6 +114,7 @@ try {
   }
   // ── 5. 5단계: 인물 6명, 쉬는 버스 경고, 스크린샷 ──
   for (const vp of [{ width: 1060, height: 977 }, { width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+    if (!want('p5')) continue;
     const page = await fresh(vp); await play(page, 5); await page.waitForTimeout(300);
     const chips = await page.evaluate(() => [...document.querySelectorAll('#people-hud .person-chip')].map(c => { const r = c.getBoundingClientRect(); return { id: c.dataset.resident, in: r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1 }; }));
     assert.equal(chips.length, 6); assert.ok(chips.every(c => c.in), '인물 6명 모두 화면 안: ' + JSON.stringify(chips));
@@ -125,7 +129,7 @@ try {
     assert.deepEqual(page.errors, []); ok(`5 ${vp.width}x${vp.height} 5단계: 인물 6명 화면 안, 쉬는 버스 경고, 얼굴 최대 ${Math.round(Math.max(...faces.map(f => f.d)))}px`); await page.close();
   }
   // ── 결과 작은 지도·엔딩·타이틀 ──
-  { const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' }); await page.goto(base + '?no3d=1'); await page.evaluate(() => localStorage.clear()); await page.reload();
+  if (want('misc')) { const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' }); await page.goto(base + '?no3d=1'); await page.evaluate(() => localStorage.clear()); await page.reload();
     assert.ok(await page.locator('.mode-desc').first().isVisible(), '모드 설명 보임'); assert.match(await page.locator('.setting').innerText(), /2회 연속 0원 미만/); ok('P2 타이틀 모드 설명');
     await play(page, 1); await page.evaluate(() => { const A = PB.App, S = PB.Session, s = A.s; S.startRun(s); S.finishRun(s); A.go('result'); }); await page.waitForTimeout(300);
     await page.evaluate(() => { document.querySelector('.resident-card').open = true; }); await page.waitForTimeout(250);
@@ -136,10 +140,25 @@ try {
     assert.equal(await page.evaluate(() => document.activeElement.id), 'ending-title', '건너뛰면 제목에 포커스'); assert.equal(await page.evaluate(() => Math.round(scrollY + document.querySelector('#panel').scrollTop)), 0); ok('P2 컷 건너뛰기 → 결과 맨 위 제목'); await page.close();
   }
   // 컷신 중 Tab이 뒤쪽 화면으로 가지 않는다
-  { const page = await fresh({ width: 1280, height: 800 }); await play(page, 1);
+  if (want('tab')) { const page = await fresh({ width: 1280, height: 800 }); await play(page, 1);
     await page.evaluate(() => PB.Cutscene.play('sol', () => {})); await page.waitForTimeout(200); const seen = new Set();
     for (let i = 0; i < 8; i++) { await page.keyboard.press('Tab'); seen.add(await page.evaluate(() => { const a = document.activeElement; return a === document.body || a.closest('#goal-intro') ? 'ok' : a.id || a.tagName; })); }
     assert.deepEqual([...seen], ['ok'], 'Tab은 컷신 안에서만'); ok('P2 컷신 뒤쪽 키보드 차단(모달)'); await page.close();
+  }
+  // P1-10: 고른 목표를 다음 단계 결과에서 다시 짚는다(결과 화면 위쪽에 실제로 보이는지)
+  if (want('goal')) for (const [key, re] of [['longest', /^이번 목표: 오래 기다린 사람부터 → 결과: 최장 대기 지난 단계 .+ → 이번 .+$/], ['many', /^이번 목표: 더 많은 사람을 빠르게 → 결과: 도착률 지난 단계 .+ → 이번 .+$/]]) {
+    const page = await fresh({ width: 1280, height: 800 }); await play(page, 1);
+    await page.evaluate(k => { const A = PB.App, S = PB.Session, s = A.s; S.startRun(s); S.finishRun(s); s.choices = { 1: k }; S.nextPhase(s); S.beginPlan(s); A.enterPlan(); }, key); await page.waitForTimeout(400);
+    assert.match(await page.locator('#hud-goal').innerText(), /^이번 목표: /);
+    await page.evaluate(() => { const A = PB.App, S = PB.Session, s = A.s; S.startRun(s); S.finishRun(s); A.go('result'); }); await page.waitForTimeout(400);
+    const g = page.locator('#result-goal'); assert.ok(await g.isVisible(), '결과 맨 위 요약에 보임'); const box = await rect(page, '#result-goal'), text = await g.innerText(); assert.match(text, re); assert.ok(box.b <= 800, '스크롤 없이 첫 화면');
+    assert.equal(await page.locator('#result-headline #result-goal').count(), 1); await page.screenshot({ path: SHOT + '/_shot-uiux-goal-' + key + '.png' }); ok('P1-10 ' + text); assert.deepEqual(page.errors, []); await page.close();
+  }
+  // 태블릿 세로: 지도 크기 고정 + 계획 화면이 세로로 넘치지 않음
+  if (want('tablet')) { const page = await fresh({ width: 820, height: 1180 }); await play(page, 3); const a = await stage(page);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1), '계획 화면 스크롤 없음: ' + await page.evaluate(() => document.documentElement.scrollHeight));
+    await page.locator('#plan-ai-toggle').click(); await page.waitForTimeout(150); assert.deepEqual(await stage(page), a); await page.locator('#plan-ai-close').click(); await depart(page); assert.deepEqual(await stage(page), a); await toEmergency(page); await page.waitForTimeout(300); assert.deepEqual(await stage(page), a);
+    ok('태블릿 820x1180 지도 ' + a.w + 'x' + a.h + ' 고정·계획 스크롤 없음'); assert.deepEqual(page.errors, []); await page.close();
   }
   console.log('PASS uiux-1105');
 } finally { await browser.close(); server.close(); }

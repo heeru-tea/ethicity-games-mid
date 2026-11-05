@@ -175,7 +175,7 @@
   function fixedFrame(k) {
     var w = root.innerWidth, h = App.viewH(), W, H;
     if (k === 'rail') { W = w - Math.round(Math.max(300, Math.min(360, w * 0.24))) - RAIL_PAD * 3 - 16; H = Math.max(300, Math.min(Math.round(W * 1.15), h - RAIL_TOP - RAIL_PAD * 2 - RAIL_BAND - RAIL_GAP)); return { w: W, h: H }; }
-    if (k === 'sheet') { W = w - 32; H = Math.max(280, Math.min(Math.round(W / 1.1), h - 56 - 52 - 100 - 196 - 40)); return { w: W, h: H }; }
+    if (k === 'sheet') { W = w - 32; H = Math.max(280, Math.min(Math.round(W / 1.1), h - 56 - 72 - 100 - 188 - 80 - 36)); return { w: W, h: H }; }
     return null;
   }
   function applyPhone() {
