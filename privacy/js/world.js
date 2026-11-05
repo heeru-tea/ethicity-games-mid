@@ -4,9 +4,11 @@
  * 2026-10-31 맵 개편(docs/specs/2026-10-31-scene-map-design.md): 타일맵 → **장면 그림 5장**.
  *   장면 = 그림 1장(논리 1280×720)을 40px 칸 32×18로 나눈 방. 장면 5개를 가로로 이어 붙인 한 격자(160×18)에서 걷고,
  *   장면 사이는 출입구 칸(DOORS)을 밟으면 건너편 장면의 도착 칸으로 옮겨진다(길찾기도 이 문을 따라 장면을 넘는다).
- *   교실(0~31) · 도서관(32~63) · 학교 마당(64~95) · 마을 길(96~127) · 내 방(128~159)
+ *   교실(0~31) · 도서관(32~63) · 학교 마당(64~95) · 마을 길(96~127) · 우리 집(내 방 + 거실·현관, 128~159)
  *   그림의 가구·문은 그림 그대로 — 여기선 막힌 칸(BLOCK 사각형)과 조사 지점(OBJECTS)만 정한다.
  * 좌표는 칸 단위(x: 왼→오, y: 위→아래, 장면 안 좌표 + 장면 시작 x). 그림은 map.js가 그린다.
+ * 2026-11-03 플레이테스트: SCENES[].bg = { x, y, w, h }(칸)가 있으면 그림을 그 사각형에만 줄여 그린다(없으면 지금처럼 장면 전체).
+ *   바깥은 bgOuter 그림, 없으면 map.js가 단색 바닥 + 칸 윤곽으로 채운다. 교실(classroom.png)도 책상 높이가 캐릭터 키만 해서 같은 방식 적용 가능(이번엔 안 함).
  *
  * ▸ 사건 트리거(triggers): 사건의 첫 장면 id → 맵에서 그 장면을 여는 조건
  *   { time, mission, target:{ npc:'saebom' } 또는 { obj:'bed' }, spawn?, tint?, cast:[{who,x,y,dir,pose?}] }
@@ -18,9 +20,20 @@
 (function (root) {
   'use strict';
 
-  var VERSION = 3; // 지도 좌표 판(저장된 맵 위치가 이 판과 다르면 버리고 장면 시작점에서 다시)
+  var VERSION = 4; // 지도 좌표 판(저장된 맵 위치가 이 판과 다르면 버리고 장면 시작점에서 다시). 2026-11-03 플레이테스트: 내 방을 줄이고 현관을 옮겨 4로
   var SW = 32, SH = 18, CELL = 40; // 장면 하나 = 32×18칸, 칸 = 논리 40px(1280×720)
   var BG = '../shared/ethicity-elementary-common-v1/backgrounds/';
+  // 2026-11-03 플레이테스트: 내 방 그림은 캐릭터(키 2.24칸)보다 가구가 2.5~3배 커서 0.55배로 줄여 장면 왼쪽 위에만 그린다(나머지는 거실·현관).
+  //   그림 좌표(32×18칸 기준)를 장면 칸으로 옮기는 일은 손으로 하지 않고 아래 두 함수로만 한다 — 그림 배율을 바꾸면 ROOM_BG만 고치면 된다.
+  var ROOM_BG = { x: 1, y: 2, w: 17.6, h: 9.9 };
+  function scaleRect(r, bg) {
+    var kx = bg.w / SW, ky = bg.h / SH;
+    var x0 = Math.round(bg.x + r[0] * kx), y0 = Math.round(bg.y + r[1] * ky);
+    var x1 = Math.round(bg.x + (r[0] + r[2]) * kx), y1 = Math.round(bg.y + (r[1] + r[3]) * ky);
+    return [x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)];
+  }
+  function scalePoint(x, y, bg) { return [Math.round(bg.x + x * bg.w / SW), Math.round(bg.y + y * bg.h / SH)]; }
+  function rr(r) { return scaleRect(r, ROOM_BG); }
   // rects: 막힌 칸 [x, y, w, h](장면 안 좌표). 나머지는 걸을 수 있다. open: 막힌 사각형 안에서 다시 여는 칸
   var SCENES = [
     { id: 'classroom', name: '2학년 3반 교실', img: BG + 'classroom.png', rects: [
@@ -50,14 +63,24 @@
       [0, 15, 14, 3], [18, 15, 14, 3]                                             // 아래 덤불·교문 기둥(가운데 길만 열림)
     ], open: [[6, 4], [7, 4], [8, 4], [25, 4], [26, 4], [27, 4], [15, 1], [16, 1], [17, 1], [15, 2], [16, 2], [17, 2], [15, 3], [16, 3], [17, 3], [15, 4], [16, 4], [17, 4]] },
     { id: 'village', name: '마을 길', img: 'assets/scenes/village.png', road: true },
-    { id: 'room', name: '내 방', img: 'assets/scenes/room.png', lamp: { x: 25.5, y: 5.8, r: 9 }, // lamp: 밤에 켜 둔 책상 불빛(map.js sceneLight, 장면 안 칸 좌표)
+    // 우리 집(2026-11-03 플레이테스트): 그림(내 방)은 bg 사각형 안에만. 방문 = 그림 아래 매트 밑 (10,12) 한 칸, 그 아래·오른쪽이 거실, 현관 = 오른쪽 아래 (24~27,17)
+    //   tools/room-compose.mjs: room-base.png + 판다 축소 + 공통 팩 코르크보드. 바깥 바닥·벽·식탁·소파는 그림이 없어 map.js drawOuter가 단색으로 그린다
+    { id: 'room', name: '내 방', img: 'assets/scenes/room.png', bg: ROOM_BG,
+      lamp: { x: ROOM_BG.x + 25.5 * 0.55, y: ROOM_BG.y + 5.8 * 0.55, r: 9 * 0.55 }, // lamp: 밤에 켜 둔 책상 불빛(map.js sceneLight, 장면 안 칸 좌표)
       rects: [
-      [0, 0, 32, 7], [0, 7, 3, 5], [0, 12, 2, 3], [0, 15, 1, 3], [30, 7, 2, 6], [31, 13, 1, 5], // 벽
-      [2, 4, 7, 8],                          // 침대
-      [22, 5, 7, 5],                         // 컴퓨터 책상·의자
-      [28, 6, 3, 6],                         // 책꽂이
-      [28, 13, 4, 5],                        // 팬더 인형
-      [0, 17, 14, 1], [18, 17, 14, 1]        // 아래(문 매트만 열림)
+      rr([0, 0, 32, 7]), rr([0, 7, 3, 5]), rr([0, 12, 2, 3]), rr([0, 15, 1, 3]), // 그림 속 벽(왼쪽은 원근으로 기울어 칸마다 다름)
+      rr([2, 4, 7, 8]),                      // 침대
+      rr([22, 5, 7, 5]),                     // 컴퓨터 책상·의자
+      rr([28, 6, 3, 6]),                     // 책꽂이
+      rr([27.5, 14.2, 3.5, 3.6]),            // 판다 인형(tools/room-compose.mjs가 줄인 자리)
+      [7, 6, 2, 1],                          // 코르크보드 받침
+      [0, 0, 32, 2], [0, 0, 1, 18], [31, 0, 1, 18], // 집 바깥 벽
+      [18, 2, 2, 11],                        // 내 방 ↔ 거실 벽
+      [20, 2, 11, 3],                        // 거실 위쪽 벽
+      [0, 12, 10, 1], [11, 12, 9, 1],        // 내 방 아래 벽(방문 (10,12)만 열림)
+      [20, 8, 2, 4],                         // 소파
+      [24, 7, 5, 3],                         // 식탁
+      [0, 17, 24, 1], [28, 17, 4, 1]         // 아래 벽(현관만 열림)
     ] }
   ];
   var W = SW * SCENES.length, H = SH;
@@ -114,8 +137,8 @@
   door([['yard', 25, 4], ['yard', 26, 4], ['yard', 27, 4]], 'library', [15, 16], 'up', '도서관으로', '도서관에 들어왔다.');
   door([['yard', 14, 17], ['yard', 15, 17], ['yard', 16, 17], ['yard', 17, 17]], 'village', [1, 6], 'right', '교문 밖으로', '교문 밖으로 나왔다.');
   door([['village', 0, 5], ['village', 0, 6]], 'yard', [15, 16], 'up', '학교로', '학교에 도착했다.'); // 그림의 길이 왼쪽 끝에서 들어오는 자리(그 아래는 나무)
-  door([['village', 24, 11], ['village', 25, 11]], 'room', [15, 16], 'up', '집 안으로', '우리 집에 들어왔다.');
-  door([['room', 14, 17], ['room', 15, 17], ['room', 16, 17], ['room', 17, 17]], 'village', [24, 12], 'down', '밖으로', '밖으로 나왔다.');
+  door([['village', 24, 11], ['village', 25, 11]], 'room', [25, 16], 'up', '집 안으로', '우리 집에 들어왔다.'); // 2026-11-03 플레이테스트: 도착 칸 = 현관 안쪽(거실 쪽)
+  door([['room', 24, 17], ['room', 25, 17], ['room', 26, 17], ['room', 27, 17]], 'village', [24, 12], 'down', '밖으로', '밖으로 나왔다.'); // 2026-11-03 플레이테스트: 현관을 거실 쪽으로(옛 자리 14~17,17은 내 방 아래)
 
   /* 구역 이름(화면 위 표시용): 장면 이름, 마당만 조금 나눔 */
   function areaName(xx, yy) {
@@ -128,6 +151,11 @@
       if (lx >= 18 && yy >= 11) return '매점 앞';
       if (lx <= 14 && yy >= 9) return '축제 부스';
     }
+    if (s.id === 'room') { // 2026-11-03 플레이테스트: 방문 밖은 거실·현관
+      var rx = xx - s.ox;
+      if (yy >= 15 && rx >= 22) return '현관';
+      if (rx >= 19 || yy >= 13) return '거실';
+    }
     return s.name;
   }
   function sceneAt(xx) { return SCENES[Math.floor(xx / SW)] || null; }
@@ -138,6 +166,9 @@
     if (extra) for (var k in extra) o[k] = extra[k];
     return o;
   }
+  function pt(x, y) { return { x: S.room.ox + ROOM_BG.x + x * ROOM_BG.w / SW, y: ROOM_BG.y + y * ROOM_BG.h / SH }; } // 내 방 그림 칸 → 전체 칸(반올림 없음)
+  function rob(id, name, r, look, extra) { var q = rr(r); return ob(id, name, 'room', q[0], q[1], q[2], q[3], look, extra); } // 내 방 그림 칸 기준 조사 지점
+  function rp(x, y, dir) { var q = scalePoint(x, y, ROOM_BG); return P('room', q[0], q[1], dir); } // 내 방 그림 칸 기준 서는 자리
   var OBJECTS = [
     ob('board', '칠판', 'classroom', 10, 4, 12, 1, '칠판: “축제 D-day · 2학년 3반 레트로 사진관 📸”', { wall: true }),
     ob('tdesk', '교탁', 'classroom', 14, 4, 4, 3, '교탁 위에 출석부와 분필이 놓여 있다.'),
@@ -163,10 +194,22 @@
       } }),
     ob('lamp', '가로등', 'village', 18, 13, 1, 1, '가로등이 막 켜졌다.'),
     ob('mailbox', '노란 우편함', 'village', 26, 12, 1, 2, '노란 우편함. 여기가 우리 집이다.'),
-    ob('bed', '침대', 'room', 2, 4, 7, 8, '내 침대. 아직 잘 시간은 아니다.'),
-    ob('mypc', '내 책상 컴퓨터', 'room', 22, 5, 7, 5, '내 책상과 컴퓨터.'),
-    ob('mybook', '책꽂이', 'room', 28, 6, 3, 6, '교과서와 만화책이 섞여 꽂혀 있다.'),
-    ob('plush', '큰 팬더 인형', 'room', 28, 13, 4, 5, '구석에 앉은 커다란 팬더 인형. 푹신한 배에 기대면 잠이 올 것 같다.')
+    // 내 방(2026-11-03 플레이테스트): 좌표는 그림 칸 → rob()가 장면 칸으로. pin = 목적지 핀 기준점(칸, 없으면 윗변 위) — 침대 핀이 머리판 위 벽에 떠 있어 매트리스 가운데로
+    rob('bed', '침대', [2, 4, 7, 8], '내 침대. 아직 잘 시간은 아니다.', { pin: pt(5.55, 9) }),
+    rob('mypc', '내 책상 컴퓨터', [22, 5, 7, 5], '내 책상과 컴퓨터.'),
+    rob('mybook', '책꽂이', [28, 6, 3, 6], '교과서와 만화책이 섞여 꽂혀 있다.'),
+    rob('plush', '큰 팬더 인형', [27.5, 14.2, 3.5, 3.6], '구석에 앉은 커다란 팬더 인형. 푹신한 배에 기대면 잠이 올 것 같다.'),
+    ob('corkboard', '코르크보드', 'room', 7, 5, 2, 2, '코르크보드. 축제 일정 메모 옆에 반 친구들과 찍은 사진이 꽂혀 있다. 그땐 누가 어떻게 나왔는지 아무도 신경 쓰지 않았다.'),
+    // 그림이 아직 없는 장식(2026-11-03 플레이테스트): 공통 팩에 없어 조사 문구만 넣고 그림 자리는 비워 둠 — wall:true라 막지 않는다(보이지 않는 벽이 되지 않게)
+    ob('phone', '협탁 위 휴대폰', 'room', 6, 6, 1, 1, '충전 중인 휴대폰. 단톡방 알림이 99+다.', { wall: true }),
+    ob('propbox', '축제 소품 상자', 'room', 11, 6, 2, 1, '축제 소품 상자. 사진관에 쓸 액자와 필름카메라 모형이 들어 있다.', { wall: true }),
+    ob('schoolbag', '의자에 걸린 책가방', 'room', 14, 8, 1, 1, '의자에 걸어 둔 책가방. 축제 준비물 쪽지가 삐져나와 있다.', { wall: true }),
+    ob('closet', '옷장과 전신거울', 'room', 2, 9, 1, 2, '옷장과 전신거울. 거울 속의 나는 오늘도 교복 차림이다.', { wall: true }),
+    ob('cushion', '바닥 쿠션', 'room', 11, 9, 1, 1, '러그 위 바닥 쿠션. 여기 앉아 휴대폰을 보다 보면 시간이 금방 간다.', { wall: true }),
+    ob('moodlamp', '무드등', 'room', 16, 9, 1, 1, '작은 무드등. 밤에는 이 불빛만 켜 둘 때가 많다.', { wall: true }),
+    // 거실: 그림이 없어 map.js가 box 색으로 칸을 채워 그린다
+    ob('dtable', '식탁', 'room', 24, 7, 5, 3, '식탁. 엄마가 남겨 둔 반찬에 랩이 씌워져 있다.', { box: 'table' }),
+    ob('sofa', '소파', 'room', 20, 8, 2, 4, '소파. 리모컨이 쿠션 사이에 끼어 있다.', { box: 'sofa' })
   ];
 
   /* 이웃집: 조사만(들어갈 수 없음). approach = 현관 앞 계단 칸 */
@@ -181,7 +224,7 @@
   var SPAWNS = {
     classroom: P('classroom', 15, 15, 'down'), // 하교: 교실 뒷문 쪽
     gate: P('yard', 15, 15, 'up'),             // 등교: 교문 안쪽
-    home: P('room', 10, 12, 'down'),           // 내 방 침대 옆(아침에 일어난 자리)
+    home: rp(10, 12, 'down'),                  // 내 방 침대 옆(아침에 일어난 자리)
     road: P('village', 12, 10, 'right'),       // 마을 길 가운데
     hall: P('yard', 7, 6, 'down'),             // 현관 앞
     yard: P('yard', 14, 13, 'right')           // 마당 축제 부스 옆
@@ -214,8 +257,9 @@
     c1_e1_a: { time: 'D-4 · 하교', mission: '집에 가기 — 마을 길 끝 우리 집, 내 방 침대', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
       cast: [who('saebom', 'classroom', 12, 8, 'down'), who('haneul', 'classroom', 19, 9, 'left')],
       greet: '저녁을 먹고 침대에 눕자 휴대폰이 울렸다.' },
+    // 2026-11-03 플레이테스트: 민준 = 자기 책상(desk7) 의자 칸, 하늘은 책상 건너편 왼쪽으로(? 표시·이름표가 서로 겹치지 않게, 무대 c1_e2_a와 같은 자리)
     c1_e2_a: { time: 'D-3 · 방과 후', mission: '교실에서 엎드려 자는 민준이 살펴보기', target: { npc: 'minjun' }, spawn: 'gate', tint: 'day',
-      cast: [who('minjun', 'classroom', 29, 11, 'up', { pose: 'sleep' }), who('haneul', 'classroom', 28, 8, 'down'),
+      cast: [who('minjun', 'classroom', 29, 11, 'up', { pose: 'sleep' }), who('haneul', 'classroom', 26, 8, 'right'),
         who('saebom', 'classroom', 12, 8, 'down'), who('jiho', 'classroom', 10, 9, 'down')] },
     c1_e3_a: { time: 'D-2 · 하교 시간', mission: '집에 가서 쉬기 — 교문을 지나 마을 길 끝 우리 집으로', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
       cast: [who('saebom', 'classroom', 20, 8, 'down'), who('haneul', 'yard', 19, 8, 'down'), who('minjun', 'yard', 7, 14, 'up')],
@@ -251,7 +295,7 @@
    */
   var PLACES = {
     classroom: { name: '2학년 3반 교실', me: P('classroom', 15, 12, 'up') },
-    room: { name: '내 방', me: P('room', 12, 12, 'down') },
+    room: { name: '내 방', me: rp(12, 12, 'down') },
     road: { name: '마을 길', me: P('village', 12, 10, 'right') },
     gate: { name: '교문', me: P('yard', 15, 15, 'up') },
     store: { name: '매점 앞', me: P('yard', 21, 14, 'right') }, // 매점 창구 바로 앞
@@ -260,7 +304,9 @@
     booth: { name: '마당 축제 부스', me: P('yard', 14, 13, 'right') }
   };
   function only(list, whos) { return list.filter(function (c) { return whos.indexOf(c.who) >= 0; }); }
-  var ATDESK = P('room', 25, 10, 'up'); // 내 방 책상 컴퓨터 앞
+  var ATDESK = rp(25, 10, 'up'); // 내 방 책상 컴퓨터 앞
+  // 침대에 누운 자리(2026-11-03 플레이테스트): 머리가 베개에 오도록 발 기준 칸 좌표(소수) + pose 'lie'(map.js: 윗몸만 그리고 아래는 이불 속)
+  var BED_ME = P('room', 3.7, 5.84, 'down', { pose: 'lie' });
   var BOOTH = [who('haneul', 'yard', 16, 13, 'left'), who('friend', 'yard', 17, 12, 'left'),
     who('saebom', 'yard', 7, 14, 'up'), who('jiho', 'yard', 4, 11, 'right')];
 
@@ -269,14 +315,16 @@
     pro_1: { place: 'classroom', tint: 'day', card: '방과 후 · 오후 5:30 — 축제 준비 중', me: P('classroom', 15, 10, 'up'),
       cast: [who('saebom', 'classroom', 12, 8, 'down'), who('haneul', 'classroom', 18, 9, 'left'), who('jiho', 'classroom', 11, 11, 'right'), who('minjun', 'classroom', 19, 11, 'left')],
       bubbles: [{ on: '다 올린다', who: 'jiho', text: '…' }, { on: '넌 뭐 할래', who: 'saebom', text: '👀' }] },
-    c1_e1_a: { place: 'room', tint: 'night', cast: [] }, // 'D-4 · 저녁 8:12' — 8시 이후는 밤(timeTint와 같은 기준, 2026-11-02)
-    c1_e1_b: { place: 'room', tint: 'night', cast: [] },
-    c1_e2_a: { place: 'classroom', tint: 'day', me: P('classroom', 28, 11, 'right'),
-      cast: [who('minjun', 'classroom', 29, 11, 'up', { pose: 'sleep' }), who('haneul', 'classroom', 28, 8, 'down'),
+    // 2026-11-03 플레이테스트: greet '침대에 눕자 휴대폰이 울렸다' — 침대 위에 누운 채 밤 무대로(옛 자리는 러그 한가운데)
+    c1_e1_a: { place: 'room', tint: 'night', me: BED_ME, cast: [] }, // 'D-4 · 저녁 8:12' — 8시 이후는 밤(timeTint와 같은 기준, 2026-11-02)
+    c1_e1_b: { place: 'room', tint: 'night', me: BED_ME, cast: [] },
+    // 2026-11-03 플레이테스트: 주인공이 하늘 바로 아래에 서서 하늘 이름표가 얼굴을 덮고 있었다 → 셋을 서로 2칸 이상 떨어뜨림(둘 다 민준이 책상 건너편, 2026-11-02 '민준이 앞에' 유지)
+    c1_e2_a: { place: 'classroom', tint: 'day', me: P('classroom', 29, 8, 'down'),
+      cast: [who('minjun', 'classroom', 29, 11, 'up', { pose: 'sleep' }), who('haneul', 'classroom', 26, 8, 'right'),
         who('saebom', 'classroom', 12, 8, 'down'), who('jiho', 'classroom', 10, 9, 'down')] },
     c1_e2_b: { place: 'room', tint: 'night', card: '그날 밤 · 내 방', cast: [] },
     c1_e2_d: { place: 'road', tint: 'day', card: 'D-2 아침 · 등굣길', cast: [] },
-    c1_e3_a: { place: 'room', tint: 'night', cast: [] },
+    c1_e3_a: { place: 'room', tint: 'night', me: BED_ME, cast: [] }, // 2026-11-03 플레이테스트: 이 걷기도 침대 조사로 열린다
     c1_e3_b: { place: 'gate', tint: 'day', card: 'D-1 아침 · 교문 앞', cast: [who('saebom', 'yard', 16, 14, 'left')] },
     c1_e3_ask: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'jiho']),
       bubbles: [{ on: '고마워. 내가 정한 만큼만', who: 'jiho', text: '🙂' }] },
@@ -429,7 +477,7 @@
 
   var WORLD = {
     W: W, H: H, VERSION: VERSION, lookFor: lookFor, timeTint: timeTint, SW: SW, SH: SH, CELL: CELL, SCENES: SCENES, sceneAt: sceneAt, grid: grid,
-    TILES: TILES, DOORS: DOORS, OBJECTS: OBJECTS, SPAWNS: SPAWNS,
+    TILES: TILES, DOORS: DOORS, OBJECTS: OBJECTS, SPAWNS: SPAWNS, BED_ME: BED_ME, scaleRect: scaleRect,
     triggers: TRIGGERS, idle: IDLE, DIRS: DIRS, PLACES: PLACES, STAGES: STAGES,
     tile: tile, objectAt: objectAt, walkable: walkable, stepFrom: stepFrom,
     findPath: findPath, adjacentTo: adjacentTo, areaName: areaName, nearestWalkable: nearestWalkable, NEIGHBORS: NEIGHBORS,
