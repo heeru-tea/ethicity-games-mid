@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>버섯도감 AI의 네 사람 · 윤리시티 책임성</title>
+<meta name="description" content="윤리시티 · AI 윤리 탐험대 책임성 편. 버섯 판별 앱을 둘러싼 네 역할을 플레이하며 AI 책임을 함께 생각하는 중·고등 수업용 게임">
+<link rel="stylesheet" href="game.css" id="ga-css">
+</head>
+<body>
+<div class="ee-theme game-accountability" id="ga-root">
+  <header class="ga-hud">
+    <div class="ga-brand"><span class="ga-series">윤리시티 · AI 윤리 탐험대</span><b>책임성 · 버섯도감 AI의 네 사람</b></div>
+    <div class="ga-hud-right">
+      <span class="ee-badge ga-player" id="ga-player" hidden></span>
+      <div class="ga-pips" id="ga-pips" aria-label="진행 단계"></div>
+      <button class="ga-tool" id="ga-music" type="button" aria-pressed="false" aria-label="배경음악 켜기"></button>
+      <button class="ga-tool" id="ga-sound" type="button" aria-pressed="false" aria-label="효과음 켜기"></button>
+      <button class="ga-tool" id="ga-motion" type="button" aria-pressed="false" aria-label="움직임 줄이기"></button>
+    </div>
+  </header>
+  <main id="ga-stage" aria-live="polite">
+    <div class="ee-panel ga-loading">공통 자산을 불러오는 중입니다…</div>
+  </main>
+</div>
+<script>
+/* 공통 팩 찾기: 표준 위치(../shared, accountability와 형제 폴더)를 먼저 보고,
+   없으면 저장소를 다르게 올린 경우의 위치를 차례로 확인합니다. 공통 팩 파일은 수정하지 않습니다. */
+(function () {
+  var PACK = 'ethicity-elementary-common-v1';
+  var BASES = ['../shared/' + PACK, './shared/' + PACK, '../../shared/' + PACK, './' + PACK, '../' + PACK];
+  var loadScript = function (src) {
+    return new Promise(function (ok, fail) {
+      var s = document.createElement('script'); s.src = src;
+      s.onload = ok; s.onerror = function () { s.remove(); fail(new Error(src)); };
+      document.body.appendChild(s);
+    });
+  };
+  var tried = [];
+  var tryBase = function (i) {
+    if (i >= BASES.length) {
+      document.getElementById('ga-stage').innerHTML = '<div class="ee-panel" style="margin:24px;padding:16px;border:3px solid #294b40;background:#fffaf0">' +
+        '<b>공통 팩(' + PACK + ')을 찾지 못했어요.</b><br>저장소에 <code>shared/' + PACK + '/</code> 폴더를 <code>accountability/</code> 폴더와 나란히 올려 주세요.' +
+        '<br><small>확인한 위치: ' + tried.join(', ') + '</small></div>';
+      return;
+    }
+    var base = BASES[i]; tried.push(base);
+    loadScript(base + '/runtime/manifest.js')
+      .then(function () { return loadScript(base + '/runtime/common.js'); })
+      .then(function () {
+        if (!window.EthicityAssets) throw new Error('no runtime');
+        var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = base + '/runtime/common.css';
+        document.head.insertBefore(css, document.getElementById('ga-css'));
+        window.ACCOUNTABILITY_COMMON_BASE = base;
+        return loadScript('game.js');
+      })
+      .catch(function () { tryBase(i + 1); });
+  };
+  tryBase(0);
+})();
+</script>
+</body>
+</html>
