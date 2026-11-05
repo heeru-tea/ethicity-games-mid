@@ -452,7 +452,7 @@ for (const id of sceneIds) {
   const pl = PLACES[st.place];
   if (!pl) { err('무대 장소 잘못됨: ' + id + ' ' + st.place); continue; }
   const me = st.me || pl.me;
-  if (!WORLD.walkable(me.x, me.y)) err('무대에서 내가 막힌 칸: ' + id);
+  if (!me.pose && !WORLD.walkable(me.x, me.y)) err('무대에서 내가 막힌 칸: ' + id); // pose(침대에 누움 등)는 가구 위 소수 좌표(2026-11-03)
   if (['day', 'evening', 'night'].indexOf(st.tint) < 0) err('무대 시간대 잘못됨: ' + id);
   if (st.device && ['phone', 'monitor', 'none'].indexOf(st.device) < 0) err('무대 기기 잘못됨: ' + id);
   const dev = st.device || { group: 'phone', dm: 'phone', sns: 'phone', ai: 'monitor', pc: 'monitor', place: 'none' }[(story.scenes[id].view || {}).type];

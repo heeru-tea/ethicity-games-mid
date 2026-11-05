@@ -173,15 +173,15 @@ try {
       ok(fast === true && slow === false, `${name} 끝까지 밀면 빠르게(${fast}) · 살짝 밀면 걷기(${slow})`);
     }
     // 조이스틱을 누른 채로 출구 매트까지 → 장면이 마을 길로
-    const turns = await joyHoldTo(page, () => { const m = PrivacyMap.debug.me(); const tp = PrivacyMap.debug.tapPath(128 + 15, 17); return m.area === '내 방' ? tp && tp.dirs : []; },
-      () => PrivacyMap.debug.me().area !== '내 방');
+    const turns = await joyHoldTo(page, () => { const m = PrivacyMap.debug.me(); const tp = PrivacyMap.debug.tapPath(128 + 25, 17); return m.area !== '마을 길' ? tp && tp.dirs : []; }, // 2026-11-03: 출구는 거실 쪽 현관
+      () => PrivacyMap.debug.me().area === '마을 길');
     const s2 = await me(page);
     ok(s2.area === '마을 길', `${name} 조이스틱만으로 내 방 출구 → 마을 길 (방향 바꾼 횟수 ${turns}) ${JSON.stringify(s2)}`);
     // 다시 들어와 매트 바로 앞에서 (c)(d) 확인 + 스크린샷
-    await page.evaluate(() => PrivacyMap.debug.place(128 + 15, 15, 'down')); // 검사용 자리(방 안 매트 두 칸 위) — 조이스틱 이동 검사는 위에서 끝남
+    await page.evaluate(() => PrivacyMap.debug.place(128 + 25, 15, 'down')); // 검사용 자리(현관 매트 두 칸 위) — 조이스틱 이동 검사는 위에서 끝남
     await page.waitForTimeout(150);
     // 한 칸 아래(매트 바로 위)로: 탭 한 번(조이스틱 한 칸은 느린 PC에서 손 떼기 전에 두 칸 — 매트까지 — 가 버릴 수 있어서)
-    { const p1 = await page.evaluate(() => PrivacyMap.debug.tileToClient(128 + 15, 16)); await page.touchscreen.tap(p1.x, p1.y); }
+    { const p1 = await page.evaluate(() => PrivacyMap.debug.tileToClient(128 + 25, 16)); await page.touchscreen.tap(p1.x, p1.y); }
     await waitFor(page, () => { const m = PrivacyMap.debug.me(); return !m.moving && m.y === 16; }, null, 3000);
     await page.waitForTimeout(200);
     cv = await joyCover(page);
@@ -201,9 +201,9 @@ try {
     await waitFor(page, () => PrivacyMap.debug.me().area === '마을 길');
     ok((await me(page)).area === '마을 길', `${name} 매트 앞에서 버튼으로 나가기`);
     // 매트 그림(문 칸 옆, 그림의 매트가 문 칸보다 넓음)을 탭해도 나간다
-    await page.evaluate(() => PrivacyMap.debug.place(128 + 12, 15, 'down'));
+    await page.evaluate(() => PrivacyMap.debug.place(128 + 22, 15, 'down'));
     await page.waitForTimeout(150);
-    const pt = await page.evaluate(() => PrivacyMap.debug.tileToClient(128 + 18, 17)); // (18,17)은 막힌 칸(매트 오른쪽 끝)
+    const pt = await page.evaluate(() => PrivacyMap.debug.tileToClient(128 + 28, 17)); // (28,17)은 막힌 칸(매트 오른쪽 끝)
     await page.touchscreen.tap(pt.x, pt.y);
     await waitFor(page, () => PrivacyMap.debug.me().area === '마을 길', null, 4000);
     ok((await me(page)).area === '마을 길', `${name} 매트 끝(막힌 칸) 탭 → 출구로 걸어가 나감`);
@@ -272,7 +272,7 @@ try {
     ok(s1.x - s0.x >= 3 && s1.y === s0.y && !(await page.evaluate(() => PrivacyMap.debug.joy().fast)), `PC: → 길게 누름 ${s0.x}→${s1.x}`);
     // 키보드로 한 칸씩 출구까지 → 마을 길
     for (let g = 0; g < 60; g++) {
-      const d = await page.evaluate(() => { const tp = PrivacyMap.debug.tapPath(128 + 15, 17); return PrivacyMap.debug.me().area === '내 방' && tp && tp.dirs[0]; });
+      const d = await page.evaluate(() => { const tp = PrivacyMap.debug.tapPath(128 + 25, 17); return PrivacyMap.debug.me().area !== '마을 길' && tp && tp.dirs[0]; });
       if (!d) break;
       await page.keyboard.press('Arrow' + d[0].toUpperCase() + d.slice(1));
       await waitFor(page, () => !PrivacyMap.debug.me().moving);
@@ -281,7 +281,7 @@ try {
     await page.screenshot({ path: shot('pc-village') });
     // 마우스로 문 매트 칸 클릭 → 출구로(옛 버그: 반응 없음)
     const page2 = await open(firstMap(), DESKTOP);
-    const pt = await page2.evaluate(() => PrivacyMap.debug.tileToClient(128 + 16, 17));
+    const pt = await page2.evaluate(() => PrivacyMap.debug.tileToClient(128 + 26, 17));
     await page2.mouse.click(pt.x, pt.y);
     await waitFor(page2, () => PrivacyMap.debug.me().area === '마을 길', null, 5000);
     ok((await me(page2)).area === '마을 길', 'PC: 문 매트 칸 클릭 → 걸어가 나감');
@@ -363,7 +363,7 @@ try {
       if (near && !(await onCanvas(page, x, y))) { await page.evaluate(([x, y]) => PrivacyMap.debug.place(x, y - 1, 'down'), [x, y]); await page.waitForTimeout(500); }
       const p = await page.evaluate(([x, y]) => PrivacyMap.debug.tileToClient(x, y), [x, y]); await page.touchscreen.tap(p.x, p.y);
     };
-    const NEAR_MAT = [128 + 15, 13, 'down'];
+    const NEAR_MAT = [128 + 25, 13, 'down'];
     const tapPin = async (page) => { const m = await page.evaluate(() => { const k = PrivacyMap.debug.marker(), r = document.getElementById('m-canvas').getBoundingClientRect(); return k && k.x != null ? { x: r.left + k.x, y: r.top + k.y, who: k.who } : null; }); if (!m) return false; await page.touchscreen.tap(m.x, m.y); return m; };
     const area = async (page) => (await me(page)).area;
     // 화면 검사: 스크롤 없음, 말 걸기 버튼·HUD 버튼이 화면 안, 내 칸과 상하좌우가 캔버스
@@ -384,14 +384,14 @@ try {
         const c0 = await screenCheck(page);
         rec(sc, '화면 검사(스크롤·버튼·캔버스)', allOk(c0));
         if (way === ways[0]) ok(allOk(c0), `${sc} 시작 화면 검사 ${JSON.stringify(c0)}`);
-        if (way === '매트 가운데 탭') await tapTile(page, ROOM + 15, 17, NEAR_MAT);
-        else if (way === '매트 가장자리 탭') await tapTile(page, ROOM + 17, 17, NEAR_MAT);
-        else if (way === '매트 연타') { await tapTile(page, ROOM + 16, 17, NEAR_MAT); await page.waitForTimeout(40); await tapTile(page, ROOM + 16, 17); await page.waitForTimeout(40); await tapTile(page, ROOM + 14, 17); }
+        if (way === '매트 가운데 탭') await tapTile(page, ROOM + 25, 17, NEAR_MAT);
+        else if (way === '매트 가장자리 탭') await tapTile(page, ROOM + 27, 17, NEAR_MAT);
+        else if (way === '매트 연타') { await tapTile(page, ROOM + 26, 17, NEAR_MAT); await page.waitForTimeout(40); await tapTile(page, ROOM + 26, 17); await page.waitForTimeout(40); await tapTile(page, ROOM + 24, 17); }
         else if (way === "'!' 핀 탭") await tapPin(page);
         else { // 문 매트 바로 앞까지 걸어서(탭) → 말 걸기 버튼
-          await tapTile(page, ROOM + 16, 16, NEAR_MAT); await waitFor(page, () => { const m = PrivacyMap.debug.me(); return !m.moving && m.x === 128 + 16 && m.y === 16; }, null, 8000);
+          await tapTile(page, ROOM + 26, 16, NEAR_MAT); await waitFor(page, () => { const m = PrivacyMap.debug.me(); return !m.moving && m.x === 128 + 26 && m.y === 16; }, null, 8000);
           const c1 = await screenCheck(page); rec(sc, '화면 검사(스크롤·버튼·캔버스)', allOk(c1));
-          const mat = await page.evaluate(() => [14, 15, 16, 17].map((x) => { const p = PrivacyMap.debug.tileToClient(128 + x, 17), e = document.elementFromPoint(p.x, p.y); return !!e && e.id === 'm-canvas'; }));
+          const mat = await page.evaluate(() => [24, 25, 26, 27].map((x) => { const p = PrivacyMap.debug.tileToClient(128 + x, 17), e = document.elementFromPoint(p.x, p.y); return !!e && e.id === 'm-canvas'; }));
           ok(mat.every(Boolean) && allOk(c1), `${sc} 매트 앞: 매트 4칸·내 칸 주변이 캔버스로 잡힘 ${JSON.stringify({ mat, c1 })}`);
           await page.tap('#btn-map-act');
         }
@@ -454,7 +454,7 @@ try {
       // g4: 걷는 중 회전 + 선택지 화면 회전
       {
         const page = await open(firstMap(), dev(size));
-        await tapTile(page, ROOM + 15, 17, [128 + 15, 11, 'down']); await page.waitForTimeout(250);
+        await tapTile(page, ROOM + 25, 17, [128 + 25, 13, 'down']); await page.waitForTimeout(250);
         const rot = [size[1], size[0]];
         await page.setViewportSize({ width: rot[0], height: rot[1] }); await page.waitForTimeout(500);
         const c1 = await screenCheck(page);
@@ -492,7 +492,7 @@ try {
         good = good && cf && await page.evaluate((sc0) => document.getElementById('confirm').hidden && JSON.stringify([PrivacyApp.state().scene, PrivacyApp.state().reaction]) === sc0, sc0);
         await close(page);
         const p2 = await open(firstMap(), dev(size));
-        await tapTile(p2, ROOM + 15, 17); await p2.waitForTimeout(200);
+        await tapTile(p2, ROOM + 25, 17); await p2.waitForTimeout(200);
         await p2.tap('#btn-menu'); await p2.waitForTimeout(150);
         const m1 = await me(p2); await p2.waitForTimeout(900); const m2 = await me(p2);
         const still = m1.x === m2.x && m1.y === m2.y || Math.abs(m1.x - m2.x) + Math.abs(m1.y - m2.y) <= 1;
@@ -528,7 +528,7 @@ try {
     {
       const page = await open(firstMap(), DESKTOP);
       for (let g = 0; g < 60; g++) {
-        const d = await page.evaluate(() => { const tp = PrivacyMap.debug.tapPath(128 + 15, 17); return PrivacyMap.debug.me().area === '내 방' && tp && tp.dirs[0]; });
+        const d = await page.evaluate(() => { const tp = PrivacyMap.debug.tapPath(128 + 25, 17); return PrivacyMap.debug.me().area !== '마을 길' && tp && tp.dirs[0]; });
         if (!d) break;
         await page.keyboard.press('Arrow' + d[0].toUpperCase() + d.slice(1));
         await waitFor(page, () => !PrivacyMap.debug.me().moving);

@@ -255,7 +255,7 @@
   async function walkToCell(tx, ty) {
     var M = PrivacyMap.debug, rt = M.routeTo(tx, ty);
     if (!rt) return false;
-    for (var k = 0; k < rt.length; k++) { key(ARROW[rt[k]]); key(ARROW[rt[k]], 'keyup'); var g = 0; await wait(16); while (M.me().moving && g++ < 100) await wait(16); }
+    for (var k = 0; k < rt.length; k++) { key(ARROW[rt[k]]); key(ARROW[rt[k]], 'keyup'); var g = 0; await wait(16); while ((M.me().moving || M.holding()) && g++ < 100) await wait(16); } // holding: 문을 지난 뒤 한 박자(2026-11-03)
     var m = M.me(); return m.x === tx && m.y === ty;
   }
 
@@ -282,7 +282,7 @@
       await play(R.A, o);
       ok(o.walked > 200, '방향키로 실제 걸은 칸 수 ' + o.walked);
       var seq = o.areas.join('>');
-      ok(/교문>마을 길>내 방/.test(seq), '교문 → 마을 길 → 내 방 순서로 이동: ' + seq.slice(0, 120));
+      ok(/교문>마을 길>현관>거실>내 방/.test(seq), '교문 → 마을 길 → 현관 → 거실 → 내 방 순서로 이동: ' + seq.slice(0, 120));
       ok((seq.match(/내 방/g) || []).length >= 3, '집 사건 3번 모두 걸어서 귀가 (' + (seq.match(/내 방/g) || []).length + '회)');
       await finishChecks('A', R.A.length);
     }
@@ -347,7 +347,7 @@
       clearInterval(bt); ow.passGreet = !!seenBubble.haneul;
       ok(tOut != null && tGone != null && tGone - tOut <= 2600, '“밖으로 나왔다”는 잠깐 뜨고 사라짐: ' + (tGone != null && tOut != null ? Math.round(tGone - tOut) + 'ms' : '안 사라짐'));
       var oseq = ow.areas.join('>');
-      ok(/내 방.*마을 길.*교문.*현관 앞.*2학년 3반 교실/.test(oseq), '내 방→마을 길→교문→현관 앞→교실: ' + oseq);
+      ok(/내 방.*거실.*현관.*마을 길.*교문.*현관 앞.*2학년 3반 교실/.test(oseq), '내 방→거실→현관→마을 길→교문→현관 앞→교실: ' + oseq);
       ok(ow.passGreet === true, '하늘이 곁을 지나가면 인사 말풍선이 저절로');
       ok($('#m-say').textContent.indexOf('방향키') < 0, '걷기 시작하면 첫 안내가 사라짐');
       ok(ow.talkLines >= 4, '새봄의 친구 소개 ' + ow.talkLines + '줄');
@@ -1420,7 +1420,7 @@
         var MW = window.PRIVACY_WORLD, MD = PrivacyMap.debug, sox = function (id) { return MW.SCENES.filter(function (c) { return c.id === id; })[0].ox; };
         if (s === 'shot-marks-sleep') await play(R.A, { upto: 3, stopAtMap: true }); // 사건 2: 엎드려 자는 민준
         if (s === 'shot-marks-library') await play(R.A, { upto: 10, stopAtMap: true }); // 사건 6: 도서관 공용 PC
-        var spot = { 'shot-marks-yard': ['yard', 14, 9, 'left'], 'shot-marks-class': ['classroom', 15, 13, 'up'], 'shot-marks-sleep': ['classroom', 22, 14, 'right'], 'shot-marks-library': ['library', 16, 11, 'up'], 'shot-marks-room': ['room', 12, 12, 'down'] }[s];
+        var spot = { 'shot-marks-yard': ['yard', 14, 9, 'left'], 'shot-marks-class': ['classroom', 15, 13, 'up'], 'shot-marks-sleep': ['classroom', 22, 14, 'right'], 'shot-marks-library': ['library', 16, 11, 'up'], 'shot-marks-room': ['room', 8, 9, 'down'] }[s];
         if (spot) MD.place(sox(spot[0]) + spot[1], spot[2], spot[3]);
         await wait(600); return;
       }
