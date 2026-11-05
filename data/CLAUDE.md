@@ -1,5 +1,16 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-05, 노이즈 벽 페널티·벽 간격·연습 카드·실기 미션·끝맺음)
+- **벽 페널티**(`config.wallPenalty`, `DR.Catch.dropCards`): 벽에 부딪히면 **이번 달리기에 담은** 카드 중 가장 최근 1장을 잃는다. 보충 때 들고 들어온 가방은 안 잃는다(이미 검수한 것 — 지시서엔 없던 판단). 빈 가방은 감속만, `invuln` 동안은 또 안 잃음. 연출 = `RunFeedback.drop`(구역 "이번 N장"도 같이 줄임), 잃은 수 = `state.lost`(저장 O, 옛 저장은 0) → 검수 `#inspect-lost`.
+- **벽 간격 = 초 단위**(`config.rareWallGapSec`, 계단식 — 진행 0~0.4 2초 / 0.4~0.75 1.2초 / 0.75~ 0.6초, 거리 = 그 지점 속도 × 초). `stream.js`: 다른 카드와 겹치면 `rareGapRange` 안에서 벽만 비킨다. **카드 자리·uid는 스냅숏 그대로, 벽과 일부 불꽃만 달라짐** → 스냅숏 테스트는 카드만 비교(`tests/walls-helper.mjs`). 그 밖의 벽은 다음 줄에 카드가 있는 레인을 피하고, 자리가 없으면 세우지 않는다.
+- ⚠️ 후반 0.6초 < `catchLead` 0.7초라, 벽 0.1초 앞에서 일찍 잡으면 그 벽에 부딪혀 **방금 잡은 드문 카드를 잃을 수 있다**. 또 후반도 벽을 옆으로 피하고 0.7초 안에 돌아오면 손해 없이 잡을 수 있다(강제가 아니라 선택). 수치는 `rareWallGapSec` 마지막 칸.
+- **벽 모양**: 서 있는 반투명 벽(1.05m, 윗면 띠). 가까운 카드는 3D 위 DOM이라 벽을 가리므로, **같은 레인 앞에 안 지난 벽이 있는 카드는 벽을 지날 때까지 3D로만**(`behindWall`).
+- **연습 카드** `#btn-practice`(임무 고르기 맨 앞): 세이브 있음 = `App.practiceTutorial`(브리핑부터, `state.practice`로 체크포인트 안 함, 끝나면 타이틀) / 세이브 없음(`Save.hasSave`, 튜토리얼 도중 체크포인트만 있는 경우 포함) = `startTutorial`(프롤로그부터, 끝나면 1 임무 도입 대화 → 브리핑) + "처음이라면 여기부터".
+- **실기 미션 안내** `DR.UI.tutorialGoal`(첫 출발만, 다시 달리기엔 안 뜸, Esc = 브리핑). 목표 HUD `#run-goal`(`mission.runGoal`). 튜토리얼 need 5·가방 10이라 한쪽을 넘게 담으면 그 판은 통과 불가. 쏠림(한쪽 0 또는 목표 초과) = `fail`, 나머지 = `failFew`.
+- **끝맺음**(`config.finish`, `beginFinish/finishStep`): 마지막 3초 게이트 → 통과 시 입력 잠금·1.2초 감속 → HUD 끔·0.8초 어두워짐(`#run-fade`, 화면이 바뀌어도 남음) → `onEnd` → 0.4초 걷힘. HP 0 = 0.5초 플래시 뒤 같은 페이드("연결 끊김"). 시간은 `step` 기준이라 **시계를 멈춘 테스트는 끝까지 step 해야 끝난다**. `finishNow`는 연출 없음. 건너뛰기는 0.3초 뒤부터(잡기 연타로 넘어가지 않게). `peek().finishing`이면 일시정지 불가.
+- **가방 찬 뒤 가속**(`config.bagFullRush` 1.5배, 1/3초에 걸쳐): 카드를 잃으면 원래 속도.
+- 테스트: `runner-browser`(진짜 키로 피하기·내주기, 진짜 시계 끝맺음, 연습 저장 유지) · `stream.test`(벽 규칙 × 5임무 × 17 seed). 단위 221, 브라우저 22개. 미확인: 실제 손맛(벽 페널티 난이도·간격), 실기기.
+
 ## ★지금 상태 (2026-11-03, 튜토리얼 개·고양이 카드 = fal 사진 C안)
 - 튜토리얼 개·고양이 카드 그림 = 사진 `assets/cards/animals/d01~d08·c01~c08.webp`(384², 원본 `cards-pilot/plain/` 무손실 → q80 다시 저장, 16장 약 13만 바이트). 카드 번호(uid `c12` → 12) % 8로 고른다(같은 코스 = 같은 사진, 코스·판정·저장은 그대로). 아이콘·이름표는 지금처럼 코드가 얹음. `cardart.js` `card(mission, id, variant, size, n)` — n은 사진 카드만 쓴다(다른 임무 그림·variant 그대로).
 - 미리 받기: 타이틀이 뜬 뒤 0.3초·`go('title'|'briefing'|'run')`(`DR.CardArt.preloadPhotos`, 한 번만, 기다리지 않음). 사진이 아직 없거나 못 읽으면 그 카드는 예전 Canvas 그림. 사진 썸네일(`thumb`)은 24칸 대신 48칸(튜토리얼엔 검수 화면이 없어 지금은 테스트 시트에서만 보임).
@@ -63,7 +74,7 @@
 ## 기획서와 달라진 점(사용자 결정 — 재논의 금지)
 - 데이터 세계 = **매끈한 3D**(서브웨이 서퍼식 뒤 카메라, three.js). 기획서의 "픽셀 아트"는 카드 썸네일 자동 픽셀화에만 남김. 팀 공유 필요할 수 있음.
 - **경계 조합(S3 네온 반사·S4 흙빛 얕은 침수)은 일반 드문 카드로도 채워짐**, 올바르게 분류한 "?" 카드는 2장 몫(`config.ambiguousWeight`).
-- **불꽃(방해 세력, 3 임무에서 선배로 밝혀질 복선)**: 날아오는 불꽃에 맞으면 감속·흔들림·HP-1, HP 3 다 잃으면 그 달리기를 처음부터(그 판 카드 비움). 벽은 감속만. 너무 어렵지 않게(1 임무 6개·튜토리얼 연습 2개·늘 빈 레인) — `config.hp`·`config.fire`·`mission.fires`.
+- **불꽃(방해 세력, 3 임무에서 선배로 밝혀질 복선)**: 날아오는 불꽃에 맞으면 감속·흔들림·HP-1, HP 3 다 잃으면 그 달리기를 처음부터(그 판 카드 비움). 벽은 감속 + 카드 1장(2026-11-05 사용자 지시로 바뀜). 너무 어렵지 않게(1 임무 6개·튜토리얼 연습 2개·늘 빈 레인) — `config.hp`·`config.fire`·`mission.fires`.
 - 실패 종류는 장면이 아니라 **빠진 조합**으로: 침수 조합(danger) 빠짐 → 위험(감독관이 막아 세움), 정상 조합만 빠짐 → 불편.
 
 ## 구조
@@ -84,8 +95,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (206)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (21개: bgm·boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·**m4**·play·polish·portraits·readability·run·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (221)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (22개: bgm·boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·**m4**·play·polish·portraits·readability·run·**runner**·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
