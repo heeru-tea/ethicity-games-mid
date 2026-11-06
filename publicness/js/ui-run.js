@@ -212,11 +212,13 @@
       var said = function (n) { return n.what === 'done' ? who(n) + ' 왕복 완료' : who(n) + ' ' + UI.legName(rdOf(n), n.leg) + ' 기준 초과(한 번 이동 대기 ' + App.duration(R.s.config.service.maxWait) + ' 넘음)'; };
       setAlerts(stopAt.items.map(function (n) { var rd = rdOf(n); return { node: n.node || (rd && rd.o), kind: n.what === 'done' ? 'wait' : 'full', text: said(n) }; }).filter(function (a) { return a.node; }));
       // 멈춘 이유를 맨 앞에(예: ‘하늘 왕복 완료’)
-      var why = stopAt.items.map(said).join(', ');
+      /* 2026-11-06 P2-5: 멈춘 이유를 문장으로(‘하늘이 왕복을 마쳐서 멈췄어요’). 지도 말풍선은 짧은 said 그대로 */
+      var because = function (n) { return n.what === 'done' ? PB.Narrative.josa(who(n), '이가') + ' 왕복을 마쳐서' : who(n) + '의 ' + UI.legName(rdOf(n), n.leg) + ' 기다림이 기준(' + App.duration(R.s.config.service.maxWait) + ')을 넘어서'; };
+      var why = stopAt.items.map(because).join(', ') + ' 멈췄어요.';
       if (PB.Hud && PB.Hud.render) PB.Hud.render(App);
       /* 2026-11-02 재검증 P1-2: 그날 마지막 멈춤(예: 20:45 하늘 왕복 완료)이면 ⏭는 꺼져 있다(‘남은 멈춤 없음’) — 안내문도 ⏭ 대신 ▶·⏩를 말한다 */
       var cp = nextCheckpoint();
-      setStatus(why + ' · ' + App.clock(stopAt.t) + ' 멈춤. ' + (stopsLeft() ? '▶ 재개하면 ' + App.speed + '배속, ⏭ 누르면 ' + nextLabel(R.s) + ' 빨리 가요.' : '남은 멈춤이 없어요. ▶ 재개하거나 ⏩ 끝까지 가요.') + (cp != null ? ' 다음 긴급 조정은 ' + App.clock(cp) + '이에요.' : ''), true);
+      setStatus(App.clock(stopAt.t) + ' ' + why + ' ' + (stopsLeft() ? '▶ 재개하면 ' + App.speed + '배속, ⏭ 누르면 ' + nextLabel(R.s) + ' 빨리 가요.' : '남은 멈춤이 없어요. ▶ 재개하거나 ⏩ 끝까지 가요.') + (cp != null ? ' 다음 긴급 조정은 ' + App.clock(cp) + '이에요.' : ''), true);
     }
     syncControls();
   }

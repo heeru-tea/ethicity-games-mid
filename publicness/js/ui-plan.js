@@ -302,8 +302,7 @@
   // AI 제안을 적용했을 때의 초안을 미리 만들어 노선·배차·인물 예상을 보여 준다(실제 적용과 같은 함수 사용)
   function recView(rec){
     if(rec._view)return rec._view;
-    var s=st(),pv=Object.assign({},s,{draft:JSON.parse(JSON.stringify(s.draft)),goalHistory:JSON.parse(JSON.stringify(s.goalHistory)),_g:null});
-    S.applyRecommendation(pv,rec);var used=pv.draft.buses.map(function(b){return b.routeNum;});pv.draft.routes=pv.draft.routes.filter(function(r){return used.indexOf(r.num)>=0;});
+    var s=st(),pv=S.previewRec(s,rec);
     var ids=function(d,num){return d.buses.filter(function(b){return b.routeNum===num;}).map(function(b){return b.id;}).join(',');};
     var rows=S.routesInOrder(pv).map(function(r){var old=S.routeByNum(s,r.num);return {num:r.num,route:r,buses:ids(pv.draft,r.num),changed:!old||old.nodes.join()!==r.nodes.join()||ids(s.draft,r.num)!==ids(pv.draft,r.num)};});
     return (rec._view={rows:rows,resting:pv.draft.buses.filter(function(b){return b.routeNum==null;}).map(function(b){return b.id;}),before:S.expected(s),after:S.expected(pv)});

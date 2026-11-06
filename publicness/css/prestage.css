@@ -135,3 +135,20 @@ body[data-screen=run] .person-chip-time, body[data-screen=run] .person-chip-trip
 .person-chip-live[hidden] { display: none; }
 .person-chip-live.bad { color: var(--sem-caution-ink); }
 .person-chip-live.good { color: var(--ok); }
+
+/* 결과 화면 자세한 기록·첫 팁·AI라면?(2026-11-06) */
+#result-details > summary { list-style: none; cursor: pointer; font-weight: 700; padding: 10px 0; scroll-margin-top: 72px; }
+#result-details > summary::-webkit-details-marker { display: none; }
+#result-details > summary::before { content: "▸"; display: inline-block; width: 1.2em; color: var(--text-mute); }
+#result-details[open] > summary::before { content: "▾"; }
+#result-details[open] { padding-bottom: 72px; }
+.result-first-tip { margin: 12px 0 0; padding: 10px 14px; border-left: 3px solid var(--border); font-size: 15px; word-break: keep-all; }
+.result-ai { margin: 0 0 24px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.result-ai h3 { margin: 0 0 8px; font-size: var(--fs-title); }
+#result-ai-body { min-height: 96px; }
+#result-ai-body p { margin: 0 0 6px; }
+#result-ai-rows { margin: 0 0 8px; padding: 0; list-style: none; }
+#result-ai-rows li { margin: 0; padding: 4px 8px; border-radius: 8px; word-break: keep-all; }
+#result-ai-rows li.ai-picked { background: #fff; box-shadow: inset 3px 0 0 var(--accent, var(--text)); }
+.ai-picked-tag { margin-left: 6px; font-size: 13px; font-weight: 700; color: var(--text-mute); white-space: nowrap; }
+.ai-picked-tag[hidden] { display: none; }

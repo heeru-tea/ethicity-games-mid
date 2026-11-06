@@ -120,7 +120,7 @@ try {
         chips: Object.fromEntries([...document.querySelectorAll('.person-chip')].map(c => [c.dataset.resident, c.querySelector('.person-chip-count').textContent])) }));
       stops.push(r);
       if (r.em) { await page.locator('#emergency-continue').click(); await page.waitForTimeout(200); continue; }
-      assert.match(r.status, /(왕복 완료|기준 초과)/, '멈춘 이유 = 주요 인물 판정: ' + r.status); assert.doesNotMatch(r.status, /만차|대기 10명/);
+      assert.match(r.status, /(왕복을 마쳐서|을 넘어서)/, '멈춘 이유 = 주요 인물 판정: ' + r.status); assert.doesNotMatch(r.status, /만차|대기 10명/);
       assert.ok(r.paused, '멈춘 동안 ▶만 강조(배속은 옅게)');
       const loud = await page.evaluate(() => { const cs = e => getComputedStyle(e), play = cs(document.querySelector('#run-pause')); return [...document.querySelectorAll('#run-controls .btn:not(#run-pause)')].filter(b => cs(b).backgroundColor === play.backgroundColor || (cs(b).boxShadow !== 'none' && cs(b).boxShadow === play.boxShadow)).map(b => b.id); });
       assert.deepEqual(loud, [], '멈춘 동안 ▶와 같은 강조는 없음(소리 버튼 포함)');
@@ -136,7 +136,7 @@ try {
     const tally = await page.evaluate(() => Object.fromEntries(Object.entries(PB.Narrative.residentTally(PB.App.s.config, PB.App.s.history)).map(([k, v]) => [k, v.completed + '/' + v.threshold])));
     Object.keys(lastChips).forEach(id => assert.equal(lastChips[id], tally[id], `${phase}단계 ${id} 칩 마지막 값 = 결과 학기 누적`));
     if (phase === 1) {
-      const h = stops.find(x => /하늘 왕복 완료/.test(x.status)); assert.ok(h && h.chips.haneul === '1/4', '하늘이 돌아오는 길을 마친 순간 1/4 ' + JSON.stringify(h));
+      const h = stops.find(x => /하늘이 왕복을 마쳐서/.test(x.status)); assert.ok(h && h.chips.haneul === '1/4', '하늘이 돌아오는 길을 마친 순간 1/4 ' + JSON.stringify(h));
       const card = await page.locator('#result-people').innerText().catch(() => ''); assert.ok(/누적 1\/4회|1\/4/.test(card) || true);
     }
     assert.deepEqual(page.errors, []);

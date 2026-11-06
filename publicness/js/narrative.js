@@ -299,7 +299,7 @@
    *    예전 저장본처럼 mobility가 없으면 승객 기록에서 같은 규칙(미도착 건수 최다, 같으면 정류장 순서)으로 센다
    *  · 단계 주제 지역(THEME)은 유지. 주제 지역이 최다가 아니면 ‘가장 많이 남은 곳은 X · 이번 단계에서 살펴볼 곳은 Y’로 둘을 구분한다
    *  · 주제 지역 출발 도착률 90% 미만(또는 출발 이동 없음)이면 단계 고정 질문(phaseEthics)을 보이고(ethics: true), 90% 이상이면 보이지 않는다(ethics: false) */
-  var FOCUS_RATE = 0.9;
+  var FOCUS_RATE = 0.9, FOCUS_MIN_N = 5; // 2026-11-06 P1-4: 건수가 너무 적은 곳(1건 중 1건)이 비율로 앞서지 않게. 그런 곳뿐이면 그대로 쓴다
   function thinkFocus(config, phase, passengers, mobility) {
     var ids = (THEME[phase] || []).filter(function (id) { return config.nodes.some(function (n) { return n.id === id && (n.fromPhase || 1) <= phase; }); });
     if (!ids.length) return { bridge: '', ethics: true };
@@ -310,11 +310,16 @@
       else ps.forEach(function (p) { if (list.indexOf(p.o) >= 0) { N++; if (p.status === 'arrived') arrived++; } });
       return { N: N, arrived: arrived, left: N - arrived, rate: N ? arrived / N : null };
     }
-    var t = stat(ids), worst = null;
-    if (mobility) { if (mobility.worst) { worst = stat([mobility.worst.id]); worst.id = mobility.worst.id; } }
-    else config.nodes.forEach(function (n) { var z = stat([n.id]); if (z.left > 0 && (!worst || z.left > worst.left)) { z.id = n.id; worst = z; } });
-    var themeIsWorst = !!worst && ids.length === 1 && ids[0] === worst.id, ethics = !t.N || t.rate < FOCUS_RATE, line = '';
-    if (worst) line = '이번에 가장 많이 남은 곳은 ' + josa(nodeName(config, worst.id), '이에요') + '. 출발한 이동 ' + worst.N + '건 중 ' + worst.left + '건이 가지 못했어요(미도착).';
+    /* 2026-11-06 P1-4: 데이터 줄은 남은 비율이 가장 큰 출발지 먼저(같으면 남은 건수), 비율까지 같은 둘째 곳도 함께. 주제 지역 줄은 그다음. 주제 지역이 가장 나쁠 때만 한 줄 */
+    var t = stat(ids), pool = config.nodes.map(function (n) { var z = stat([n.id]); z.id = n.id; return z; }).filter(function (z) { return z.left > 0; });
+    var enough = pool.filter(function (z) { return z.N >= FOCUS_MIN_N; }); if (enough.length) pool = enough;
+    pool.sort(function (a, b) { return b.left / b.N - a.left / a.N || b.left - a.left; });
+    var worst = pool[0] || null, tied = pool[1] && pool[1].left / pool[1].N === worst.left / worst.N ? pool[1] : null;
+    var themeIsWorst = !!worst && ids.length === 1 && (ids[0] === worst.id || (!!tied && ids[0] === tied.id)), ethics = !t.N || t.rate < FOCUS_RATE, line = '';
+    if (worst) {
+      var one = function (z) { return nodeName(config, z.id) + '(' + z.N + '건 중 ' + z.left + '건 미도착)'; };
+      line = tied ? '남은 비율이 가장 큰 곳은 ' + one(worst) + '과 ' + one(tied) + '이에요.' : '남은 비율이 가장 큰 곳은 ' + josa(nodeName(config, worst.id), '이에요') + '. 출발한 이동 ' + worst.N + '건 중 ' + worst.left + '건이 가지 못했어요(미도착).';
+    }
     if (!t.N) line += (line ? ' ' : '') + '이번에는 ' + names + '에서 출발한 이동이 없었어요.';
     else if (!worst) line = names + '에서 출발한 이동 ' + t.N + '건이 모두 도착했어요.';
     else if (!themeIsWorst) line += ' 이번 단계에서 살펴볼 곳은 ' + josa(names, '이에요') + '(' + (t.left ? '출발 ' + t.N + '건 중 ' + t.left + '건 미도착' : '출발 ' + t.N + '건 모두 도착') + ').';

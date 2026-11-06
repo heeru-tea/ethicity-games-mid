@@ -303,6 +303,53 @@
     return true;
   }
 
+  /* 결과 화면 ‘AI라면?’(2026-11-06): AI 제안을 다음 단계 계획 화면과 같은 입력으로 돌리기 위한 사본. 진짜 세션은 건드리지 않는다.
+   * 마지막 단계·계약 종료는 다음 단계가 없어 같은 단계 사본(이번 결과가 prevMetrics) */
+  function plannedNext(s) {
+    var c = serialize(s); if (!c.config) c.config = s.config; c.current = null;
+    if (s.stage === 'result' && s.phase < s.config.phases.length && !(s.end && s.end.cause === 'contract')) { nextPhase(c); beginPlan(c); }
+    return c;
+  }
+  // AI 제안을 적용한 초안 사본(계획 화면 미리보기·결과 화면 카드가 같은 함수)
+  function previewRec(s, rec) {
+    var pv = Object.assign({}, s, { draft: clone(s.draft), goalHistory: clone(s.goalHistory), _g: null });
+    applyRecommendation(pv, rec);
+    var used = pv.draft.buses.map(function (b) { return b.routeNum; });
+    pv.draft.routes = pv.draft.routes.filter(function (r) { return used.indexOf(r.num) >= 0; });
+    return pv;
+  }
+  // 두 초안의 가장 큰 변화 하나: 노선 추가 > 노선 삭제 > 정류장 추가 > 정류장 삭제 > 버스 이동 > 버스 빌리기
+  function planChange(a, b) {
+    function rows(s) {
+      return s.draft.routes.map(function (r) { return { num: r.num, route: r, nodes: r.nodes, buses: s.draft.buses.filter(function (x) { return x.routeNum === r.num; }).length }; })
+        .filter(function (r) { return r.nodes.length >= 2 && r.buses > 0; });
+    }
+    var x = rows(a), y = rows(b), restX = x.slice(), restY = [], moved = null, stops = [];
+    y.forEach(function (n) {
+      var old = restX.filter(function (o) { return Graph.routeId(o.route) === Graph.routeId(n.route); })[0];
+      if (!old) { restY.push(n); return; }
+      restX.splice(restX.indexOf(old), 1);
+      if (n.buses > old.buses && !moved) moved = { type: 'moveBus', num: old.num };
+    });
+    var added = [];
+    restY.forEach(function (n) {
+      var best = null, shared = 0;
+      restX.forEach(function (o) { var k = o.nodes.filter(function (id) { return n.nodes.indexOf(id) >= 0; }).length; if (k > shared) { shared = k; best = o; } });
+      if (!best || shared < 2 || shared * 2 < best.nodes.length) { added.push(n); return; }
+      restX.splice(restX.indexOf(best), 1);
+      var plus = n.nodes.filter(function (id) { return best.nodes.indexOf(id) < 0; }), minus = best.nodes.filter(function (id) { return n.nodes.indexOf(id) < 0; });
+      if (plus.length) stops.push({ type: 'addStop', num: best.num, node: plus[0] });
+      else if (minus.length) stops.push({ type: 'delStop', num: best.num, node: minus[0] });
+    });
+    if (added.length) { var longest = added.slice().sort(function (p, q) { return q.nodes.length - p.nodes.length; })[0]; return { type: 'addRoute', nodes: longest.nodes.slice() }; }
+    if (restX.length) return { type: 'delRoute', num: restX[0].num };
+    var stop = stops.filter(function (c) { return c.type === 'addStop'; })[0] || stops[0];
+    if (stop) return stop;
+    if (moved) return moved;
+    if (b.draft.buses.length > a.draft.buses.length) return { type: 'lease' };
+    return { type: 'none' };
+  }
+
   function revealed(s) {
     var h = s.history[s.history.length - 1];
     return Advisor.makeRevealed({
@@ -577,7 +624,7 @@
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
     assign: assign, lease: lease, unlease: unlease, leaseLimit: leaseLimit, leasedBuses: leasedBuses, LEASE_BASE: LEASE_BASE, restingFor: restingFor, autoPlace: autoPlace, busCost: busCost, typicalBusCost: typicalBusCost, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,
     chooseGoal: chooseGoal, markGoalAction: markGoalAction, applyRecommendation: applyRecommendation, applyFourth: applyFourth,
-    revealed: revealed, expected: expected, startRun: startRun, finishRun: finishRun, nextPhase: nextPhase, endingSummary: endingSummary
+    revealed: revealed, plannedNext: plannedNext, previewRec: previewRec, planChange: planChange, expected: expected, startRun: startRun, finishRun: finishRun, nextPhase: nextPhase, endingSummary: endingSummary
   };
   root.PB = root.PB || {};
   root.PB.Session = api;

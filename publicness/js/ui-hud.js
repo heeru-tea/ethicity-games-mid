@@ -101,7 +101,7 @@
       else if (done) text = '왕복 완료 ✓';
       else if (outDone) text = '가는 길 ✓ · ' + (!back || tf < back.t ? '볼일 중' : '돌아오는 길 ' + (onBus(back) ? '버스 안' : '대기 중'));
       else if (out && tf >= out.t) text = '가는 길 ' + (onBus(out) ? '버스 안' : '대기 중');
-      var cnt = b.querySelector('.person-chip-count'); if (cnt && t) { var v = (t.completed + gained) + '/' + t.threshold; if (cnt.textContent !== v) cnt.textContent = v; }
+      var cnt = b.querySelector('.person-chip-count'); if (cnt && t) { var v = (t.completed + gained) + '/' + t.threshold; if (cnt.textContent !== v) cnt.textContent = v; /* 2026-11-06 P2-7: 읽어 주는 이름표도 같은 숫자 */ var al = b.getAttribute('aria-label') || '', al2 = al.replace(/학기 누적 \d+\/\d+회/, '학기 누적 ' + v + '회'); if (al2 !== al) b.setAttribute('aria-label', al2); }
       var lv = b.querySelector('.person-chip-live'); if (!lv) { lv = el('span', { 'class': 'person-chip-live' }); b.appendChild(lv); }
       if (lv.textContent !== text) lv.textContent = text; lv.hidden = !text; lv.classList.toggle('bad', /기준 초과$/.test(text)); lv.classList.toggle('good', text === '왕복 완료 ✓');
       b.dataset.live = text; b.title = b.getAttribute('aria-label') + (text ? ' · 지금: ' + text : '');

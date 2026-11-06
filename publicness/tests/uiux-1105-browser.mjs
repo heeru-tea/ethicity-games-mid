@@ -88,11 +88,11 @@ try {
     assert.match(live.title, /운행 종료 때 정산될 항목: 보유비 −40,000원, 공공서비스 수행분 \+0원/); assert.equal(live.running - 40000, live.total, '화면 수지 − 정산 항목 = 정산 수지');
     await page.evaluate(() => document.querySelector('#run-next').click()); await page.waitForFunction(() => PB.UI.runState().hold, null, { timeout: 30000 });
     const hold = await page.evaluate(() => ({ bar: document.querySelector('#run-statusbar-text').textContent, vis: !!document.querySelector('#run-statusbar').getClientRects().length, alerts: document.querySelectorAll('#stage-overlay .run-alert').length, btn: document.querySelector('#run-open-emergency').hidden }));
-    assert.ok(hold.vis, '상태 줄이 보임'); assert.match(hold.bar, /왕복 완료|기준 초과/); assert.match(hold.bar, /멈춤/); assert.ok(hold.alerts >= 1, '지도 위 말풍선'); assert.equal(hold.btn, true, '1단계는 긴급 조정 없음');
+    assert.ok(hold.vis, '상태 줄이 보임'); assert.match(hold.bar, /왕복을 마쳐서|을 넘어서/); assert.match(hold.bar, /멈췄어요/); assert.ok(hold.alerts >= 1, '지도 위 말풍선'); assert.equal(hold.btn, true, '1단계는 긴급 조정 없음');
     ok('P1-5 멈춤: ' + hold.bar);
     await page.evaluate(() => { const s = PB.App.s; PB.UI.stopRun(); PB.Session.finishRun(s); PB.App.go('result'); }); await page.waitForTimeout(300);
     const r = await page.evaluate(() => { const h = PB.App.s.history[0]; return { think: document.querySelector('#think-bridge').textContent, worst: h.scores.mobility.worst, name: PB.App.nodeName(h.scores.mobility.worst.id), detail: document.querySelector('#score-worst').textContent, lead: document.querySelector('#result-lead').textContent, settle: document.querySelector('#result-settle').innerText, trend: document.querySelector('#result-trend').textContent, final: h.metrics.costs.total }; });
-    assert.ok(r.think.startsWith(`이번에 가장 많이 남은 곳은 ${r.name}`), r.think); assert.ok(r.think.includes(`${r.worst.N}건 중 ${r.worst.missed}건이 가지 못했어요(미도착)`), r.think); assert.ok(r.detail.includes(`${r.name} 출발 ${r.worst.missed}건 (${r.worst.N}건 중)`), r.detail);
+    assert.ok(r.think.startsWith('남은 비율이 가장 큰 곳은 '), r.think); /* 2026-11-06 P1-4: 건수 최다(자세히)와 비율 최대(생각해 보기)는 이름이 다른 줄 */ assert.ok(r.detail.includes(`${r.name} 출발 ${r.worst.missed}건 (${r.worst.N}건 중)`), r.detail);
     assert.match(r.lead, /이동 요청 142건\(기본 139건 \+ 추가 3건\)/); assert.match(r.settle, /운행 중[\s\S]*종료 정산[\s\S]*최종/); assert.match(r.trend, /지금 추세\(이번 단계 수지 유지\)라면 학기 말 잔액 약/);
     ok('2 생각해 보기 = 자세히: ' + r.think.slice(0, 50)); ok('P1-4 ' + r.settle.replace(/\n/g, ' / '));
     await page.evaluate(() => { PB.App.s.choices = { 1: 'longest' }; }); await play(page, 2);
