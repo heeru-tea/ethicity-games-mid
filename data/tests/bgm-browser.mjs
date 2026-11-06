@@ -11,7 +11,7 @@ async function readResults(page) {
   while (await page.locator('#screen-result .result-scene').count()) await page.locator('#btn-next').click();
 }
 
-const { browser, page, errors } = await openGame({ query: '?start=m1' });
+const { browser, page, errors } = await openGame({ query: '?start=flood' });
 try {
   // 대화·브리핑: 무음
   await page.locator('#btn-skip').click();

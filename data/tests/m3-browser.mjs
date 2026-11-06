@@ -229,7 +229,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
   } finally { await browser.close(); }
 }
 {
-  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m1' });
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=flood' });
   try {
     await page.locator('#btn-skip').click();
     await page.locator('#screen-briefing').waitFor({ state: 'visible' });

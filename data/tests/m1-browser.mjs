@@ -33,7 +33,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
 
   // 시나리오 A — 흔한 카드만
   {
-    const { browser, page, errors } = await openGame({ viewport, query: '?start=m1' });
+    const { browser, page, errors } = await openGame({ viewport, query: '?start=flood' });
     try {
       await page.locator('#btn-skip').click();
       assert.equal(await page.locator('#screen-briefing .brief-scene').count(), 4);
@@ -67,7 +67,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
 
   // 시나리오 B — "?" 카드를 정하지 않고 제출
   {
-    const { browser, page, errors } = await openGame({ viewport, query: '?start=m1' });
+    const { browser, page, errors } = await openGame({ viewport, query: '?start=flood' });
     try {
       await toRun(page);
       await fillAndFinish(page, { ...ALL2, q_neon: 1 });
@@ -91,7 +91,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
 
   // 시나리오 C — S4만 위험 실패 → 보충
   {
-    const { browser, page, errors } = await openGame({ viewport, query: '?start=m1' });
+    const { browser, page, errors } = await openGame({ viewport, query: '?start=flood' });
     try {
       await toRun(page);
       await fillAndFinish(page, { ...ALL2, night_shallow: 0, night_muddy: 0, day_deep: 11, day_shallow: 9 });

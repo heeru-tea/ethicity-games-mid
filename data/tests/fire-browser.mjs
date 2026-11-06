@@ -39,7 +39,7 @@ async function walkInto(page) {
 
 // 2) HP 0 → 연결 끊김 화면 → 같은 코스 처음부터
 {
-  const { browser, page, errors } = await openGame({ query: '?start=m1' });
+  const { browser, page, errors } = await openGame({ query: '?start=flood' });
   try {
     await page.locator('#btn-skip').click();
     await page.locator('#btn-run').click();

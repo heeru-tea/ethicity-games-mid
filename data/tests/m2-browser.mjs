@@ -74,7 +74,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
 
   // 1부 — 1 임무 크게 보기에는 이름표 버튼 없음
   if (!small) {
-    const { browser, page, errors } = await openGame({ viewport, query: '?start=m1' });
+    const { browser, page, errors } = await openGame({ viewport, query: '?start=flood' });
     try {
       await toInspect(page, { day_deep: 2 });
       await page.locator('#inspect-grid .bag-card .bag-open').first().click();
@@ -252,7 +252,7 @@ async function finishFromSenior(page) {
 
 // m1 to m2 — 1 임무 첫 판 통과 → 마무리 [다음 임무로] → 2 임무 브리핑에 기록 한 줄
 {
-  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m1' });
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=flood' });
   try {
     const ALL2 = { day_deep: 2, day_shallow: 2, day_wet: 2, day_dry: 2, night_wet: 2, night_neon: 2, night_deep: 2, night_shallow: 2, night_muddy: 2 };
     await toInspect(page, ALL2);
@@ -335,7 +335,7 @@ async function finishFromSenior(page) {
 
 // 리뷰 I2 — 저장된 진행이 있으면 임무 고르기 전에 확인(취소하면 저장 그대로)
 {
-  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m1' });
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=flood' });
   try {
     await page.locator('#btn-skip').click();
     await page.locator('#screen-briefing').waitFor({ state: 'visible' });
