@@ -24,6 +24,7 @@ const rareOf = (stage) => `(() => { const m = DR.App.mission(), c = DR.App.cours
   return c.items.filter((i) => i.kind === 'card' && !i.fakeId && (i.ambiguousId || m.cardTypes[i.key]?.rare)).filter((i) => {
     const sec = S.rareGapSec(cfg, i.z / c.length), v = S.speedAt(cfg, i.z / c.length);
     const w = c.items.filter((o) => o.kind === 'wall' && o.lane === i.lane && o.z < i.z).pop();
+    if (!w) return false;
     i.wall = w; i.neighbour = i.lane === 1 ? 0 : 1;
     const others = c.items.filter((o) => o.lane === i.neighbour && o.kind !== 'card' && Math.abs(o.z - w.z) < 8);
     return ${stage === 'early' ? 'S.canDodge(cfg, sec)' : '!S.canDodge(cfg, sec)'} && i.z > 80 && !others.length && !c.items.some((o) => o.kind === 'wall' && o.lane === i.lane && o.z > w.z && o.z < i.z);
@@ -56,14 +57,23 @@ const rareOf = (stage) => `(() => { const m = DR.App.mission(), c = DR.App.cours
     const before = await zoneText();
     await stepUntil(page, `return p.runnerZ > ${r.wall.z} - 8;`);
     await toLane(page, r.wall.lane);
-    await stepUntil(page, `return p.lost === 1 || p.runnerZ > ${r.wall.z} + 1;`);
-    p = await page.evaluate(() => DR.Run.peek());
+    // 빨간 가방·"-1"은 진짜 시계 0.8초만 떠 있다 — 시계를 멈춘 테스트가 놓치지 않게 부딪힌 그 호출 안에서 읽는다
+    const hit = await page.evaluate((wz) => {
+      for (let i = 0; i < 2000; i++) {
+        const q = DR.Run.peek();
+        if (q.lost === 1 || q.runnerZ > wz + 1) break;
+        DR.Run.step(0.02);
+      }
+      const bag = document.getElementById('hud-bag');
+      return { p: DR.Run.peek(), count: bag.querySelector('b').textContent, cls: bag.className, minus: bag.querySelector('.bag-minus')?.textContent, notice: document.querySelector('.catch-notice').textContent };
+    }, r.wall.z);
+    p = hit.p;
     assert.equal(p.lost, 1, 'one card lost');
     assert.equal(p.bagCount, 1, 'bag down by one');
-    assert.match(await page.locator('#hud-bag b').innerText(), /^1\/30$/);
-    assert.match(await page.locator('#hud-bag').getAttribute('class'), /\blose\b/);
-    assert.equal(await page.locator('.bag-minus').innerText(), '-1');
-    assert.equal(await page.locator('.catch-notice').innerText(), '노이즈! 카드 1장을 잃었어');
+    assert.equal(hit.count, '1/30');
+    assert.match(hit.cls, /\blose\b/);
+    assert.equal(hit.minus, '-1');
+    assert.equal(hit.notice, '노이즈! 카드 1장을 잃었어');
     await page.evaluate(() => DR.Run.step(0.2 / 4)); // 튀어 나가는 카드가 그려질 틈
     assert.equal(await page.locator('.lost-flight').count(), 1, 'card flies off');
     await page.evaluate(() => DR.Run.step(0.02));
@@ -100,7 +110,8 @@ const rareOf = (stage) => `(() => { const m = DR.App.mission(), c = DR.App.cours
   } finally { await browser.close(); }
 }
 
-// 2) 진짜 키: 초반은 벽을 피해 돌아 들어가 잡는다 / 후반은 벽을 지나면 1장 내주고 잡는다 → HUD·검수 숫자가 맞는다
+// 2) 진짜 키: 초반은 벽을 피해 돌아 들어가 잡는다(1임무) / 후반은 벽을 지나면 1장 내주고 잡는다(2임무) → HUD·검수 숫자가 맞는다
+// 1임무 코스는 드문 카드가 진행 0.56 안쪽에만 있어 후반 칸(0.75~)이 없다 — 후반 칸은 2~4임무에서 나온다
 {
   const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m1' });
   try {
@@ -121,16 +132,26 @@ const rareOf = (stage) => `(() => { const m = DR.App.mission(), c = DR.App.cours
     assert.ok(await page.evaluate((u) => DR.Run.isTaken(u), early.uid), 'rare caught after dodging');
     assert.equal(p.lost, 0, 'dodged: nothing lost');
     assert.equal(p.bagCount, 1);
-
+    assert.deepEqual(errors, []);
+    console.log('ok dodge early');
+  } finally { await browser.close(); }
+}
+{
+  const { browser, page, errors } = await openGame({ viewport: { width: 1280, height: 800 }, query: '?start=m2' });
+  try {
+    await startM(page);
     const late = await page.evaluate(`(${rareOf('late')})`);
     assert.ok(late, 'a rare card in the late stage');
+    // 내줄 카드 1장을 담아 두고 시작(앞쪽 카드는 벽 전에 다 지나간다)
+    await page.evaluate((wz) => { const it = DR.App.course.items.find((i) => i.kind === 'card' && !i.fakeId && i.z < wz - 60 && i.z > wz - 200); DR.Run.debugTake(it.uid); }, late.wall.z);
     await stepUntil(page, `return p.runnerZ > ${late.wall.z} - 40;`);
     await toLane(page, late.lane);
     await stepUntil(page, `return p.runnerZ > ${late.wall.z} - 10;`);
     await page.screenshot({ path: shotPath('wall-late-1280') });
     assert.match(await page.locator('#run-hint').innerText(), /노이즈를 지나면 카드 1장을 잃어\. 그래도 잡을까\?/);
     await stepUntil(page, `return p.lost === 1;`);
-    p = await page.evaluate(() => DR.Run.peek());
+    let p = await page.evaluate(() => DR.Run.peek());
+    assert.equal(p.lost, 1, 'hit the wall in the late stage');
     assert.equal(p.bagCount, 0, 'gave one card');
     await stepUntil(page, `return ${late.z} - p.runnerZ < 6;`);
     await page.evaluate(key('Space'));
@@ -144,7 +165,7 @@ const rareOf = (stage) => `(() => { const m = DR.App.mission(), c = DR.App.cours
     assert.match(await page.locator('#screen-inspect h2').first().innerText(), /\(1\/30칸\)/);
     assert.deepEqual(await page.evaluate(() => DR.App.state.bag.map((c) => c.id)), [late.uid]);
     assert.deepEqual(errors, []);
-    console.log('ok dodge early / trade late');
+    console.log('ok trade late');
   } finally { await browser.close(); }
 }
 
