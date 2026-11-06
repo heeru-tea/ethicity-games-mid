@@ -78,7 +78,7 @@ async function play(p,{tag,viewport,pick,judge,wrongFirst,shots}){
   await measure(p,k+'-result',viewport);assert.equal(await p.locator('.body .unknown').count(),0,'result no longer ends with the unknown line');
   if(k==='photo'){const crop=await p.locator('.stage-photo canvas').getAttribute('data-crop');assert.equal(crop,(pick.photo==='all'?E.ALL:E.AUTO).join(','));}
   if(k==='face'){assert.equal(await p.locator('.stage-status').innerText(),pick.face==='release'?'입장 제한 해제':'입장 제한 중');assert.equal(await p.locator('img.actor.clerkOpen').count(),pick.face==='release'?1:0);}
-  if(k==='writing')assert.equal(await p.locator('.stage-status').innerText(),pick.writing==='detector'?'발표: 빠짐':'발표: 함');
+  if(k==='writing')assert.equal(await p.locator('.stage-status').innerText(),pick.writing==='detector'?'발표: 빠짐':'발표: 그대로 진행');
   if(shots.includes(k+'-result'))await shot(p,`${tag}-${k}-result`,viewport===PHONE);
   await click(p,'.step-nav [data-act="next"]');
   await measure(p,k+'-follow-start',viewport);
