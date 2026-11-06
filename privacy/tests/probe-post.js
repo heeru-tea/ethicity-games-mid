@@ -83,7 +83,7 @@
     for (var k = 0; k < route.length; k++) {
       key(ARROW[route[k]]); key(ARROW[route[k]], 'keyup');
       var g = 0; await wait(16);
-      while (M.me().moving && g++ < 100) await wait(16);
+      while ((M.me().moving || (M.holding && M.holding())) && g++ < 200) await wait(16); // 문을 지난 뒤 한 박자는 걷지 않는다(2026-11-03) — 사람처럼 기다렸다 다음 걸음
       var area = M.me().area;
       if (opts.areas && opts.areas[opts.areas.length - 1] !== area) opts.areas.push(area);
     }
@@ -707,7 +707,7 @@
       ok(c3.x === c2.x && c3.y === c2.y, '멈추면 배경도 바로 멈춤(뒤늦게 흐르지 않음)');
       // 걷기 동작: 반 칸마다 한 프레임(한 칸에 약 2번 바뀜, 칸이 바뀌어도 이어짐). 시간 대신 걸은 칸 수로 잰다
       var r1 = SM.routeTo(96 + 2, 7) || [];
-      for (var k1 = 0; k1 < r1.length; k1++) { key(ARROW[r1[k1]]); key(ARROW[r1[k1]], 'keyup'); var g1 = 0; await wait(16); while (SM.me().moving && g1++ < 100) await wait(16); }
+      for (var k1 = 0; k1 < r1.length; k1++) { key(ARROW[r1[k1]]); key(ARROW[r1[k1]], 'keyup'); var g1 = 0; await wait(16); while ((SM.me().moving || (SM.holding && SM.holding())) && g1++ < 200) await wait(16); }
       var lastF = SM.walkFrame(), lastX = SM.me().x, fch = 0, tiles = 0;
       key('ArrowRight');
       for (var st = 0; st < 80; st++) { // 15ms씩 80번(=1.2초) 직접 진행

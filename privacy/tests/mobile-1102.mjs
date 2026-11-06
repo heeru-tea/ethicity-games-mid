@@ -111,6 +111,18 @@ async function joyHoldTo(page, getDirs, done, ms = 20000) {
   await waitFor(page, () => !PrivacyMap.debug.me().moving, null, 1500);
   return n;
 }
+// 조이스틱으로 한 칸씩 목표까지. 2026-11-03부터 방문이 한 칸이라, 누른 채 25ms마다 방향만 바꾸면 걸음(110ms)을 놓쳐 그 칸을 지나치고 좌우로 왕복한다(검사 쪽 한계 — 옛 조이스틱도 같음).
+// 누른 채 곧게 걷기·문 지나 이어 걷기는 joystick-1105가 본다
+async function joyWalkTo(page, getDirs, done, steps = 60) {
+  let n = 0;
+  for (; n < steps; n++) {
+    if (await page.evaluate(done)) break;
+    const dirs = await page.evaluate(getDirs);
+    if (!dirs || !dirs.length) break;
+    if (!(await joyStep(page, dirs[0]))) { await page.waitForTimeout(150); }
+  }
+  return n;
+}
 const inter = (a, b) => a && b && a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 // (d) 지금 그린 화면에서 이름표와 표시 그림(목적지 핀·?)이 겹치는지
 const tagClash = (page) => page.evaluate(() => {
@@ -173,16 +185,13 @@ try {
       ok(fast === true && slow === false, `${name} 끝까지 밀면 빠르게(${fast}) · 살짝 밀면 걷기(${slow})`);
     }
     // 조이스틱을 누른 채로 출구 매트까지 → 장면이 마을 길로
-    const turns = await joyHoldTo(page, () => { const m = PrivacyMap.debug.me(); const tp = PrivacyMap.debug.tapPath(128 + 25, 17); return m.area !== '마을 길' ? tp && tp.dirs : []; }, // 2026-11-03: 출구는 거실 쪽 현관
+    const turns = await joyWalkTo(page, () => { const m = PrivacyMap.debug.me(); const tp = PrivacyMap.debug.tapPath(128 + 25, 17); return m.area !== '마을 길' ? tp && tp.dirs : []; }, // 2026-11-03: 출구는 거실 쪽 현관
       () => PrivacyMap.debug.me().area === '마을 길');
     const s2 = await me(page);
-    ok(s2.area === '마을 길', `${name} 조이스틱만으로 내 방 출구 → 마을 길 (방향 바꾼 횟수 ${turns}) ${JSON.stringify(s2)}`);
+    ok(s2.area === '마을 길', `${name} 조이스틱만으로 내 방 출구 → 마을 길 (${turns}걸음) ${JSON.stringify(s2)}`);
     // 다시 들어와 매트 바로 앞에서 (c)(d) 확인 + 스크린샷
-    await page.evaluate(() => PrivacyMap.debug.place(128 + 25, 15, 'down')); // 검사용 자리(현관 매트 두 칸 위) — 조이스틱 이동 검사는 위에서 끝남
-    await page.waitForTimeout(150);
-    // 한 칸 아래(매트 바로 위)로: 탭 한 번(조이스틱 한 칸은 느린 PC에서 손 떼기 전에 두 칸 — 매트까지 — 가 버릴 수 있어서)
-    { const p1 = await page.evaluate(() => PrivacyMap.debug.tileToClient(128 + 25, 16)); await page.touchscreen.tap(p1.x, p1.y); }
-    await waitFor(page, () => { const m = PrivacyMap.debug.me(); return !m.moving && m.y === 16; }, null, 3000);
+    // 매트 바로 위 칸으로 바로 옮긴다(탭으로 가면 좁은 가로 화면에서 카메라가 자리 잡기 전 좌표를 눌러 다른 곳으로 걸어간다 — 탭 길찾기 자체는 tap·map-resume 프로브가 본다)
+    await page.evaluate(() => PrivacyMap.debug.place(128 + 25, 16, 'down'));
     await page.waitForTimeout(200);
     cv = await joyCover(page);
     ok(cv.cells > 0 && !cv.me && !cv.exit, `${name} 매트 앞: 조이스틱이 주인공·출구 칸을 가리지 않음 ${JSON.stringify(cv)}`);
@@ -389,7 +398,8 @@ try {
         else if (way === '매트 연타') { await tapTile(page, ROOM + 26, 17, NEAR_MAT); await page.waitForTimeout(40); await tapTile(page, ROOM + 26, 17); await page.waitForTimeout(40); await tapTile(page, ROOM + 24, 17); }
         else if (way === "'!' 핀 탭") await tapPin(page);
         else { // 문 매트 바로 앞까지 걸어서(탭) → 말 걸기 버튼
-          await tapTile(page, ROOM + 26, 16, NEAR_MAT); await waitFor(page, () => { const m = PrivacyMap.debug.me(); return !m.moving && m.x === 128 + 26 && m.y === 16; }, null, 8000);
+          // 문 앞 칸으로 바로 옮긴다: 좁은 가로 화면에서 문 앞 칸 탭은 매트로 처리돼 밖으로 나갈 수 있다(나가려는 동작이라 막지 않음 — 2026-11-06 보고함)
+          await page.evaluate(() => PrivacyMap.debug.place(128 + 26, 16, 'down')); await page.waitForTimeout(500);
           const c1 = await screenCheck(page); rec(sc, '화면 검사(스크롤·버튼·캔버스)', allOk(c1));
           const mat = await page.evaluate(() => [24, 25, 26, 27].map((x) => { const p = PrivacyMap.debug.tileToClient(128 + x, 17), e = document.elementFromPoint(p.x, p.y); return !!e && e.id === 'm-canvas'; }));
           ok(mat.every(Boolean) && allOk(c1), `${sc} 매트 앞: 매트 4칸·내 칸 주변이 캔버스로 잡힘 ${JSON.stringify({ mat, c1 })}`);

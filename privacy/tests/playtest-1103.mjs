@@ -281,7 +281,9 @@ try {
     /* e. 내 방 충돌·조사 */
     if (ONLY.includes('e')) {
       const p = await open(makeRun('pro_1', { map: true }), dev);
-      const spots = [['bed', 6, 7, '침대'], ['mypc', 15, 8, '컴퓨터'], ['plush', 15, 10, '판다'], ['dtable', 24, 10, '식탁'], ['sofa', 22, 10, '소파'], ['corkboard', 7, 7, '코르크보드']];
+      const spots = [['bed', 6, 7, '침대'], ['mypc', 15, 8, '컴퓨터'], ['plush', 15, 10, '판다'], ['dtable', 24, 10, '식탁'], ['sofa', 22, 10, '소파'], ['corkboard', 7, 7, '코르크보드'],
+        // 그림 자리만 비워 둔 장식 6종: 조사 문구는 나오고, 칸은 막지 않는다(보이지 않는 벽 금지)
+        ['phone', 6, 7, '협탁 휴대폰'], ['propbox', 11, 7, '소품 상자'], ['schoolbag', 14, 9, '책가방'], ['closet', 3, 9, '옷장·거울'], ['cushion', 10, 9, '쿠션'], ['moodlamp', 15, 9, '무드등']];
       for (const [id, x, y, label] of spots) {
         const o = WORLD.object(id);
         const dir = x + ROOM >= o.x + o.w ? 'left' : y >= o.y + o.h ? 'up' : 'right';
@@ -293,6 +295,10 @@ try {
         const txt = await p.evaluate(() => document.querySelector('.talk-text').textContent);
         ok(txt.includes(o.look.slice(0, 6)), `${label} 조사 문구 ${txt}`);
         await passTalk(p); await p.waitForTimeout(80);
+      }
+      {
+        const free = await p.evaluate(() => ['phone', 'propbox', 'schoolbag', 'closet', 'cushion', 'moodlamp'].map((id) => { const o = PRIVACY_WORLD.object(id); return id + ':' + (o.wall === true && PRIVACY_WORLD.walkable(o.x, o.y) ? 1 : 0); }));
+        rec(size, '장식 6종은 막지 않음', free.every((t) => t.endsWith(':1')), free.join(' '));
       }
       // 충돌: 방문 말고는 방 ↔ 거실이 막혀 있다
       const blocked = await p.evaluate(() => { const W = PRIVACY_WORLD, r = 128; let open = []; for (let x = 0; x < 32; x++) if (W.walkable(r + x, 12)) open.push(x); return { open, bed: W.walkable(r + 3, 7), desk: W.walkable(r + 14, 6), panda: W.walkable(r + 17, 11) }; });
