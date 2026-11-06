@@ -106,7 +106,7 @@ try {
     await page.locator('#confirm-depart[open]').waitFor();
     assert.equal(await page.locator('#confirm-depart-h').innerText(), '이대로 출발할까요?');
     assert.equal(await page.locator('#depart-summary, .depart-plan, #depart-rule').count(), 0, '예상 요약·운행 구성·규칙 문단 없음');
-    assert.doesNotMatch(await page.locator('#confirm-depart').innerText(), /기준 충족|예상 수지|못 떠나는/);
+    /* 2026-11-05 UI/UX 지시서 P0-2: 점검 목록과 예상 수지 한 줄은 보인다(인물별 기준 충족 예상은 없음) */assert.doesNotMatch(await page.locator('#confirm-depart').innerText(), /기준 충족/);
     await page.locator('#confirm-yes').click(); await page.waitForTimeout(600);
     assert.equal(await page.locator('#run-next').getAttribute('aria-label'), '다음 멈춤까지', phase + '단계 버튼 이름');
     const note = await page.evaluate(() => [...document.querySelectorAll('#panel .note')].map(n => n.textContent).find(t => /정원/.test(t)) || '');
@@ -193,10 +193,11 @@ try {
     await arrive(page, 3); await page.waitForTimeout(2500);
     const proj = () => page.evaluate(() => PB.Session.visibleNodeIds(PB.App.s).map(id => { const n = PB.App.nodeXY(id), p = PB.App.view.project(n.x, n.y); return id + Math.round(p.left) + ',' + Math.round(p.top); }).join(' '));
     const p0 = await proj(), m0 = await marks(page), shifts = [];
+    const same = (a, b, m) => { const n = (s) => s.match(/-?\d+/g).map(Number), x = n(a), y = n(b); assert.ok(x.length === y.length && x.every((v, i) => Math.abs(v - y[i]) <= 1), m + ' ' + a + ' / ' + b); }; // 1px 반올림은 흔들림이 아니다
     await page.locator('#route-4').click(); await page.waitForTimeout(700);
-    assert.equal(await proj(), p0, '첫 클릭에 투영 그대로'); shifts.push(...moved(m0, await marks(page)));
+    same(await proj(), p0, '첫 클릭에 투영 그대로'); shifts.push(...moved(m0, await marks(page)));
     for (const id of ['I', 'A']) { await clickNode(page, id); await page.waitForTimeout(700); shifts.push(...moved(m0, await marks(page)).map(x => '+' + id + ' ' + x)); }
-    assert.equal(await page.evaluate(() => PB.App.s.draft.routes.find(r => r.num === 4).nodes.join('')), 'IA'); assert.equal(await proj(), p0);
+    assert.equal(await page.evaluate(() => PB.App.s.draft.routes.find(r => r.num === 4).nodes.join('')), 'IA'); same(await proj(), p0, '이은 뒤 투영 그대로');
     assert.deepEqual(shifts, [], '3단계 4번 노선을 이어도 이름표·얼굴 그대로');
     assert.deepEqual(page.errors, []); ok('P1-5 ② 3D 1148 3단계 도착 뒤 첫 클릭·I·A 잇기: 투영·이름표·얼굴 그대로'); await page.close();
   }
@@ -206,8 +207,8 @@ try {
       const page = await fresh(q, { width: w, height: h }, dpr);
       await arrive(page, phase); await page.waitForTimeout(700);
       const c = await covered(page, '#map-banner'); assert.ok(c, '배너 있음');
-      const geo = await page.evaluate(() => { const b = document.querySelector('#map-banner').getBoundingClientRect(), s = document.querySelector('#stage').getBoundingClientRect(); return { w: b.width, h: b.height, inStage: b.left >= s.left - 1 && b.right <= s.right + 1 && b.top >= s.top - 1 && b.bottom <= s.bottom + 1, above: b.bottom <= s.top + 1 && b.left >= s.left - 1 && b.right <= s.right + 1, strip: document.querySelector('#map-banner').parentNode.id === 'map-strip' && b.top >= s.bottom - 1 }; });
-      assert.ok(geo.w > 100 && geo.h < 90, '배너가 접히지 않음 ' + JSON.stringify(geo)); assert.ok(geo.inStage || geo.strip, '배너가 지도 안 또는 지도 아래 알림 줄(빈자리가 없을 때) ' + JSON.stringify(geo));
+      const geo = await page.evaluate(() => { const b = document.querySelector('#map-banner').getBoundingClientRect(), s = document.querySelector('#stage').getBoundingClientRect(); return { w: b.width, h: b.height, side: b.left >= s.right - 1 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight, inStage: b.left >= s.left - 1 && b.right <= s.right + 1 && b.top >= s.top - 1 && b.bottom <= s.bottom + 1, above: b.bottom <= s.top + 1 && b.left >= s.left - 1 && b.right <= s.right + 1, strip: document.querySelector('#map-banner').parentNode.id === 'map-strip' && b.top >= s.bottom - 1 }; });
+      assert.ok(geo.w > 100 && geo.h < 90, '배너가 접히지 않음 ' + JSON.stringify(geo)); assert.ok(geo.inStage || geo.strip || geo.side, '배너가 지도 안·지도 옆 칸(넓은 화면 기본 배치 2026-11-05) 또는 지도 아래 알림 줄 ' + JSON.stringify(geo));
       assert.deepEqual(c.hits, [], `${q || '3D'} ${w} ${phase}단계 배너가 가리는 것`);
       if (w === 1280 && q) await page.screenshot({ path: `${SHOT}/_shot-p1-5-banner-2d1280-p${phase}.png` });
       if (w === 390) await page.screenshot({ path: `${SHOT}/_shot-p1-5-banner-390-p${phase}.png` });

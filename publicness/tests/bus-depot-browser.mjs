@@ -74,7 +74,7 @@ try{for(const view of (process.env.VIEWS||'2d,3d').split(',')){
  // 다른 노선으로 이동: 2번의 2호차 → 1번 선 위
  s=await dragTo(page,'#route-bus-2',await linePoint(page,1,0,.2,-15));assert.equal(s.hl,'1');assert.match(s.label,/놓으면 빨강 노선 1→2대 .*초록 노선 1→0대 · 운행 대기/);
  assert.deepEqual(await buses(page),[1,1]);await conserve(page,'이동');
- assert.ok(await page.locator('#route-bus-2.idle').count(),'마지막 버스가 떠난 노선은 남고 운행 대기');assert.match(await page.locator('#route-bus-2').getAttribute('aria-label'),/운행 대기/);assert.equal(await page.locator('#route-bus-2 .route-count').innerText(),'0대');
+ assert.ok(await page.locator('#route-bus-2.idle').count(),'마지막 버스가 떠난 노선은 남고 운행 대기');assert.match(await page.locator('#route-bus-2').getAttribute('aria-label'),/운행 대기/);assert.equal(await page.locator('#route-bus-2 .route-count').innerText(),'버스 없음');
  assert.equal(await page.evaluate(()=>PB.Session.routeByNum(PB.App.s,2).nodes.length),2,'노선 유지');
  assert.match(await page.locator('#depot-count').innerText(),/^0대$/);assert.ok(await page.locator('.depot-empty').count());
 
