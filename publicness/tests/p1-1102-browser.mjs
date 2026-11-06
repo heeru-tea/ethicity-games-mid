@@ -87,10 +87,10 @@ try {
     let ai = null;
     if (w > 850) {
       await page.locator('#plan-ai-toggle').click(); await page.waitForTimeout(800); boxes.push(await rectOf(page, '#stage'));
-      ai = await page.evaluate(() => { const a = document.querySelector('#plan-ai-popover').getBoundingClientRect(), s = document.querySelector('#stage').getBoundingClientRect(); return { inside: a.left >= s.left && a.right <= s.right + 1 && a.top >= s.top, rightGap: Math.round(s.right - a.right) }; });
+      ai = await page.evaluate(() => { const a = document.querySelector('#plan-ai-popover').getBoundingClientRect(), s = document.querySelector('#stage').getBoundingClientRect(); return { clear: a.left >= s.right || a.right <= s.left, gap: Math.round(a.left - s.right) }; });
       if (w === 1148) await page.screenshot({ path: `${SHOT}/_shot-p1-1-ai-1148.png` });
       await page.locator('#plan-ai-close').click(); await page.waitForTimeout(800); boxes.push(await rectOf(page, '#stage'));
-      assert.ok(ai.inside && ai.rightGap <= 12, 'AI 패널은 지도 오른쪽 가장자리 위 ' + JSON.stringify(ai));
+      assert.ok(ai.clear, 'AI 패널은 지도 옆 칸(11-05 P1-1·P1-6, 지도를 덮지 않음) ' + JSON.stringify(ai));
     }
     if (w !== 1148) await page.screenshot({ path: `${SHOT}/_shot-p1-1-coach-${w}.png` });
     assert.equal(new Set(boxes).size, 1, '지도 틀 그대로: ' + boxes.join(' | '));

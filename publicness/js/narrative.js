@@ -313,7 +313,7 @@
     var t = stat(ids), worst = null;
     if (mobility) { if (mobility.worst) { worst = stat([mobility.worst.id]); worst.id = mobility.worst.id; } }
     else config.nodes.forEach(function (n) { var z = stat([n.id]); if (z.left > 0 && (!worst || z.left > worst.left)) { z.id = n.id; worst = z; } });
-    var themeIsWorst = !!worst && ids.indexOf(worst.id) >= 0, ethics = !t.N || t.rate < FOCUS_RATE, line = '';
+    var themeIsWorst = !!worst && ids.length === 1 && ids[0] === worst.id, ethics = !t.N || t.rate < FOCUS_RATE, line = '';
     if (worst) line = '이번에 가장 많이 남은 곳은 ' + josa(nodeName(config, worst.id), '이에요') + '. 출발한 이동 ' + worst.N + '건 중 ' + worst.left + '건이 가지 못했어요(미도착).';
     if (!t.N) line += (line ? ' ' : '') + '이번에는 ' + names + '에서 출발한 이동이 없었어요.';
     else if (!worst) line = names + '에서 출발한 이동 ' + t.N + '건이 모두 도착했어요.';

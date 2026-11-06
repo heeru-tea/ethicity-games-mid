@@ -291,7 +291,7 @@
         if (!frozen && settled) keep.lab[id] = { dir: best.dir, right: right, ox: (right ? best.x + best.w : best.x) - p.left, oy: best.y - p.top };
         // 짧은 연결선: 마커 가장자리 → 이름표의 가장 가까운 점
         var bx = Math.max(best.x, Math.min(p.left, best.x + best.w)), by = Math.max(best.y, Math.min(p.top, best.y + best.h)), dd = Math.hypot(bx - p.left, by - p.top);
-        if (narrow ? dd > T.stop + 8 : dd > T.stop + 1) svgEl('line', { 'class': 'leader', 'data-node': id, x1: p.left + (bx - p.left) / dd * T.stop, y1: p.top + (by - p.top) / dd * T.stop, x2: bx, y2: by }, gLead);
+        if (narrow ? dd > L[id].gap + 10 : dd > T.stop + 1) svgEl('line', { 'class': 'leader', 'data-node': id, x1: p.left + (bx - p.left) / dd * T.stop, y1: p.top + (by - p.top) / dd * T.stop, x2: bx, y2: by }, gLead);
       });
       /* 운행·결과: 이름표 칸 = 지금 그린 이름표(대기 pill 포함) + 아직 비어 있는 pill 자리(pad). 얼굴·번호 원은 그린 이름표는 피하고,
        * 빈 pill 자리는 다른 곳이 없을 때만 쓴다(좁은 지도에서 pill 자리 때문에 얼굴이 이름표 위로 밀리던 것) */
