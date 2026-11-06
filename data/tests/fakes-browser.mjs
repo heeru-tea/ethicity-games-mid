@@ -12,7 +12,7 @@ const nextFake = (n) => `const fs = items.filter(i => i.kind==='card' && i.fakeI
 
 // 1) 첫 가짜에만 안내 한 줄
 {
-  const { browser, page, errors } = await openGame({ query: '?run=m1' });
+  const { browser, page, errors } = await openGame({ query: '?run=flood' });
   try {
     await page.waitForFunction(() => DR.Run.peek().running, null, { timeout: 8000 });
     await page.evaluate(() => { DR.Run.setPaused(true); DR.Run.debugSetHp(99); });
@@ -36,7 +36,7 @@ const nextFake = (n) => `const fs = items.filter(i => i.kind==='card' && i.fakeI
 
 // 2) 가짜도 보통 카드처럼 잡힌다(가방에 fakeId)
 {
-  const { browser, page, errors } = await openGame({ query: '?run=m1' });
+  const { browser, page, errors } = await openGame({ query: '?run=flood' });
   try {
     await page.waitForFunction(() => DR.Run.peek().running, null, { timeout: 8000 });
     await page.evaluate(() => { DR.Run.setPaused(true); DR.Run.debugSetHp(99); });
@@ -185,7 +185,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     const row = page.locator('#prep-summary .kind[data-key="day_deep"]');
     await row.locator('button', { hasText: '1장 빼기' }).click();
     assert.equal(await page.evaluate(() => DR.App.state.bag.length), n0, 'nothing removed by the button itself');
-    const ids = await page.evaluate(() => DR.App.state.bag.filter((c) => DR.Cards.displayKey(DR.Missions.m1, c) === 'day_deep').map((c) => c.id));
+    const ids = await page.evaluate(() => DR.App.state.bag.filter((c) => DR.Cards.displayKey(DR.Missions.flood, c) === 'day_deep').map((c) => c.id));
     assert.equal(await page.locator('#prep-summary .kind[data-key="day_deep"] .kind-pick-card').count(), ids.length, 'every day_deep-labelled photo shown (pool included)');
     const pool = await page.evaluate(() => DR.App.state.bag.find((c) => c.fakeId === 'f_pool').id);
     if (viewport.width === 390) await page.screenshot({ path: shotPath('prep-pick-390'), fullPage: true });

@@ -60,7 +60,7 @@ const hint = (page) => page.locator('#screen-story .dialog-hint').innerText();
     // 2) 단서 카드 글은 한 번만(캡션) — 그림 칸에는 글을 그리지 않는다
     await page.locator('#inspect-grid .bag-card[data-key="q_neon"] .bag-open').click();
     const clue = await page.evaluate(() => {
-      const m = DR.Missions.m1;
+      const m = DR.Missions.flood;
       const a = DR.CardArt.clue(m, 'q_neon', 1, 256).toDataURL(), b = DR.CardArt.clue(m, 'q_muddy', 0, 256).toDataURL(); // 둘 다 수위 센서, 문구만 다름
       return { same: a === b, captions: [...document.querySelectorAll('#inspect-zoom .clue figcaption')].map((f) => f.textContent) };
     });

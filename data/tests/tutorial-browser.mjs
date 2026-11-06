@@ -16,7 +16,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
     assert.ok(await visible('profile'), 'opening after start');
     const open = await page.evaluate(() => DR.Prologue.opening);
     assert.match(await page.locator('#screen-profile .opening-lead').innerText(), /안내 AI가 말했다/);
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'btn-opening-next', 'first action focused');
+    assert.equal(await page.locator('#btn-opening-next').isEnabled(), true, 'first action available right away');
     for (const b of open.beats) {
       assert.equal(await page.locator('#screen-profile .opening').getAttribute('data-beat'), b.id);
       if (b.id === 'split') assert.equal(await page.locator('.split-tag b').innerText(), '고양이');
@@ -46,7 +46,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
       assert.ok(c.label.length > 0, 'label drawn on top');
     }
     await page.screenshot({ path: shotPath('run-tutorial-' + viewport.width) });
-    await finishWith({ dog: 8 });
+    await finishWith({ dog: 7 });
     assert.ok(await visible('inspect'), 'inspect after the run');
     await page.locator('#btn-submit').click();
     assert.ok(await visible('result'), 'demo after fail');

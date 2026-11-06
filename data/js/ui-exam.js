@@ -56,7 +56,7 @@
       next.addEventListener('click', function () { DR.Sfx.play('ui'); if (++i >= data.beats.length) finish(); else show(); });
       parts.push(el('div', { class: 'actions' }, [next]));
       screen.appendChild(el('div', { class: 'page opening', 'data-beat': b.id, 'aria-live': 'polite' }, parts));
-      next.focus();
+      if (i > 0) next.focus(); // 같은 화면 안의 다음 장면만(화면 전환 때는 자동 포커스 금지 — Space 연타로 건너뛰지 않게)
     }
     show();
     DR.App.go('profile');
@@ -131,8 +131,8 @@
     return el('figure', { class: 'exam-pair ' + kind, 'data-id': card.id, 'data-kind': kind }, [
       el('img', { src: photo(m, card, 192), alt: '카드 사진' }),
       el('figcaption', null, [
-        el('p', { class: 'exam-ai', text: 'AI: ' + label + (label === '개' ? '입니다.' : '입니다.') }),
-        el('p', { text: (kind === 'fixed' ? '이제 ‘' : '이 사진에 ‘') + label + (kind === 'fixed' ? '’라는 이름표를 주었어요.' : '’라는 이름표를 주었어요.') })
+        el('p', { class: 'exam-ai', text: 'AI: ' + label + '입니다.' }),
+        el('p', { text: (kind === 'fixed' ? '이제 ‘' : '이 사진에 ‘') + label + '’라는 이름표를 주었어요.' })
       ])
     ]);
   }
@@ -191,7 +191,6 @@
     screen.innerHTML = '';
     screen.appendChild(el('div', { class: 'page' }, kids));
     DR.App.go('result');
-    if (actions[0]) actions[0].focus();
   }
 
   root.DR = root.DR || {};

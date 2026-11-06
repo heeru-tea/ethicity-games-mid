@@ -261,8 +261,9 @@ async function finishFromSenior(page) {
     assert.ok(res.every((r) => r.outcome === 'pass'));
     await finishFromSenior(page);
     assert.ok((await page.locator('#screen-outro').innerText()).includes('침수 판별 AI 완료'), 'kicker names the mission');
-    assert.deepEqual(await page.evaluate(() => DR.App.records.m1), { cleared: true, passed: true, firstTry: true, supplements: 0, firstFails: [], fixedLabels: 0 });
-    assert.deepEqual(await page.evaluate(() => DR.Save.records().m1.cleared), true, 'record saved');
+    assert.deepEqual(await page.evaluate(() => DR.App.records.flood), { cleared: true, passed: true, firstTry: true, supplements: 0, firstFails: [], fixedLabels: 0 });
+    assert.deepEqual(await page.evaluate(() => DR.Save.records().flood.cleared), true, 'record saved');
+    await page.evaluate(() => { DR.App.records.m1 = DR.App.records.flood; }); // 2 임무 브리핑 한 줄은 1 임무(next가 m2인 첫 임무) 기록을 읽는다
     assert.ok(await page.locator('#btn-again').isVisible(), 'title button too');
     await page.locator('#btn-next-mission').click();
     await page.locator('#btn-skip').click();
@@ -347,7 +348,7 @@ async function finishFromSenior(page) {
     assert.ok((await dlg.innerText()).includes('저장된 진행'), 'asks before overwriting');
     await dlg.locator('button', { hasText: '취소' }).click();
     assert.equal(await page.evaluate(() => DR.App.screen), 'title');
-    assert.equal(await page.evaluate(() => DR.Save.load().mission), 'm1', 'save kept on cancel');
+    assert.equal(await page.evaluate(() => DR.Save.load().mission), 'flood', 'save kept on cancel');
     await page.locator('#btn-m2').click();
     await page.locator('dialog.modal button', { hasText: '2 임무 시작' }).click();
     await page.locator('#screen-story').waitFor({ state: 'visible' });

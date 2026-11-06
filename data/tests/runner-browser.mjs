@@ -210,7 +210,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 
     await page.evaluate(() => { DR.Run.setPaused(true); DR.Run.debugSetHp(99); });
     const goalText = () => page.locator('#run-goal').innerText();
     await page.evaluate(() => DR.Run.step(0.02));
-    assert.match(await goalText(), /강아지 0\/5\s*·\s*고양이 0\/5/);
+    assert.match(await goalText(), /개 0\/5\s*·\s*고양이 0\/5/);
     // 첫 벽 직전 안내, 벽 뒤 같은 레인에 카드 없음
     const wall = await page.evaluate(() => DR.App.course.items.find((i) => i.kind === 'wall'));
     await stepUntil(page, `return ${wall.z} - p.runnerZ < p.speed * 1.9;`);
@@ -222,7 +222,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 
     await page.evaluate(() => { DR.App.debugFill({ dog: 1 }); DR.Run.step(0.02); });
     const over = page.locator('.run-goal-item[data-goal="dog"]');
     assert.match(await over.getAttribute('class'), /\bover\b/);
-    assert.match(await over.innerText(), /강아지 6\/5 이미 5장!/);
+    assert.match(await over.innerText(), /개 6\/5 이미 5장!/);
     assert.equal(await page.evaluate(() => DR.Run.peek().bagCount), 6, 'not blocked');
     await page.screenshot({ path: shotPath('tutorial-over-' + viewport.width) });
     // 한쪽으로 쏠림(6:4) → fail 대사

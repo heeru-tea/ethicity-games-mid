@@ -20,7 +20,7 @@ async function walkInto(page) {
 
 // 1) 맞으면 HP-1·감속·무적
 {
-  const { browser, page, errors } = await openGame({ query: '?run=m1' });
+  const { browser, page, errors } = await openGame({ query: '?run=flood' });
   try {
     await page.waitForFunction(() => DR.Run.peek().running, null, { timeout: 8000 });
     await page.evaluate(() => DR.Run.setPaused(true));

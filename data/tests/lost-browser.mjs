@@ -82,6 +82,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 812 
     for (let i = 0; i < 3; i++) await page.locator('#btn-next').click();
     for (let i = 0; i < 6 && !(await page.locator('#screen-outro').isVisible()); i++) { await page.waitForTimeout(200); if (await page.locator('#btn-skip').count()) await page.locator('#btn-skip').click(); await passCity(page); }
     await page.locator('#screen-outro').waitFor({ state: 'visible', timeout: 8000 });
+    assert.equal(await page.evaluate(() => DR.App.cityCount()), 1, '도시 칸 하나');
     await page.locator('#screen-outro .btn-primary').first().click();
     await page.locator('#screen-story').waitFor({ state: 'visible', timeout: 5000 });
     assert.equal(await page.evaluate(() => DR.App.state.mission), 'm2');
