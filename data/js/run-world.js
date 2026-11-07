@@ -83,6 +83,13 @@
       glow.position.set(side * (W / 2 + 0.07), -0.7, 0); view.lines.add(glow); made.push(glow.geometry, glow.material);
     });
 
+    // 노이즈 벽: 팔레트의 벽 색·불투명도(낮 바닥 위에서도 보이게 — 밤은 원래 그대로)
+    view.wallOpacity = P.wall.opacity;
+    if (time === 'day' && view.wallTex && view.wallTex.image) {
+      var wg = view.wallTex.image.getContext('2d'), ww = view.wallTex.image.width, wh = view.wallTex.image.height;
+      for (var wy = 0; wy < wh; wy += 2) for (var wx = 0; wx < ww; wx += 2) { var r = Math.random(); wg.fillStyle = r < 0.3 ? P.wall.noise[0] : r < 0.65 ? P.wall.noise[1] : P.wall.noise[2]; wg.fillRect(wx, wy, 2, 2); }
+      view.wallTex.needsUpdate = true;
+    }
     // 다리 아래 도시 불빛(작고 어둡게 — 카드 높이·레인 위로 오지 않는다)
     var n = opts.low ? N_LIGHTS_LOW : N_LIGHTS, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
     var seed = 1;
@@ -153,7 +160,7 @@
       stage.style.setProperty('--rw-horizon', px.toFixed(1) + 'px');
     }
     function state() {
-      return { time: time, look: cur ? cur.id : null, rain: rainOn, moving: moving,
+      return { time: time, look: cur ? cur.id : null, rain: rainOn, moving: moving, wallOpacity: view.wallOpacity,
         layers: stage.querySelectorAll('.rw-layer').length };
     }
     function dispose() {

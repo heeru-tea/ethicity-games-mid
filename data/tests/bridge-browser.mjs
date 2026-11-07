@@ -29,6 +29,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
     const w = await world(page);
     assert.ok(w, 'tutorial run has a bridge world');
     assert.deepEqual([w.time, w.look, w.layers], ['night', 'tutorial', 5]);
+    assert.equal(w.wallOpacity, 0.72, 'night walls keep their look');
     assert.equal(await layers(page), 5);
     assert.ok(await page.evaluate(() => getComputedStyle(document.querySelector('#run-stage .rw-sky')).backgroundImage.includes('bg-sky.webp')));
     const hz = await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById('run-stage')).getPropertyValue('--rw-horizon')) / innerHeight);
@@ -137,6 +138,10 @@ console.log('ok m1 night bridge zones');
     await page.waitForFunction(() => document.querySelector('#run-stage .rw-sky').hidden);
     assert.equal((await world(page)).time, 'day');
     assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('run-stage')).backgroundImage.includes('gradient')), true, 'plain sky behind');
+    // 리뷰 I1: 낮 다리의 노이즈 벽은 덜 투명하게(그려진 벽 재질에 실제로 들어감)
+    assert.equal((await world(page)).wallOpacity, 0.9);
+    const wallOp = await page.evaluate(() => { while (!DR.Run.course().items.some((i) => i.kind === 'wall' && i.z - DR.Run.peek().runnerZ < 140 && i.z > DR.Run.peek().runnerZ)) DR.Run.step(0.05); return DR.Run.peek().wallOpacities; });
+    assert.ok(wallOp && wallOp.length && wallOp.every((o) => o === 0.9), 'wall meshes use 0.9: ' + JSON.stringify(wallOp));
     assert.deepEqual(errors.filter((e) => !e.includes('__missing-sky')), []);
   } finally { await browser.close(); }
 }

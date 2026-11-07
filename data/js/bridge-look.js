@@ -8,12 +8,15 @@
   var PALETTE = {
     night: {
       deck: '#16162f', seam: '#232347', lane: '#7ff9ff', laneOpacity: 0.42, edge: '#7ff9ff', edgeOpacity: 1, side: '#0e0d24',
-      fog: '#1b1340', lights: ['#ffd24a', '#7ff9ff', '#ff5fb0'], lightOpacity: 0.55, reflect: ['#ff5fb0', '#7ff9ff'], reflectOpacity: 0.1
+      fog: '#1b1340', lights: ['#ffd24a', '#7ff9ff', '#ff5fb0'], lightOpacity: 0.55, reflect: ['#ff5fb0', '#7ff9ff'], reflectOpacity: 0.1,
+      wall: { opacity: 0.72, noise: ['#ffffff', '#ff5fb0', '#c2307f'] } // 노이즈 벽 원래 모습 그대로(run3d.js 벽 텍스처)
     },
     // 낮: 하늘보다 어두운 청회색 철판 — 반투명 분홍 벽(노이즈)이 묻히지 않게 대비 2.2 이상
     day: {
       deck: '#535d76', seam: '#5f6a84', lane: '#e6faff', laneOpacity: 0.5, edge: '#a6e9f0', edgeOpacity: 0.75, side: '#3a4258',
-      fog: '#cfe4ef', lights: ['#ffd24a', '#a6e9f0', '#f2b8d6'], lightOpacity: 0.35, reflect: ['#f2b8d6', '#a6e9f0'], reflectOpacity: 0.08
+      fog: '#cfe4ef', lights: ['#ffd24a', '#a6e9f0', '#f2b8d6'], lightOpacity: 0.35, reflect: ['#f2b8d6', '#a6e9f0'], reflectOpacity: 0.08,
+      // 리뷰 I1: 진분홍(#c2307f) 칸은 낮 바닥과 밝기가 거의 같다(대비 1.1) → 낮에만 밝은 분홍 칸 + 덜 투명하게
+      wall: { opacity: 0.9, noise: ['#ffffff', '#ff5fb0', '#ff8fca'] }
     }
   };
 

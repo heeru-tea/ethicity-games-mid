@@ -174,7 +174,7 @@
       g.position.set(laneX(item.lane), 1.1, -item.z);
     } else {
       // 서 있는 반투명 노이즈 벽(주인공 허리 높이) + 윗면 띠 — 멀리서도, 뒤 카드와도 구분되게
-      var wall = new THREE.Mesh(new THREE.BoxGeometry(cfg().laneWidth * 0.94, WALL_H, 0.3), new THREE.MeshBasicMaterial({ map: S.view.wallTex, transparent: true, opacity: 0.72, depthWrite: false }));
+      var wall = new THREE.Mesh(new THREE.BoxGeometry(cfg().laneWidth * 0.94, WALL_H, 0.3), new THREE.MeshBasicMaterial({ map: S.view.wallTex, transparent: true, opacity: S.view.wallOpacity || 0.72, depthWrite: false }));
       var cap = new THREE.Mesh(new THREE.BoxGeometry(cfg().laneWidth * 0.94, 0.09, 0.34), new THREE.MeshBasicMaterial({ color: 0xffa2d3 }));
       cap.position.y = WALL_H / 2;
       g.add(wall); g.add(cap);
@@ -714,7 +714,8 @@
     },
     peek: function () {
       if (!S) return { running: false };
-      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, lost: S.lost.length, rush: S.rush, finishing: S.finishing ? S.finishing.kind : null, gate: !!(S.view && S.view.gate.visible), running: S.running, hero: S.view && S.view.hero ? S.heroId : null, legSwing: S.legSwing, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning, fakeHintShown: S.fakeHintShown, linesShown: S.linesShown || [], pixelRatio: S.renderer ? S.renderer.getPixelRatio() : null, scenery: S.scenery && S.scenery.state ? S.scenery.state() : null, world: S.view && S.view.world ? S.view.world.state() : null };
+      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, lost: S.lost.length, rush: S.rush, finishing: S.finishing ? S.finishing.kind : null, gate: !!(S.view && S.view.gate.visible), running: S.running, hero: S.view && S.view.hero ? S.heroId : null, legSwing: S.legSwing, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning, fakeHintShown: S.fakeHintShown, linesShown: S.linesShown || [], pixelRatio: S.renderer ? S.renderer.getPixelRatio() : null, scenery: S.scenery && S.scenery.state ? S.scenery.state() : null, world: S.view && S.view.world ? S.view.world.state() : null,
+        wallOpacities: S.course.items.filter(function (i) { return i.kind === 'wall' && S.meshes[i.uid]; }).map(function (i) { return S.meshes[i.uid].children[0].material.opacity; }) };
     }
   };
 
