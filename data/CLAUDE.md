@@ -3,7 +3,7 @@
 ## ★지금 상태 (2026-11-06, 오프닝·첫 시험 개편 + 1 임무 = 분실물 센터)
 - **사용자 결정(재논의 금지)**: 침수 임무는 중학생에게 어려워 1 임무를 **분실물 센터 AI**로 교체. 설계 `docs/specs/2026-11-05-opening-tutorial-draft.md`(오프닝·첫 시험) + `docs/specs/2026-11-06-m1-lost-found.md`(1 임무).
 - **옛 침수 임무** = `missions/legacy-flood.js`(id flood, `?start=flood`로만). 게임 흐름에 없음. 가짜·"?" 카드 엔진 테스트 자료로 남김(m4에 쓰이는 규칙을 지키려고) — 테스트의 `?start=flood`·`legacy-flood.js`는 이 때문.
-- **오프닝** `js/ui-exam.js opening` + `missions/prologue.js`(beats: shelter·split·school·world·gate). 그림 `assets/story/opening-{shelter,school,world}.webp`, `opening-gate-{onyu,daon}.webp`는 **Codex 제작 중, 이 이름으로 넣으면 저절로 쓰임**(없으면 그림 자리 숨김, 테스트 allowlist 있음).
+- **오프닝** `js/ui-exam.js opening` + `missions/prologue.js`(beats: shelter·split·school·world·gate). 그림 `assets/story/opening/*.webp`(1280px, Codex 2026-11-06, 원본 PNG·프롬프트는 커밋 안 함, 없으면 그림 자리 숨김).
 - **첫 시험**: 튜토리얼 카드 = 개 7·고양이 7 + 이름표 틀린 카드 2장(`fakes`, 코스 뒤 절반 `fakeFrom`, 달리는 중 안내 없음 `fakeHint:false`). 판정 `DR.Judge.exam`(사진 기준 수 + 이름표). 검수·시연 `examInspect/examDemo`. 틀린 카드를 안 가져오면 시험관의 연습 카드(`state.drill`, 가방·개수·판정 밖, 고쳐야 넘어감). 이름표만 틀리면 재달리기 없음. 달리기 목표 HUD는 사진 기준. 표기 '강아지' → '개'(문서 기준).
 - **새 1 임무** `missions/m1.js`: 장면 3(우산·지갑·스마트폰), 조합 = 모습 6개 각 3장, `hideShapes`(이름표는 종류, 첫 검수까지 모습을 글로 안 알림, 결과·보충부터 모습 이름), `rareLate`(구역 앞 35%는 흔한 모습), 컨베이어 `holdBin`(모자란 모습만 '분류 보류' 칸, 비상 정지 없음). 사진 `assets/cards/lost-found/*.webp`(384², 원본 PNG는 커밋 안 함). 동기 "이상하게 놓인 사진은 그냥 빼자"는 m4 "이상한 건 빼자" 복선이라 유지.
 - 옛 침수 저장: `App.resume`이 도로 카드를 보면 새 1 임무 브리핑으로 되돌림, 3 임무 정체 공개는 지금 장면 이름만 인용.
