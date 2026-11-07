@@ -1,6 +1,15 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
-## ★지금 상태 (2026-11-06, 오프닝·첫 시험 개편 + 1 임무 = 분실물 센터)
+## ★지금 상태 (2026-11-07, 달리기 무대 1차 = 「도시 위를 잇는 빛의 다리」)
+- **사용자 결정(재논의 금지)**: "엑셀 위에서 달리는 느낌" → 방향 C(도시 위 빛의 다리), 바닥 = 시안 2번 어두운 남색 철판(눈이 덜 피곤, 카드·벽이 잘 보임). 연습·1 임무 = 밤 다리, **3 임무 = 낮 다리**, **2·4 임무 = 실내 무대 유지(2차에서 다듬기)**. 겉모습만(길 모양·코스·판정 그대로). 설계 `docs/specs/2026-11-07-run-bridge-world-design.md`, 계획 `docs/plans/2026-11-07-run-bridge-world.md`.
+- **구조**: 임무 데이터 `world: 'bridge'`(+ 3 임무 `worldTime: 'day'`) → `run3d.js start`가 `DR.RunWorld.create`(`js/run-world.js`), 기본 바닥 격자·상자 빌딩 숨김, `peek().world`. 색·구역 모습은 `js/bridge-look.js`(순수, node 테스트 — 밤 바닥 `#16162f`, 낮 바닥 `#535d76`은 분홍 벽 대비 2.2 때문에 계획보다 어둡게). 1 임무 `scenery: 'bridge'`(구역마다 하늘 색조·다리 아래 불빛 비율), 3 임무 `scenery: 'city'`는 다리 위에서 소품만(등불 S2·강물 다리 아래 S3), 비 = 다리가 S4만.
+- **하늘·도시 그림 = 캔버스 뒤 CSS 층**(`.rw-sky/.rw-far/.rw-mid/.rw-tint/.rw-rain`, `#run-stage` isolation + z-index −1). WebGL 텍스처가 아니라서 file:// 더블클릭에서도 막히지 않음(플래그 없는 브라우저로 테스트). 도시 밑변 = `--rw-horizon`(매 프레임 지평선 투영). 그림 못 읽으면 그 층만 숨김 → `#run-stage` 그라디언트가 단색 하늘. 낮 그림 `assets/title/bg-*-day.webp`(Codex, 원본 PNG·preview·ps1은 gitignore), 3 임무 브리핑 때 `DR.RunWorld.preload`.
+- 젖은 네온 반사는 레인 밖 여백에만(레인 위에 띠가 지면 카드·벽과 겹침). `?low=1`·움직임 줄이기 = 비·시차·스파크 멈춤(`peek().world.moving`).
+- 테스트: 단위 `bridge-look.test`(대비·구역 모습) · 브라우저 `bridge-browser`(연습 밤 1366·375, 다시 달려도 층 5개, 2 임무로 가면 0, low/reduced, 플래그 없는 file://, 1 임무 구역 3색, 그림 없음 대체) · `m3-browser`(낮·구역별 비·저녁빛). 스크린샷 `_shot-bridge-*`. 헤드리스 fps: 이전 16 → 23(상자 빌딩이 빠져 더 가벼움).
+- ⚠️ `tutorial-browser`·`runner-browser`는 실시간 대기(30·60초)라 다른 브라우저 테스트 직후 묶어 돌리면 가끔 시간 초과 — 혼자 다시 돌리면 통과(이전 코드도 같은 성질).
+- 미확인: 실제 학교 PC 프레임·체감, 실기기 휴대폰, 학생 반응. 2차 = 2·4 임무 실내 무대 다듬기(+1 임무 자기 실내 무대는 선택), 그다음 길 모양(휘기·오르내리기).
+
+## 지금 상태 (2026-11-06, 오프닝·첫 시험 개편 + 1 임무 = 분실물 센터)
 - **사용자 결정(재논의 금지)**: 침수 임무는 중학생에게 어려워 1 임무를 **분실물 센터 AI**로 교체. 설계 `docs/specs/2026-11-05-opening-tutorial-draft.md`(오프닝·첫 시험) + `docs/specs/2026-11-06-m1-lost-found.md`(1 임무).
 - **옛 침수 임무** = `missions/legacy-flood.js`(id flood, `?start=flood`로만). 게임 흐름에 없음. 가짜·"?" 카드 엔진 테스트 자료로 남김(m4에 쓰이는 규칙을 지키려고) — 테스트의 `?start=flood`·`legacy-flood.js`는 이 때문.
 - **오프닝** `js/ui-exam.js opening` + `missions/prologue.js`(beats: shelter·split·school·world·gate). 그림 `assets/story/opening/*.webp`(1280px, Codex 2026-11-06, 원본 PNG·프롬프트는 커밋 안 함, 없으면 그림 자리 숨김).
@@ -97,6 +106,7 @@
 | `js/save.js` | 저장·이어하기·소리·주인공·**임무 기록(records)** |
 | `js/cardart.js` | 카드·아이콘·단서·결과 컷을 Canvas로 생성(같은 화풍 원칙, 지하차도 금지) |
 | `js/run3d.js` | three.js 달리기(r149, `vendor/`) — `step/peek/setPaused/finishNow/debugTake` 테스트 훅 |
+| `js/run-world.js` · `bridge-look.js` | 빛의 다리 무대(캔버스 뒤 하늘·도시 CSS 층 + 3D 다리·불빛) · 밤/낮 팔레트·구역 모습(순수) |
 | `js/ui-story.js` · `ui-inspect.js` · `ui-result.js` · `ui-conveyor.js` | 대화·브리핑·검수(크게 보기 공용 = `zoomer`, 2 임무 이름표 고치기)·감독관·결과·보충 준비·마무리·2 임무 컨베이어 |
 | `js/ui-common.js` · `ui-shell.js` | 아이콘 줄·범례·도움말·되돌리기 / 일시정지·타이틀(주인공·임무 고르기) |
 | `js/ui-guide.js` · `ui-grade.js` · `ui-city.js` · `showdown.js` | 3 임무 길 안내 시연 · 4 임무 채점 시연 · 도시 복구 화면 · 4 임무 결판·동기 카드 규칙(순수) |
@@ -105,8 +115,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (221)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (22개: bgm·boot·cardart·fakes·fire·flow·hero·keys·m1·m2·m3·**m4**·play·polish·portraits·readability·run·**runner**·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (234)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (25개: bgm·boot·**bridge**·cardart·exam·fakes·fire·flow·hero·keys·lost·m1·m2·m3·m4·play·polish·portraits·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
