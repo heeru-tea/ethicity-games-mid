@@ -3,6 +3,7 @@
 (function (root) {
   'use strict';
   function create(view, mission) {
+    if (mission && mission.scenery === 'bridge') return bridge(view, mission);
     if (mission && mission.scenery === 'sorting') return sorting(view, mission);
     if (mission && mission.scenery === 'city') return city(view, mission);
     if (mission && mission.scenery === 'exam') return exam(view, mission);
@@ -207,6 +208,12 @@
       }
     }
     return { update: update, state: function () { return { zone: current, theme: 'city', sky: sky }; } };
+  }
+  // 빛의 다리(1 임무 등, js/run-world.js): 구역마다 하늘 색조·다리 아래 불빛 비율만 바꾼다(DR.BridgeLook). 하늘 색·안개는 다리가 맡는다
+  function bridge(view) {
+    var current = null;
+    function update(id) { if (id !== current) { current = id; if (view.world) view.world.look(id); } }
+    return { update: update, state: function () { return { zone: current, theme: 'bridge', look: view.world ? view.world.state().look : null }; } };
   }
   root.DR.RunScenery = { create: create };
 })(window);

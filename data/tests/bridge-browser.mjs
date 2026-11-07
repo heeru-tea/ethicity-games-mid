@@ -97,4 +97,31 @@ console.log('ok low / reduced motion');
 }
 console.log('ok file:// without flag');
 
+// D. 1 임무 = 밤 다리, 구역(우산·지갑·스마트폰)마다 하늘 색조·불빛 비율이 다르다
+{
+  const { browser, page, errors } = await openGame({ query: '?run=m1' });
+  try {
+    await ready(page);
+    const zones = await page.evaluate(() => DR.Run.course().zones.map((z) => z.id));
+    assert.equal(zones.length, 3);
+    const seen = [];
+    for (const id of zones) {
+      await page.evaluate((id) => {
+        const zone = DR.Run.course().zones.find((z) => z.id === id);
+        while (DR.Run.peek().runnerZ < zone.start + 1) DR.Run.step(0.05);
+      }, id);
+      const sc = await page.evaluate(() => DR.Run.peek().scenery);
+      assert.equal(sc.theme, 'bridge'); assert.equal(sc.zone, id);
+      const w = await world(page);
+      assert.equal(w.time, 'night'); assert.equal(w.look, 'm1-' + id);
+      seen.push(await page.evaluate(() => getComputedStyle(document.querySelector('#run-stage .rw-tint')).backgroundColor));
+      if (id === zones[0]) await page.screenshot({ path: shotPath('bridge-m1-1366') });
+    }
+    assert.equal(new Set(seen).size, 3, 'each zone tints the sky differently');
+    assert.equal(await page.evaluate(() => DR.Run.peek().scenery && document.getElementById('run-stage').classList.contains('rw-night')), true);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+}
+console.log('ok m1 night bridge zones');
+
 console.log('PASS bridge');
