@@ -469,6 +469,12 @@
       var zone = S.course.zones.filter(function (zone) { return S.z >= zone.start; }).pop();
       S.scenery.update(zone.id, S.z, S.t, rm);
     }
+    if (v.world) {
+      v.world.update(S.z, S.t);
+      // 지평선(다리가 안개로 사라지는 곳) 화면 높이 → 도시 그림 밑변
+      var hp = new THREE.Vector3(S.camX, 0, -S.z - VIEW_AHEAD).project(S.camera);
+      v.world.setHorizon((1 - hp.y) / 2 * (S.container.clientHeight || 1));
+    }
     // 땅·도로는 줄 간격에 맞춰 따라온다(줄이 세계에 고정돼 보이게)
     var snap = Math.floor(S.z / LINE_GAP) * LINE_GAP;
     var mid = -(snap + ROAD_LEN / 2 - VIEW_BEHIND);
@@ -631,6 +637,11 @@
     S.heroId = DR.Save ? DR.Save.hero() : 'onyu';
     S.view = buildScene();
     S.view.gate = makeGate();
+    // 빛의 다리(연습·1·3 임무): 바닥·격자·상자 빌딩 대신 다리 + 캔버스 뒤 하늘·도시 층(js/run-world.js). 2·4 임무는 없음
+    if (S.mission.world && root.DR.RunWorld) {
+      S.view.world = root.DR.RunWorld.create(S.view, container, { time: S.mission.worldTime || 'night', low: low, reduced: reducedMotion(), missionId: S.mission.id, laneWidth: cfg().laneWidth, roadLen: ROAD_LEN });
+      S.view.world.look(null);
+    }
     if (S.course.zones) S.scenery = root.DR.RunScenery.create(S.view, S.mission);
     S.feedback = root.DR.RunFeedback.create(container, S.mission, S.course);
     // 조작을 막는 건 일시정지 메뉴·도움말 같은 열린 다이얼로그다. S.paused(setPaused)는 시계만 멈춘다 —
@@ -674,6 +685,7 @@
     if (S.ro) S.ro.disconnect();
     var mute = document.getElementById('btn-mute');
     if (mute) mute.removeEventListener('click', S.onMute);
+    if (S.view.world) S.view.world.dispose();
     S.view.scene.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
     S.disposables.forEach(function (t) { t.dispose(); });
     S.feedback.destroy();
@@ -702,7 +714,7 @@
     },
     peek: function () {
       if (!S) return { running: false };
-      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, lost: S.lost.length, rush: S.rush, finishing: S.finishing ? S.finishing.kind : null, gate: !!(S.view && S.view.gate.visible), running: S.running, hero: S.view && S.view.hero ? S.heroId : null, legSwing: S.legSwing, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning, fakeHintShown: S.fakeHintShown, linesShown: S.linesShown || [], pixelRatio: S.renderer ? S.renderer.getPixelRatio() : null, scenery: S.scenery && S.scenery.state ? S.scenery.state() : null };
+      return { t: S.t, runnerZ: S.z, speed: currentSpeed(), lane: S.lane, bagCount: bagCount(), bagMax: S.bagMax, lost: S.lost.length, rush: S.rush, finishing: S.finishing ? S.finishing.kind : null, gate: !!(S.view && S.view.gate.visible), running: S.running, hero: S.view && S.view.hero ? S.heroId : null, legSwing: S.legSwing, slowedUntil: S.slowedUntil, paused: S.paused, hp: S.hp, invulnUntil: S.invulnUntil, warning: S.warning, fakeHintShown: S.fakeHintShown, linesShown: S.linesShown || [], pixelRatio: S.renderer ? S.renderer.getPixelRatio() : null, scenery: S.scenery && S.scenery.state ? S.scenery.state() : null, world: S.view && S.view.world ? S.view.world.state() : null };
     }
   };
 
