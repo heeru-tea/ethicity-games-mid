@@ -167,5 +167,14 @@
   }
 
   root.DR = root.DR || {};
-  root.DR.RunWorld = { create: create };
+  // 브리핑 때 그 임무의 다리 그림을 미리 받아 둔다(한 번만, 기다리지 않음 — app.js go)
+  var preloaded = {};
+  function preload(mission) {
+    if (!mission || !mission.world) return;
+    var t = mission.worldTime === 'day' ? 'day' : 'night';
+    if (preloaded[t]) return;
+    preloaded[t] = true;
+    ART[t].forEach(function (src) { new Image().src = src; });
+  }
+  root.DR.RunWorld = { create: create, preload: preload };
 })(window);

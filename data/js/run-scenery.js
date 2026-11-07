@@ -185,17 +185,23 @@
     }
     var positions = new Float32Array(160 * 6), geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     var rain = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xc6dbe8, transparent: true, opacity: 0.55 })); rain.frustumCulled = false; scene.add(rain);
+    // 빛의 다리 낮 버전(view.world, 2026-11-07): 하늘·안개·비는 다리(js/run-world.js)가 맡고, 여기선 구역 소품만 — 강물은 다리 아래로
+    var onBridge = !!view.world;
+    if (onBridge) river.children.forEach(function (w) { w.position.y = -6; });
     var current = null, sky = null;
     function update(id, z, t, reduced) {
       var look = CITY[id] || CITY.S1;
       if (id !== current) {
         current = id; sky = look.sky;
-        scene.background = new THREE.Color(sky); scene.fog.color.setHex(sky);
-        view.buildings.forEach(function (b, i) {
-          b.scale.y = look.scale; b.position.y = b.geometry.parameters.height * b.scale.y / 2;
-          b.material.color.setHex(look.body); b.children[0].material.color.setHex(look.edges[i % look.edges.length]);
-        });
-        lanterns.visible = id === 'S2'; river.visible = id === 'S3'; rain.visible = id === 'S4';
+        if (onBridge) view.world.look(id);
+        else {
+          scene.background = new THREE.Color(sky); scene.fog.color.setHex(sky);
+          view.buildings.forEach(function (b, i) {
+            b.scale.y = look.scale; b.position.y = b.geometry.parameters.height * b.scale.y / 2;
+            b.material.color.setHex(look.body); b.children[0].material.color.setHex(look.edges[i % look.edges.length]);
+          });
+        }
+        lanterns.visible = id === 'S2'; river.visible = id === 'S3'; rain.visible = id === 'S4' && !onBridge;
       }
       lanterns.position.z = -Math.floor(z / 20) * 20 + 20;
       river.position.z = -Math.floor(z / 20) * 20 + 20;

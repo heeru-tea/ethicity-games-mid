@@ -124,4 +124,21 @@ console.log('ok file:// without flag');
 }
 console.log('ok m1 night bridge zones');
 
+// E. 그림을 못 읽으면(낮 하늘 파일이 없는 경우) 오류 없이 그 층만 숨김 → #run-stage 바탕이 단색 하늘
+{
+  const { browser, page, errors } = await openGame({ query: '?run=m3' });
+  await page.addInitScript(() => {
+    const d = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+    Object.defineProperty(HTMLImageElement.prototype, 'src', { set(v) { d.set.call(this, String(v).includes('bg-sky-day') ? 'assets/title/__missing-sky.webp' : v); }, get() { return d.get.call(this); } });
+  });
+  try {
+    await page.reload();
+    await ready(page);
+    await page.waitForFunction(() => document.querySelector('#run-stage .rw-sky').hidden);
+    assert.equal((await world(page)).time, 'day');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('run-stage')).backgroundImage.includes('gradient')), true, 'plain sky behind');
+    assert.deepEqual(errors.filter((e) => !e.includes('__missing-sky')), []);
+  } finally { await browser.close(); }
+}
+console.log('ok missing art falls back');
 console.log('PASS bridge');

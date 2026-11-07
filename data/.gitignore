@@ -3,3 +3,9 @@ tests/_*.json
 tools/_hero/
 tools/_cards/
 assets/cards-pilot/**/*-original.png
+# 낮 다리 그림 원본·검토용(게임은 *-day.webp만 씀)
+assets/title/*-day.png
+assets/title/*-day-seam-check.png
+assets/title/bg-day-preview.png
+assets/title/make-day-layers.ps1
+assets/title/generation-prompts-day.json
