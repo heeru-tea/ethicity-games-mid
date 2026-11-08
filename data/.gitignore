@@ -15,3 +15,5 @@ assets/cards/recycle/*.png
 assets/cards/lost-found/*.png
 # 도시 복구 그림 원본(Codex 무손실 webp 5MB) — 게임은 assets/city/의 손실 q90 사본(1.2MB)만 씀
 art-source/city-lossless/
+# 3 임무 거리 사진 원본(Codex PNG·contact-sheet, 게임은 384² webp만 씀)
+assets/cards/city/*.png
