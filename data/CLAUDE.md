@@ -1,5 +1,15 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-09, 달리기 무대 2차 = 2·4 임무 실내 무대 — 설계 `docs/specs/2026-11-08-run-indoor-stages-design.md`, 계획 `docs/plans/2026-11-09-run-indoor-stages.md`)
+- **임무 데이터 `world`**: m2 `'sorting'`(선별장), m4 `'grading'`(채점 센터 S1~S3 → S4 교무실). 1차 구조를 넓힘 — `run-world.js`가 실내면 CSS 층 6개(하늘·도시 2·창 색조·**실내 벽** `.rw-wall`·비[안 씀]), `bridge-look.js`에 실내 팔레트·구역 모습(순수, node 테스트). `peek().scenery.theme`은 'sorting'·'exam' 그대로, `peek().world`에 `indoor·room·art·artHidden·deck·fog·wallShift`.
+- **그림**: `assets/title/int-sorting/int-grading/int-teachers-office.webp`(2560×1080, 창 유리 알파 0, sharp q90 알파 유지 — 269·171·210KB, README 표). 원본 PNG·보라판 백업·ps1·preview는 안 올림. 벽 층 밑변 = 지평선(`--rw-horizon`), 높이 = 지평선까지, 가로 반복. 창 띠(그림 25~68%) 뒤로 **낮 도시**(`bg-*-day.webp`, `.rw-indoor .rw-far/.rw-mid`를 창 높이로) + 시간대 색조(`look.window`: 선별장 오후 → 늦은 오후 구역마다 조금씩, 채점 센터 늦은 오후, 교무실 노을). 4 임무는 두 그림을 처음부터 받아 둠.
+- **색 = 실제 장소**(보라 없음 — 단위 테스트가 색상각으로 막음): 선별장 바닥 어두운 초록 고무 벨트 `#1d3a2b` + 롤러 이음매 + 안전 노랑 가장자리, 옆 콘크리트 / 채점 센터 어두운 남색 벨트 `#1b2840` + 흰 가장자리·민트 안쪽 줄 / 교무실 어두운 리놀륨 `#33241e`(더 따뜻하고 어둡게). 안개·옆 바닥 = 그림 아래 3% 평균색에 맞춤(바닥이 그림 바닥선과 이어지게). 흰 카드 대비 ≥ 4.5, 분홍 벽(섞인 색) 칸마다 ≥ 2·평균 ≥ 2.5.
+- **소품**(`run-scenery.js`, 실내면 하늘·안개는 run-world가): 선별장 = 초록 옆 벨트·롤러, 분류함(구역 색 = 카드 테두리와 같은 색상, `dimBin` 0.72배로 어둡게, 바깥 x = 길 폭/2 + 3.8), 작은 호퍼(분류함 위), 경광등 날개(천천히 회전, 번쩍임 없음) / 채점 센터 = 옆 벨트(남색)에 답안지(○✕ 기호만, 천천히 흐름)·도장 팔(리듬 있게 꾹), 구역 경계 스캐너 문 / S4 = 교무실 문(열린 문짝) + 책상·묶인 옛 답안지·민트 캐비닛, 교무실 바닥을 S4 자리부터 미리 깔아 둠(레인 줄은 polygonOffset으로 그 위). 레인 위엔 소품 없음. **3D 천장 조명 막대는 뺌**(머리 위를 지날 때 화면을 가로지르는 흰 줄로 보였음 — 그림에 조명이 있음). 4 임무는 4레인 폭(10.8m) 기준.
+- `?low=1`·움직임 줄이기 = 벽·도시 층·경광등·도장·답안지 멈춤(`world.moving` false). 그림을 못 읽으면 벽 층만 숨김 → 하늘·도시·방 색 바탕(바깥 풍경처럼 보임).
+- 테스트: 단위 `bridge-look.test` 실내 7(팔레트 대비·보라 아님·벨트 색·분류함·구역 모습·그림 파일) · 브라우저 `indoor-browser`(2 임무 구역 4개 look·창빛·분류함 색·움직임 / 4 임무 1280·390 S1 채점 센터 → S4 교무실 그림·바닥·안개 / low·움직임 줄이기 ×3 / 그림 없음) · `bridge-browser` 기대값 바뀜(2 임무 = 실내 층 6개, 전엔 0). 스크린샷 `_shot-indoor-m2-S1~S4-1280`·`_shot-indoor-m4-S1/S4-1280/390`·`_shot-indoor-m2-noart-1280`.
+- 결과: 단위 333 · 브라우저 32/32(전체 `run-all`, indoor 새로). 헤드리스 fps(1280, 참고) 2 임무 40 → 43.7 · 4 임무 40 → 42(실내 전 상자 빌딩이 빠져서), 연습 다리 61~64.
+- 미확인: 학교 PC 프레임(실내 소품 메시 수 — 4 임무 약 300개 상자), 실기기, 학생 반응("여기가 선별장/채점 센터구나"), 노을 색조 세기. (그림 안 글자: 교무실 벽시계는 원본 크기로 잘라 봐서 숫자 없음 확인, 나머지는 축소본으로만 봄 — 글자 안 보임)
+
 ## ★지금 상태 (2026-11-09, 4 임무만 4레인 — 계획 `docs/plans/2026-11-09-m4-four-lanes.md`, 설계 `docs/specs/2026-11-08-run-indoor-stages-design.md` "추가 결정")
 - **레인 수 = 임무 데이터**: `missions/m4.js lanes: 4`, 나머지는 없음 = 3(`DR.Stream.laneCount`). 쓰는 곳 = `stream.js`(레인 섞기·듬성듬성 벽 첫 레인·불꽃 레인), `input.js nextLane/startLane`(끝에서 멈춤, 출발 = 3레인 가운데 1 / 4레인 가운데 왼쪽 1), `run3d`(레인 x = (l − (n−1)/2) × 폭, 바닥 폭·레인 줄 n+1개·결승 게이트·옆 빌딩, `camRig` — 4레인은 카메라 조금 높이·뒤로·덜 따라감), `run-feedback`(불 경고 n칸, 화면 카드), `run-world`(다리 폭·가장자리 줄), `play-browser` 자동 조종.
 - 연습·1~3 임무: 3레인이면 난수 쓰는 횟수까지 그대로 → 코스가 **바이트 그대로**(`tests/fixtures/courses-before-lanes.json` = 바꾸기 전 5828537에서 만든 스냅숏, 벽·불꽃·개인정보·지지직 표시까지 — `lanes.test`. 다시 만들지 말 것). 화면도 3레인 값 그대로(`camRig`·카드 칸 계산 3레인 가지 그대로).
@@ -79,7 +89,7 @@
 - 테스트: 단위 `bridge-look.test`(대비·구역 모습) · 브라우저 `bridge-browser`(연습 밤 1366·375, 다시 달려도 층 5개, 2 임무로 가면 0, low/reduced, 플래그 없는 file://, 1 임무 구역 3색, 그림 없음 대체) · `m3-browser`(낮·구역별 비·저녁빛). 스크린샷 `_shot-bridge-*`. 헤드리스 fps: 이전 16 → 23(상자 빌딩이 빠져 더 가벼움).
 - ⚠️ `tutorial-browser`·`runner-browser`는 실시간 대기(30·60초)라 다른 브라우저 테스트 직후 묶어 돌리면 가끔 시간 초과 — 혼자 다시 돌리면 통과(이전 코드도 같은 성질).
 - **2 임무 카드 = 실사풍 사진 14장**(2026-11-08, Codex, `assets/cards/recycle/*.webp` 384², 원본 PNG는 gitignore, 1 임무와 같은 `art.photo`/`art.photos`). 신문지·종이 상자, 일반쓰레기(장갑·스펀지·휴지)는 카드 번호로 번갈아. 컨베이어의 처음 보는 물건(variant 3 이상)은 일부러 Canvas. ⚠️ 일부만 사진이면 그림 방식 차이가 가짜 카드 단서가 되니 한 임무 전체를 한꺼번에 켤 것.
-- 미확인: 실제 학교 PC 프레임·체감, 실기기 휴대폰, 학생 반응. 2차(설계 `docs/specs/2026-11-08-run-indoor-stages-design.md`) = 2·4 임무 실내 무대 — 실제 장소 색(보라는 1차 데이터 세계만), 창밖 낮 도시, 4 임무 S4 = 노을 교무실. 선별장·채점 센터 그림은 실제 장소 색으로 다시 주문 중. 그다음 길 모양(휘기·오르내리기).
+- 미확인: 실제 학교 PC 프레임·체감, 실기기 휴대폰, 학생 반응. 2차(2·4 임무 실내 무대)는 2026-11-09 완료(맨 위 ★). 그다음 길 모양(휘기·오르내리기).
 
 ## 지금 상태 (2026-11-06, 오프닝·첫 시험 개편 + 1 임무 = 분실물 센터)
 - **사용자 결정(재논의 금지)**: 침수 임무는 중학생에게 어려워 1 임무를 **분실물 센터 AI**로 교체. 설계 `docs/specs/2026-11-05-opening-tutorial-draft.md`(오프닝·첫 시험) + `docs/specs/2026-11-06-m1-lost-found.md`(1 임무).
@@ -178,7 +188,7 @@
 | `js/save.js` | 저장·이어하기·소리·주인공·**임무 기록(records)** |
 | `js/cardart.js` | 카드·아이콘·단서·결과 컷을 Canvas로 생성(같은 화풍 원칙, 지하차도 금지) |
 | `js/run3d.js` | three.js 달리기(r149, `vendor/`) — `step/peek/setPaused/finishNow/debugTake` 테스트 훅 |
-| `js/run-world.js` · `bridge-look.js` | 빛의 다리 무대(캔버스 뒤 하늘·도시 CSS 층 + 3D 다리·불빛) · 밤/낮 팔레트·구역 모습(순수) |
+| `js/run-world.js` · `bridge-look.js` | 빛의 다리·실내 무대(캔버스 뒤 하늘·도시·실내 벽 CSS 층 + 3D 다리/벨트·불빛) · 밤/낮/실내 팔레트·구역 모습(순수) |
 | `js/ui-story.js` · `ui-inspect.js` · `ui-result.js` · `ui-conveyor.js` | 대화·브리핑·검수(크게 보기 공용 = `zoomer`, 2 임무 이름표 고치기)·감독관·결과·보충 준비·마무리·2 임무 컨베이어 |
 | `js/ui-common.js` · `ui-shell.js` | 아이콘 줄·범례·도움말·되돌리기 / 일시정지·타이틀(주인공·임무 고르기) |
 | `js/glitch.js` | "지지직" 연출 대상 고르기·선명해지는 거리·깜빡임 일정·효과 그림(연출만, 판정 영향 없음) |
@@ -189,8 +199,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (326)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (31개: bgm·boot·bridge·cardart·chapter·city·exam·fakes·fire·flow·glitch·hero·keys·**lanes**·lost·m1·m2·m3·m4·play·playtest·polish·portraits·privacy·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (333)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (32개: bgm·boot·bridge·cardart·chapter·city·exam·fakes·fire·flow·glitch·hero·**indoor**·keys·lanes·lost·m1·m2·m3·m4·play·playtest·polish·portraits·privacy·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
