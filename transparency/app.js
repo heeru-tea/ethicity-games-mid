@@ -200,14 +200,22 @@
    f+=fs.judgment?`<ul class="verdicts">${verdictLine(0,c.follow.judge.text,fs.judgment,E.followAnswers[k])}</ul>`:isReport?'<p class="v-none">아직 안 함</p>':'';
    if(!isReport&&fs.judgment&&fs.judgment!=='legacy')f+=`<p class="pair"><span class="k">아직 모르는 점</span> ${esc(c.follow.unknown)}</p>`;
    h+=group('후속 조사',f);}
+  if(isReport||state.notices[k].posted!==null||state.furthest>=E.sceneOf(k,'notice'))h+=group(N.report,noticeSummary(k));
   if(isReport||state.furthest>=E.sceneOf(k,'reflect'))h+=group('내 서술',written(D.reflect.q1,r.q1)+written(D.reflect.q2,r.q2));
   const links=[];
   if(isReport){if(state.furthest>=E.sceneOf(k,'reflect'))links.push(btn('서술 고치기','revisit',`data-scene="${E.sceneOf(k,'reflect')}"`));}
   else{if(state.judgments[k].includes('legacy'))links.push(btn('남은 판단 해 보기','revisit',`data-scene="${E.sceneOf(k,'check')}"`));
    if(fs.judgment==='legacy')links.push(btn('후속 조사 해 보기','revisit',`data-scene="${E.sceneOf(k,'follow')}"`));
+   if(state.notices[k].posted==='legacy')links.push(btn('미리 알리기 해 보기','revisit',`data-scene="${E.sceneOf(k,'notice')}"`));
    if(cs.final&&state.furthest>=E.sceneOf(k,'choose'))links.push(btn('이 사건 다시 골라 보기','revisit',`data-scene="${E.sceneOf(k,'choose')}"`));}
   if(links.length)h+=`<div class="card-links">${links.join('')}</div>`;
   return h+'</section>';}
+ // 보고서·수첩의 미리 알리기: 붙인 카드(부딪침·약속은 글자로 표시), 빠진 꼭 필요 카드, 판정 글자
+ function noticeSummary(k){const ns=state.notices[k],posted=postedOf(k);
+  if(!posted)return `<p class="v-none">${ns.posted==='legacy'?'이전 저장에서 넘어와 아직 안 함':'아직 안 함'}</p>`;
+  const nt=D.cases[k].notice,r=E.noticeCheck(k,posted),flag=id=>{const kind=E.noticeKind(k,id);return kind==='conflict'||kind==='promise'?` <span class="n-flag">(${esc(N.kinds[kind])})</span>`:'';};
+  const items=nt.cards.filter(c=>posted.includes(c.id)).map(c=>`<li>${esc(c.text)}${flag(c.id)}</li>`).concat(nt.cards.filter(c=>r.missing.includes(c.id)).map(c=>`<li class="n-missing">${esc(N.reportMissing)}: ${esc(c.text)}</li>`));
+  return `<div class="notice-sum"><ul class="notice-list">${items.join('')}</ul><p class="v-pick">판정: ${r.ok?`<span class="v-tag v-ok">${esc(N.reportOk)}</span>`:`<span class="v-tag v-again">${esc(N.reportAgain)}</span>`}</p></div>`;}
  function notebook(){open('내 수첩','<p class="hint">확인한 것과 고른 것이 자동으로 적혀. 판단 칸은 네가 고른 그대로 남아.</p>'+E.CASES.map(k=>caseCard(k,'note')).join(''));}
  // 생각 정리 화면 왼쪽: 이 사건에서 고른 판단 셋과 조치를 작게 보여 준다.
  function reflectSummary(k){return `<div class="document reflect-sum"><p class="doc-label">${esc(D.reflect.summary)}</p>${verdicts(k)}${actions(k)}</div>`;}

@@ -104,16 +104,19 @@
    "v2Migration": "version 2 save at old scene 7 resumes at writing check as version 4 with empty reflections; photo reflection reachable"
   },
   {
+   "v3Migration": "version 3 save at face reflect: notices legacy, not blocked, notebook 미리 알리기 해 보기 ×3 → writing notice → post → reload keeps → notebook updated; v3 report save shows legacy text"
+  },
+  {
    "noticeLayout": "desktop1280: page 1307px / viewport 800px, first card top 438, post button bottom 1030, next bottom 1211 (feedback shown)"
   },
   {
    "noticeLayoutStart": "desktop1280: before posting page 1034px / viewport 800px, post button bottom 814"
   },
   {
-   "printPdf": "some empty: 2 pages (A4, 15mm)"
+   "printPdf": "some empty: 3 pages (A4, 15mm)"
   },
   {
-   "printPdf": "all 200+ chars: 3 pages (A4, 15mm)"
+   "printPdf": "all 200+ chars, longest notices: 3 pages (A4, 15mm)"
   },
   {
    "reportEdit": "desktop1280: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-08 restored on afterprint"
@@ -537,10 +540,10 @@
   {
    "viewport": "1366x768",
    "screen": "report",
-   "chars": 1368,
+   "chars": 1554,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 3745,
+   "pageHeight": 4231,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -944,10 +947,10 @@
   {
    "viewport": "390x844",
    "screen": "report",
-   "chars": 1387,
+   "chars": 1626,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 4722,
+   "pageHeight": 5386,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -956,8 +959,8 @@
  "summary": {
   "after1366": {
    "screens": 37,
-   "avgChars": 275,
-   "maxChars": 1368,
+   "avgChars": 280,
+   "maxChars": 1554,
    "maxButtons": 13
   },
   "originalBefore1366": {
@@ -967,11 +970,11 @@
    "maxButtons": 32
   },
   "desktopQuestionAndFirstActionInView": "33/37",
-  "phoneMaxPageHeight": 4722,
+  "phoneMaxPageHeight": 5386,
   "desktopPath": {
    "judgments": 12,
    "clicks": 79,
-   "readChars": 9153
+   "readChars": 9339
   }
  }
 }

@@ -228,6 +228,11 @@ button.stamp-mine:disabled{color:var(--text);background:#fff;border:2px dashed #
 .blank{display:inline-block;width:3.2em;border-bottom:2px solid currentColor;vertical-align:-2px;margin:0 2px}
 .answer{white-space:pre-wrap;margin:0 0 6px}
 .not-written{color:var(--muted)}
+.notice-list{margin:0 0 2px;padding-left:1.2em}
+.notice-list li{margin:0}
+.n-flag{font-size:.88rem;font-weight:800}
+.n-missing{color:var(--muted)}
+.notice-sum .v-pick{margin:2px 0 0}
 .card-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .card-links button{font-size:.9rem;min-height:40px;padding:6px 14px}
 dialog .case-card{margin:12px 0}
@@ -305,6 +310,11 @@ dialog .case-card{margin:12px 0}
  .v-pick{font-size:9.5pt}
  .v-tag{color:#000!important;background:none!important;border:1px solid #000;padding:0 4pt}
  .v-again{border-style:dashed}
+ /* 미리 알리기: 붙인 카드를 한 줄로 이어 쓴다(쪽수 유지) */
+ .notice-list{padding:0;display:inline}
+ .notice-list li{display:inline;margin-right:6pt}
+ .notice-sum .v-pick{display:inline;margin-left:4pt}
+ .n-missing{color:#333}
  .frame-text{margin:3pt 0 1pt}
  .answer{margin:0 0 3pt}
 }
