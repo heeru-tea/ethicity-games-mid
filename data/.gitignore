@@ -9,3 +9,5 @@ assets/title/*-day-seam-check.png
 assets/title/bg-day-preview.png
 assets/title/make-day-layers.ps1
 assets/title/generation-prompts-day.json
+# 분리배출 사진 원본(Codex PNG, 게임은 384² webp만 씀)
+assets/cards/recycle/*.png

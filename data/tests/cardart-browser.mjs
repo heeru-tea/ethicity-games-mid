@@ -192,6 +192,15 @@ try {
     const th = A.thumb(A.card(t, 'dog', 0, 192, 4), 24);
     out.thumb = th.width + 'x' + th.height;
     out.m1NotPhoto = !A.card(DR.Missions.flood, 'day_deep', 0, 256, 5).photo;
+    // 2 임무 분리배출 사진(assets/cards/recycle/, Codex 2026-11-08): 14장이 다 와야 m2 데이터에 켠다 — 지금은 모두 Canvas.
+    // 사진 구조 자체는 가짜 임무로 확인: art.photo / art.photos(카드 번호로 번갈아) / variant 3↑(컨베이어 '처음 보는 물건') = Canvas 물건 그림
+    const m2 = DR.Missions.m2;
+    out.m2 = Object.keys(m2.cardTypes).concat(m2.fakes.map((f) => f.id)).filter((id) => id !== 'f_cat' && A.card(m2, id, 0, 256, 1).photo); // f_cat = 튜토리얼 고양이 사진(전부터)
+    const fake = { id: 'zz', cardTypes: { a: { art: { object: 'can_drink', photo: 'can_drink' } }, p: { art: { object: 'paper_news', photos: ['paper_news', 'paper_box'] } } } };
+    out.m2photo = A.card(fake, 'a', 0, 256, 1).photo;
+    out.m2paper = [0, 1, 2].map((n) => A.card(fake, 'p', 0, 256, n).photo);
+    const cv = A.card(fake, 'a', 3, 256);
+    out.m2conveyor = { photo: cv.photo || '', std: std(cv) };
     // 사진을 못 읽음(없는 파일) → 그 번호의 카드는 Canvas 그림(빈 그림 아님), 다른 사진은 그대로
     const keep = A._photos.d03;
     const bad = new Image(); A._photos.d03 = bad;
@@ -217,6 +226,11 @@ try {
   assert.ok(rt.std > 10, 'photo not blank');
   assert.equal(rt.thumb, '192x192', 'photo thumb = 48 cells × 4');
   assert.ok(rt.m1NotPhoto, 'other missions keep Canvas art');
+  assert.deepEqual(rt.m2, [], 'm2 stays Canvas until all 14 photos arrive');
+  assert.equal(rt.m2photo, 'can_drink');
+  assert.deepEqual(rt.m2paper, ['paper_news', 'paper_box', 'paper_news'], 'newspaper and box alternate');
+  assert.equal(rt.m2conveyor.photo, '', 'conveyor variant = Canvas');
+  assert.ok(rt.m2conveyor.std > 30, 'conveyor object drawn, not a gray box: ' + rt.m2conveyor.std);
   assert.equal(rt.fallback.photo, '', 'missing photo → Canvas art');
   assert.equal(rt.fallback.id, '');
   assert.ok(rt.fallback.std > 10, 'fallback art drawn');
