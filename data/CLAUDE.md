@@ -1,5 +1,16 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-09, "지지직" 연출 + 카드 앞뒤 간격 + 4 임무 "?" 더 번지게 — 계획 `docs/plans/2026-11-09-glitch-stagger.md`)
+- **지지직**(요청서 `docs/feedback/2026-11-08-glitch-effect.md`, 연출만): `js/glitch.js`(DR.Glitch). 대상 = 흔한 카드만(가짜·"?"·드문·개인정보 제외), 개수 = round(대상 × `mission.glitchRate`) — tutorial 0·m1 0.05·m2 0.15·m3 0.2·m4 없음(파일 안 건드림 = 0). `Stream.build` 끝에서 코스 난수와 **따로 도는** seed 난수로 표시 필드 `item.glitch`(stripe·rgb·glyph)만 붙임 → 카드·벽·불꽃·uid 그대로(`glitch.test`). `cardsOf`·`privacy.test strip`은 glitch를 뺀다. 가방 카드엔 안 들어감(`take`가 안 옮김).
+  - 화면: `run3d` 원래 그림 ↔ 효과 그림 2장(처음 켜질 때 만듦, glyph는 이름표 글자만 다시 그림)을 `config.glitch` 일정(0.5초마다 0.16초 = 1초 3번 이하)으로. 거리 `clearDist` = max(속도, 기준 속도) × (catchLead + 1.0초) 안에 한 번 들어오면 **계속 선명**(느려져도 다시 안 흔들림). 화면 카드(34m 안, `run-feedback`)도 같은 상태. 밝기는 그대로(줄 밀기·R/B 채널 어긋남·글자만). 움직임 줄이기 = 효과 없이 멀 때 테두리만 흐리게(3D frame 불투명도 0.45, DOM `.glitch-soft`), 안내도 없음. 첫 등장 안내 "데이터 세계가 흔들려. 가까이 가면 또렷해져!"(달리기마다 한 번, 다른 안내가 떠 있으면 끝난 뒤). 검수·보충·결과는 CardArt 그대로라 해당 없음.
+  - 테스트 훅 `DR.Run.glitchState()`·`screenOf(uid)`. 브라우저 `glitch-browser`(2 임무 한 판: 효과 순간은 늘 잡기 구간 1초 전보다 멂·잡기 구간에선 원래 그림·대상 밖 카드 변화 0·1초 3번 이하·안내 1번·지지직 카드를 키로 잡아 검수까지 / 움직임 줄이기). 스크린샷 `_shot-glitch-m2-1280/390(-zoom)`.
+- **카드 앞뒤 간격**(설계 `docs/specs/2026-11-08-run-indoor-stages-design.md` "추가 결정"): `config.cardStaggerSec` 0.3초. 한 줄 두 장 중 한 장을 그 지점 속도 × 0.3초 **뒤로만**(드문+흔한 줄이면 흔한 카드 — 드문 카드와 그 벽 그대로). 난수 안 써서 종류·레인·구역 그대로, 벽·불꽃은 옮긴 자리를 보고 다시 정해짐. 듬성듬성 벽 '다음 줄 레인'은 z 같음 → 줄 소속. 드문 카드 벽이 범위 안에 꼭 맞는 자리가 없을 때(후반 드문 카드 둘이 같은 레인에 가까이) 같은 레인 카드와 가장 먼 자리(전엔 카드 위에 설 수 있었음 — m4 seed 3에서 드러남).
+  - 스냅숏 fixture(`courses-before-zones/m3/m4.json`)는 **파일 그대로**, 비교만 간격 0 코스로(= 옛 배치) + `stream.test` 관계 테스트(실제 = 그 배치 + 줄마다 한 장만 뒤로). `reach.test`는 간격만큼 떨어진 카드를 한 줄로 묶어 '한 줄 한 장' 그대로 셈. 모든 임무 × seed 17 × 첫 판·보충에서 다른 두 카드 사이 ≥ 0.3초.
+  - ⚠️ `play-browser` 자동 조종은 `rows.has(it.z)`로 '한 줄 한 장'을 고르는데, 이제 z가 달라 한 줄 두 장을 다 노릴 수 있다(0.3초 간격이라 잡을 수는 있음).
+- **4 임무 "?" 카드 더 번지게**(추가 요청): `cardart drawWordAnswer` smudge만 — 또렷한 획 없이 따로 그린 낱말을 세 겹 원으로 퍼뜨려 찍기(ctx.filter 없이) + 밀린 자국 둘 + 회색 띠 + 받침 자리 문지름. 단서(같은 학생 답·글자 확대)는 그대로 또렷. `cardart-browser` 선명도 비율(진짜 종류 카드 대비) 0.771→0.593 · 0.738→0.586, 같은 학생 단서 0.996·1.013. m4.js 그대로.
+- 테스트: 단위 319(glitch.test 8·stream.test 간격 16·reach 묶음 1 새로) · 브라우저 30/30(전에 실패하던 bgm·m3·play도 이번 전체 실행에선 통과).
+- 미확인: 실제 달리는 눈으로 지지직이 보이는지(먼 3D 카드는 1280에서 폭 40px 남짓 — 색 어긋남은 작게 보임), 실기기 프레임, 학생이 "?"를 단서 둘로 판단하는지.
+
 ## ★지금 상태 (2026-11-08, 4 임무 = 낱말 손글씨판, 최고 난이도 — 설계 `docs/specs/2026-11-08-m4-words-design.md`, 계획 `docs/plans/2026-11-08-m4-words.md`)
 - **숫자 1~5 → 낱말 4개**(데이터 `data`·알고리즘 `algo`·인공지능 `ai`·머신러닝 `ml`, 이름표 id는 영문). 보기 밖 낱말 = 가짜에만 `date`('데이트')·`en_ai`('AI'), `labelExtra[].short`(→ `DR.Cards.labelShort`). `labelStyle: 'word'` = 고치기·"?" 버튼이 낱말 넷(CSS `.labels.word` 4칸 격자, ≤330px면 2×2 — 375px는 한 줄, `m4-browser D`).
 - **카드 세 갈래**(데이터 `group`): ① 이상해 보이지만 맞음(`rare`·벽) — `cur_ai`·`cur_algo`(흘림, S2)·`alt_ai`'AI'·`alt_data`'data'(S3)·`alt_ml`'머신 러닝'(S3·S4 공용)·`scrawl_ml`(아주 흘림 = 선배 글씨, S4) 19장 / ② 이상하고 틀림 — `x_scribble`(S1)·`x_algo_ai`·`x_ai_algo`(S2)·`x_date`·`x_ai_raw`(S3) 9장 / ③ 반듯한데 틀림 — `x_neat_algo`('인공지능')·`x_neat_data`('머신러닝') 4장(S1). 평범 = `neat_*` 12장(S1·S3 공용 — S3에도 반듯한 답 2장 조합 `S3_neat`, 개인정보 카드가 코스 앞 15% 밖에 놓일 자리가 생김). "?" = `q_ai`·`q_algo`(번진 흘림). 코스 46장, 첫 판 최소 16장.
@@ -160,6 +171,7 @@
 | `js/run-world.js` · `bridge-look.js` | 빛의 다리 무대(캔버스 뒤 하늘·도시 CSS 층 + 3D 다리·불빛) · 밤/낮 팔레트·구역 모습(순수) |
 | `js/ui-story.js` · `ui-inspect.js` · `ui-result.js` · `ui-conveyor.js` | 대화·브리핑·검수(크게 보기 공용 = `zoomer`, 2 임무 이름표 고치기)·감독관·결과·보충 준비·마무리·2 임무 컨베이어 |
 | `js/ui-common.js` · `ui-shell.js` | 아이콘 줄·범례·도움말·되돌리기 / 일시정지·타이틀(주인공·임무 고르기) |
+| `js/glitch.js` | "지지직" 연출 대상 고르기·선명해지는 거리·깜빡임 일정·효과 그림(연출만, 판정 영향 없음) |
 | `js/privacy.js` · `ui-chapter.js` | 목적 밖 개인정보 카드(표시·가리기·제출 판정, 순수) · 챕터 끝(다른 용도 요청·개념 질문·생각 쓰기) |
 | `js/ui-guide.js` · `ui-grade.js` · `ui-city.js` · `showdown.js` | 3 임무 길 안내 시연 · 4 임무 채점 시연 · 도시 복구 화면 · 4 임무 결판·동기 카드 규칙(순수) |
 | `js/app.js` | 흐름 상태 기계, `?start=` `?run=` 디버그 진입, `DR.App.debugFill` |
@@ -167,8 +179,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (295)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (28개: bgm·boot·bridge·cardart·**chapter**·**city**·exam·fakes·fire·flow·hero·keys·lost·m1·m2·m3·m4·play·polish·portraits·**privacy**·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (319)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (30개: bgm·boot·bridge·cardart·chapter·city·exam·fakes·fire·flow·**glitch**·hero·keys·lost·m1·m2·m3·m4·play·playtest·polish·portraits·privacy·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
