@@ -32,6 +32,8 @@ async function caseRun(p,k,vp,wrong){
  for(const x of c.checks)await discover(p,x.id);
  for(let i=0;i<3;i++){const j=c.judges[i];
   assert.match(await p.locator('.judge-head').innerText(),new RegExp(`이 말은 맞을까\\? ${i+1}/3`));
+  // 2026-11-08: 판단 카드가 나와도 화면을 자동으로 내리지 않는다. 휴대폰에서는 학생이 직접 내리는 것처럼 휠로 내린 뒤 확인한다(자료 칸은 위에 붙어 있다).
+  if(i===0){const t=await p.locator('.judge-say').evaluate(e=>e.getBoundingClientRect().bottom-innerHeight);if(t>0){await p.mouse.move(195,600);await p.mouse.wheel(0,t+24);await p.waitForTimeout(300);}}
   const m=await p.evaluate(()=>{const s=document.querySelector('.judge-head'),cs=getComputedStyle(s),say=document.querySelector('.judge-say').getBoundingClientRect(),v=document.querySelector('.visual').getBoundingClientRect(),pressed=[...document.querySelectorAll('.source-tag')].filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.dataset.id),cardB=document.querySelector('.stamps').getBoundingClientRect();return {size:parseFloat(cs.fontSize),weight:+cs.fontWeight,color:cs.color,pressed,tags:[...document.querySelectorAll('.source-tag')].map(b=>b.textContent),say:{t:say.top,b:say.bottom},v:{t:v.top,b:v.bottom,l:v.left,r:v.right},stampsB:cardB.bottom,vh:innerHeight,vw:innerWidth};});
   assert.ok(m.size>=18&&m.size<=20.5&&m.weight>=700,'머리말 18~20px 굵게 '+JSON.stringify(m));
   assert.deepEqual(m.tags,j.src.map(id=>c.checks.find(x=>x.id===id).name),'태그 = 근거 자료 이름');
@@ -79,13 +81,13 @@ async function caseRun(p,k,vp,wrong){
    assert.equal(await p.locator('.row-open').count(),4);await p.locator('[data-act="row"][data-id="r1"]').focus();await p.keyboard.press('Enter');assert.equal(await p.locator('.row-open').count(),3,'Enter로 열림');
    assert.equal(await p.locator('.proof').evaluate(n=>getComputedStyle(n).color),await p.evaluate(()=>getComputedStyle(document.body).color),'근거 줄 = 본문 색');
    await p.screenshot({path:path.join(shotDir,'_t1106-chips-1280.png')});ok('칩 16~18px·대비 4.5 이상·근거 보기·키보드');await ctx.close();}
-  // 기존 저장(version 2): 판단 중간에서 이어하기, 키 구조 그대로
+  // 저장(version 3): 판단 중간에서 이어하기, 키 구조 그대로
   {const ctx=await browser.newContext({viewport:{width:1280,height:800}}),p=await ctx.newPage();await p.goto(url);
    const base=await p.evaluate(()=>TransparencyGame.getState()),old=stateAt('face','check');old.evidence.push(...E.checks.face);old.judgments.face=['different','confirmed',null];
    await seed(p,old);
    assert.match(await p.locator('.judge-head').innerText(),/3\/3/);assert.ok(await p.locator('.visual .evidence-photo').isVisible(),'이어하기에서도 근거 자료(비교 사진)');assert.equal(await p.locator('.compare-labels span').first().innerText(),'등록된 사진');
    await p.screenshot({path:path.join(shotDir,'_t1106-compare-1280.png')});
-   const s=await state(p);assert.equal(s.version,2);assert.deepEqual(Object.keys(s).sort(),Object.keys(base).sort(),'저장 구조 그대로');ok('version 2 이어하기');await ctx.close();}
+   const s=await state(p);assert.equal(s.version,3);assert.deepEqual(Object.keys(s).sort(),Object.keys(base).sort(),'저장 구조 그대로');ok('version 3 이어하기');await ctx.close();}
   // 후속 조사 카드·집계 기준
   {const ctx=await browser.newContext({viewport:{width:1280,height:800}}),p=await ctx.newPage();await p.goto(url);
    await seed(p,stateAt('photo','follow'));

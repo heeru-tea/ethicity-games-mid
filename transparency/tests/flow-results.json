@@ -4,7 +4,10 @@
    "tag": "desktop",
    "viewport": "1366x768",
    "judgments": 12,
-   "clicks": 60,
+   "clicks": 64,
+   "reportRight": 12,
+   "reportAgain": 0,
+   "reportNotWritten": 4,
    "choices": {
     "photo": {
      "first": "all",
@@ -44,7 +47,10 @@
    "tag": "phone",
    "viewport": "390x844",
    "judgments": 12,
-   "clicks": 63,
+   "clicks": 67,
+   "reportRight": 4,
+   "reportAgain": 8,
+   "reportNotWritten": 7,
    "choices": {
     "photo": {
      "first": "auto",
@@ -83,13 +89,34 @@
  ],
  "checks": [
   {
-   "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 2)"
+   "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 3)"
   },
   {
    "keyboard": "item and region buttons operable with Enter"
   },
   {
    "legacySave": "v1 rev4 scene 5 resumes at writing case start, old judgment kept, new ones can be done from notebook; rev3 S07 resumes at writing case start; corrupt save starts at prologue"
+  },
+  {
+   "v2Migration": "version 2 save at old scene 7 resumes at writing check as version 3 with empty reflections; photo reflection reachable"
+  },
+  {
+   "printPdf": "some empty: 2 pages (A4, 15mm)"
+  },
+  {
+   "printPdf": "all 200+ chars: 3 pages (A4, 15mm)"
+  },
+  {
+   "reportEdit": "desktop1280: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-08 restored on afterprint"
+  },
+  {
+   "reportEdit": "phone: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-08 restored on afterprint"
+  },
+  {
+   "feedback2": "1366px: name tags + alt, portraits, 자료 header, scrollY 22→22 after third region"
+  },
+  {
+   "feedback2": "390px: name tags + alt, portraits, 자료 header, scrollY 145→145 after third region"
   },
   {
    "storageBlocked": "playable in current window with notice"
@@ -99,7 +126,7 @@
   {
    "viewport": "1366x768",
    "screen": "intro",
-   "chars": 141,
+   "chars": 143,
    "buttons": 1,
    "overflow": false,
    "pageHeight": 768,
@@ -110,7 +137,7 @@
   {
    "viewport": "1366x768",
    "screen": "photo-hook",
-   "chars": 85,
+   "chars": 91,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -121,7 +148,7 @@
   {
    "viewport": "1366x768",
    "screen": "photo-check-start",
-   "chars": 90,
+   "chars": 92,
    "buttons": 3,
    "overflow": false,
    "pageHeight": 768,
@@ -132,10 +159,10 @@
   {
    "viewport": "1366x768",
    "screen": "photo-check-records",
-   "chars": 266,
-   "buttons": 9,
+   "chars": 310,
+   "buttons": 10,
    "overflow": false,
-   "pageHeight": 768,
+   "pageHeight": 852,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -143,10 +170,10 @@
   {
    "viewport": "1366x768",
    "screen": "photo-check-done",
-   "chars": 315,
-   "buttons": 7,
+   "chars": 343,
+   "buttons": 8,
    "overflow": false,
-   "pageHeight": 768,
+   "pageHeight": 883,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -154,7 +181,7 @@
   {
    "viewport": "1366x768",
    "screen": "photo-choose",
-   "chars": 55,
+   "chars": 61,
    "buttons": 3,
    "overflow": false,
    "pageHeight": 768,
@@ -165,7 +192,7 @@
   {
    "viewport": "1366x768",
    "screen": "photo-result",
-   "chars": 117,
+   "chars": 123,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -176,7 +203,7 @@
   {
    "viewport": "1366x768",
    "screen": "photo-follow-start",
-   "chars": 168,
+   "chars": 177,
    "buttons": 13,
    "overflow": false,
    "pageHeight": 768,
@@ -187,18 +214,29 @@
   {
    "viewport": "1366x768",
    "screen": "photo-follow-done",
-   "chars": 330,
+   "chars": 370,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 899,
+   "pageHeight": 1023,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
   },
   {
    "viewport": "1366x768",
+   "screen": "photo-reflect",
+   "chars": 315,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 858,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
    "screen": "writing-hook",
-   "chars": 165,
+   "chars": 172,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -209,7 +247,7 @@
   {
    "viewport": "1366x768",
    "screen": "writing-check-start",
-   "chars": 147,
+   "chars": 143,
    "buttons": 3,
    "overflow": false,
    "pageHeight": 768,
@@ -220,10 +258,10 @@
   {
    "viewport": "1366x768",
    "screen": "writing-check-records",
-   "chars": 433,
-   "buttons": 11,
+   "chars": 472,
+   "buttons": 13,
    "overflow": false,
-   "pageHeight": 768,
+   "pageHeight": 893,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -231,10 +269,10 @@
   {
    "viewport": "1366x768",
    "screen": "writing-check-done",
-   "chars": 472,
-   "buttons": 9,
+   "chars": 290,
+   "buttons": 5,
    "overflow": false,
-   "pageHeight": 799,
+   "pageHeight": 860,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -242,7 +280,7 @@
   {
    "viewport": "1366x768",
    "screen": "writing-choose",
-   "chars": 75,
+   "chars": 82,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 768,
@@ -253,7 +291,7 @@
   {
    "viewport": "1366x768",
    "screen": "writing-result",
-   "chars": 136,
+   "chars": 151,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -264,7 +302,7 @@
   {
    "viewport": "1366x768",
    "screen": "writing-follow-start",
-   "chars": 175,
+   "chars": 184,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -275,10 +313,21 @@
   {
    "viewport": "1366x768",
    "screen": "writing-follow-done",
-   "chars": 319,
+   "chars": 341,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 905,
+   "pageHeight": 999,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "writing-reflect",
+   "chars": 338,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 885,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -286,7 +335,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-hook",
-   "chars": 101,
+   "chars": 107,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -297,7 +346,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-check-start",
-   "chars": 102,
+   "chars": 108,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 768,
@@ -308,10 +357,10 @@
   {
    "viewport": "1366x768",
    "screen": "face-check-records",
-   "chars": 181,
-   "buttons": 7,
+   "chars": 255,
+   "buttons": 8,
    "overflow": false,
-   "pageHeight": 770,
+   "pageHeight": 908,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -319,10 +368,10 @@
   {
    "viewport": "1366x768",
    "screen": "face-check-done",
-   "chars": 221,
-   "buttons": 5,
+   "chars": 255,
+   "buttons": 6,
    "overflow": false,
-   "pageHeight": 811,
+   "pageHeight": 969,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -330,7 +379,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-choose",
-   "chars": 81,
+   "chars": 87,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 768,
@@ -341,7 +390,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-result",
-   "chars": 147,
+   "chars": 153,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -352,7 +401,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-follow-start",
-   "chars": 173,
+   "chars": 202,
    "buttons": 5,
    "overflow": false,
    "pageHeight": 768,
@@ -363,10 +412,21 @@
   {
    "viewport": "1366x768",
    "screen": "face-follow-done",
-   "chars": 370,
+   "chars": 391,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 826,
+   "pageHeight": 944,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "face-reflect",
+   "chars": 327,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 858,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -374,7 +434,7 @@
   {
    "viewport": "1366x768",
    "screen": "end",
-   "chars": 110,
+   "chars": 116,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 768,
@@ -385,10 +445,21 @@
   {
    "viewport": "1366x768",
    "screen": "end-done",
-   "chars": 242,
-   "buttons": 8,
+   "chars": 295,
+   "buttons": 9,
    "overflow": false,
-   "pageHeight": 1056,
+   "pageHeight": 1251,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "report",
+   "chars": 1368,
+   "buttons": 6,
+   "overflow": false,
+   "pageHeight": 3745,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -396,10 +467,10 @@
   {
    "viewport": "390x844",
    "screen": "intro",
-   "chars": 141,
+   "chars": 143,
    "buttons": 1,
    "overflow": false,
-   "pageHeight": 846,
+   "pageHeight": 848,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -407,18 +478,18 @@
   {
    "viewport": "390x844",
    "screen": "photo-hook",
-   "chars": 85,
+   "chars": 91,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 982,
+   "pageHeight": 1017,
    "questionInView": true,
-   "firstActionInView": true,
+   "firstActionInView": false,
    "codes": []
   },
   {
    "viewport": "390x844",
    "screen": "photo-check-start",
-   "chars": 90,
+   "chars": 92,
    "buttons": 3,
    "overflow": false,
    "pageHeight": 844,
@@ -429,10 +500,10 @@
   {
    "viewport": "390x844",
    "screen": "photo-check-records",
-   "chars": 266,
-   "buttons": 9,
+   "chars": 310,
+   "buttons": 10,
    "overflow": false,
-   "pageHeight": 1321,
+   "pageHeight": 1433,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -440,10 +511,10 @@
   {
    "viewport": "390x844",
    "screen": "photo-check-done",
-   "chars": 323,
-   "buttons": 7,
+   "chars": 358,
+   "buttons": 8,
    "overflow": false,
-   "pageHeight": 1422,
+   "pageHeight": 1556,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -451,7 +522,7 @@
   {
    "viewport": "390x844",
    "screen": "photo-choose",
-   "chars": 55,
+   "chars": 61,
    "buttons": 3,
    "overflow": false,
    "pageHeight": 844,
@@ -462,7 +533,7 @@
   {
    "viewport": "390x844",
    "screen": "photo-result",
-   "chars": 114,
+   "chars": 120,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 844,
@@ -473,10 +544,10 @@
   {
    "viewport": "390x844",
    "screen": "photo-follow-start",
-   "chars": 168,
+   "chars": 177,
    "buttons": 13,
    "overflow": false,
-   "pageHeight": 1222,
+   "pageHeight": 1260,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -484,10 +555,21 @@
   {
    "viewport": "390x844",
    "screen": "photo-follow-done",
-   "chars": 340,
+   "chars": 387,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1763,
+   "pageHeight": 1979,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "photo-reflect",
+   "chars": 359,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 1427,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -495,10 +577,10 @@
   {
    "viewport": "390x844",
    "screen": "writing-hook",
-   "chars": 165,
+   "chars": 172,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 990,
+   "pageHeight": 994,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -506,7 +588,7 @@
   {
    "viewport": "390x844",
    "screen": "writing-check-start",
-   "chars": 147,
+   "chars": 143,
    "buttons": 3,
    "overflow": false,
    "pageHeight": 844,
@@ -517,29 +599,29 @@
   {
    "viewport": "390x844",
    "screen": "writing-check-records",
-   "chars": 433,
-   "buttons": 11,
+   "chars": 472,
+   "buttons": 13,
    "overflow": false,
-   "pageHeight": 1581,
+   "pageHeight": 1444,
    "questionInView": true,
-   "firstActionInView": false,
+   "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
    "screen": "writing-check-done",
-   "chars": 476,
-   "buttons": 9,
+   "chars": 300,
+   "buttons": 5,
    "overflow": false,
-   "pageHeight": 1684,
+   "pageHeight": 1409,
    "questionInView": true,
-   "firstActionInView": false,
+   "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
    "screen": "writing-choose",
-   "chars": 75,
+   "chars": 82,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 844,
@@ -550,7 +632,7 @@
   {
    "viewport": "390x844",
    "screen": "writing-result",
-   "chars": 100,
+   "chars": 107,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 844,
@@ -561,7 +643,7 @@
   {
    "viewport": "390x844",
    "screen": "writing-follow-start",
-   "chars": 175,
+   "chars": 184,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 844,
@@ -572,10 +654,21 @@
   {
    "viewport": "390x844",
    "screen": "writing-follow-done",
-   "chars": 319,
+   "chars": 341,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1274,
+   "pageHeight": 1404,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "writing-reflect",
+   "chars": 362,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 1399,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -583,7 +676,7 @@
   {
    "viewport": "390x844",
    "screen": "face-hook",
-   "chars": 101,
+   "chars": 107,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 844,
@@ -594,7 +687,7 @@
   {
    "viewport": "390x844",
    "screen": "face-check-start",
-   "chars": 102,
+   "chars": 108,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 844,
@@ -605,10 +698,10 @@
   {
    "viewport": "390x844",
    "screen": "face-check-records",
-   "chars": 181,
-   "buttons": 7,
+   "chars": 255,
+   "buttons": 8,
    "overflow": false,
-   "pageHeight": 1178,
+   "pageHeight": 1307,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -616,10 +709,10 @@
   {
    "viewport": "390x844",
    "screen": "face-check-done",
-   "chars": 237,
-   "buttons": 5,
+   "chars": 278,
+   "buttons": 6,
    "overflow": false,
-   "pageHeight": 1279,
+   "pageHeight": 1512,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -627,7 +720,7 @@
   {
    "viewport": "390x844",
    "screen": "face-choose",
-   "chars": 81,
+   "chars": 87,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 844,
@@ -638,7 +731,7 @@
   {
    "viewport": "390x844",
    "screen": "face-result",
-   "chars": 109,
+   "chars": 115,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 844,
@@ -649,21 +742,32 @@
   {
    "viewport": "390x844",
    "screen": "face-follow-start",
-   "chars": 173,
+   "chars": 202,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 933,
+   "pageHeight": 1016,
    "questionInView": true,
-   "firstActionInView": true,
+   "firstActionInView": false,
    "codes": []
   },
   {
    "viewport": "390x844",
    "screen": "face-follow-done",
-   "chars": 385,
+   "chars": 413,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 1534,
+   "pageHeight": 1811,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "face-reflect",
+   "chars": 363,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 1371,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -671,10 +775,10 @@
   {
    "viewport": "390x844",
    "screen": "end",
-   "chars": 110,
+   "chars": 116,
    "buttons": 4,
    "overflow": false,
-   "pageHeight": 913,
+   "pageHeight": 917,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -682,10 +786,21 @@
   {
    "viewport": "390x844",
    "screen": "end-done",
-   "chars": 242,
-   "buttons": 8,
+   "chars": 311,
+   "buttons": 9,
    "overflow": false,
-   "pageHeight": 1289,
+   "pageHeight": 1567,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "report",
+   "chars": 1387,
+   "buttons": 6,
+   "overflow": false,
+   "pageHeight": 4722,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -693,9 +808,9 @@
  ],
  "summary": {
   "after1366": {
-   "screens": 27,
-   "avgChars": 193,
-   "maxChars": 472,
+   "screens": 31,
+   "avgChars": 254,
+   "maxChars": 1368,
    "maxButtons": 13
   },
   "originalBefore1366": {
@@ -704,12 +819,12 @@
    "maxChars": 1127,
    "maxButtons": 32
   },
-  "desktopQuestionAndFirstActionInView": "25/27",
-  "phoneMaxPageHeight": 1763,
+  "desktopQuestionAndFirstActionInView": "27/31",
+  "phoneMaxPageHeight": 4722,
   "desktopPath": {
    "judgments": 12,
-   "clicks": 60,
-   "readChars": 4252
+   "clicks": 64,
+   "readChars": 6840
   }
  }
 }
