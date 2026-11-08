@@ -1,5 +1,18 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-08, 플레이테스트 수정 13건 — 요청서 `docs/feedback/2026-11-08-playtest.md`, 계획 `docs/plans/2026-11-08-playtest-fixes.md`)
+- **4 임무 전용(`missions/m4.js`·`ui-grade.js`·`showdown.js`·그림)은 안 건드림**(손글씨 다시 설계 중). 공용 렌더러 수정만 4 임무에도 닿음 — 결과 문구는 4 임무에서 예전과 같음(`result-line.test` 무작위 가방 400개).
+- 조사 = `js/josa.js`(DR.Josa: 숫자 1·3·6·7·8·0, 영문 L·M·N·R 받침, 끝 따옴표·괄호 건너뜀, `fill('{what:이}')`) — judge 문구가 씀(9).
+- 조합 이름 = `DR.Cards.comboName`(종류 이름 하나면 그 이름 → 3 임무 '시장 골목', 여럿이면 `what` → 4 임무 '또박또박 쓴 답안', 없으면 A·B)(1).
+- 장면 결과 문구 = `js/result-line.js`(DR.ResultLine.sceneLine): 결정 조합 하나 → 조합 `cut`(없으면 기존 `fail.line`), 여럿 → 임무 `cutTemplate[종류]`에 "A와 B"(조합 `item`), 오염만 → 가짜 `cut` / 플레이어 오표기는 `cutTemplate.contam`({label}), 그 밖 → 장면 `cuts`. 1~3 임무 데이터 채움(2 임무 함 이름 = 컨베이어 wrongBin과 같게)(2). ⚠️ 교사 검수 대기 문장에 더함.
+- 튜토리얼 연습 카드 = "이 카드도 AI가 배우는 자료야…", 점검표 "이름표가 맞는 카드 n / 11장"(판정 `Judge.exam`은 그대로, 표시만)(3a) · 고치기 창 "그대로 두기"(6) · 시험 각주 짧게(12).
+- 타이틀: 진행 중 임무가 없고 기록이 있으면 "N 임무부터 이어하기"(`DR.Save.nextMission` = 기록에서 안 깬 첫 임무, 새 저장 필드 없음) + 그 카드 "다음은 여기"(`.mc-next` = 연습 카드 `.mc-first`와 같은 모양) + 옆 "처음부터". 다 깸 = "처음부터 다시"(확인 창) + 봇 대사 묶음 따로(`title-scene.js LINES_DONE`, `state().lineSet`)(4·11).
+- 검수 안내: 이름표 고치기 없는 임무(1 임무 `relabel:false`) = "그림을 보고 필요 없는 카드는 뺀다." · 크게 보기 = 모든 임무 같은 구조(머리줄 이름표 + 닫기 `#btn-zoom-close` 오른쪽 위 → 가운데 사진 → …)(5).
+- 보충 준비: 비울 칸 = max(`supplementFreeSlots`, 모자란 장 수 합)(안내에 숫자), "출발할 수 있어요" = `.notice-ok` 초록(7) · 카드 전체 격자 기본 접힘(`#btn-prep-all`, 테스트는 `openPrepAll`)(13).
+- 노이즈 경고 = "이번 달리기에서 노이즈로 잃은 카드 n장"(코드는 원래 달릴 때마다 덮어씀 — 보충 뒤 남지 않는 것을 테스트로 고정)(8). 도시 복구 가운데 정렬은 696d4af에서 이미 맞음 — 회귀 테스트만(10). 완료 화면의 "단순화한 규칙" 문단 뺌(감독관 마무리 대사에 한 번)(12).
+- 테스트: 단위 `josa.test`·`result-line.test`·`cards.test`(comboName)·`save.test`(nextMission) · 브라우저 `playtest-browser`(항목별, `ONLY=4`처럼 하나만). 바뀐 기대값: `exam-browser`(연습 카드 문장·11장), `flow-browser`(침수 끝 → "1 임무부터 이어하기"), `runner-browser`(노이즈 문구), `m1-browser`(완료 화면 문단 없음). 스크린샷 `_shot-playtest-*`.
+- 미확인: 실제 학생이 새 결과 문구·"다음은 여기"를 어떻게 읽는지, 실기기.
+
 ## ★지금 상태 (2026-11-08, 도시 복구 그림 6장 연결 + "이어지는" 연출 — 교사 피드백 feedback2)
 - 그림 `assets/city/city-0..5.webp`(Codex, 1600×600 = 8:3, 구역 5개 × 20%, city-N = 왼쪽 N칸만 색). 받은 무손실 webp 5.0MB → sharp q90·smartSubsample 1.2MB(원본은 `art-source/city-lossless/`, gitignore). 그림 속 데이터 케이블 = 높이 **94%**(재 봄 — 지시서는 "약 88%") → `config.city.cableY`.
 - 틀: 넓은 화면 8:3·`min(100%, 56rem)`(양옆 안 잘림), ≤640px = 4:3 + cover, object-position x = 새 구역이 틀 가운데 오게(지시서 식 `(to-0.5)*20%`를 그대로 쓰면 가운데가 아니라서 cover 계산으로 — 양 끝 구역은 벽에 붙음). 두 장 같은 자리. 자리 계산 = `js/city-look.js`(DR.CityLook, 순수) → CSS 변수 넓은/좁은 두 벌.
