@@ -6,14 +6,42 @@ test('corrupt or impossible saves reset safely',()=>{
  let s=E.initial();s.scene=4;s.furthest=4;assert.deepEqual(E.restore(JSON.stringify(s)),E.initial(),'result scene without a choice');
  s=E.initial();s.judgments.photo=[null,'unknown',null];assert.deepEqual(E.restore(s),E.initial(),'judgment gap');
 });
-test('version 2 progress round-trips exactly',()=>{
+test('version 3 progress round-trips exactly',()=>{
  let s=E.initial();s=E.reduce(s,{type:'next'});s=E.reduce(s,{type:'next'});s=E.reduce(s,{type:'check',id:'photo-original'});
- assert.equal(s.scene,2);assert.deepEqual(E.restore(JSON.stringify(s)),s);
+ assert.equal(s.scene,2);assert.equal(s.version,3);assert.deepEqual(E.restore(JSON.stringify(s)),s);
+ for(const bad of [{reflections:null},{finalNote:3},{reporter:{name:1,number:''}},{reflections:{photo:{q1:'a'},writing:{q1:'',q2:''},face:{q1:'',q2:''}}}])
+  assert.deepEqual(E.restore(JSON.stringify({...s,...bad})),E.initial(),'broken text fields reset '+JSON.stringify(bad));
+});
+// version 2 저장(2026-11-06 판)을 그대로 만든다: 장면 0 프롤로그, 1~5 사진, 6~10 글, 11~15 얼굴, 16 마지막. 서술 칸 없음.
+function v2(scene,furthest,extra={}){const s={version:2,scene,furthest,evidence:[],judgments:{photo:[null,null,null],writing:[null,null,null],face:[null,null,null]},
+ cases:{photo:{first:null,final:null},writing:{first:null,final:null},face:{first:null,final:null}},follows:{photo:{marks:{},judgment:null},writing:{marks:{},judgment:null},face:{marks:{},judgment:null}},question:null,completed:false};return Object.assign(s,extra);}
+const doneCase=(s,k)=>{s.evidence.push(...E.checks[k]);s.judgments[k]=E.answers[k].slice();s.cases[k]={first:E.choices[k][0],final:E.choices[k][0]};
+ const m=E.followMarks[k],marks={};m.ids.forEach((id,i)=>{marks[id]=k==='photo'?E.truth[i]:m.values[0];});s.follows[k]={marks,judgment:E.followAnswers[k]};return s;};
+test('version 2 saves move to version 3: same step, empty reflections, existing fields kept',()=>{
+ // 글 사건 직접 확인 중(옛 scene 7)
+ let old=doneCase(v2(7,7),'photo');old.evidence.push('writing-guide');
+ let s=E.restore(JSON.stringify(old));
+ assert.equal(s.version,3);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');assert.equal(s.furthest,s.scene);
+ assert.deepEqual(s.reflections,{photo:{q1:'',q2:''},writing:{q1:'',q2:''},face:{q1:'',q2:''}});assert.equal(s.finalNote,'');assert.deepEqual(s.reporter,{name:'',number:''});
+ assert.deepEqual(s.judgments.photo,old.judgments.photo);assert.deepEqual(s.follows.photo,old.follows.photo);assert.deepEqual(s.evidence,old.evidence);
+ assert.deepEqual(E.restore(JSON.stringify(s)),s,'migrated save round-trips as version 3');
+ // 사진 후속 조사 중(옛 scene 5): 다음은 새 생각 정리 화면
+ old=v2(5,5);old.evidence.push(...E.checks.photo);old.judgments.photo=E.answers.photo.slice();old.cases.photo={first:'all',final:'all'};
+ s=E.restore(old);assert.equal(E.stepOf(s.scene),'follow');assert.equal(E.caseKey(s.scene),'photo');
+ for(const [i,id] of E.followMarks.photo.ids.entries())s=E.reduce(s,{type:'mark',id,value:E.truth[i]});s=E.reduce(s,{type:'follow-judge',stamp:'different'});
+ s=E.reduce(s,{type:'next'});assert.equal(E.stepOf(s.scene),'reflect');
+ // 다 끝낸 저장(옛 scene 16): 마지막 장면, 보고서로 갈 수 있다
+ old=v2(16,16,{question:'criteria',completed:true});for(const k of E.CASES)doneCase(old,k);
+ s=E.restore(old);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.equal(s.question,'criteria');
+ s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.REPORT);
+ // 옛 배치에서 범위를 벗어난 장면 번호
+ assert.deepEqual(E.restore(v2(17,17)),E.initial());
 });
 test('version 1 revision 4 save at scene 5 (writing case start) resumes at the writing case start',()=>{
  const old={version:1,revision:4,scene:5,furthest:5,evidence:['photo-original','photo-rule'],judgments:{photo:'unknown',writing:null,face:null},cases:{photo:v1c('auto'),writing:{first:null,final:null},face:{first:null,final:null}},question:null,completed:false};
  const s=E.restore(JSON.stringify(old));
- assert.equal(s.version,2);assert.equal(E.stepOf(s.scene),'hook');assert.equal(E.caseKey(s.scene),'writing');
+ assert.equal(s.version,3);assert.equal(E.stepOf(s.scene),'hook');assert.equal(E.caseKey(s.scene),'writing');
+ assert.deepEqual(s.reflections.photo,{q1:'',q2:''},'version 1 saves also get empty reflections');
  assert.deepEqual(s.judgments.photo,['unknown','legacy','legacy'],'old pick kept as judgment 1; new ones marked as not done');
  assert.equal(s.follows.photo.judgment,'legacy');assert.deepEqual(s.cases.photo,{first:'auto',final:'auto'});
  assert.equal(E.canAdvance(s),true);assert.equal(E.reduce(s,{type:'next'}).scene,s.scene+1);

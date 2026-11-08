@@ -3,11 +3,27 @@ const at=(scene,fn)=>{let s=E.initial();s.scene=scene;s.furthest=scene;return fn
 function checkAll(s,key){for(const id of E.checks[key])s=E.reduce(s,{type:'check',id});return s;}
 function judgeAll(s,key){for(const st of E.answers[key])s=E.reduce(s,{type:'judge',stamp:st});return s;}
 
-test('scene layout: five steps per case, prologue and ending',()=>{
- assert.equal(E.END,16);
- assert.deepEqual([0,1,2,3,4,5,6,10,11,15,16].map(E.stepOf),['intro','hook','check','choose','result','follow','hook','follow','hook','follow','end']);
- assert.deepEqual([1,5,6,10,11,15].map(E.caseKey),['photo','photo','writing','writing','face','face']);
- assert.equal(E.sceneOf('face','choose'),13);
+test('scene layout: six steps per case (reflect last), prologue, ending and report',()=>{
+ assert.equal(E.END,19);assert.equal(E.REPORT,20);
+ assert.deepEqual([0,1,2,3,4,5,6,7,12,13,18,19,20].map(E.stepOf),['intro','hook','check','choose','result','follow','reflect','hook','reflect','hook','reflect','end','report']);
+ assert.deepEqual([1,6,7,12,13,18].map(E.caseKey),['photo','photo','writing','writing','face','face']);
+ assert.equal(E.sceneOf('face','choose'),15);
+});
+test('reflect step: two free-text answers per case, empty is allowed, other cases untouched',()=>{
+ let s=at(E.sceneOf('photo','reflect'),s=>{s.cases.photo={first:'auto',final:'auto'};return s;});
+ assert.equal(E.canAdvance(s),true,'empty reflection can move on');
+ s=E.reduce(s,{type:'reflect',key:'photo',q:'q1',text:'원본 사진'});s=E.reduce(s,{type:'reflect',key:'writing',q:'q1',text:'x'});s=E.reduce(s,{type:'reflect',key:'photo',q:'q9',text:'x'});
+ assert.deepEqual(s.reflections,{photo:{q1:'원본 사진',q2:''},writing:{q1:'',q2:''},face:{q1:'',q2:''}});
+ s=E.reduce(s,{type:'reflect',key:'photo',q:'q2',text:'가'.repeat(5000)});assert.equal(s.reflections.photo.q2.length,4000,'no hard limit in UI, only a storage cap');
+ const t=at(2);assert.deepEqual(E.reduce(t,{type:'reflect',key:'photo',q:'q1',text:'x'}).reflections.photo.q1,'','only on the reflect screen');
+});
+test('ending: final note needs the question first, then the report opens; reporter fields are cleaned',()=>{
+ let s=at(E.END);for(const k of E.CASES)s.cases[k]={first:E.choices[k][0],final:E.choices[k][0]};
+ s=E.reduce(s,{type:'note',text:'먼저'});assert.equal(s.finalNote,'');assert.equal(E.reduce(s,{type:'next'}).scene,E.END,'report locked before the question');
+ s=E.reduce(s,{type:'ask',id:'input'});s=E.reduce(s,{type:'note',text:'어떤 정보를 쓰는지'});assert.equal(s.finalNote,'어떤 정보를 쓰는지');
+ s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.REPORT);assert.equal(E.reduce(s,{type:'next'}).scene,E.REPORT);
+ s=E.reduce(s,{type:'reporter',field:'name',text:'김\n하늘'});s=E.reduce(s,{type:'reporter',field:'number',text:'10203'});s=E.reduce(s,{type:'reporter',field:'x',text:'y'});
+ assert.deepEqual(s.reporter,{name:'김하늘',number:'10203'});
 });
 test('each case has three judgments and each stamp is the answer exactly once',()=>{
  for(const k of E.CASES){assert.equal(E.answers[k].length,3);assert.deepEqual([...E.answers[k]].sort(),[...E.stamps].sort(),k);}
@@ -22,9 +38,10 @@ test('check step needs every record and all three judgments before choosing',()=
  s=E.reduce(s,{type:'judge',stamp:'unknown'});assert.deepEqual(s.judgments.photo,['unknown','different','confirmed'],'picks are locked');
 });
 test('choosing moves to the result; first choice survives a later change',()=>{
- let s=judgeAll(checkAll(at(12),'face'),'face');s=E.reduce(s,{type:'next'});assert.equal(s.scene,13);
- s=E.reduce(s,{type:'choose',id:'maintain'});assert.equal(s.scene,14);assert.equal(E.outcome(s,'face').restricted,true);
- s=E.reduce(s,{type:'revisit',scene:13});s=E.reduce(s,{type:'choose',id:'release'});
+ const ch=E.sceneOf('face','choose');
+ let s=judgeAll(checkAll(at(ch-1),'face'),'face');s=E.reduce(s,{type:'next'});assert.equal(s.scene,ch);
+ s=E.reduce(s,{type:'choose',id:'maintain'});assert.equal(s.scene,ch+1);assert.equal(E.outcome(s,'face').restricted,true);
+ s=E.reduce(s,{type:'revisit',scene:ch});s=E.reduce(s,{type:'choose',id:'release'});
  assert.deepEqual(s.cases.face,{first:'maintain',final:'release'});assert.equal(E.outcome(s,'face').restricted,false);
 });
 test('follow-up needs every mark, then one judgment; marks lock after judging',()=>{
@@ -34,7 +51,7 @@ test('follow-up needs every mark, then one judgment; marks lock after judging',(
  s=E.reduce(s,{type:'mark',id:'p9',value:'cut'});assert.equal(s.follows.photo.marks.p9,undefined);
  assert.equal(E.canAdvance(s),false);s=E.reduce(s,{type:'follow-judge',stamp:'different'});assert.equal(E.canAdvance(s),true);
  s=E.reduce(s,{type:'mark',id:'p1',value:'shown'});assert.equal(s.follows.photo.marks.p1,E.truth[0],'locked');
- s=E.reduce(s,{type:'next'});assert.equal(s.scene,6);
+ s=E.reduce(s,{type:'next'});assert.equal(s.scene,6);assert.equal(E.stepOf(s.scene),'reflect','follow-up leads to the reflection screen');
 });
 test('follow-up photos: 담이 is cut in 3 of 6 and other friends are cut too',()=>{
  assert.equal(E.truth.filter(t=>t==='cut').length,3);
@@ -46,7 +63,7 @@ test('photo outcomes are real crops: automatic leaves 담이 out, the full choic
  assert.equal(E.allFaces(E.AUTO),false);assert.equal(E.allFaces(E.ALL),true);assert.ok(E.cutFaces(E.AUTO).includes(2));
 });
 test('revisit cannot jump past the furthest scene; ending needs choices then a question',()=>{
- let s=at(3);s=E.reduce(s,{type:'revisit',scene:9});assert.equal(s.scene,3);
+ let s=at(3);s=E.reduce(s,{type:'revisit',scene:10});assert.equal(s.scene,3);
  s=at(E.END);s=E.reduce(s,{type:'ask',id:'input'});assert.equal(s.completed,false);
  for(const k of E.CASES)s.cases[k]={first:E.choices[k][0],final:E.choices[k][0]};
  s=E.reduce(s,{type:'ask',id:'criteria'});assert.equal(s.completed,true);

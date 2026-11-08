@@ -126,5 +126,12 @@ window.TransparencyStory = (()=>{
   afterAsk:'세 질문 모두 상자를 여는 질문이야.',
   closing:['moa','설명이 기록과 맞는지, 결과가 맞는지, 무엇을 해도 되는지는 따로 살펴야 해.'],
   quote:'상자를 여는 첫 번째 도구는, 질문이었다.'};
- return {art,names,bgNames,stamps,intro,drafts,history,alertText,cases,ending};
+ // 사건마다 생각 정리(후속 조사 다음)와 마지막 '나의 조사 보고서'. 문장 틀은 입력칸 위에 실제 글로 보인다.
+ const reflect={title:'이 사건에서 알게 된 것을 적어 봐.',lead:'아래 문장을 이어서 써 봐. 비워 두고 넘어가도 돼.',
+  q1:'① 나는 ___ 자료를 보고, 이 AI가 ___라고 판단했다.',q2:'② 이 AI에 대해 아직 확인하지 못한 것은 ___이고, 그것을 알려면 ___가 필요하다.',
+  summary:'이 사건에서 내가 고른 것',recommend:'200자 안팎이면 좋아요',empty:'보고서에 ‘작성 안 함’으로 들어가요.',
+  finalPrompt:'앞으로 AI 서비스를 쓸 때 나는 무엇을 먼저 물어볼까?'};
+ const report={title:'나의 조사 보고서',game:'블랙박스를 열어보는 고양이',privacy:'이름과 학번은 이 기기에만 저장돼요. 서버로 보내지 않아요.',
+  printHint:'인쇄 창에서 대상을 ‘PDF로 저장’으로 고르세요.',notWritten:'작성 안 함'};
+ return {art,names,bgNames,stamps,intro,drafts,history,alertText,cases,ending,reflect,report};
 })();

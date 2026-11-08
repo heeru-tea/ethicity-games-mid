@@ -1,12 +1,18 @@
 (function(root){
  'use strict';
- // 저장 version 2. 사건마다 다섯 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사).
+ // 저장 version 3. 사건마다 여섯 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사) → reflect(생각 정리).
+ // 마지막은 end(닫히지 않은 질문 + 마지막 서술) → report(나의 조사 보고서).
  // 장면 번호는 LAYOUT에서 계산한다. 사건 4·5를 붙일 때는 CASES·STEPS·checks·choices·answers만 늘리면 된다.
  const CASES=['photo','writing','face'];
- const FIVE=['hook','check','choose','result','follow'];
- const STEPS={photo:FIVE,writing:FIVE,face:FIVE};
- const LAYOUT=[{step:'intro',k:null}];for(const k of CASES)for(const step of STEPS[k])LAYOUT.push({step,k});LAYOUT.push({step:'end',k:null});
- const END=LAYOUT.length-1;
+ const SIX=['hook','check','choose','result','follow','reflect'];
+ const STEPS={photo:SIX,writing:SIX,face:SIX};
+ const LAYOUT=[{step:'intro',k:null}];for(const k of CASES)for(const step of STEPS[k])LAYOUT.push({step,k});LAYOUT.push({step:'end',k:null},{step:'report',k:null});
+ const END=LAYOUT.findIndex(x=>x.step==='end'),REPORT=LAYOUT.length-1;
+ // version 2 장면 배치(reflect·report 없음). 옛 저장의 장면 번호를 새 배치로 옮길 때 쓴다.
+ const LAYOUT2=[{step:'intro',k:null}];for(const k of CASES)for(const step of SIX.slice(0,5))LAYOUT2.push({step,k});LAYOUT2.push({step:'end',k:null});
+ const END2=LAYOUT2.length-1;
+ const TEXT_MAX=4000; // 서술 칸은 강제 제한이 없다. 저장이 지나치게 커지지 않게만 막는다.
+ const REPORTER=['name','number'];
  const checks={photo:['photo-original','photo-rule'],writing:['writing-guide','writing-history'],face:['face-alert','face-clerk','face-photo']};
  const choices={photo:['auto','all'],writing:['detector','review','draft'],face:['maintain','release','crowd']};
  const stamps=['confirmed','unknown','different'];
@@ -27,7 +33,9 @@
  function sceneOf(key,step){return LAYOUT.findIndex(x=>x.k===key&&x.step===step);}
  const clone=v=>JSON.parse(JSON.stringify(v));
  const each=f=>Object.fromEntries(CASES.map(k=>[k,f(k)]));
- function initial(){return {version:2,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),question:null,completed:false};}
+ function initial(){return {version:3,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),question:null,completed:false,
+  reflections:each(()=>({q1:'',q2:''})),finalNote:'',reporter:{name:'',number:''}};}
+ const text=v=>typeof v==='string'?v.slice(0,TEXT_MAX):'';
  function checked(s,key){return checks[key].every(id=>s.evidence.includes(id));}
  function judged(s,key){return checked(s,key)&&s.judgments[key].every(Boolean);}
  // 지금 판단할 칸: 비어 있거나 이전 저장에서 넘어와 하지 않은('legacy') 첫 칸.
@@ -41,7 +49,9 @@
   if(step==='check')return judged(s,k);
   if(step==='choose'||step==='result')return !!s.cases[k].final;
   if(step==='follow')return followDone(s,k);
-  return false; // 마지막 장면은 질문(ask)으로 끝난다.
+  if(step==='reflect')return true; // 서술은 비워도 된다(보고서에 '작성 안 함').
+  if(step==='end')return s.completed; // 질문을 골라야 보고서로 간다.
+  return false; // 보고서가 마지막 장면이다.
  }
  function reduce(state,action){
   const s=clone(state),k=caseKey(s.scene),step=stepOf(s.scene);
@@ -52,7 +62,10 @@
   }
   if(action.type==='mark'&&step==='follow'){const m=followMarks[k],f=s.follows[k];if(m.ids.includes(action.id)&&m.values.includes(action.value)&&(f.judgment===null||f.judgment==='legacy'))f.marks[action.id]=action.value;}
   if(action.type==='follow-judge'&&step==='follow'&&followReady(s,k)&&stamps.includes(action.stamp)){const f=s.follows[k];if(f.judgment===null||f.judgment==='legacy')f.judgment=action.stamp;}
-  if(action.type==='next'&&s.scene<END&&canAdvance(s)){s.scene++;s.furthest=Math.max(s.furthest,s.scene);}
+  if(action.type==='reflect'&&step==='reflect'&&action.key===k&&['q1','q2'].includes(action.q)&&typeof action.text==='string')s.reflections[k][action.q]=text(action.text);
+  if(action.type==='note'&&step==='end'&&s.completed&&typeof action.text==='string')s.finalNote=text(action.text);
+  if(action.type==='reporter'&&step==='report'&&REPORTER.includes(action.field)&&typeof action.text==='string')s.reporter[action.field]=action.text.replace(/[\u0000-\u001f\u007f]/g,'').slice(0,40);
+  if(action.type==='next'&&s.scene<REPORT&&canAdvance(s)){s.scene++;s.furthest=Math.max(s.furthest,s.scene);}
   if(action.type==='revisit'&&Number.isInteger(action.scene)&&action.scene>=0&&action.scene<=s.furthest)s.scene=action.scene;
   if(action.type==='ask'&&step==='end'&&questions.includes(action.id)&&CASES.every(c=>s.cases[c].final)){if(!s.question)s.question=action.id;s.completed=true;}
   return s;
@@ -71,6 +84,7 @@
   }
   if(v.question&&!CASES.every(c=>v.cases[c].final))return false;
   if(v.completed!==!!v.question)return false;
+  if(v.furthest>END&&!v.completed)return false;
   return true;
  }
  // ── 이전 저장(version 1) ────────────────────────────────────────────
@@ -125,6 +139,7 @@
  // 'legacy'(이전 저장에서 넘어와 하지 않음)로 두어 이어하기를 막지 않는다. 그 사건을 다시 열면 해 볼 수 있다.
  function upgrade(r){
   const s=initial(),map=n=>n===0?0:n===13?END:sceneOf(key4(n),step4(n));
+  // 이미 지나간 사건의 생각 정리(reflect)는 비워 둔 채로 지나간 것으로 본다(보고서에 '작성 안 함').
   s.scene=map(r.scene);s.furthest=map(r.furthest);s.evidence=r.evidence.slice();s.question=r.question;s.completed=r.completed;
   for(const key of CASES){const j=r.judgments[key];s.cases[key]=clone(r.cases[key]);
    if(j)s.judgments[key]=[j,'legacy','legacy'];
@@ -136,12 +151,20 @@
   try{const v=typeof raw==='string'?JSON.parse(raw):raw;
    if(!v||typeof v!=='object')return initial();
    if(v.version===1){const r=v.revision===4?restore4(v):migrate3(v);return r?upgrade(r):initial();}
-   if(v.version!==2)return initial();
-   if(!Number.isInteger(v.scene)||v.scene<0||v.scene>END||!Number.isInteger(v.furthest)||v.furthest<v.scene||v.furthest>END)return initial();
+   if(v.version!==2&&v.version!==3)return initial();
+   // version 2 → 3: 장면 번호를 새 배치로 옮기고 서술은 빈 값으로 둔다.
+   const last=v.version===2?END2:REPORT,map=n=>{if(v.version===3)return n;const x=LAYOUT2[n];return x.step==='intro'?0:x.step==='end'?END:sceneOf(x.k,x.step);};
+   if(!Number.isInteger(v.scene)||v.scene<0||v.scene>last||!Number.isInteger(v.furthest)||v.furthest<v.scene||v.furthest>last)return initial();
    if(!Array.isArray(v.evidence)||v.evidence.some(id=>!CASES.some(k=>checks[k].includes(id))))return initial();
    if(!v.judgments||!v.cases||!v.follows||typeof v.completed!=='boolean')return initial();
    if(v.question!==null&&!questions.includes(v.question))return initial();
-   const s=initial();s.scene=v.scene;s.furthest=v.furthest;s.evidence=[...new Set(v.evidence)];s.question=v.question;s.completed=v.completed;
+   const s=initial();s.scene=map(v.scene);s.furthest=map(v.furthest);s.evidence=[...new Set(v.evidence)];s.question=v.question;s.completed=v.completed;
+   if(v.version===3){
+    if(!v.reflections||typeof v.reflections!=='object'||!v.reporter||typeof v.reporter!=='object'||typeof v.finalNote!=='string')return initial();
+    for(const key of CASES){const r=v.reflections[key];if(!r||typeof r.q1!=='string'||typeof r.q2!=='string')return initial();s.reflections[key]={q1:text(r.q1),q2:text(r.q2)};}
+    if(REPORTER.some(f=>typeof v.reporter[f]!=='string'))return initial();
+    s.finalNote=text(v.finalNote);for(const f of REPORTER)s.reporter[f]=v.reporter[f].slice(0,40);
+   }
    for(const key of CASES){const c=v.cases[key],j=v.judgments[key],f=v.follows[key],m=followMarks[key];
     if(!c||['first','final'].some(p=>c[p]!==null&&!choices[key].includes(c[p])))return initial();
     if(!Array.isArray(j)||j.length!==3||j.some(x=>x!==null&&x!=='legacy'&&!stamps.includes(x)))return initial();
@@ -154,6 +177,6 @@
   }catch{return initial();}
  }
  const api={initial,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,outcome,allFaces,cutFaces,
-  CASES,STEPS,LAYOUT,END,checks,choices,stamps,answers,followAnswers,followMarks,questions,AUTO,ALL,faces,FOLLOW_CROPS,truth};
+  CASES,STEPS,LAYOUT,LAYOUT2,END,REPORT,checks,choices,stamps,answers,followAnswers,followMarks,questions,AUTO,ALL,faces,FOLLOW_CROPS,truth};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TransparencyEngine=api;
 })(typeof window==='undefined'?globalThis:window);

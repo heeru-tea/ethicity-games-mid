@@ -119,11 +119,6 @@ dialog::backdrop{background:#131921b8}
 .modal-head{display:flex;justify-content:space-between;gap:16px;align-items:start;position:sticky;top:-24px;background:var(--bg);padding:8px 0;z-index:2}
 .modal-head h2{margin:0}
 .modal-head button{font-size:.88rem}
-.note-case{border-top:1px solid var(--border);padding:16px 0}
-.note-case dl{margin:0}
-.note-case dt{font-size:.85rem;color:var(--muted);font-weight:700;margin-top:8px}
-.note-case dd{margin:0}
-.note-case button{margin-top:12px}
 
 @media(max-width:860px){
  .screen{grid-template-columns:1fr;grid-template-areas:"head" "visual" "body"}
@@ -207,3 +202,85 @@ button.stamp-mine:disabled{color:var(--text);background:#fff;border:2px dashed #
 .evidence-head{display:flex;align-items:center;gap:6px;font-size:.95rem;font-weight:800;margin:0 0 8px}
 .evidence-head span{font-size:.8rem;color:#fff;background:var(--accent-dark);border-radius:6px;padding:1px 8px}
 .cue{margin:12px 0 0;font-weight:700;color:var(--speaker)}
+
+/* 사건 카드(수첩·보고서 공통). 카드 radius 14 = 안쪽 태그 6 + 여백 8. 단계별 묶음을 위에서 아래로. */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.case-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:14px 0}
+.case-card:focus{outline:none}
+.case-title{font-size:1.1rem;margin:0 0 10px}
+.case-num{display:inline-block;font-size:.8rem;font-weight:800;color:var(--accent-dark);border:1px solid #d9b58a;border-radius:6px;padding:0 7px;margin-right:6px;vertical-align:2px}
+.group{border-top:1px solid var(--border);padding:8px 0 6px}
+.group-label{font-size:.82rem;font-weight:800;color:var(--muted);margin:0 0 2px}
+.group p{margin:0 0 4px}
+.facts,.verdicts,.document .verdicts{list-style:none;margin:0;padding:0}
+.verdicts p{margin:0}
+.facts li{margin:0 0 4px}
+.verdict{margin:0 0 8px}
+.verdict:last-child{margin-bottom:2px}
+.v-say{font-weight:500}
+.v-pick{font-size:.92rem}
+.v-tag{display:inline-block;font-size:.82rem;font-weight:800;border-radius:6px;padding:0 7px;line-height:1.6}
+.v-ok{color:#14532d;background:#e3f1e7;border:1.5px solid #1f6b3a}
+.v-again{color:var(--text);background:#fff;border:1.5px dashed #6d675c}
+.v-none{color:var(--muted)}
+.pair .k{display:inline-block;min-width:5.2em;font-size:.85rem;font-weight:800;color:var(--muted)}
+.frame-text{display:block;font-weight:700;margin:6px 0 2px;word-break:keep-all}
+.blank{display:inline-block;width:3.2em;border-bottom:2px solid currentColor;vertical-align:-2px;margin:0 2px}
+.answer{white-space:pre-wrap;margin:0 0 6px}
+.not-written{color:var(--muted)}
+.card-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.card-links button{font-size:.9rem;min-height:40px;padding:6px 14px}
+dialog .case-card{margin:12px 0}
+
+/* 생각 정리 */
+.reflect-sum .verdicts{margin:4px 0 8px}
+.reflect-sum .pair{margin:0;font-size:.95rem}
+.reflect-sum .v-say{font-size:.95rem}
+.lead{margin-top:0}
+.write-q{margin:0 0 18px}
+.write-q textarea{display:block;width:100%;font:inherit;font-size:1rem;line-height:1.6;color:var(--text);background:#fff;border:1px solid #c9c2b5;border-radius:8px;padding:10px 12px;resize:vertical;margin-top:6px;word-break:keep-all;overflow-wrap:break-word}
+.write-q textarea:focus-visible{outline:3px solid #995000;outline-offset:1px}
+.count{font-size:.85rem;color:var(--muted);margin:4px 0 0}
+.empty-note{font-size:.85rem;color:var(--muted);margin:2px 0 0}
+
+/* 보고서 화면: 한 줄로 읽는다(그림 칸 없음) */
+.step-report .screen{display:block;max-width:46rem}
+.step-report .body{max-width:none}
+.report-head{margin:0 0 6px}
+.report-game{font-weight:800;margin:0 0 2px}
+.report-date{color:var(--muted);margin:0 0 10px}
+.reporter{display:flex;flex-wrap:wrap;gap:10px 18px}
+.reporter label{display:flex;align-items:center;gap:8px;font-weight:700}
+.reporter input{font:inherit;width:11em;max-width:100%;min-height:42px;padding:6px 10px;border:1px solid #c9c2b5;border-radius:8px;background:#fff;color:var(--text)}
+.report-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:10px 0 4px}
+.report-actions .hint{margin:0}
+
+/* 인쇄(PDF로 저장): A4 세로, 여백 15mm, 흰 바탕 검은 글자. 사건 하나가 페이지 사이에서 잘리지 않게 한다(사건마다 새 페이지는 아님). */
+@media print{
+ @page{size:A4 portrait;margin:15mm}
+ :root{font-size:9.5pt;line-height:1.4;background:#fff;color:#000}
+ *{outline:none!important;box-shadow:none!important;caret-color:transparent}
+ body{background:#fff;color:#000}
+ header,footer,nav,.skip,button,.no-print,.visual,.stage,img,.resume,.step-nav,dialog,.meta{display:none!important}
+ main{max-width:none;margin:0;padding:0}
+ .screen{display:block!important;max-width:none!important}
+ h1{font-size:15pt;margin:0 0 4pt}
+ .report-game{font-size:10pt}
+ .report-date{color:#000;margin:0 0 4pt}
+ .reporter input{border:0;border-bottom:1px solid #000;border-radius:0;min-height:0;padding:0 4pt;color:#000;background:none}
+ .case-card{break-inside:avoid;page-break-inside:avoid;border:1px solid #777;border-radius:6pt;padding:4pt 9pt;margin:0 0 6pt;background:#fff}
+ .group p{margin:0 0 1pt}
+ .case-title{font-size:11.5pt;margin:0 0 3pt}
+ .case-num{color:#000;border-color:#000}
+ .group{padding:2pt 0 1pt;border-top:1px solid #bbb}
+ .group-label{font-size:8pt;margin:0}
+ .group-label,.pair .k,.v-none,.not-written,.hint{color:#333}
+ .verdict{margin:0 0 2pt}
+ .v-say,.v-pick{display:inline}
+ .v-say{margin-right:4pt!important}
+ .v-pick{font-size:9.5pt}
+ .v-tag{color:#000!important;background:none!important;border:1px solid #000;padding:0 4pt}
+ .v-again{border-style:dashed}
+ .frame-text{margin:3pt 0 1pt}
+ .answer{margin:0 0 3pt}
+}
