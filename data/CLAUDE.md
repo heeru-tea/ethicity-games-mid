@@ -1,5 +1,22 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-08, 「목적에 맞는 활용」 — 개인정보 카드 + 챕터 끝 생각 쓰기)
+- **사용자 결정(재논의 금지)**: 설계 `docs/specs/2026-11-08-data-purpose-design.md`, 계획 `docs/plans/2026-11-08-data-purpose.md`. 방향 = 개인정보는 **최대한 보호하는 쪽으로 단순하게**(챕터 끝 정답 방향은 늘 거절, 가명 처리는 한 줄만, 법 설명 없음).
+- **① 목적 밖 개인정보 카드**(`js/privacy.js` DR.Privacy, 순수): 임무 파일 `privacy: { on, cards: [{ id, key, fix: 'mask'|'remove', at, art, mask: [{x,y,w,h,look}] }] }`. 카드 = 흔한 종류 카드에 `privateId`만 붙인 것(진짜 `key` 그대로 → 가린 카드 = 그 종류의 정상 카드). `Stream.build` 끝에서 **난수 없이** 표시(그 종류 중 앞 15% 밖·`at` 비율 자리) → 카드 자리·uid·벽은 그대로, 첫 판만. 스냅숏 비교(`walls-helper cardsOf`)는 `privateId`를 빼고, `privacy.test`가 "표시만 늘었다"를 따로 지킴.
+  - 1 임무 신분증 지갑(`wallet_closed`로 셈)·메시지 잠금화면(`phone_front`) 가리기 / 2 임무 캔 버리는 사람 얼굴 ×2(`can_drink`) 빼기 / 3 임무 행인 얼굴 강변길(`river_now`)·택시 번호판 역 앞(`station_now`) 가리기 / 4 임무 이름 흘림 획 또박또박 2·4(`neat_2`·`neat_4`) 가리기. **네 임무 모두 켬**(1·2 임무 사진 3장이 와서 384² webp q0.82로 변환, 원본 PNG는 gitignore).
+  - ⚠️ `wallet-id` 사진은 **펼친 지갑 모습**인데 설계(흔한 모습만)대로 닫힌 지갑 종류로 센다 — 사용자 확인 목록(바꾸려면 `m1.js` 그 카드 `key`).
+  - 그림: `DR.Cards.artId` = `privateId`(가리면 `privateId#masked`) → 달리기·검수·보충 모두 같은 길. `cardart.js` `maskOver`(문서·번호판·이름 = 검은 막대, 얼굴 = 흐리게), 3 임무 `people`·`plate`, 4 임무 `nameLine`(답 칸 밖 위쪽, 이어 쓴 고리 — 숫자 모양 아님). 개인정보 카드는 그 종류와 같은 씨앗.
+  - 검수: 크게 보기에 **모든 카드 공통 '가리기'**(개인정보 아닌 카드 → "가릴 개인정보가 없어"), '가림' 표시, 안내 한 줄. 제출 때 `DR.Privacy.check` → 그대로면 감독관이 막음(어느 카드인지 말 안 함, 버튼은 '검수로 돌아가기'만 — `DR.UI.supervisorBlock`), 2 임무 얼굴을 가리면 "얼굴을 가려도 …" 문장으로 막고 빼야 통과. 장면 판정과는 따로. 달리는 중 알림 없음.
+  - 결과: 가릴 수 있던 카드를 뺐으면 마지막 장면에 감독관 "가렸으면 살려 쓸 수 있었어"(`state.privCaught` = 첫 달리기 뒤 가방의 가리기 카드 id, 저장, 옛 저장 []).
+  - 테스트 훅: `debugFill`은 개인정보 카드를 **건너뛴다**(기존 테스트 그대로), `privateId`를 id로 주면 그것만. `play-browser` 자동 조종도 고르지 않음.
+- **② 챕터 끝**(`js/ui-chapter.js`, `#screen-chapter`, 임무 파일 `chapterEnd`): 1/3 다른 용도 요청(안내 AI 한 줄 + 메시지 카드, 새 초상 없음) → 셋 중 고르기·피드백·다시 고르기 → 2/3 그 임무 개념 질문(대표성·라벨 품질·최신성·편향) → 3/3 문장 틀 생각 쓰기(입력마다 저장, 비워도 됨). 자리 = 1~3 임무 마지막 대화 뒤·도시 복구 전 / 4 임무 재연결 5/5 뒤·의뢰인 대사 전(`app.js finishMission chapterEnd`). 점수 없음.
+  - 저장 `records[임무].chapter = { req: {first,last}, concept: {first,last}, note }`(`DR.Save.chapterOf` — 옛 기록은 빈 값, '처음부터'에서 지워짐). 다시 깨면 이전 답이 채워진 채(처음 선택 유지). 임무 완료 요약 `#outro-summary`에 세 줄. 장면 중 새로고침하면 그 판 챕터 끝은 건너뛴다(임무 기록은 이미 남음).
+  - 테스트 공용 `passCity`가 챕터 끝도 첫 답으로 지나간다(`passChapter`), `m4-browser ending`도.
+- **교사 검수 대기(초안 문장)**: `missions/m1~m4.js chapterEnd` 전부, `js/ui-chapter.js` TEXT, `js/privacy.js` TEXT. 검수 플래그는 두지 않음(README에도 적음).
+- 테스트: 단위 `privacy.test`(데이터 규칙·표시·check·wasted)·`chapter.test`(데이터·chapterOf)·`save.test`(privCaught)·`reach.test`(새 1 임무 m1 추가, 옛 침수는 flood, 빼야 하는 카드는 셈 밖). 브라우저 `privacy-browser`(art·flow 4임무×1280·390·reload) · `chapter-browser`(1 임무 자리·다시 고르기·저장·새로고침·다시 깨기·처음부터, 2·3 임무 화면 390, 4 임무 자리). 스크린샷 `_shot-privacy-*`·`_shot-chapter-*`.
+- 미확인: 문장의 법적·교육적 정확성(교사 검수), 학생 반응(가리기 버튼을 찾는지, 챕터 끝 길이), 실기기.
+- ⚠️ 이 작업 전(1b81f73)에도 실패하던 브라우저 테스트 3개(같은 줄에서 같은 오류, 고치지 않음): `bgm-browser`("바로 끊지 않고 서서히" — 검수로 갈 때 이미 음량 0), `m3-browser`·`play-browser`(3 임무 달리기 끝 `#screen-inspect` 4초 시간 초과). 3 임무 낮 다리 작업 뒤부터로 보임 — 다음 작업에서 따로 볼 것.
+
 ## ★지금 상태 (2026-11-07, 달리기 무대 1차 = 「도시 위를 잇는 빛의 다리」)
 - **사용자 결정(재논의 금지)**: "엑셀 위에서 달리는 느낌" → 방향 C(도시 위 빛의 다리), 바닥 = 시안 2번 어두운 남색 철판(눈이 덜 피곤, 카드·벽이 잘 보임). 연습·1 임무 = 밤 다리, **3 임무 = 낮 다리**, **2·4 임무 = 실내 무대 유지(2차에서 다듬기)**. 겉모습만(길 모양·코스·판정 그대로). 설계 `docs/specs/2026-11-07-run-bridge-world-design.md`, 계획 `docs/plans/2026-11-07-run-bridge-world.md`.
 - **구조**: 임무 데이터 `world: 'bridge'`(+ 3 임무 `worldTime: 'day'`) → `run3d.js start`가 `DR.RunWorld.create`(`js/run-world.js`), 기본 바닥 격자·상자 빌딩 숨김, `peek().world`. 색·구역 모습은 `js/bridge-look.js`(순수, node 테스트 — 밤 바닥 `#16162f`, 낮 바닥 `#535d76`은 분홍 벽 대비 2.2 때문에 계획보다 어둡게, 낮에만 노이즈 벽 = 흰·분홍·연분홍 + 불투명도 0.9 — 진분홍 칸이 낮 바닥과 밝기가 같아서, 리뷰 I1). 1 임무 `scenery: 'bridge'`(구역마다 하늘 색조·다리 아래 불빛 비율), 3 임무 `scenery: 'city'`는 다리 위에서 소품만(등불 S2·강물 다리 아래 S3), 비 = 다리가 S4만.
@@ -110,14 +127,15 @@
 | `js/run-world.js` · `bridge-look.js` | 빛의 다리 무대(캔버스 뒤 하늘·도시 CSS 층 + 3D 다리·불빛) · 밤/낮 팔레트·구역 모습(순수) |
 | `js/ui-story.js` · `ui-inspect.js` · `ui-result.js` · `ui-conveyor.js` | 대화·브리핑·검수(크게 보기 공용 = `zoomer`, 2 임무 이름표 고치기)·감독관·결과·보충 준비·마무리·2 임무 컨베이어 |
 | `js/ui-common.js` · `ui-shell.js` | 아이콘 줄·범례·도움말·되돌리기 / 일시정지·타이틀(주인공·임무 고르기) |
+| `js/privacy.js` · `ui-chapter.js` | 목적 밖 개인정보 카드(표시·가리기·제출 판정, 순수) · 챕터 끝(다른 용도 요청·개념 질문·생각 쓰기) |
 | `js/ui-guide.js` · `ui-grade.js` · `ui-city.js` · `showdown.js` | 3 임무 길 안내 시연 · 4 임무 채점 시연 · 도시 복구 화면 · 4 임무 결판·동기 카드 규칙(순수) |
 | `js/app.js` | 흐름 상태 기계, `?start=` `?run=` 디버그 진입, `DR.App.debugFill` |
 
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (234)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (25개: bgm·boot·**bridge**·cardart·exam·fakes·fire·flow·hero·keys·lost·m1·m2·m3·m4·play·polish·portraits·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (264)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (27개: bgm·boot·bridge·cardart·**chapter**·exam·fakes·fire·flow·hero·keys·lost·m1·m2·m3·m4·play·polish·portraits·**privacy**·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).

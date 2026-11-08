@@ -335,7 +335,7 @@
     if (relabels) summary.push('고친 이름표: ' + fixed + '장');
     var cityBefore = cityCount();
     // 챕터 끝 답(설계 2026-11-08 ②)은 다시 깨도 이어 간다 — 이전 답을 채운 채 보여 주고, 처음 선택은 처음 값 그대로
-    rec.chapter = DR.Save.chapterOf(App.records, m.id);
+    if (m.chapterEnd) rec.chapter = DR.Save.chapterOf(App.records, m.id);
     App.records[m.id] = rec;
     DR.Save.finish();
     DR.Save.setRecord(m.id, rec);
