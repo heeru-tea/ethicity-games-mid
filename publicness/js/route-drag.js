@@ -49,7 +49,7 @@
  function cancel(){var g=gesture;gesture=null;hover=null;latest=null;if(g){until=performance.now()+400;try{if(stage.hasPointerCapture(g.id))stage.releasePointerCapture(g.id);}catch(e){}}schedule();}
  function move(e){
   var p=point(e);if(!inside(p)){cancel();return;}
-  if(!gesture){var r=active(),id=nearest(p);if(e.pointerType==='touch'||!r||r.nodes.length<2||PB.Graph.isLoop(r)||!id||r.nodes.indexOf(id)>=0||e.target.closest('button,select,input')){hover=null;schedule();return;}
+  if(!gesture){var r=active(),id=nearest(p);if(e.pointerType==='touch'||e.buttons||!r||r.nodes.length<2||PB.Graph.isLoop(r)||!id||r.nodes.indexOf(id)>=0||e.target.closest('button,select,input')){hover=null;schedule();return;}
    var tx=api().begin(api().mode(id));if(!tx)return;tx.route=PB.RouteEdit.visit(tx.route,tx.mode,id);tx.last=id;hover={tx:tx,p:p,snap:id};schedule();return;}
   var g=gesture;g.p=p;if(Math.hypot(p.x-g.start.x,p.y-g.start.y)>=7)g.moved=true;if(!g.moved)return;
   var id=nearest(p);g.snap=id;
@@ -60,16 +60,16 @@
  function init(){
   stage=document.querySelector('#stage');layer=document.createElement('div');layer.id='route-edit-layer';canvas=document.createElement('canvas');canvas.id='route-edit-canvas';canvas.setAttribute('aria-hidden','true');layer.appendChild(canvas);tip=document.createElement('div');tip.id='route-edit-tooltip';tip.setAttribute('role','tooltip');tip.hidden=true;layer.appendChild(tip);stage.appendChild(layer);ctx=canvas.getContext('2d');
   stage.addEventListener('pointerdown',function(e){
-   if(!enabled()||e.button!==0||gesture)return;var p=point(e),r=active(),h=handleAt(p),segment=h?null:segmentAt(p,r),id=nearest(p),mode=h?{end:h.end}:segment!=null?{index:segment}:null;
+   if(!enabled()||e.button!==0||gesture)return;var p=point(e),r=active(),h=handleAt(p),segment=h?null:segmentAt(p,r),id=nearest(p);/* 2026-11-09: 노선 밖 정류장을 바로 누르면 선 끌기가 아니라 그 정류장 끌기(선 위에 놓아 사이에 넣기) */if(segment!=null&&id&&r.nodes.indexOf(id)<0){var q=project(id);if(Math.hypot(q.left-p.x,q.top-p.y)<22)segment=null;}var mode=h?{end:h.end}:segment!=null?{index:segment}:null;
    if(!h&&e.target.closest('button,select,input,a'))return;
    if(!mode&&r&&!r.nodes.length&&id)mode={end:'tail'};
-   if(!mode)return;var tx=api().begin(mode);if(!tx)return;if(!tx.route.nodes.length){tx.route=PB.RouteEdit.visit(tx.route,mode,id);tx.startId=id;}
+   /* 정류장을 끌기 시작하면(다른 손길) 마우스 올림 미리보기는 지운다 — 끝에 붙는 것처럼 보이지 않게(2026-11-09) */if(!mode){if(hover){hover=null;schedule();}return;}var tx=api().begin(mode);if(!tx)return;if(!tx.route.nodes.length){tx.route=PB.RouteEdit.visit(tx.route,mode,id);tx.startId=id;}
    gesture={id:e.pointerId,tx:tx,start:p,p:p,moved:false,lastSnap:h?h.id:id,snap:null};hover=null;
    stage.setPointerCapture(e.pointerId);e.preventDefault();e.stopImmediatePropagation();schedule();
   },true);
-  stage.addEventListener('pointermove',function(e){if(!enabled())return;if(gesture&&gesture.id!==e.pointerId)return;if(gesture){e.preventDefault();e.stopImmediatePropagation();}latest={clientX:e.clientX,clientY:e.clientY,target:e.target,pointerType:e.pointerType};if(!move.pending)move.pending=requestAnimationFrame(function(){move.pending=0;var ev=latest;latest=null;if(ev)move(ev);});},true);
+  stage.addEventListener('pointermove',function(e){if(!enabled())return;if(gesture&&gesture.id!==e.pointerId)return;if(gesture){e.preventDefault();e.stopImmediatePropagation();}latest={clientX:e.clientX,clientY:e.clientY,target:e.target,pointerType:e.pointerType,buttons:e.buttons};if(!move.pending)move.pending=requestAnimationFrame(function(){move.pending=0;var ev=latest;latest=null;if(ev)move(ev);});},true);
   stage.addEventListener('pointerup',function(e){if(!gesture||gesture.id!==e.pointerId)return;e.preventDefault();e.stopImmediatePropagation();latest=null;move(e);var g=gesture;if(!g)return;gesture=null;hover=null;until=performance.now()+400;try{stage.releasePointerCapture(e.pointerId);}catch(err){}
-   if(g.moved){lastTap=null;if(api().commit(g.tx)&&!A().reducedMotion()){var old=g.tx.original.nodes;animation={t:performance.now(),color:A().routeStyle(g.tx.num).color,edges:g.tx.route.nodes.slice(1).map(function(id,i){return[g.tx.route.nodes[i],id];}).filter(function(e){return !old.some(function(id,i){return id===e[0]&&old[i+1]===e[1];});})};}}else if(g.tx.mode.index!=null){var now=e.timeStamp;if(lastTap&&lastTap.num===g.tx.num&&lastTap.index===g.tx.mode.index&&now-lastTap.t<400){lastTap=null;A().onRouteDouble(g.tx.num,g.tx.mode.index);}else{lastTap={num:g.tx.num,index:g.tx.mode.index,t:now};A().onRouteClick(g.tx.num,g.tx.mode.index);}}else if(g.tx.original.nodes.length)api().choose(g.tx.mode.end);else A().onNodeClick(g.tx.startId);schedule();
+   if(g.moved){lastTap=null;var done=api().commit(g.tx);if(!done&&api().fail)api().fail(g.tx,g.snap);/* 2026-11-09: 안 이어지면 한 줄 이유 */if(done&&!A().reducedMotion()){var old=g.tx.original.nodes;animation={t:performance.now(),color:A().routeStyle(g.tx.num).color,edges:g.tx.route.nodes.slice(1).map(function(id,i){return[g.tx.route.nodes[i],id];}).filter(function(e){return !old.some(function(id,i){return id===e[0]&&old[i+1]===e[1];});})};}}else if(g.tx.mode.index!=null){var now=e.timeStamp;if(lastTap&&lastTap.num===g.tx.num&&lastTap.index===g.tx.mode.index&&now-lastTap.t<400){lastTap=null;A().onRouteDouble(g.tx.num,g.tx.mode.index);}else{lastTap={num:g.tx.num,index:g.tx.mode.index,t:now};A().onRouteClick(g.tx.num,g.tx.mode.index);}}else if(g.tx.original.nodes.length)api().choose(g.tx.mode.end);else A().onNodeClick(g.tx.startId);schedule();
   },true);
   stage.addEventListener('click',function(e){if(e.detail&&performance.now()<until){e.preventDefault();e.stopImmediatePropagation();}},true);
   stage.addEventListener('pointercancel',cancel,true);stage.addEventListener('lostpointercapture',function(){if(gesture)cancel();},true);stage.addEventListener('pointerleave',function(){if(!gesture){hover=null;schedule();}});

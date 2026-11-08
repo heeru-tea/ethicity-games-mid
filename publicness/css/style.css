@@ -266,6 +266,7 @@ body[data-screen="plan"] .stage::after { content: attr(data-caption); position: 
 body[data-screen="plan"] .stage.previewing::after { background: var(--accent-soft); color: var(--accent-ink); padding: 8px 12px; border-radius: 6px; }
 body[data-screen="plan"] .stage-svg, body[data-screen="plan"] .stage-3d canvas { touch-action: none; }
 .route-drag-guide { position: fixed; height: 3px; background: var(--accent); transform-origin: 0 50%; pointer-events: none; z-index: 999; }
+.route-drag-guide.on-line { height: 5px; margin-top: -1px; box-shadow: 0 0 0 2px #fff; } /* 2026-11-09: 정류장을 선 위로 — 놓으면 사이에 들어감 */
 .route-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .route-tab { padding: 7px 11px; }
 .route-summary { font-size: .9rem; color: var(--text-mute); margin-bottom: 8px; }
