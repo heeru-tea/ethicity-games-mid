@@ -120,6 +120,8 @@ body { overflow: hidden; word-break: keep-all; }
 /* 검수 · 보충 준비 */
 .notice { background: rgba(255,95,176,.14); border: 1px solid var(--pink); border-radius: 12px; padding: 10px 14px; }
 .notice[hidden] { display: none; }
+.bag-grid[hidden] { display: none; }
+.btn-prep-all { margin: 12px 0; }
 .notice.notice-ok { background: rgba(91,227,161,.12); border-color: var(--ok); } /* 보충 출발 가능(플레이테스트 7) */
 .bag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
 .bag-card { position: relative; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 6px; }

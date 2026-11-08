@@ -289,6 +289,8 @@
     // 종류별 "1장 빼기"는 바로 빼지 않는다 — 그 라벨의 카드 썸네일을 펼쳐 학생이 사진을 보고 직접 고른다
     // (가장 최근 카드를 몰래 빼면 가짜가 남고 진짜가 빠질 수 있다)
     var openKinds = {};
+    // 카드 전체 격자(카드마다 빼기)는 기본 접힘 — 종류별 '1장 빼기'와 겹쳐 화면이 너무 길어서(플레이테스트 13). 다시 그려도 펼친 채
+    var showAll = false;
 
     function render() {
       // forceResubmit = 보충 횟수 밖 다시 제출(4 임무 결판, 남은 보충 0번) — 달리지 않는다
@@ -348,6 +350,11 @@
         ]));
       });
 
+      var allToggle = el('button', { id: 'btn-prep-all', class: 'btn btn-small btn-prep-all', type: 'button', 'aria-expanded': String(showAll), 'aria-controls': 'prep-grid',
+        text: showAll ? '카드 전체 접기' : '카드 전체 보기 (' + bag.length + '장)' });
+      allToggle.addEventListener('click', function () { DR.Sfx.play('ui'); showAll = !showAll; render(); });
+      var grid = bagGrid(mission, bag, 'prep-grid', { onOpen: zoom.open, onRemove: function (card) { removeWithUndo(mission, bag, card, render); } });
+      grid.hidden = !showAll;
       var go = el('button', { id: 'btn-supplement', class: 'btn btn-primary', type: 'button', text: resubmit ? '다시 제출' : '보충 달리기 출발' });
       go.disabled = lack > 0;
       go.addEventListener('click', function () { DR.Sfx.unlock(); DR.Sfx.play('ui'); DR.UI.clearToast(); zoom.close(); done(bag, { resubmit: resubmit }); });
@@ -368,7 +375,8 @@
         resubmit && !lack ? null : el('p', { id: 'prep-need', class: 'notice' + (lack > 0 ? '' : ' notice-ok'), text: lack > 0 ? lack + '칸 더 비워야 해요.' : '출발할 수 있어요.' }), // 가능 = 초록(경고 분홍 아님)
         el('h3', { text: '가방 속 종류별 개수' }),
         summary,
-        bagGrid(mission, bag, 'prep-grid', { onOpen: zoom.open, onRemove: function (card) { removeWithUndo(mission, bag, card, render); } }),
+        allToggle,
+        grid,
         el('div', { class: 'actions' }, [go])
       ]));
       zoom.reopen();
