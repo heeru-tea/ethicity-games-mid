@@ -101,7 +101,7 @@ async function follow(p,k,judge,wrongFirst){
 const tagOf=async(p,id)=>(await p.locator('#fb-'+id+' .fb-tag').innerText()).replace(/\s+/g,' ');
 async function notice(p,k,plan){
  assert.equal(E.stepOf((await state(p)).scene),'notice');assert.match(await p.locator('.meta').innerText(),/만든 사람이라면: 미리 알리기/);
- const lines=await p.locator('.body .line').allInnerTexts(),solo=!!D.cases[k].solo;assert.match(lines[0],/안내문은 잘못된 조치를 대신하지 않아\. 그래도 미리 알리는 건 따로 해야 할 일이야\./);
+ const lines=await p.locator('.body .line').allInnerTexts(),solo=!!D.cases[k].solo;assert.match(lines[0],/안내문이 잘못된 조치를 바로잡아 주지는 않아\. 그래도 미리 알리는 건 따로 해야 할 일이야\./);
  if(k==='face')assert.match(lines[1],/가게 입구에는 얼굴 인식을 쓴다는 안내가 없었어\./);else assert.equal(lines.length,1);
  assert.equal(await p.locator('.notice-intro .who').count(),solo?0:1,'solo: the fixed line has no speaker');
  const fbLine=async id=>(await p.locator('#fb-'+id).innerText()).replace(/\s+/g,' ').trim();
@@ -187,7 +187,7 @@ async function playCase(p,k,{tag,viewport,pick,judge,wrongFirst,shots,write={},n
   if(c.solo){// 사건 5: 혼자 안내 한 번, 질문을 하나 이상 해야 직접 확인
    assert.equal(await p.locator('.solo-note').count(),1);assert.equal(await p.locator('.solo-note').innerText(),c.soloNote);
    assert.equal(await p.locator('[data-act="ask"]').count(),4);assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),true,'ask first');
-   await click(p,'[data-act="ask"][data-id="notice"]');assert.match(await p.locator('.body .finding').innerText(),/추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요\./);assert.match(await p.locator('.body .finding').innerText(),/네 질문 모두/);
+   await click(p,'[data-act="ask"][data-id="notice"]');assert.match(await p.locator('.body .finding').innerText(),/추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요\./);assert.match(await p.locator('.body .finding').innerText(),/질문 네 개 모두/);
    await click(p,'[data-act="ask"][data-id="criteria"]');assert.match(await p.locator('.body .finding').innerText(),/순위를 매긴 자세한 이유는 알려 주지 않았어요/);
    assert.deepEqual((await state(p)).asked,['notice','criteria']);assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false);}
   else assert.equal(await p.locator('.solo-note').count(),0);
@@ -311,7 +311,7 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    await click(p,'header [data-act="notebook"]');assert.equal(await p.locator('#modal-body [data-act="revisit"]').filter({hasText:'미리 알리기 해 보기'}).count(),3);
    for(const [i,k] of OLD3.entries())noticeShown(await p.locator('#modal-body .case-card').nth(i).innerText(),k,s,'legacy notebook');
    await click(p,`#modal-body [data-act="revisit"][data-scene="${E.sceneOf('writing','notice')}"]`);s=await state(p);assert.equal(s.scene,E.sceneOf('writing','notice'));
-   assert.match(await p.locator('.body').innerText(),/이전 저장에서 넘어와 아직 하지 않은 단계야/);assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false);
+   assert.match(await p.locator('.body').innerText(),/이전 저장에서 넘어왔어. 이 단계는 아직 하지 않았어/);assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false);
    for(const id of E.noticeCards.writing.must)await click(p,`[data-act="notice-pick"][data-id="${id}"]`);await click(p,'[data-act="notice-post"]');assert.match(await p.locator('.notice-verdict').innerText(),/다 맞았어/);
    await p.reload({waitUntil:'domcontentloaded'});s=await state(p);assert.deepEqual(s.notices.writing.posted,E.noticeCards.writing.must,'notice survives reload');assert.equal(await p.locator('.card-fb').count(),5,'feedback back after reload');
    await click(p,'header [data-act="notebook"]');const note=await p.locator('#modal-body').innerText();

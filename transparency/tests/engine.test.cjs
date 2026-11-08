@@ -36,7 +36,7 @@ test('notice step: picking toggles cards, posting needs a card, posting once ope
 const D=(()=>{global.window={};require('../story.js');return global.window.TransparencyStory;})();
 const DASH_EMOJI=/[—–]|\p{Extended_Pictographic}/u;
 test('notice copy: story cards match engine kinds, conflict cards explain the clash, fixed lines as approved',()=>{
- assert.equal(D.notice.principle,'안내문은 잘못된 조치를 대신하지 않아. 그래도 미리 알리는 건 따로 해야 할 일이야.');
+ assert.equal(D.notice.principle,'안내문이 잘못된 조치를 바로잡아 주지는 않아. 그래도 미리 알리는 건 따로 해야 할 일이야.');
  assert.ok(D.cases.face.notice.lines.some(([,t])=>t==='가게 입구에는 얼굴 인식을 쓴다는 안내가 없었어.'),'bakery intro line');
  for(const k of E.CASES){const n=D.cases[k].notice,ids=n.cards.map(c=>c.id);
   assert.deepEqual([...ids].sort(),[...E.noticeIds(k)].sort(),k+' same cards');
@@ -98,10 +98,10 @@ test('cases 4 and 5 copy: ids match the engine, judgment sources are records of 
 });
 test('ending moved: the four questions (same answers) are asked in case 5; the ending keeps its closing lines; five cases in the prologue',()=>{
  const R=D.cases.recommend;assert.deepEqual(R.asks.map(a=>a[0]),E.questions);
- assert.equal(R.asks.find(x=>x[0]==='notice')[1],'쓰기 전에 무엇을 알려 줬어야 해?');
+ assert.equal(R.asks.find(x=>x[0]==='notice')[1],'앱을 쓰기 전에 무엇을 알려 줬어야 해?');
  assert.equal(R.asks.find(x=>x[0]==='notice')[2],'추천에 관심사를 쓴다는 건 처음에 알렸어요. 추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요.');
  assert.equal(R.asks.find(x=>x[0]==='criteria')[2],'관심사와 이어진 모임을 먼저 골랐어요. 순위를 매긴 자세한 이유는 알려 주지 않았어요.');
- assert.equal(R.afterAsk,'네 질문 모두 상자를 여는 질문이야.');
+ assert.equal(R.afterAsk,'질문 네 개 모두 상자를 여는 질문이야.');
  assert.equal(D.ending.asks,undefined);assert.equal(D.ending.question,undefined);assert.equal(D.ending.lines.length,2);
  assert.equal(D.ending.closing[1],'설명이 기록과 맞는지, 결과가 맞는지, 무엇을 해도 되는지는 따로 살펴야 해.');assert.equal(D.ending.quote,'상자를 여는 첫 번째 도구는, 질문이었다.');
  assert.equal(D.ending.discussion.length,3);assert.equal(D.ending.discussion[2],'설명이 기록과 다를 때, 누구에게 무엇을 고쳐 달라고 할 수 있을까?');
