@@ -278,7 +278,6 @@
   function supplementPrep(mission, result, bag, done, popts) {
     var extra = (popts && popts.extra) || [];
     var screen = document.getElementById('screen-prep');
-    var need = Math.min(DR.config.supplementFreeSlots, mission.bag);
     var comboById = {};
     mission.scenes.forEach(function (s) { s.combos.forEach(function (c) { comboById[c.id] = c; }); });
     // 종류(key)마다 필요한 최대 장수 — 여유 계산용
@@ -293,7 +292,11 @@
 
     function render() {
       // forceResubmit = 보충 횟수 밖 다시 제출(4 임무 결판, 남은 보충 0번) — 달리지 않는다
-      var resubmit = !!(popts && popts.forceResubmit) || Object.keys(DR.Judge.shortfall(mission, bag.concat(extra), DR.config)).length === 0;
+      var shortNow = DR.Judge.shortfall(mission, bag.concat(extra), DR.config);
+      var resubmit = !!(popts && popts.forceResubmit) || Object.keys(shortNow).length === 0;
+      // 비워야 할 칸 = 기본 칸과 모자란 장 수 합 중 큰 쪽(플레이테스트 7 — 9장이 모자란데 6칸이면 한 번에 못 채움). 가방보다 클 수는 없다
+      var shortTotal = Object.keys(shortNow).reduce(function (n, k) { return n + shortNow[k]; }, 0);
+      var need = Math.min(Math.max(DR.config.supplementFreeSlots, shortTotal), mission.bag - extra.length);
       var free = mission.bag - bag.length - extra.length, lack = resubmit ? Math.max(0, -free) : Math.max(0, need - free);
       var counts = DR.Cards.labelCounts(mission, bag), withPeer = extra.length ? DR.Cards.labelCounts(mission, bag.concat(extra)) : counts;
       screen.innerHTML = '';
@@ -349,7 +352,8 @@
       go.disabled = lack > 0;
       go.addEventListener('click', function () { DR.Sfx.unlock(); DR.Sfx.play('ui'); DR.UI.clearToast(); zoom.close(); done(bag, { resubmit: resubmit }); });
       var note = resubmit ? '모자란 카드는 없다. 가방을 정리했으면 다시 제출하자.'
-        : '이번엔 그 장면에 필요한 카드가 더 자주 나온다. 가방 칸은 그대로라서, 출발하려면 ' + need + '칸 이상 비어 있어야 한다.';
+        : '이번엔 그 장면에 필요한 카드가 더 자주 나온다. 가방 칸은 그대로라서, 출발하려면 ' + need + '칸 이상 비어 있어야 한다' +
+          (shortTotal > DR.config.supplementFreeSlots ? '(모자란 카드 ' + shortTotal + '장).' : '.');
       var peerNote = extra.length ? el('p', { id: 'prep-peer', class: 'notice', text: '동기가 따로 모아 둔 카드 ' + extra.length + '장이 ' + (resubmit ? '다시 제출하기 전에' : '보충 달리기가 끝나면') + ' 가방에 들어온다(' + extra.length + '칸)' +
         (popts.peerFixed ? ' — 이번엔 동기와 함께 넣는다.' : ' — 넣을지는 검수에서 정한다.') }) : null;
       var helpBtn = el('button', { id: 'btn-help-prep', class: 'btn btn-ghost btn-help', type: 'button', text: '?', 'aria-label': '도움말' });
@@ -361,7 +365,7 @@
         failed,
         el('p', { class: 'note', text: note }),
         peerNote,
-        resubmit && !lack ? null : el('p', { id: 'prep-need', class: 'notice', text: lack > 0 ? lack + '칸 더 비워야 해요.' : '출발할 수 있어요.' }),
+        resubmit && !lack ? null : el('p', { id: 'prep-need', class: 'notice' + (lack > 0 ? '' : ' notice-ok'), text: lack > 0 ? lack + '칸 더 비워야 해요.' : '출발할 수 있어요.' }), // 가능 = 초록(경고 분홍 아님)
         el('h3', { text: '가방 속 종류별 개수' }),
         summary,
         bagGrid(mission, bag, 'prep-grid', { onOpen: zoom.open, onRemove: function (card) { removeWithUndo(mission, bag, card, render); } }),
