@@ -41,7 +41,7 @@
  // 장면 그림. 결과가 그림에 바로 보이게 한다(게시판 사진·입장 표시·점원 표정).
  // screen = 무대 오른쪽 위에 코드로 그린 화면 카드(도서관 추천 화면·모임 추천 알림). 첫 줄은 작은 머리말.
  function stage(bg,cast,{photoRect,status,boxes,screen,screenCls=''}={}){
-  return `<div class="stage"><img class="backdrop" src="${A.backgrounds[bg]}" alt="${D.bgNames[bg]}">${photoRect?`<div class="stage-photo">${canvas(photoRect,'게시판에 올린 사진')}</div>`:''}${screen?`<div class="stage-screen ${screenCls}">${screen.map((x,i)=>`<span class="${i?'screen-line':'screen-head'}">${esc(x)}</span>`).join('')}</div>`:''}${boxes?`<div class="stage-boxes" aria-hidden="true">${[0,1,2].map(()=>`<span class="prop ${boxes}"></span>`).join('')}</div>`:''}${status?`<p class="stage-status">${esc(status)}</p>`:''}<div class="cast">${cast.map(c=>`<img class="actor ${castCls(c)}" src="${A[c]}" alt="${esc(D.names[c])}">`).join('')}</div><div class="name-tags" aria-hidden="true">${cast.map((c,i)=>`<span class="name-tag pos-${i} ${castCls(c)}"><span>${esc(D.names[c])}</span></span>`).join('')}</div></div>`;
+  return `<div class="stage"><img class="backdrop" src="${A.backgrounds[bg]}" alt="${D.bgNames[bg]}">${photoRect?`<div class="stage-photo">${canvas(photoRect,'게시판에 올린 사진')}</div>`:''}${screen?`<div class="stage-screen ${screenCls}">${screen.map((x,i)=>`<span class="${i?(x.startsWith('임시 표시')?'screen-line screen-flag':'screen-line'):'screen-head'}">${esc(x)}</span>`).join('')}</div>`:''}${boxes?`<div class="stage-boxes" aria-hidden="true">${[0,1,2].map(()=>`<span class="prop ${boxes}"></span>`).join('')}</div>`:''}${status?`<p class="stage-status">${esc(status)}</p>`:''}<div class="cast">${cast.map(c=>`<img class="actor ${castCls(c)}" src="${A[c]}" alt="${esc(D.names[c])}">`).join('')}</div><div class="name-tags" aria-hidden="true">${cast.map((c,i)=>`<span class="name-tag pos-${i} ${castCls(c)}"><span>${esc(D.names[c])}</span></span>`).join('')}</div></div>`;
  }
  function caseStage(k,{result=false}={}){const c=D.cases[k],o=E.outcome(state,k),opt=c.choose.options.find(x=>x.id===o.id);
   let cast=c.cast.slice(),status='';
@@ -226,7 +226,7 @@
   return `<li class="verdict"><p class="v-say">${num?num+'. ':''}“${esc(text)}”</p><p class="v-pick">${pick}</p></li>`;}
  function verdicts(k){const c=D.cases[k];return `<ul class="verdicts">${state.judgments[k].map((p,i)=>verdictLine(i+1,c.judges[i].text,p,E.answers[k][i])).join('')}</ul>`;}
  const optLabel=(k,id)=>D.cases[k].choose.options.find(o=>o.id===id)?.label;
- function actions(k){const cs=state.cases[k];return `<p class="pair"><span class="k">처음 조치</span> ${esc(optLabel(k,cs.first)||'아직 안 고름')}${cs.legacyFirst?' (이전 저장에서는 마지막 선택만 남아 있었어)':''}</p><p class="pair"><span class="k">최종 조치</span> ${esc(optLabel(k,cs.final)||'아직 안 고름')}</p>`;}
+ function actions(k){const cs=state.cases[k];return `<div class="pairs"><p class="pair"><span class="k">처음 조치</span> ${esc(optLabel(k,cs.first)||'아직 안 고름')}${cs.legacyFirst?' (이전 저장에서는 마지막 선택만 남아 있었어)':''}</p><p class="pair"><span class="k">최종 조치</span> ${esc(optLabel(k,cs.final)||'아직 안 고름')}</p></div>`;}
  function group(title,html){return `<div class="group"><p class="group-label">${esc(title)}</p>${html}</div>`;}
  function written(frame,value){return `<p class="frame-text">${frameHtml(frame)}</p><p class="answer${filled(value)?'':' not-written'}">${filled(value)?esc(value):esc(R.notWritten)}</p>`;}
  function caseCard(k,mode){const c=D.cases[k],cs=state.cases[k],fs=state.follows[k],seen=c.checks.filter(x=>state.evidence.includes(x.id)),isReport=mode==='report',H=isReport?'h2':'h3',r=state.reflections[k];

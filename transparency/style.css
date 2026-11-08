@@ -347,8 +347,7 @@ dialog .case-card{margin:12px 0}
  .group{display:grid;grid-template-columns:5.4em minmax(0,1fr);column-gap:6pt;align-items:baseline}
  .group>*{grid-column:2}
  .group>.group-label{grid-column:1;grid-row:1 / span 9;align-self:start;margin:1pt 0 0}
- .group .pair{display:inline;margin-right:10pt}
- .group .pair+.pair{margin-left:0}
+ .group .pairs .pair{display:inline;margin-right:10pt}
  .group .frame-text:first-of-type{margin-top:0}
 }
 /* 처음부터 다시 하기 대화상자: 이름·학번 함께 지우기(기본 체크) */
@@ -359,7 +358,7 @@ dialog .case-card{margin:12px 0}
 .stage-screen{position:absolute;right:5%;top:8%;width:34%;display:flex;flex-direction:column;gap:2px;padding:8px 12px;background:#14202ee6;color:#f4f1e8;border:2px solid #3b4a5c;border-radius:8px;font-size:.85rem;line-height:1.35;z-index:1}
 .stage-screen .screen-head{font-size:.72rem;font-weight:800;color:#c9d3df;letter-spacing:.02em}
 .stage-screen .screen-line{font-weight:700}
-.stage-screen .screen-line:nth-child(3){color:#14202e;background:#f8d45b;border-radius:4px;padding:0 6px;margin-top:2px;width:fit-content}
+.stage-screen .screen-flag{color:#14202e;background:#f8d45b;border-radius:4px;padding:0 6px;margin-top:2px;width:fit-content}
 .stage-screen.phone{right:auto;left:30%;top:10%;width:26%;border-radius:14px;border-width:3px}
 .solo-note{font-weight:800;color:var(--text);background:var(--surface);border:1.5px solid #c9b88f;border-radius:10px;padding:8px 12px;margin:0 0 12px}
 .line.plain{color:var(--text)}
