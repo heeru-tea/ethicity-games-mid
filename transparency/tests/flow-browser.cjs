@@ -137,7 +137,7 @@ async function play(p,{tag,viewport,pick,judge,wrongFirst,shots,write={},note:fi
   judgments+=await follow(p,k,judge,wrongFirst);
   await measure(p,k+'-follow-done',viewport);if(shots.includes(k+'-follow'))await shot(p,`${tag}-${k}-follow`,viewport===PHONE);
   await click(p,'.step-nav [data-act="next"]');
-  await measure(p,k+'-notice-start',viewport);await notice(p,k,notices[k]||'ok');await measure(p,k+'-notice-done',viewport);if(shots.includes(k+'-notice'))await shot(p,`${tag}-${k}-notice`,viewport===PHONE);
+  await measure(p,k+'-notice-start',viewport);if(viewport===PHONE)await noticeReadable(p,k);await notice(p,k,notices[k]||'ok');await measure(p,k+'-notice-done',viewport);if(shots.includes(k+'-notice'))await shot(p,`${tag}-${k}-notice`,viewport===PHONE);
   await click(p,'.step-nav [data-act="next"]');
   await reflect(p,k,write[k]);await measure(p,k+'-reflect',viewport);
   await click(p,'.step-nav [data-act="next"]');
@@ -167,6 +167,10 @@ async function play(p,{tag,viewport,pick,judge,wrongFirst,shots,write={},note:fi
  assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
  results.paths.push({tag,viewport:viewport.width+'x'+viewport.height,judgments,clicks,reportRight:right,reportAgain:again,reportNotWritten:empties,choices:s.cases,judgmentsPicked:s.judgments,completed:s.completed,errors:errors.length,externalRequests:external.length});
 }
+// 휴대폰 미리 알리기: 글자 16px 이상, 누르는 곳 44px 이상(붙이기 전)
+async function noticeReadable(p,k){const r=await p.evaluate(()=>{const vis=e=>e.offsetParent&&e.textContent.trim();
+  return {font:Math.min(...[...document.querySelectorAll('.body p,.body button,.body button span')].filter(vis).map(e=>parseFloat(getComputedStyle(e).fontSize))),tap:Math.min(...[...document.querySelectorAll('.body button')].filter(vis).map(b=>b.getBoundingClientRect().height))};});
+ assert.ok(r.font>=16,'notice text 16px+ '+k+' '+r.font);assert.ok(r.tap>=44,'notice tap 44px+ '+k+' '+r.tap);}
 async function withPage(viewport,fn,init){const ctx=await browser.newContext({viewport});if(init)await ctx.addInitScript(init);const p=await ctx.newPage();p.setDefaultTimeout(30000);try{return await fn(p);}finally{await ctx.close();}}
 async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>localStorage.setItem(KEY,JSON.stringify(obj)),{KEY,obj});await p.reload();}
 (async()=>{
@@ -178,7 +182,9 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    write:{photo:{q1:'나는 AI의 자르기 기준 자료를 보고, 이 AI가 눈길이 모일 곳을 중심으로 잘랐다고 판단했다.'},face:{q2:'아직 확인하지 못한 것은 점검이 끝났는지이고, 그것을 알려면 점검 기록이 필요하다.'}},note:'어떤 정보를 썼는지 먼저 물어볼래.'}));
   await withPage(PHONE,p=>play(p,{tag:'phone',viewport:PHONE,pick:{photo:'auto',writing:'detector',face:'maintain'},judge:()=>'confirmed',wrongFirst:true,shots:['photo-check','photo-follow','writing-check-records','face-follow'],notices:{photo:'fix',writing:'wrong',face:'fix'}}));
   // 휴대폰 390: 미리 알리기 화면(카드가 가장 많은 빵집, 이어하기 안내 없음)이 붙이기 전 한 화면 안팎
-  {const ph=results.readability.find(x=>x.viewport==='390x844'&&x.screen==='face-notice-start');assert.ok(ph.pageHeight<=844*1.35,'phone notice about one screen '+ph.pageHeight);results.checks.push({phoneNotice:'face notice before posting: page '+ph.pageHeight+'px (viewport 844)'});}
+  {const hs=E.CASES.map(k=>[k,results.readability.find(x=>x.viewport==='390x844'&&x.screen===k+'-notice-start').pageHeight,results.readability.find(x=>x.viewport==='390x844'&&x.screen===k+'-notice-done').pageHeight]);
+   for(const [k,h] of hs)assert.ok(h<=Math.round(844*1.05),'phone '+k+' notice before posting fits about one screen: '+h);
+   results.checks.push({phoneNotice:'before posting / after: '+hs.map(([k,h,d])=>k+' '+h+'/'+d+'px').join(', ')+' (viewport 844)'});}
   // 저장·이어하기·다시 선택·처음부터
   await withPage(PHONE,async p=>{
    await p.goto(url,{waitUntil:'domcontentloaded'});await p.evaluate(()=>localStorage.setItem('ethicity.player',JSON.stringify({nickname:'테스트<b>'})));
@@ -201,6 +207,19 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    assert.equal(await p.evaluate(()=>localStorage.getItem('ethicity.player')),JSON.stringify({nickname:'테스트<b>'}),'shared player data untouched');
    results.checks.push({saveResume:'mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 4)'});
   });
+  // 처음부터 다시 하기: '이름과 학번도 지우기'(기본 체크) — 체크면 함께 지우고, 풀면 이름·학번만 남긴다
+  await withPage(PHONE,async p=>{const done=finishedState();done.reporter={name:'하늘',number:'10203'};
+   for(const erase of [true,false]){await seedPage(p,done);assert.equal(await p.locator('[data-reporter="name"]').inputValue(),'하늘');
+    await click(p,'header [data-act="settings"]');await click(p,'#modal-body [data-act="reset-ask"]');
+    const box=p.locator('#modal-body input[type="checkbox"]#reset-reporter');assert.equal(await box.count(),1);assert.equal(await box.isChecked(),true,'checked by default');
+    assert.match(await p.locator('#modal-body label[for="reset-reporter"], #modal-body label:has(#reset-reporter)').first().innerText(),/이름과 학번도 지우기/);
+    const lb=await p.locator('#modal-body label:has(#reset-reporter)').boundingBox();assert.ok(lb.height>=44,'checkbox row tap target '+lb.height);
+    if(!erase){await box.click();assert.equal(await box.isChecked(),false);}
+    await click(p,'[data-act="reset"]');const saved=JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY)),s=await state(p);
+    assert.equal(s.scene,0);assert.equal(saved.scene,0);assert.equal(s.completed,false);assert.equal(s.notices.face.posted,null,'progress cleared');
+    assert.deepEqual(saved.reporter,erase?{name:'',number:''}:{name:'하늘',number:'10203'},erase?'name/number erased':'name/number kept');
+    await p.reload({waitUntil:'domcontentloaded'});assert.deepEqual((await state(p)).reporter,saved.reporter,'after reload');}
+   results.checks.push({resetReporter:'reset dialog checkbox 이름과 학번도 지우기 checked by default → erased; unchecked → name/number kept, progress cleared, survives reload'});});
   // 키보드만으로 확인 조작
   await withPage(DESKTOP,async p=>{let s=E.initial();s.scene=2;s.furthest=2;await seedPage(p,s);
    await p.locator('[data-act="item"][data-id="photo-rule"]').focus();await p.keyboard.press('Enter');

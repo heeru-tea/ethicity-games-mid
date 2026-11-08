@@ -49,6 +49,8 @@
  const each=f=>Object.fromEntries(CASES.map(k=>[k,f(k)]));
  function initial(){return {version:4,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),question:null,completed:false,
   reflections:each(()=>({q1:'',q2:''})),finalNote:'',reporter:{name:'',number:''},notices:each(()=>({picked:[],posted:null}))};}
+ // 처음부터 다시 하기: 진행은 모두 지운다. 이름·학번은 기본으로 함께 지우고(공용 PC), keepReporter일 때만 남긴다.
+ function restart(s,{keepReporter=false}={}){const n=initial();if(keepReporter&&s&&s.reporter)for(const f of REPORTER)n.reporter[f]=typeof s.reporter[f]==='string'?s.reporter[f]:'';return n;}
  const text=v=>typeof v==='string'?v.slice(0,TEXT_MAX):'';
  function checked(s,key){return checks[key].every(id=>s.evidence.includes(id));}
  function judged(s,key){return checked(s,key)&&s.judgments[key].every(Boolean);}
@@ -204,7 +206,7 @@
    return consistent(s)?s:initial();
   }catch{return initial();}
  }
- const api={initial,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,noticeIds,noticeKind,noticeCheck,noticeDone,outcome,allFaces,cutFaces,
+ const api={initial,restart,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,noticeIds,noticeKind,noticeCheck,noticeDone,outcome,allFaces,cutFaces,
   CASES,STEPS,LAYOUT,LAYOUT2,LAYOUT3,END,REPORT,checks,choices,stamps,answers,followAnswers,followMarks,questions,noticeCards,AUTO,ALL,faces,FOLLOW_CROPS,truth};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TransparencyEngine=api;
 })(typeof window==='undefined'?globalThis:window);

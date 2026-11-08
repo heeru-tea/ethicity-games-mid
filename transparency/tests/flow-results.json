@@ -89,10 +89,13 @@
  ],
  "checks": [
   {
-   "phoneNotice": "face notice before posting: page 1097px (viewport 844)"
+   "phoneNotice": "before posting / after: photo 844/1283px, writing 844/1345px, face 875/1499px (viewport 844)"
   },
   {
    "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 4)"
+  },
+  {
+   "resetReporter": "reset dialog checkbox 이름과 학번도 지우기 checked by default → erased; unchecked → name/number kept, progress cleared, survives reload"
   },
   {
    "keyboard": "item and region buttons operable with Enter"
@@ -107,10 +110,10 @@
    "v3Migration": "version 3 save at face reflect: notices legacy, not blocked, notebook 미리 알리기 해 보기 ×3 → writing notice → post → reload keeps → notebook updated; v3 report save shows legacy text"
   },
   {
-   "noticeLayout": "desktop1280: page 1307px / viewport 800px, first card top 438, post button bottom 1030, next bottom 1211 (feedback shown)"
+   "noticeLayout": "desktop1280: page 1223px / viewport 800px, first card top 400, post button bottom 958, next bottom 1126 (feedback shown)"
   },
   {
-   "noticeLayoutStart": "desktop1280: before posting page 1034px / viewport 800px, post button bottom 814"
+   "noticeLayoutStart": "desktop1280: before posting page 910px / viewport 800px, post button bottom 752"
   },
   {
    "printPdf": "some empty: 3 pages (A4, 15mm)"
@@ -122,10 +125,10 @@
    "reportEdit": "desktop1280: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-08 restored on afterprint"
   },
   {
-   "noticeLayout": "phone: page 1717px / viewport 844px, first card top 466, post button bottom 1177, next bottom 1414 (feedback shown)"
+   "noticeLayout": "phone: page 1556px / viewport 844px, first card top 388, post button bottom 1084, next bottom 1252 (feedback shown)"
   },
   {
-   "noticeLayoutStart": "phone: before posting page 1154px / viewport 844px, post button bottom 867"
+   "noticeLayoutStart": "phone: before posting page 932px / viewport 844px, post button bottom 761"
   },
   {
    "reportEdit": "phone: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-08 restored on afterprint"
@@ -246,7 +249,7 @@
    "chars": 244,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 878,
+   "pageHeight": 774,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -257,7 +260,7 @@
    "chars": 471,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1088,
+   "pageHeight": 1025,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -367,7 +370,7 @@
    "chars": 262,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 841,
+   "pageHeight": 768,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -378,7 +381,7 @@
    "chars": 489,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1051,
+   "pageHeight": 988,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -485,10 +488,10 @@
   {
    "viewport": "1366x768",
    "screen": "face-notice-start",
-   "chars": 289,
+   "chars": 287,
    "buttons": 7,
    "overflow": false,
-   "pageHeight": 977,
+   "pageHeight": 853,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -496,10 +499,10 @@
   {
    "viewport": "1366x768",
    "screen": "face-notice-done",
-   "chars": 561,
+   "chars": 559,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 1219,
+   "pageHeight": 1135,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -653,7 +656,7 @@
    "chars": 220,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 942,
+   "pageHeight": 844,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -664,7 +667,7 @@
    "chars": 465,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1411,
+   "pageHeight": 1283,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -774,7 +777,7 @@
    "chars": 230,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 967,
+   "pageHeight": 844,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -785,7 +788,7 @@
    "chars": 494,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1474,
+   "pageHeight": 1345,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -892,10 +895,10 @@
   {
    "viewport": "390x844",
    "screen": "face-notice-start",
-   "chars": 260,
+   "chars": 258,
    "buttons": 7,
    "overflow": false,
-   "pageHeight": 1097,
+   "pageHeight": 875,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -903,10 +906,10 @@
   {
    "viewport": "390x844",
    "screen": "face-notice-done",
-   "chars": 549,
+   "chars": 547,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 1684,
+   "pageHeight": 1499,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -974,7 +977,7 @@
   "desktopPath": {
    "judgments": 12,
    "clicks": 80,
-   "readChars": 9356
+   "readChars": 9352
   }
  }
 }

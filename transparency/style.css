@@ -276,6 +276,32 @@ dialog .case-card{margin:12px 0}
 .notice-paper ul{margin:4px 0 0;padding-left:1.2em}
 .notice-paper li{margin:0 0 2px}
 .paper-empty{color:var(--muted);margin:0}
+/* 미리 알리기 화면을 촘촘하게(휴대폰 390에서 붙이기 전 한 화면 안팎): 글자는 16px 이상, 누르는 곳은 44px 이상 */
+.notice-intro{margin:0 0 4px}
+.notice-intro .line{font-size:1rem;line-height:1.6;margin:0 0 4px}
+.notice-intro .line.cont{margin-top:-2px}
+.step-notice .task{font-size:1rem;line-height:1.6;margin:6px 0 4px}
+.step-notice .notice-cards{gap:6px;margin-top:6px}
+.step-notice .notice-card{font-size:1rem;line-height:1.45;min-height:44px;padding:7px 12px;align-items:center}
+.step-notice .notice-card .pick-box{margin-top:0}
+.step-notice .card-fb{font-size:.95rem;line-height:1.45;margin:3px 0 2px 2px}
+.step-notice .fb-tag{font-size:.95rem;padding:0 6px}
+.step-notice .notice-post-row{margin:10px 0 0;display:flex;align-items:center;gap:6px 12px}
+.notice-post-row>button{flex:none}
+.step-notice .notice-post-row .hint{margin:0;flex:1 1 9em;line-height:1.5}
+.step-notice .notice-verdict{margin:10px 0 0}
+.step-notice .notice-verdict p{margin-bottom:2px}
+.step-notice .step-nav{margin-top:14px}
+.step-notice .hint{font-size:.95rem;margin:6px 0 0}
+@media(max-width:860px){
+ .step-notice h1{margin-bottom:8px}
+}
+@media(max-width:520px){
+ /* 이전 · 생각 정리하기를 한 줄로 */
+ .step-notice .step-nav{flex-wrap:nowrap}
+ .step-notice .step-nav>button{flex:0 0 auto}
+ .step-notice .step-nav>button.primary{flex:1 1 auto}
+}
 @media(max-width:860px){
  /* 휴대폰: 카드와 버튼을 먼저, 붙인 안내문 종이는 아래(무대 그림은 생략) */
  .step-notice .screen{grid-template-areas:"head" "body" "visual"}
@@ -318,3 +344,6 @@ dialog .case-card{margin:12px 0}
  .frame-text{margin:3pt 0 1pt}
  .answer{margin:0 0 3pt}
 }
+/* 처음부터 다시 하기 대화상자: 이름·학번 함께 지우기(기본 체크) */
+.check-row{display:flex;align-items:center;gap:10px;min-height:44px;margin:4px 0;font-weight:700;cursor:pointer;width:fit-content}
+.check-row input{flex:none;width:22px;height:22px;margin:0;accent-color:var(--accent-dark);cursor:pointer}

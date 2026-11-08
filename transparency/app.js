@@ -88,7 +88,7 @@
    b=`<p class="status">${esc(o.status)}</p>`+o.reaction.map(l=>line(l)).join('')+line(['moa',o.feedback],'moa')+more([o.more,c.more].filter(Boolean).join(' '))+nav(false,`<span class="nav-pair">${btn('다른 선택 해 보기','rechoose')}${btn('더 조사하기','next','','primary')}</span>`)+`<p class="hint">결과는 수첩에 자동으로 적혔어.</p>`;}
   if(step==='follow'){const f=c.follow;h=head(meta,f.question)+f.lines.map(l=>line(l)).join('')+(E.followReady(state,k)?'':`<p class="task">${esc(f.task)}</p>`);v=evidenceHead(f.src)+followView(k);
    b=followBody(k)+nav(true,btn('미리 알리기','next',E.canAdvance(state)?'':'disabled','primary'));}
-  if(step==='notice'){h=head(meta,c.notice.title);v=noticeStage(k);b=noticeBody(k)+nav(true,btn('생각 정리하기','next',E.canAdvance(state)?'':'disabled','primary'))+(E.canAdvance(state)?'':`<p class="hint">${esc(N.needPost)}</p>`);}
+  if(step==='notice'){h=head(meta,c.notice.title);v=noticeStage(k);b=noticeBody(k)+nav(true,btn('생각 정리하기','next',E.canAdvance(state)?'':'disabled','primary'));}
   if(step==='reflect'){const r=state.reflections[k],toReport=state.furthest>=E.REPORT;h=head(meta,D.reflect.title);v=reflectSummary(k);
    b=`<p class="hint lead">${esc(D.reflect.lead)}</p>`+writeBox('reflect-q1',D.reflect.q1,r.q1,'data-reflect="q1"')+writeBox('reflect-q2',D.reflect.q2,r.q2,'data-reflect="q2"');
    const next=btn(k==='face'?'마지막 장면으로':'다음 사건','next','',toReport?'':'primary');
@@ -159,10 +159,13 @@
   const parts=['missing','conflicts','promises'].filter(x=>r[x].length).map(x=>`${N.againParts[x]} ${r[x].length}장`);
   return `<div class="finding again notice-verdict" role="status"><p class="again-head">${esc(N.again)}</p><p>${esc(parts.join(' · '))}. ${esc(N.againMore)}</p></div>`;}
  function noticeBody(k){const nt=D.cases[k].notice,ns=state.notices[k],posted=postedOf(k),fresh=!!posted&&sameSet(posted,ns.picked);
-  let b=line(['moa',N.principle],'moa')+nt.lines.map(l=>line(l)).join('')+`<p class="task">${esc(N.task)}</p>`;
+  // 고정 한 줄과 사건 도입 대사를 한 묶음으로 짧게: 같은 화자가 이어 말하면 얼굴·이름을 다시 쓰지 않는다.
+  const intro=[['moa',N.principle],...nt.lines].map((l,i,all)=>i&&all[i-1][0]===l[0]?`<p class="line cont">${esc(l[1])}</p>`:line(l,l[0]==='moa'?'moa':'')).join('');
+  let b=`<div class="notice-intro">${intro}</div><p class="task">${esc(N.task)}</p>`;
   b+=`<div class="notice-cards" role="group" aria-label="안내문에 붙일 카드">${nt.cards.map(card=>{const on=ns.picked.includes(card.id),fb=fresh?cardFeedback(k,card,posted):'';
    return `<div class="notice-item">${btn(`<span class="pick-box" aria-hidden="true">${on?'✓':''}</span><span>${esc(card.text)}</span>`,'notice-pick',`data-id="${card.id}" aria-pressed="${on}"${fb?` aria-describedby="fb-${card.id}"`:''}`,'notice-card')}${fb}</div>`;}).join('')}</div>`;
-  b+=`<p class="notice-post-row">${btn(esc(posted?N.repostLabel:N.post),'notice-post',ns.picked.length?'':'disabled')}</p>`;
+  // 아직 한 번도 안 붙였으면 '한 번 붙이면 다음으로' 안내를 버튼 옆에 둔다(휴대폰에서 줄 하나 아끼기).
+  b+=`<div class="notice-post-row">${btn(esc(posted?N.repostLabel:N.post),'notice-post',ns.picked.length?'':'disabled')}${E.noticeDone(state,k)?'':`<p class="hint">${esc(N.needPost)}</p>`}</div>`;
   if(ns.posted==='legacy')b+=`<p class="hint">${esc(N.legacy)}</p>`;
   if(fresh)b+=noticeVerdict(k,posted);else if(posted)b+=`<p class="hint repost" role="status">${esc(N.repost)}</p>`;
   return b;}
@@ -236,7 +239,7 @@
  window.addEventListener('beforeprint',()=>{if(E.stepOf(state.scene)==='report')document.title=reportTitle();});
  window.addEventListener('afterprint',()=>{document.title=baseTitle;});
  function sources(){open('참고한 실제 사례',`<p>도시·동물·대사·문서·수치·선택 결과는 모두 창작이에요. 실제 기업의 모델이나 내부 문서를 재현하지 않았어요.</p><ul><li><a target="_blank" rel="noopener" href="https://www.nist.gov/publications/four-principles-explainable-artificial-intelligence">NIST (2021)</a>: 설명·이해 가능성·설명 정확성·지식 한계의 개념 참고.</li><li><a target="_blank" rel="noopener" href="https://blog.x.com/engineering/en_us/topics/insights/2021/sharing-learnings-about-our-image-cropping-algorithm">Twitter (2021)</a>: 자동 자르기와 사용자 통제 문제 참고.</li><li><a target="_blank" rel="noopener" href="https://www.vanderbilt.edu/brightspace/2023/08/16/guidance-on-ai-detection-and-why-were-disabling-turnitins-ai-detector/">Vanderbilt (2023)</a>: AI 탐지 기능 비활성화 발표와 신뢰성·설명 부족 우려 참고.</li><li><a target="_blank" rel="noopener" href="https://www.ftc.gov/news-events/news/press-releases/2023/12/rite-aid-banned-using-ai-facial-recognition-after-ftc-says-retailer-deployed-technology-without">FTC (2023)</a>: Rite Aid에 대한 규제기관의 주장과 제안된 합의 명령 발표 참고. 주장을 모두 법적으로 확정된 사실로 표현하지 않으며, 2023년 발표를 현재의 법적·운영 상태로 단정하지 않아요.</li></ul><p class="hint">링크를 열 때만 외부 사이트로 이동해요. 게임 진행이나 선택은 외부로 보내지 않아요.</p>`);}
- function reset(){state=E.initial();arrive();skipFocusReturn=true;save();render(true);}
+ function reset(keepReporter){state=E.restart(state,{keepReporter});arrive();skipFocusReturn=true;save();render(true);}
 
  document.addEventListener('click',e=>{
   const b=e.target.closest('button[data-act]');if(!b||b.disabled)return;const act=b.dataset.act,k=E.caseKey(state.scene);revealCue=false;
@@ -269,8 +272,8 @@
   if(act==='sources'){sources();return;}
   if(act==='discussion'){open('토론 질문','<ol><li>설명을 들었지만 문제가 해결되지 않은 장면은 어디였나?</li><li>끝까지 알 수 없었던 것은 무엇이고, 그래도 바꿀 수 있었던 조치는 무엇인가?</li></ol>');return;}
   if(act==='settings'){open('설정',`<p>진행은 이 브라우저에 자동 저장돼요. 다시 열면 하던 곳부터 이어져요. 계정 가입이나 교사용 수집은 없어요.</p><div class="menu">${btn('참고한 실제 사례','sources')}${btn('처음부터 다시 하기','reset-ask')}</div><p class="hint">플레이 시간과 교육 효과는 아직 실제 학생을 대상으로 검증하지 않았어요.</p>`);return;}
-  if(act==='reset-ask'){open('처음부터 다시 하기',`<p>이 게임의 진행과 수첩 기록을 지우고 처음으로 돌아가요. 공통 플레이어 정보와 다른 게임 기록은 그대로 둬요.</p><div class="menu">${btn('지우고 처음부터','reset','','primary')}${btn('취소','close')}</div>`);return;}
-  if(act==='reset'){close();reset();return;}
+  if(act==='reset-ask'){open('처음부터 다시 하기',`<p>이 게임의 진행과 수첩 기록을 지우고 처음으로 돌아가요. 공통 플레이어 정보와 다른 게임 기록은 그대로 둬요.</p><label class="check-row"><input type="checkbox" id="reset-reporter" checked> 이름과 학번도 지우기</label><div class="menu">${btn('지우고 처음부터','reset','','primary')}${btn('취소','close')}</div>`);return;}
+  if(act==='reset'){const keep=$('#reset-reporter')?.checked===false;close();reset(keep);return;}
  });
  // 서술·이름 칸: 입력할 때마다 자동 저장한다. 다시 그리지 않아 입력 중인 글(한글 조합)이 끊기지 않는다.
  document.addEventListener('input',e=>{const t=e.target;if(!t.matches?.('textarea,input'))return;

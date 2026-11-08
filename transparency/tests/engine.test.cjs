@@ -75,6 +75,13 @@ test('ending: final note needs the question first, then the report opens; report
  s=E.reduce(s,{type:'reporter',field:'name',text:'김\n하늘'});s=E.reduce(s,{type:'reporter',field:'number',text:'10203'});s=E.reduce(s,{type:'reporter',field:'x',text:'y'});
  assert.deepEqual(s.reporter,{name:'김하늘',number:'10203'});
 });
+test('restart: clears progress; name/학번 erased by default, kept only when asked',()=>{
+ let s=at(E.REPORT);s.completed=true;s.reflections.photo.q1='메모';s.reporter={name:'하늘',number:'10203'};
+ assert.deepEqual(E.restart(s),E.initial(),'default erases name and number too');
+ assert.deepEqual(E.restart(s,{keepReporter:false}),E.initial());
+ const kept=E.restart(s,{keepReporter:true});assert.deepEqual(kept,{...E.initial(),reporter:{name:'하늘',number:'10203'}},'only reporter kept');
+ assert.notEqual(kept.reporter,s.reporter,'copied, not shared');assert.deepEqual(E.restore(JSON.stringify(kept)),kept,'kept reporter survives save/restore');
+});
 test('each case has three judgments and each stamp is the answer exactly once',()=>{
  for(const k of E.CASES){assert.equal(E.answers[k].length,3);assert.deepEqual([...E.answers[k]].sort(),[...E.stamps].sort(),k);}
  assert.ok(E.CASES.length*3+Object.keys(E.followAnswers).length>=12);
