@@ -41,7 +41,7 @@
     scene.fog.color.setHex(hex(P.fog));
     view.ground.visible = false;
     view.buildings.forEach(function (b) { b.visible = false; });
-    var W = opts.laneWidth * 3 + 1.2;
+    var nl = opts.lanes || 3, W = opts.laneWidth * nl + 1.2;
     function deckTex(wet) {
       var c = document.createElement('canvas'); c.width = 128; c.height = 64;
       var g = c.getContext('2d');
@@ -66,9 +66,9 @@
       if (!tex[k]) tex[k] = deckTex(wet);
       view.road.material.map = tex[k]; view.road.material.needsUpdate = true;
     }
-    // 레인 줄: 안쪽 2개 가늘고 흐리게, 바깥 2개 = 다리 가장자리(가장 밝은 빛)
+    // 레인 줄: 안쪽은 가늘고 흐리게, 바깥 2개 = 다리 가장자리(가장 밝은 빛)
     view.lines.children.forEach(function (m, i) {
-      var edge = i === 0 || i === 3;
+      var edge = i === 0 || i === nl;
       m.material.transparent = true;
       m.material.color.setHex(hex(edge ? P.edge : P.lane));
       m.material.opacity = edge ? P.edgeOpacity : P.laneOpacity;
