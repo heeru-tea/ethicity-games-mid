@@ -114,7 +114,7 @@
             !C.isMislabeled(mission, card) && c.keys.indexOf(C.truthKey(mission, card)) >= 0;
         });
         if (!fixed) return;
-        var t = mission.cardTypes[c.keys[0]], name = (t && t.name) || c.what, have = (s.missingHave || {})[id] || 0;
+        var t = mission.cardTypes[c.keys[0]], name = (c.keys.length > 1 ? C.comboName(mission, c) : t && t.name) || c.what, have = (s.missingHave || {})[id] || 0;
         (out[s.id] = out[s.id] || []).push('이름표는 맞게 고쳤지만, ' + name + ' 사진이 ' + have + '장뿐이라 AI가 ' + name + josa(name, '을', '를') + ' 배우지 못했다.');
       });
     });

@@ -44,7 +44,7 @@
         var c = byCombo[id], shown = DR.UI.comboCount(mission, counts, c);
         // 문장은 바로 아래 보이는 개수로 고른다 — '없었다'와 '1장'이 같이 나오지 않게
         parts.push(el('p', { class: 'missing', text: DR.Judge.missingLine(mission, id, shown) }));
-        parts.push(el('p', { class: 'missing-count', text: '이번 가방: ' + (mission.hideShapes ? c.what : DR.Cards.keyLabel(mission, c.keys[0])) + ' ' + shown + '장 / 필요 ' + c.need + '장' }));
+        parts.push(el('p', { class: 'missing-count', text: '이번 가방: ' + (mission.hideShapes ? c.what : DR.Cards.comboName(mission, c)) + ' ' + shown + '장 / 필요 ' + c.need + '장' }));
       });
       (notes[s.id] || []).forEach(function (t) { parts.push(el('p', { class: 'missing fixed-note', text: t })); });
       (r.contaminated || []).forEach(function (src) {

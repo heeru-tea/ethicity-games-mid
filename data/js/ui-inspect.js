@@ -54,7 +54,7 @@
   function countText(have, need) { return DR.UI.needRevealed() ? have + ' / ' + need + '장' : '현재 ' + have + '장'; }
   function comboRow(mission, counts, c) {
     // 1 임무(hideShapes): 첫 결과 전에는 sceneRows가 종류 한 줄로 합치고, 공개 뒤에는 모습 이름으로
-    var have = comboCount(mission, counts, c), label = mission.hideShapes ? mission.cardTypes[c.keys[0]].name : DR.Cards.keyLabel(mission, c.keys[0]);
+    var have = comboCount(mission, counts, c), label = DR.Cards.comboName(mission, c); // 여러 종류 조합은 합친 이름(플레이테스트 1)
     var short = DR.UI.needRevealed() && have < c.need;
     // 같은 종류를 다른 장면도 쓰면 '(두 장면 공통)' — 한 카드가 두 장면에 함께 세어진다는 뜻
     var shared = mission.scenes.filter(function (s) { return s.combos.some(function (o) { return o.keys.some(function (k) { return c.keys.indexOf(k) >= 0; }); }); }).length > 1;
@@ -307,7 +307,7 @@
         s.missing.forEach(function (id) {
           var c = comboById[id], have = comboCount(mission, counts, c), filled = have < c.need && comboCount(mission, withPeer, c) >= c.need;
           shorts.appendChild(el('li', { class: 'combo short', 'data-combo': id }, [
-            DR.UI.iconStrip(mission, c.keys[0], 20), el('span', { class: 'combo-label', text: kindName(mission, c.keys[0]) }),
+            DR.UI.iconStrip(mission, c.keys[0], 20), el('span', { class: 'combo-label', text: DR.Cards.comboName(mission, c) }),
             el('b', { class: 'combo-count', text: filled ? '동기 카드로 채워짐' : have < c.need ? '부족 ' + (c.need - have) + '장' : (mission.changeLog ? '사진을 다시 살펴봐요' : mission.labels ? '이름표를 다시 살펴봐요' : '설명표를 다시 살펴봐요') })
           ]));
         });
