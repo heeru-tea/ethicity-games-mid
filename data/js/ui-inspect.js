@@ -143,7 +143,7 @@
       screen.appendChild(el('div', { class: 'page' }, [
         el('p', { class: 'kicker', text: '검수 · ' + mission.title }),
         el('h2', { text: '가방 확인 (' + bag.length + '/' + mission.bag + '칸)' }),
-        opts.lost ? el('p', { id: 'inspect-lost', class: 'lost-line', text: '노이즈로 잃은 카드 ' + opts.lost + '장' }) : null,
+        opts.lost ? el('p', { id: 'inspect-lost', class: 'lost-line', text: '이번 달리기에서 노이즈로 잃은 카드 ' + opts.lost + '장' }) : null, // 직전 달리기 하나 기준(플레이테스트 8)
         changeLogBoard(mission),
         el('p', { class: 'note', text: mission.inspectNote ? mission.inspectNote : mission.changeLog ? '카드를 누르면 크게 볼 수 있다. 언제 찍은 사진인지 도시 변경 기록과 맞춰 보고, 지금의 거리가 아닌 사진은 뺀다.' : mission.labels ? (mission.relabel !== false ? '카드를 누르면 크게 볼 수 있다. 그림과 이름표가 안 맞으면 이름표를 고치거나 뺀다.' : '카드를 누르면 크게 볼 수 있다. 그림을 보고 필요 없는 카드는 뺀다.') : '카드를 누르면 크게 볼 수 있다. "?" 카드는 단서를 보고 설명표를 붙이거나, 넣지 않기로 정한다.' }),
         DR.Privacy.on(mission) ? el('p', { id: 'inspect-privacy-note', class: 'note', text: DR.Privacy.TEXT.inspectNote }) : null,

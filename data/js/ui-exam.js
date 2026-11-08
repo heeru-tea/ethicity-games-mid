@@ -111,7 +111,7 @@
         el('p', { class: 'kicker', text: '검수 · ' + m.title }),
         el('h2', { text: '가져온 사진 확인 (' + bag.length + '/' + m.bag + '칸)' }),
         el('p', { text: bag.length ? '이름표가 틀린 카드가 있을 수 있어. 카드를 눌러 사진과 이름표를 비교하고, 틀렸으면 고쳐 봐.' : '가방이 비었어.' }),
-        opts.lost ? el('p', { id: 'inspect-lost', class: 'lost-line', text: '노이즈로 잃은 카드 ' + opts.lost + '장' }) : null,
+        opts.lost ? el('p', { id: 'inspect-lost', class: 'lost-line', text: '이번 달리기에서 노이즈로 잃은 카드 ' + opts.lost + '장' }) : null,
         grid,
         opts.drill ? el('section', { id: 'exam-drill', class: 'exam-drill', 'aria-labelledby': 'exam-drill-h' }, [
           el('h3', { id: 'exam-drill-h', text: '시험관의 연습 카드' }),
