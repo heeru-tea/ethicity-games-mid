@@ -112,6 +112,15 @@
   box.appendChild(row);if(!last)box.appendChild(el('p',{'class':'note'},'고른 답은 다음 단계 지도 위에 ‘이번 목표’로 보여요.'));sec.appendChild(box);
   return sec;
  }
+ /* 2026-11-09 교사 플레이테스트 4: 같은 조건으로 다시 한 게임의 같은 단계와 비교 한두 줄(js/run-compare.js — 이미 계산된 숫자만).
+  * s.runId = 게임 구분(세션 선택 필드, 예전 저장본엔 없어 여기서 붙임 — App.save가 저장). 기록은 localStorage ethicity.publicness.stageRuns */
+ function compareLines(App,s,h){
+  var RC=PB.RunCompare,store=null;if(!RC)return null;try{store=root.localStorage;}catch(e){return null;}if(!store)return null;
+  if(!s.runId)s.runId=RC.newId();
+  var key=RC.scenarioKey(s,(s.config&&s.config.SCENARIO_VERSION)||PB.config.SCENARIO_VERSION),cur=RC.summary(h,s.draft),prev=RC.previous(store,key,h.phase,s.runId);
+  RC.remember(store,key,h.phase,s.runId,cur,Date.now());
+  return prev?RC.lines(prev.sum,cur,{duration:App.duration,won:App.won,route:PB.Names.route,name:App.nodeName}):null;
+ }
  PB.UI.result=function(App,panel){
   var result=original(App,panel),s=App.s,h=s.history[s.history.length-1],m=h.metrics,k=m.costs,res=s.current.result,last=s.phase>=s.config.phases.length||!!(s.end&&s.end.cause==='contract');
   var eyebrow=q(panel,'.eyebrow'),title=q(panel,'h2'),scores=q(panel,'#scores'),family=q(panel,'#family-result'),summary=q(panel,'#resident-summary'),notice=q(panel,'#finance-status');
@@ -132,6 +141,8 @@
    var c=el('div',{'class':'result-stat',id:r[3]});c.appendChild(el('span',{'class':'stat-label'},r[0]));var v=c.appendChild(el('strong',{'class':'stat-value'},r[1]));c.appendChild(el('span',{'class':'stat-sub'},r[2]));
    if(r[3]==='result-stat-profit'&&k.total<0)v.classList.add('negative');big.appendChild(c);});
   head.appendChild(big);
+  var cmp=compareLines(App,s,h);if(cmp){var cbox=el('div',{id:'result-rerun','class':'result-rerun'});cbox.appendChild(el('p',{id:'result-rerun-numbers'},cmp.numbers));cbox.appendChild(el('p',{id:'result-rerun-plan','class':'note'},cmp.plan));head.appendChild(cbox);}
+
   /* 2026-11-06 P0-1: 다음 행동 제안의 첫 줄은 접힌 기록 밖에도(같은 문장) */
   var firstTip=scores&&scores.querySelector('#score-tips li');if(firstTip)head.appendChild(el('p',{id:'result-first-tip','class':'result-first-tip'},firstTip.textContent));
   /* P1-4: 운행 중 → 종료 정산 → 최종 3줄 + 지금 추세로 학기 말 잔액. 숫자는 정산표 그대로 나눠 보이기만 한다 */
