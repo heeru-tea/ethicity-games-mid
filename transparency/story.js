@@ -46,7 +46,11 @@ window.TransparencyStory = (()=>{
    follow:{src:'사진 6장',question:'다른 사진에서도 담이만 잘릴까?',lines:[['lulu','같은 날 찍은 사진 여섯 장도 앱이 모두 자동으로 잘랐어.']],
     task:'사진마다 담이가 나왔는지 골라 봐.',note:'게임에서는 같은 단체 사진을 앱이 다르게 자른 결과로 여섯 장을 대신 보여 줘요.',
     judge:{who:'classmate',text:'여섯 장을 보니, 이 AI는 담이만 늘 잘라.',right:'맞아, 자료와 달라. 담이는 세 장에서 잘렸지만 세 장에서는 나왔고, 다른 친구들도 잘렸어.',wrong:'세어 본 결과를 다시 봐. 담이는 세 장에서 나왔고, 루루는 네 장에서 잘렸어.'},
-    unknown:'여섯 장만으로는, 더 많은 사진에서 누가 자주 잘리는지 아직 몰라.',more:'잘리는 횟수를 제대로 보려면 더 많은 사진과, 사진마다 AI가 매긴 점수 기록이 필요해요.'}},
+    unknown:'여섯 장만으로는, 더 많은 사진에서 누가 자주 잘리는지 아직 몰라.',more:'잘리는 횟수를 제대로 보려면 더 많은 사진과, 사진마다 AI가 매긴 점수 기록이 필요해요.'},
+   // 미리 알리기(교사 검수 대기). 카드 종류는 engine noticeCards, 여기는 화면 순서와 문장.
+   notice:{title:'사진 앱을 내놓기 전에, 쓰는 사람에게 무엇을 알릴까?',paper:'사진 앱 첫 화면 안내',lines:[],
+    cards:[{id:'photo-center',text:'눈길이 모일 것 같은 곳을 중심으로 잘라요.'},{id:'photo-auto',text:'올린 사진을 AI가 자동으로 잘라요.'},{id:'photo-best',text:'AI가 늘 가장 좋은 사진을 골라 줘요.'},
+     {id:'photo-choose',text:'자를 범위를 직접 고를 수 있어요.'},{id:'photo-formula',text:'점수 계산식을 전부 공개해요.',clash:'알리는 것도 좋지만, 계산식은 너무 어려워 오히려 안 읽히고 회사 기술 비밀과도 부딪쳐. 알리되 기준 요약만큼만.'}]}},
   writing:{name:'글 검사 사건',title:'의심 표시가 붙은 원고',bg:2,cast:['moa','luluPaper','teacher'],
    hook:[['lulu','검사기가 내 발표 원고에 ‘AI 작성 의심’ 표시를 했어.'],['teacher','표시만 보고 정하지는 않을게. 같이 살펴보자.']],
    question:'의심 표시만으로 AI가 썼다고 할 수 있을까?',
@@ -77,7 +81,11 @@ window.TransparencyStory = (()=>{
     task:'버튼을 눌러 선생님 글을 같은 검사기에 넣어 봐.',docLabel:'선생님이 5년 전에 쓴 학급 문집 머리말',
     sentences:['올해도 우리 반은 서로의 이야기를 끝까지 들어 주었다.','덕분에 교실은 늘 조금 시끄럽고 따뜻했다.','이 문집이 그 소리를 오래 기억하게 해 주기를 바란다.'],flagged:[1,2],
     judge:{who:'lulu',text:'선생님이 직접 쓴 글에도 의심 표시가 떴어.',right:'맞아, 자료로 확인돼. 세 문장 중 두 문장에 표시가 붙었어.',wrong:'검사 결과를 다시 봐. 두 문장에 ‘AI 작성 의심’ 표시가 붙어 있어.'},
-    unknown:'검사기가 왜 그 문장들에 표시했는지는 아직 몰라.',more:'사람이 쓴 글에도 표시가 뜰 수 있으니, 표시 하나로 누가 썼는지 정하면 안 돼요.'}},
+    unknown:'검사기가 왜 그 문장들에 표시했는지는 아직 몰라.',more:'사람이 쓴 글에도 표시가 뜰 수 있으니, 표시 하나로 누가 썼는지 정하면 안 돼요.'},
+   notice:{title:'검사기를 쓰기 전에, 학생들에게 무엇을 알릴까?',paper:'글 검사기 안내문',lines:[],
+    cards:[{id:'writing-perfect',text:'AI가 쓴 글을 100% 찾아내요.'},{id:'writing-human',text:'사람이 쓴 글에도 ‘의심’ 표시가 뜰 수 있어요.'},{id:'writing-process',text:'글 쓰는 과정은 직접 보지 않아요.'},
+     {id:'writing-patterns',text:'어떤 문장이 걸리는지 패턴을 전부 공개해요.',clash:'알리는 것도 좋지만, 패턴을 다 알리면 표시를 피해 가는 방법이 돼서 검사 목적과 부딪쳐. 알리되 사람 글에도 뜰 수 있다는 것만큼만.'},
+     {id:'writing-teacher',text:'표시만으로 결정하지 않고 선생님이 확인해요.'}]}},
   face:{name:'얼굴 인식 사건',title:'들어갈 수 없는 빵집',bg:3,cast:['moa','bami','clerk'],
    hook:[['clerk','시스템이 전에 문제를 일으킨 손님이래요. 들어오실 수 없어요.'],['bami','저는 여기 처음 왔는데요?']],
    question:'‘닮았다’는 알림으로 입장을 막아도 될까?',
@@ -117,8 +125,23 @@ window.TransparencyStory = (()=>{
      {id:'r3',item:'등록 사진이 선명한지 점검하기',status:'예정',proof:'날짜만 적혀 있고 점검 기록은 없다.'},
      {id:'r4',item:'잘못 막힌 손님에게 연락할 방법 알리기',status:'예정',proof:'관련 기록이 없다.'}],
     judge:{who:'clerk',text:'약속한 점검은 곧 다 끝날 거예요.',right:'맞아, 자료로는 알 수 없어. 두 항목은 아직 ‘예정’이고 기록이 없어.',wrong:'점검표를 다시 봐. 끝난 건 하나뿐이고, 남은 일이 언제 끝날지는 기록에 없어.'},
-    unknown:'‘예정’으로 적힌 점검이 실제로 이루어질지는 아직 몰라.',more:'점검표가 붙었다는 것과 점검을 마쳤다는 것은 달라요.'}}
+    unknown:'‘예정’으로 적힌 점검이 실제로 이루어질지는 아직 몰라.',more:'점검표가 붙었다는 것과 점검을 마쳤다는 것은 달라요.'},
+   notice:{title:'얼굴 인식을 켜기 전에, 손님들에게 무엇을 알릴까?',paper:'빵집 입구 안내문',lines:[['moa','가게 입구에는 얼굴 인식을 쓴다는 안내가 없었어.']],
+    cards:[{id:'face-use',text:'입구에서 얼굴 인식을 써요.'},{id:'face-never',text:'얼굴 인식은 틀리지 않아요.'},{id:'face-staff',text:'알림이 뜨면 직원이 확인해요(바로 막지 않아요).'},
+     {id:'face-wall',text:'등록된 손님의 사진을 문에 붙여 둬요.',clash:'알리는 것도 좋지만, 등록된 손님의 사진은 그 사람의 개인정보라 부딪쳐. 알리되 얼굴 인식을 쓴다는 것만큼만.'},
+     {id:'face-blur',text:'등록 사진이 흐리면 틀릴 수 있어요.'},{id:'face-report',text:'잘못 막혔다면 이곳으로 알려 주세요.'}]}}
  };
+ // 미리 알리기 공통 문장(교사 검수 대기). 카드별 피드백 = 상태 글자(종류 · 넣음/빠짐/뺐음) + 짧은 한 줄.
+ const notice={principle:'안내문은 잘못된 조치를 대신하지 않아. 그래도 미리 알리는 건 따로 해야 할 일이야.',
+  task:'안내문에 붙일 카드를 골라 봐. 고른 다음 ‘안내문 붙이기’를 눌러.',post:'안내문 붙이기',repostLabel:'안내문 다시 붙이기',
+  kinds:{must:'꼭 필요',nice:'있으면 좋음',conflict:'부딪침',promise:'지킬 수 없는 약속'},
+  fb:{must:{in:'꼭 알려야 해. 쓰는 사람이 미리 알고 고를 수 있어.',out:'이게 없으면 쓰는 사람이 미리 알 수 없어.'},nice:{in:'이것도 도움이 돼.',out:'넣으면 더 도움이 돼.'},
+   conflict:{in:'',out:'잘 뺐어.'},promise:{in:'지킬 수 없는 약속은 오히려 믿음을 깨.',out:'잘 뺐어. 지킬 수 없는 약속은 오히려 믿음을 깨.'}},
+  ok:'다 맞았어.',okMore:'이제 쓰는 사람이 미리 알고 고를 수 있어. 일어난 일을 바로잡는 건 또 다른 일이야.',
+  again:'고칠 점이 있어',againParts:{missing:'빠진 꼭 필요 카드',conflicts:'부딪치는 카드',promises:'지킬 수 없는 약속'},againMore:'다시 골라서 붙여 볼 수 있어. 이대로 넘어가도 돼.',
+  repost:'카드를 바꿨어. ‘안내문 다시 붙이기’를 누르면 다시 확인해 줄게.',needPost:'안내문을 한 번 붙이면 다음으로 갈 수 있어.',
+  legacy:'이전 저장에서 넘어와 아직 하지 않은 단계야. 지금 해 볼 수 있어.',empty:'아직 붙인 안내가 없어.',
+  report:'미리 알리기',reportOk:'다 맞음',reportAgain:'고칠 점 있음',reportMissing:'빠짐'};
  const ending={title:'닫히지 않은 질문',
   lines:[['lulu','이제 상자 속을 다 알게 된 거야?'],['moa','아니. 그래도 무엇을 물어야 하는지는 알게 됐어.']],
   question:'새 앱이 모아에게 ‘밤하늘 관찰 모임’을 추천했어. 무엇부터 물어볼까?',
@@ -133,5 +156,5 @@ window.TransparencyStory = (()=>{
   finalPrompt:'앞으로 AI 서비스를 쓸 때 나는 무엇을 먼저 물어볼까?'};
  const report={title:'나의 조사 보고서',game:'블랙박스를 열어보는 고양이',privacy:'이름과 학번은 이 기기에만 저장돼요. 서버로 보내지 않아요.',
   printHint:'인쇄 창에서 대상을 ‘PDF로 저장’으로 고르세요.',notWritten:'작성 안 함'};
- return {art,names,bgNames,stamps,intro,drafts,history,alertText,cases,ending,reflect,report};
+ return {art,names,bgNames,stamps,intro,drafts,history,alertText,cases,notice,ending,reflect,report};
 })();

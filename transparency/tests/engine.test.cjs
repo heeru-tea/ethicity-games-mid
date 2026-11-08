@@ -31,6 +31,18 @@ test('notice step: picking toggles cards, posting needs a card, posting once ope
  const back=E.reduce(s,{type:'revisit',scene:E.sceneOf(k,'follow')});assert.deepEqual(E.reduce(back,{type:'notice-pick',id:n.nice[0]}).notices[k],s.notices[k],'only on the notice screen');
  const nx=E.reduce(s,{type:'next'});assert.equal(E.stepOf(nx.scene),'reflect');assert.equal(E.caseKey(nx.scene),k);
 });
+const D=(()=>{global.window={};require('../story.js');return global.window.TransparencyStory;})();
+const DASH_EMOJI=/[—–]|\p{Extended_Pictographic}/u;
+test('notice copy: story cards match engine kinds, conflict cards explain the clash, fixed lines as approved',()=>{
+ assert.equal(D.notice.principle,'안내문은 잘못된 조치를 대신하지 않아. 그래도 미리 알리는 건 따로 해야 할 일이야.');
+ assert.ok(D.cases.face.notice.lines.some(([,t])=>t==='가게 입구에는 얼굴 인식을 쓴다는 안내가 없었어.'),'bakery intro line');
+ for(const k of E.CASES){const n=D.cases[k].notice,ids=n.cards.map(c=>c.id);
+  assert.deepEqual([...ids].sort(),[...E.noticeIds(k)].sort(),k+' same cards');
+  assert.ok(n.title&&n.paper,k);assert.ok(!(E.noticeKind(k,ids[0])==='must'&&E.noticeKind(k,ids[1])==='must'),'must cards do not open the list together');
+  for(const c of n.cards){assert.ok(c.text.length>4&&c.text.length<=30,c.id+' short');if(E.noticeKind(k,c.id)==='conflict')assert.ok(c.clash&&c.clash.length>10,c.id+' clash reason');}
+  const all=[n.title,n.paper,...n.lines.map(l=>l[1]),...n.cards.flatMap(c=>[c.text,c.clash||''])].join(' ');assert.doesNotMatch(all,DASH_EMOJI,k+' no em dash or emoji');}
+ const g=D.notice;assert.doesNotMatch(JSON.stringify(g),DASH_EMOJI);for(const kind of ['must','nice','conflict','promise'])assert.ok(g.kinds[kind]&&g.fb[kind],kind);
+});
 test('notice verdict: all must in and no conflict or promise = ok; nice does not change the verdict',()=>{
  for(const k of E.CASES){const n=notice(k);
   assert.deepEqual(E.noticeCheck(k,n.must),{ok:true,missing:[],conflicts:[],promises:[],extras:[]},k);

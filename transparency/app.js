@@ -14,7 +14,7 @@
  let autoKey=null,keepFinding=null,revealCue=false;
  const photo=new Image();photo.src=A.photo;photo.onload=paint;
  const modal=$('#modal');
- const STEP_LABELS={hook:'궁금한 것',check:'직접 확인',choose:'선택',result:'결과',follow:'후속 조사',reflect:'생각 정리'};
+ const STEP_LABELS={hook:'궁금한 것',check:'직접 확인',choose:'선택',result:'결과',follow:'후속 조사',notice:'만든 사람이라면: 미리 알리기',reflect:'생각 정리'};
  const FACE_NAMES=['토리','루루','담이','모아','몽이'];
  // 대사 옆 작은 얼굴: 전신 그림(1024×1536)에서 얼굴 중심(가로·세로 비율). 그림이 없는 화자(마을 사람들·반 친구·앱 알림)는 이름만.
  const FACE_POS={moa:[.54,.12],lulu:[.51,.23],luluPaper:[.46,.23],dami:[.51,.15],bami:[.59,.13],teacher:[.48,.12],clerk:[.52,.13],clerkOpen:[.55,.12]};
@@ -87,7 +87,8 @@
   if(step==='result'){const o=c.choose.options.find(x=>x.id===state.cases[k].final);h=head(meta,o.title);v=caseStage(k,{result:true});
    b=`<p class="status">${esc(o.status)}</p>`+o.reaction.map(l=>line(l)).join('')+line(['moa',o.feedback],'moa')+more([o.more,c.more].filter(Boolean).join(' '))+nav(false,`<span class="nav-pair">${btn('다른 선택 해 보기','rechoose')}${btn('더 조사하기','next','','primary')}</span>`)+`<p class="hint">결과는 수첩에 자동으로 적혔어.</p>`;}
   if(step==='follow'){const f=c.follow;h=head(meta,f.question)+f.lines.map(l=>line(l)).join('')+(E.followReady(state,k)?'':`<p class="task">${esc(f.task)}</p>`);v=evidenceHead(f.src)+followView(k);
-   b=followBody(k)+nav(true,btn('생각 정리하기','next',E.canAdvance(state)?'':'disabled','primary'));}
+   b=followBody(k)+nav(true,btn('미리 알리기','next',E.canAdvance(state)?'':'disabled','primary'));}
+  if(step==='notice'){h=head(meta,c.notice.title);v=noticeStage(k);b=noticeBody(k)+nav(true,btn('생각 정리하기','next',E.canAdvance(state)?'':'disabled','primary'))+(E.canAdvance(state)?'':`<p class="hint">${esc(N.needPost)}</p>`);}
   if(step==='reflect'){const r=state.reflections[k],toReport=state.furthest>=E.REPORT;h=head(meta,D.reflect.title);v=reflectSummary(k);
    b=`<p class="hint lead">${esc(D.reflect.lead)}</p>`+writeBox('reflect-q1',D.reflect.q1,r.q1,'data-reflect="q1"')+writeBox('reflect-q2',D.reflect.q2,r.q2,'data-reflect="q2"');
    const next=btn(k==='face'?'마지막 장면으로':'다음 사건','next','',toReport?'':'primary');
@@ -145,6 +146,30 @@
   if(fs.judgment==='legacy')b+='<p class="hint">이전 저장에서 넘어와 아직 하지 않은 조사야. 지금 해 볼 수 있어.</p>';
   if(picked)b+=`${verdictBox(j,picked,answer)}<p class="unknown"><strong>아직 모르는 점</strong> ${esc(f.unknown)}</p>${more(f.more)}`;
   return b+'</section>';}
+ // 미리 알리기: 학생이 그 AI를 내놓는 쪽이 되어 안내문 카드를 고른다. 피드백·보고서는 마지막으로 붙인 안내문(posted) 기준.
+ const N=D.notice,sameSet=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
+ const postedOf=k=>Array.isArray(state.notices[k].posted)?state.notices[k].posted:null;
+ // 카드 한 장의 피드백: 상태 글자(✓/!/○ + 종류 · 넣음/빠짐/뺐음)와 짧은 한 줄. 색만으로 구분하지 않는다.
+ function cardFeedback(k,card,posted){const kind=E.noticeKind(k,card.id),on=posted.includes(card.id);
+  const good=kind==='must'?on:kind==='nice'?null:!on,mark=good===null?(on?'✓':'○'):good?'✓':'!',state_=on?'넣음':kind==='must'?'빠짐':kind==='nice'?'안 넣음':'뺐음';
+  const say=kind==='conflict'?[N.fb.conflict[on?'in':'out'],card.clash].filter(Boolean).join(' '):N.fb[kind][on?'in':'out'];
+  return `<p class="card-fb ${good===false?'fb-again':good===null&&!on?'fb-plain':'fb-ok'}" id="fb-${card.id}"><span class="fb-tag">${mark} ${esc(N.kinds[kind])} · ${state_}</span> ${esc(say)}</p>`;}
+ function noticeVerdict(k,posted){const r=E.noticeCheck(k,posted);
+  if(r.ok)return `<div class="finding notice-verdict" role="status"><p><strong>${esc(N.ok)}</strong> ${esc(N.okMore)}</p></div>`;
+  const parts=['missing','conflicts','promises'].filter(x=>r[x].length).map(x=>`${N.againParts[x]} ${r[x].length}장`);
+  return `<div class="finding again notice-verdict" role="status"><p class="again-head">${esc(N.again)}</p><p>${esc(parts.join(' · '))}. ${esc(N.againMore)}</p></div>`;}
+ function noticeBody(k){const nt=D.cases[k].notice,ns=state.notices[k],posted=postedOf(k),fresh=!!posted&&sameSet(posted,ns.picked);
+  let b=line(['moa',N.principle],'moa')+nt.lines.map(l=>line(l)).join('')+`<p class="task">${esc(N.task)}</p>`;
+  b+=`<div class="notice-cards" role="group" aria-label="안내문에 붙일 카드">${nt.cards.map(card=>{const on=ns.picked.includes(card.id),fb=fresh?cardFeedback(k,card,posted):'';
+   return `<div class="notice-item">${btn(`<span class="pick-box" aria-hidden="true">${on?'✓':''}</span><span>${esc(card.text)}</span>`,'notice-pick',`data-id="${card.id}" aria-pressed="${on}"${fb?` aria-describedby="fb-${card.id}"`:''}`,'notice-card')}${fb}</div>`;}).join('')}</div>`;
+  b+=`<p class="notice-post-row">${btn(esc(posted?N.repostLabel:N.post),'notice-post',ns.picked.length?'':'disabled')}</p>`;
+  if(ns.posted==='legacy')b+=`<p class="hint">${esc(N.legacy)}</p>`;
+  if(fresh)b+=noticeVerdict(k,posted);else if(posted)b+=`<p class="hint repost" role="status">${esc(N.repost)}</p>`;
+  return b;}
+ // 왼쪽(휴대폰은 아래): 사건 무대와 붙인 안내문 종이
+ function noticePaper(k){const nt=D.cases[k].notice,posted=postedOf(k)||[],cards=nt.cards.filter(x=>posted.includes(x.id));
+  return `<div class="notice-paper${cards.length?"":" empty"}"><p class="doc-label">${esc(nt.paper)}</p>${cards.length?`<ul>${cards.map(x=>`<li>${esc(x.text)}</li>`).join('')}</ul>`:`<p class="paper-empty">${esc(N.empty)}</p>`}</div>`;}
+ function noticeStage(k){return caseStage(k,{result:true})+noticePaper(k);}
  function focusSelector(){const el=document.activeElement;if(!el||!$('#app').contains(el))return null;const parts=['data-act','data-id'].filter(a=>el.hasAttribute(a)).map(a=>`[${a}="${CSS.escape(el.getAttribute(a))}"]`);return parts.length?el.tagName.toLowerCase()+parts.join(''):null;}
 
  function open(title,html){lastFocus=document.activeElement;$('#modal-title').textContent=title;$('#modal-body').innerHTML=html;if(!modal.open)modal.showModal();paint();}
@@ -219,6 +244,8 @@
   if(act==='segment'){const s=D.cases.face.clerkSegments.find(x=>x.id===b.dataset.id);if(s.found){tapHint=s.id==='rule'?s.found:'';send({type:'check',id:'face-clerk'});}else{tapHint=s.hint;render();}return;}
   if(act==='judge'){keepFinding=null;justJudged=E.currentJudgment(state,k);send({type:'judge',stamp:b.dataset.id});return;}
   if(act==='judge-next'){justJudged=null;render();$('#work .judge [data-act="judge"]')?.focus({preventScroll:true});return;}
+  if(act==='notice-pick'){send({type:'notice-pick',id:b.dataset.id});return;}
+  if(act==='notice-post'){send({type:'notice-post'});return;}
   if(act==='mark'){send({type:'mark',id:b.dataset.id,value:b.dataset.value});return;}
   if(act==='run'){send({type:'mark',id:'run',value:'done'});return;}
   if(act==='row'){send({type:'mark',id:b.dataset.id,value:'open'});return;}

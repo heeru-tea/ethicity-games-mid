@@ -255,6 +255,30 @@ dialog .case-card{margin:12px 0}
 .report-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:10px 0 4px}
 .report-actions .hint{margin:0}
 
+/* 미리 알리기: 카드 = 토글 버튼(네모 칸 ✓ + 테두리), 카드별 피드백 = 글자 태그(✓ 실선 / ! 점선 / ○ 회색) */
+.notice-cards{display:grid;gap:8px;margin:8px 0 0}
+.notice-card{width:100%;display:flex;gap:10px;align-items:flex-start;padding:9px 14px;word-break:keep-all}
+.pick-box{flex:none;width:1.3em;height:1.3em;margin-top:.22em;border:2px solid #8a8378;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800;line-height:1;background:#fff}
+.notice-card[aria-pressed=true] .pick-box{border-color:var(--accent-dark);background:var(--accent-dark);color:#fff}
+.card-fb{font-size:.9rem;line-height:1.55;margin:4px 0 4px 2px}
+.fb-tag{display:inline-block;font-size:.8rem;font-weight:800;border-radius:6px;padding:0 7px;margin-right:4px;border:1.5px solid}
+.fb-ok .fb-tag{color:#14532d;background:#e3f1e7;border-color:#1f6b3a}
+.fb-again .fb-tag{color:var(--text);background:#fff;border:1.5px dashed #6d675c}
+.fb-plain .fb-tag{color:#4a463f;background:#fff;border-color:#8a8378}
+.notice-post-row{margin:12px 0 0}
+.notice-verdict{margin:12px 0 0}
+.notice-paper{background:#fffef8;border:1px solid #d8cfbd;border-radius:6px;padding:14px 18px;margin-top:12px}
+.notice-paper ul{margin:4px 0 0;padding-left:1.2em}
+.notice-paper li{margin:0 0 2px}
+.paper-empty{color:var(--muted);margin:0}
+@media(max-width:860px){
+ /* 휴대폰: 카드와 버튼을 먼저, 붙인 안내문 종이는 아래(무대 그림은 생략) */
+ .step-notice .screen{grid-template-areas:"head" "body" "visual"}
+ .step-notice .body{margin-top:0}
+ .step-notice .visual .stage{display:none}
+ .step-notice .notice-paper.empty{display:none}
+}
+
 /* 인쇄(PDF로 저장): A4 세로, 여백 15mm, 흰 바탕 검은 글자. 사건 하나가 페이지 사이에서 잘리지 않게 한다(사건마다 새 페이지는 아님). */
 @media print{
  @page{size:A4 portrait;margin:15mm}
