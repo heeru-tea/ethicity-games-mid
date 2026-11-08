@@ -23,7 +23,7 @@ try{for(const [w,h] of [[1280,800],[375,812]]){
  await page.evaluate(()=>PB.App.retry('same'));await toResult(page,[[1,['F','C','B','D'],2]]);await page.locator('#result-headline').waitFor();
  const c=await cmp(page),now=await page.evaluate(()=>{const h=PB.App.s.history[0].metrics;return {maxWait:h.maxWait,missed:h.N-h.arrived,total:h.costs.total,runId:PB.App.s.runId};});
  assert.ok(c&&c.visible,'재도전 같은 단계 결과에 비교 줄');assert.notEqual(now.runId,first.runId);
- assert.match(c.numbers,/^지난번 이 단계 운행보다 /);assert.ok(c.numbers.split(' · ').length<=3,c.numbers);
+ assert.match(c.numbers,/^지난번 같은 단계와 비교: /);assert.ok(c.numbers.split(' · ').length<=3,c.numbers);
  const fmt=await page.evaluate(([a,b])=>({miss:a.missed+'건 → '+b.missed+'건',wait:PB.App.duration(a.maxWait)+' → '+PB.App.duration(b.maxWait)}),[first,now]);
  if(first.missed!==now.missed&&c.numbers.includes('목적지까지 못 간 이동'))assert.ok(c.numbers.includes('목적지까지 못 간 이동 '+fmt.miss),'숫자는 결과 값 그대로: '+c.numbers);
  if(c.numbers.includes('최장 대기'))assert.ok(c.numbers.includes('최장 대기 '+fmt.wait),c.numbers);

@@ -29,7 +29,7 @@
     var moved = cands.filter(function (c) { return c.a != null && c.b != null && c.show(c.a) !== c.show(c.b); })
       .map(function (c) { return { c: c, r: c.rel(c.a, c.b) }; }).sort(function (x, y) { return y.r - x.r; }).slice(0, 3)
       .map(function (x) { return x.c.label + ' ' + x.c.show(x.c.a) + ' → ' + x.c.show(x.c.b); });
-    var numbers = moved.length ? '지난번 이 단계 운행보다 ' + moved.join(' · ') : '지난번 이 단계 운행과 결과 숫자가 같아요.';
+    var numbers = moved.length ? '지난번 같은 단계와 비교: ' + moved.join(' · ') : '지난번 같은 단계와 결과 숫자가 같아요.';
     var changes = planChanges(prev.routes || [], cur.routes || [], f).slice(0, 2);
     return { numbers: numbers, plan: changes.length ? '달라진 계획: ' + changes.join(' · ') : '계획은 지난번과 같아요.' };
   }

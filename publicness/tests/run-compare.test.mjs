@@ -13,7 +13,7 @@ test('summary: 결과 화면 기록(history)과 출발한 계획에서 숫자만
 test('lines: 변화가 큰 숫자 2~3개 한 줄 + 달라진 계획 한 줄(버스 수·정류장)', () => {
  const prev=sum(),cur=sum({maxWait:210,missed:20,arrived:80,total:2000,routes:[{num:1,nodes:['C','G'],buses:2},{num:2,nodes:['F','D'],buses:1}]});
  const L=C.lines(prev,cur,f);
- assert.equal(L.numbers,'지난번 이 단계 운행보다 최장 대기 2시간 → 3시간 30분 · 목적지까지 못 간 이동 12건 → 20건 · 이번 단계 수지 +3,000원 → +2,000원');
+ assert.equal(L.numbers,'지난번 같은 단계와 비교: 최장 대기 2시간 → 3시간 30분 · 목적지까지 못 간 이동 12건 → 20건 · 이번 단계 수지 +3,000원 → +2,000원');
  assert.equal(L.plan,'달라진 계획: 초록 노선 버스 2대 → 1대');
 });
 test('lines: 같은 정류장 노선은 색이 달라도 같은 노선, 정류장 더함·뺌·새 노선·없앰', () => {
@@ -22,11 +22,11 @@ test('lines: 같은 정류장 노선은 색이 달라도 같은 노선, 정류�
  assert.equal(C.lines(prev,cur,f).plan,'달라진 계획: 주황 노선에 구도심 시장 더함');
  assert.equal(C.lines(prev,sum({routes:[{num:1,nodes:['C','G'],buses:2}]}),f).plan,'달라진 계획: 주황 노선(외곽 마을–병원) 없앰');
  assert.equal(C.lines(sum({routes:[]}),sum({routes:[{num:1,nodes:['C','G','C'],buses:1}]}),f).plan,'달라진 계획: 빨강 노선 새로 만듦(대학교–산업·일자리, 버스 1대)');
- const same=C.lines(sum(),sum(),f);assert.deepEqual(same,{numbers:'지난번 이 단계 운행과 결과 숫자가 같아요.',plan:'계획은 지난번과 같아요.'});
+ const same=C.lines(sum(),sum(),f);assert.deepEqual(same,{numbers:'지난번 같은 단계와 결과 숫자가 같아요.',plan:'계획은 지난번과 같아요.'});
 });
 test('lines: 주요 인물 기준 변화가 크면 앞에, 숫자는 최대 3개', () => {
  const L=C.lines(sum({people:{ok:3,total:3},maxWait:100}),sum({people:{ok:1,total:3},maxWait:110,missed:13,total:2900}),f);
- assert.ok(L.numbers.startsWith('지난번 이 단계 운행보다 기준을 채운 주요 인물 3명 → 1명 · '),L.numbers);
+ assert.ok(L.numbers.startsWith('지난번 같은 단계와 비교: 기준을 채운 주요 인물 3명 → 1명 · '),L.numbers);
  assert.equal(L.numbers.split(' · ').length,3);
 });
 test('previous/remember: 같은 조건·같은 단계·다른 게임만, 최근 것, 오래된 것은 밀려남, 저장소가 막혀도 조용히', () => {
