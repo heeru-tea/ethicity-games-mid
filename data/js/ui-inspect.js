@@ -145,7 +145,7 @@
         el('h2', { text: '가방 확인 (' + bag.length + '/' + mission.bag + '칸)' }),
         opts.lost ? el('p', { id: 'inspect-lost', class: 'lost-line', text: '노이즈로 잃은 카드 ' + opts.lost + '장' }) : null,
         changeLogBoard(mission),
-        el('p', { class: 'note', text: mission.inspectNote ? mission.inspectNote : mission.changeLog ? '카드를 누르면 크게 볼 수 있다. 언제 찍은 사진인지 도시 변경 기록과 맞춰 보고, 지금의 거리가 아닌 사진은 뺀다.' : mission.labels ? '카드를 누르면 크게 볼 수 있다. 그림과 이름표가 안 맞으면 이름표를 고치거나 뺀다.' : '카드를 누르면 크게 볼 수 있다. "?" 카드는 단서를 보고 설명표를 붙이거나, 넣지 않기로 정한다.' }),
+        el('p', { class: 'note', text: mission.inspectNote ? mission.inspectNote : mission.changeLog ? '카드를 누르면 크게 볼 수 있다. 언제 찍은 사진인지 도시 변경 기록과 맞춰 보고, 지금의 거리가 아닌 사진은 뺀다.' : mission.labels ? (mission.relabel !== false ? '카드를 누르면 크게 볼 수 있다. 그림과 이름표가 안 맞으면 이름표를 고치거나 뺀다.' : '카드를 누르면 크게 볼 수 있다. 그림을 보고 필요 없는 카드는 뺀다.') : '카드를 누르면 크게 볼 수 있다. "?" 카드는 단서를 보고 설명표를 붙이거나, 넣지 않기로 정한다.' }),
         DR.Privacy.on(mission) ? el('p', { id: 'inspect-privacy-note', class: 'note', text: DR.Privacy.TEXT.inspectNote }) : null,
         notice,
         bagGrid(mission, bag, 'inspect-grid', {
@@ -175,9 +175,11 @@
       zoomed = card;
       var A = DR.CardArt, amb = !!card.ambiguousId, label = cardLabel(mission, card), digit = mission.labelStyle === 'digit';
       var big = A.card(mission, cardId(card), variantOf(card), 320, numOf(card));
+      // 모든 임무 같은 구조(플레이테스트 5): 머리줄(이름표 + 닫기, 오른쪽 위) → 가운데 사진 → 가리기 → (임무별) 단서·날짜·이름표 고치기
+      var close = el('button', { id: 'btn-zoom-close', class: 'btn btn-ghost btn-small zoom-close', type: 'button', text: '닫기' });
       var inner = [
-        el('img', { class: 'zoom-art', src: big.toDataURL(), alt: '카드 원본: ' + label }),
-        el('p', { class: 'zoom-label' }, [DR.UI.iconStrip(mission, DR.Cards.iconsOf(mission, card)), el('span', { text: label })])
+        el('div', { class: 'zoom-head' }, [el('p', { class: 'zoom-label' }, [DR.UI.iconStrip(mission, DR.Cards.iconsOf(mission, card)), el('span', { text: label })]), close]),
+        el('img', { class: 'zoom-art', src: big.toDataURL(), alt: '카드 원본: ' + label })
       ];
       if (DR.Privacy.on(mission) && !card.fixed) {
         var maskBtn = el('button', { id: 'btn-mask', class: 'btn btn-small btn-mask', type: 'button', 'aria-pressed': card.masked ? 'true' : 'false',
@@ -235,8 +237,7 @@
         inner.push(el('h3', { text: '이름표' }),
           el('p', { class: 'note', text: mission.relabelNote || '그림과 맞지 않으면 맞는 이름표로 고친다. 맞는 이름표가 없으면 빼자.' }), relabel);
       }
-      var close = el('button', { class: 'btn btn-ghost', type: 'button', text: '닫기' });
-      var panel = el('div', { class: 'zoom-panel', role: 'dialog', 'aria-modal': 'true', 'aria-label': '카드 크게 보기: ' + label }, inner.concat([el('div', { class: 'actions' }, [close])]));
+      var panel = el('div', { class: 'zoom-panel', role: 'dialog', 'aria-modal': 'true', 'aria-label': '카드 크게 보기: ' + label }, inner);
       var overlay = el('div', { id: zoomId, class: 'zoom' }, [panel]);
       function cleanup() { overlay.remove(); root.removeEventListener('keydown', onKey); zoomCleanup = null; }
       function shut() { zoomed = null; cleanup(); }
