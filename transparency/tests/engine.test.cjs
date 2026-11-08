@@ -3,11 +3,42 @@ const at=(scene,fn)=>{let s=E.initial();s.scene=scene;s.furthest=scene;return fn
 function checkAll(s,key){for(const id of E.checks[key])s=E.reduce(s,{type:'check',id});return s;}
 function judgeAll(s,key){for(const st of E.answers[key])s=E.reduce(s,{type:'judge',stamp:st});return s;}
 
-test('scene layout: six steps per case (reflect last), prologue, ending and report',()=>{
- assert.equal(E.END,19);assert.equal(E.REPORT,20);
- assert.deepEqual([0,1,2,3,4,5,6,7,12,13,18,19,20].map(E.stepOf),['intro','hook','check','choose','result','follow','reflect','hook','reflect','hook','reflect','end','report']);
- assert.deepEqual([1,6,7,12,13,18].map(E.caseKey),['photo','photo','writing','writing','face','face']);
- assert.equal(E.sceneOf('face','choose'),15);
+test('scene layout: seven steps per case (notice between follow-up and reflect), prologue, ending and report',()=>{
+ assert.equal(E.END,22);assert.equal(E.REPORT,23);
+ assert.deepEqual([0,1,2,3,4,5,6,7,8,14,15,20,21,22,23].map(E.stepOf),['intro','hook','check','choose','result','follow','notice','reflect','hook','reflect','hook','notice','reflect','end','report']);
+ assert.deepEqual([1,7,8,14,15,21].map(E.caseKey),['photo','photo','writing','writing','face','face']);
+ assert.equal(E.sceneOf('face','choose'),17);
+ for(const k of E.CASES)assert.equal(E.sceneOf(k,'notice'),E.sceneOf(k,'follow')+1,k);
+});
+// 미리 알리기: 학생이 AI를 내놓는 쪽이 되어 안내문 카드를 고른다.
+const notice=k=>{const n=E.noticeCards[k];return {must:n.must,nice:n.nice,conflict:n.conflict,promise:n.promise};};
+const atNotice=k=>at(E.sceneOf(k,'notice'),s=>{for(const c of E.CASES.slice(0,E.CASES.indexOf(k)+1))s.cases[c]={first:E.choices[c][0],final:E.choices[c][0]};return s;});
+test('notice cards: 2~3 must, 1 nice, 1 conflict, 1 promise per case, ids unique',()=>{
+ for(const k of E.CASES){const n=notice(k);assert.ok(n.must.length>=2&&n.must.length<=3,k);for(const t of ['nice','conflict','promise'])assert.equal(n[t].length,1,k+' '+t);
+  const ids=E.noticeIds(k);assert.equal(new Set(ids).size,ids.length);assert.ok(ids.length>=5&&ids.length<=6);for(const id of ids)assert.ok(['must','nice','conflict','promise'].includes(E.noticeKind(k,id)));}
+});
+test('notice step: picking toggles cards, posting needs a card, posting once opens the next step, re-pick anytime',()=>{
+ const k='writing',n=notice(k);let s=atNotice(k);
+ assert.equal(E.stepOf(s.scene),'notice');assert.deepEqual(s.notices[k],{picked:[],posted:null});assert.equal(E.canAdvance(s),false);
+ s=E.reduce(s,{type:'notice-post'});assert.equal(s.notices[k].posted,null,'nothing to post');
+ s=E.reduce(s,{type:'notice-pick',id:n.must[0]});s=E.reduce(s,{type:'notice-pick',id:n.conflict[0]});s=E.reduce(s,{type:'notice-pick',id:E.noticeCards.photo.must[0]});s=E.reduce(s,{type:'notice-pick',id:'zzz'});
+ assert.deepEqual(s.notices[k].picked,[n.must[0],n.conflict[0]],'other case cards and unknown ids ignored');assert.deepEqual(s.notices.photo.picked,[]);
+ s=E.reduce(s,{type:'notice-pick',id:n.conflict[0]});assert.deepEqual(s.notices[k].picked,[n.must[0]],'second press removes');
+ assert.equal(E.reduce(s,{type:'next'}).scene,s.scene,'not posted yet');
+ s=E.reduce(s,{type:'notice-post'});assert.deepEqual(s.notices[k].posted,[n.must[0]]);assert.equal(E.canAdvance(s),true,'posting once is enough, even if not all right');
+ s=E.reduce(s,{type:'notice-pick',id:n.must[1]});assert.deepEqual(s.notices[k].posted,[n.must[0]],'posted notice stays until posted again');assert.equal(E.canAdvance(s),true);
+ s=E.reduce(s,{type:'notice-post'});assert.deepEqual(s.notices[k].posted,[n.must[0],n.must[1]]);
+ const back=E.reduce(s,{type:'revisit',scene:E.sceneOf(k,'follow')});assert.deepEqual(E.reduce(back,{type:'notice-pick',id:n.nice[0]}).notices[k],s.notices[k],'only on the notice screen');
+ const nx=E.reduce(s,{type:'next'});assert.equal(E.stepOf(nx.scene),'reflect');assert.equal(E.caseKey(nx.scene),k);
+});
+test('notice verdict: all must in and no conflict or promise = ok; nice does not change the verdict',()=>{
+ for(const k of E.CASES){const n=notice(k);
+  assert.deepEqual(E.noticeCheck(k,n.must),{ok:true,missing:[],conflicts:[],promises:[],extras:[]},k);
+  assert.equal(E.noticeCheck(k,[...n.must,...n.nice]).ok,true,'nice is extra');assert.deepEqual(E.noticeCheck(k,[...n.must,...n.nice]).extras,n.nice);
+  const miss=E.noticeCheck(k,n.must.slice(1));assert.equal(miss.ok,false);assert.deepEqual(miss.missing,[n.must[0]]);
+  const clash=E.noticeCheck(k,[...n.must,...n.conflict]);assert.equal(clash.ok,false);assert.deepEqual(clash.conflicts,n.conflict);
+  const prom=E.noticeCheck(k,[...n.must,...n.promise]);assert.equal(prom.ok,false);assert.deepEqual(prom.promises,n.promise);
+  assert.equal(E.noticeCheck(k,E.noticeIds(k)).ok,false,'picking everything is not right');}
 });
 test('reflect step: two free-text answers per case, empty is allowed, other cases untouched',()=>{
  let s=at(E.sceneOf('photo','reflect'),s=>{s.cases.photo={first:'auto',final:'auto'};return s;});
@@ -51,7 +82,7 @@ test('follow-up needs every mark, then one judgment; marks lock after judging',(
  s=E.reduce(s,{type:'mark',id:'p9',value:'cut'});assert.equal(s.follows.photo.marks.p9,undefined);
  assert.equal(E.canAdvance(s),false);s=E.reduce(s,{type:'follow-judge',stamp:'different'});assert.equal(E.canAdvance(s),true);
  s=E.reduce(s,{type:'mark',id:'p1',value:'shown'});assert.equal(s.follows.photo.marks.p1,E.truth[0],'locked');
- s=E.reduce(s,{type:'next'});assert.equal(s.scene,6);assert.equal(E.stepOf(s.scene),'reflect','follow-up leads to the reflection screen');
+ s=E.reduce(s,{type:'next'});assert.equal(s.scene,6);assert.equal(E.stepOf(s.scene),'notice','follow-up leads to the notice screen');
 });
 test('follow-up photos: 담이 is cut in 3 of 6 and other friends are cut too',()=>{
  assert.equal(E.truth.filter(t=>t==='cut').length,3);

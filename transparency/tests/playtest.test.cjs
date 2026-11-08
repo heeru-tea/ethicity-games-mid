@@ -25,11 +25,11 @@ test('version 2 saves move to version 3: same step, empty reflections, existing 
  assert.deepEqual(s.reflections,{photo:{q1:'',q2:''},writing:{q1:'',q2:''},face:{q1:'',q2:''}});assert.equal(s.finalNote,'');assert.deepEqual(s.reporter,{name:'',number:''});
  assert.deepEqual(s.judgments.photo,old.judgments.photo);assert.deepEqual(s.follows.photo,old.follows.photo);assert.deepEqual(s.evidence,old.evidence);
  assert.deepEqual(E.restore(JSON.stringify(s)),s,'migrated save round-trips as version 3');
- // 사진 후속 조사 중(옛 scene 5): 다음은 새 생각 정리 화면
+ // 사진 후속 조사 중(옛 scene 5): 다음은 새 미리 알리기 화면
  old=v2(5,5);old.evidence.push(...E.checks.photo);old.judgments.photo=E.answers.photo.slice();old.cases.photo={first:'all',final:'all'};
  s=E.restore(old);assert.equal(E.stepOf(s.scene),'follow');assert.equal(E.caseKey(s.scene),'photo');
  for(const [i,id] of E.followMarks.photo.ids.entries())s=E.reduce(s,{type:'mark',id,value:E.truth[i]});s=E.reduce(s,{type:'follow-judge',stamp:'different'});
- s=E.reduce(s,{type:'next'});assert.equal(E.stepOf(s.scene),'reflect');
+ s=E.reduce(s,{type:'next'});assert.equal(E.stepOf(s.scene),'notice','then the new notice screen');
  // 다 끝낸 저장(옛 scene 16): 마지막 장면, 보고서로 갈 수 있다
  old=v2(16,16,{question:'criteria',completed:true});for(const k of E.CASES)doneCase(old,k);
  s=E.restore(old);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.equal(s.question,'criteria');
