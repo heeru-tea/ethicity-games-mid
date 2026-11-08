@@ -252,7 +252,7 @@ if (want(7, 8, 13)) {
     assert.match(look.cls, /notice-ok/);
     assert.notEqual(look.border, 'rgb(255, 95, 176)', '분홍 테두리 아님');
     assert.equal(await page.locator('#btn-supplement').isDisabled(), false);
-    await page.screenshot({ path: shotPath('playtest-prep-ok-1280') });
+    await page.screenshot({ path: shotPath('playtest-prep-ok-1280'), fullPage: true });
     // 8: 보충 달리기(벽 안 맞음) 뒤 검수에 지난 판 노이즈 경고 없음
     await page.locator('#btn-supplement').click();
     await page.waitForFunction(() => DR.App.screen === 'run' && DR.Run.peek().running, null, { timeout: 10000 });
@@ -280,6 +280,7 @@ if (want(10)) {
         }, missing);
         await page.locator('#screen-city').click({ position: { x: 5, y: 5 } }); // 건너뛰기 = 바로 ready
         await page.waitForFunction(() => document.querySelector('.city-page').dataset.phase === 'ready', null, { timeout: 5000 });
+        await page.waitForTimeout(200); // 점 새 칸은 0.06초 뒤에 켜진다
         const g = await page.evaluate(() => {
           const r = (s) => { const e = document.querySelector(s); if (!e || e.offsetParent === null) return null; const b = e.getBoundingClientRect(); return b.x + b.width / 2; };
           const page = document.querySelector('.city-page').getBoundingClientRect();

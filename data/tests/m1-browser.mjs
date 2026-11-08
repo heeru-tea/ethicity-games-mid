@@ -127,7 +127,9 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 375, height: 812 
       await passCity(page);
       await page.locator('#btn-skip').click();
       assert.ok(await page.locator('#screen-outro').isVisible(), 'outro');
-      assert.ok((await page.locator('#screen-outro').innerText()).includes('단순화한 규칙'));
+      // 시뮬레이션 안내는 감독관 마무리 대사에 한 번만(플레이테스트 12) — 완료 화면엔 되풀이하지 않는다
+      assert.ok(await page.evaluate(() => DR.Missions.flood.story.outro.some((l) => l.text.includes('단순화한 규칙'))));
+      assert.ok(!(await page.locator('#screen-outro').innerText()).includes('단순화한 규칙'));
       assert.deepEqual(await page.evaluate(() => DR.App.state.record), { firstTry: false, supplements: 1 });
       assert.deepEqual(errors, []);
     } finally { await browser.close(); }
