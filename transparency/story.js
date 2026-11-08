@@ -129,7 +129,18 @@ window.TransparencyStory = (()=>{
    notice:{title:'얼굴 인식을 켜기 전에, 손님들에게 무엇을 알릴까?',paper:'빵집 입구 안내문',lines:[['moa','가게 입구에는 얼굴 인식을 쓴다는 안내가 없었어.']],
     cards:[{id:'face-use',text:'입구에서 얼굴 인식을 써요.'},{id:'face-never',text:'얼굴 인식은 틀리지 않아요.'},{id:'face-staff',text:'알림이 뜨면 직원이 확인해요(바로 막지 않아요).'},
      {id:'face-wall',text:'등록된 손님의 사진을 문에 붙여 둬요.',clash:'알리는 것도 좋지만, 등록된 손님의 사진은 그 사람의 개인정보라 부딪쳐. 알리되 얼굴 인식을 쓴다는 것만큼만.'},
-     {id:'face-blur',text:'등록 사진이 흐리면 틀릴 수 있어요.'},{id:'face-report',text:'잘못 막혔다면 이곳으로 알려 주세요.'}]}}
+     {id:'face-blur',text:'등록 사진이 흐리면 틀릴 수 있어요.'},{id:'face-report',text:'잘못 막혔다면 이곳으로 알려 주세요.'}]}},
+  // ── 사건 4·5(2026-11-08 구현, 문장 전부 교사 검수 대기) ──
+  library:{name:'도서관 추천 사건',
+   notice:{title:'추천 기능을 켜기 전에, 학생들에게 무엇을 알릴까?',paper:'도서관 추천 화면 안내',lines:[],
+    cards:[{id:'library-perfect',text:'추천은 늘 네 취향에 딱 맞아요.'},{id:'library-record',text:'추천에 네가 빌린 책 기록을 써요.'},{id:'library-off',text:'추천을 끄거나 다시 고를 수 있어요.'},
+     {id:'library-others',text:'다른 학생들이 빌린 책 목록을 보여 줘요.',clash:'알리는 것도 좋지만, 다른 학생이 빌린 책은 그 학생의 개인정보라 부딪쳐. 알리되 인기 책을 섞는다는 것만큼만.'},
+     {id:'library-popular',text:'기록과 상관없는 인기 책도 섞어서 보여 줘요.'}]}},
+  recommend:{name:'모임 추천 사건',
+   notice:{title:'모임 추천 앱을 내놓기 전에, 쓰는 사람에게 무엇을 알릴까?',paper:'모임 추천 앱 첫 화면 안내',lines:[],
+    cards:[{id:'recommend-interest',text:'관심사 ‘별’·‘야외 활동’으로 골라요.'},{id:'recommend-safe',text:'추천한 모임은 늘 안전하고 너에게 딱 맞아요.'},{id:'recommend-unchecked',text:'모임이 끝나는 시각과 집에 갈 교통은 확인하지 않아요.'},
+     {id:'recommend-off',text:'추천을 끄는 방법이 있어요.'},{id:'recommend-formula',text:'순위 계산식을 전부 공개해요.',clash:'알리는 것도 좋지만, 계산식은 너무 어려워 오히려 안 읽히고 회사 기술 비밀과도 부딪쳐. 알리되 무엇을 보고 고르는지만큼만.'},
+     {id:'recommend-ad',text:'광고로 위에 올린 모임이면 ‘광고’라고 표시해요.'}]}}
  };
  // 미리 알리기 공통 문장(교사 검수 대기). 카드별 피드백 = 상태 글자(종류 · 넣음/빠짐/뺐음) + 짧은 한 줄.
  const notice={principle:'안내문은 잘못된 조치를 대신하지 않아. 그래도 미리 알리는 건 따로 해야 할 일이야.',
