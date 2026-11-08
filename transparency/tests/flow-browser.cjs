@@ -113,7 +113,7 @@ async function notice(p,k,plan){
  if(plan!=='ok'){await pick(n.must[0]);await pick(n.conflict[0]);await pick(n.promise[0]);assert.equal(await pressed(n.conflict[0]),true);
   await post();assert.match(await p.locator('.notice-verdict').innerText(),/고칠 점이 있어/);
   assert.equal(await tagOf(p,n.must[1]),'! 꼭 필요 · 빠짐');assert.equal(await tagOf(p,n.conflict[0]),'! 부딪침 · 넣음');assert.equal(await tagOf(p,n.promise[0]),'! 지킬 수 없는 약속 · 넣음');assert.equal(await tagOf(p,n.must[0]),'✓ 꼭 필요 · 넣음');
-  if(solo){assert.equal(await fbLine(n.promise[0]),'! 지킬 수 없는 약속 · 넣음','solo: tag only');assert.equal((await p.locator('.notice-verdict').innerText()).split('\n').filter(Boolean).length,1,'solo: one verdict line');}
+  if(solo){const clash=D.cases[k].notice.cards.find(c=>c.id===n.conflict[0]).clash;assert.ok((await p.locator('#fb-'+n.conflict[0]).innerText()).includes(clash),'solo: clash reason stays (2026-11-09 user)');assert.equal(await fbLine(n.promise[0]),'! 지킬 수 없는 약속 · 넣음','solo: tag only');assert.equal((await p.locator('.notice-verdict').innerText()).split('\n').filter(Boolean).length,1,'solo: one verdict line');}
   else assert.match(await p.locator('#fb-'+n.promise[0]).innerText(),/지킬 수 없는 약속은 오히려 믿음을 깨/);
   assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false,'posted once: can move on even if not all right');
   assert.equal(await p.locator('.notice-paper li').count(),3,'posted notice on the paper');

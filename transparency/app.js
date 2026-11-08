@@ -188,7 +188,8 @@
  // 카드 한 장의 피드백: 상태 글자(✓/!/○ + 종류 · 넣음/빠짐/뺐음)와 짧은 한 줄. 색만으로 구분하지 않는다.
  function cardFeedback(k,card,posted){const kind=E.noticeKind(k,card.id),on=posted.includes(card.id);
   const good=kind==='must'?on:kind==='nice'?null:!on,mark=good===null?(on?'✓':'○'):good?'✓':'!',state_=on?'넣음':kind==='must'?'빠짐':kind==='nice'?'안 넣음':'뺐음';
-  const say=D.cases[k].solo?'':kind==='conflict'?[N.fb.conflict[on?'in':'out'],card.clash].filter(Boolean).join(' '):N.fb[kind][on?'in':'out'];
+  // 사건 5(혼자): 다른 카드 설명은 숨기되, 부딪침 카드의 이유(상충관계)는 남긴다(2026-11-09 사용자)
+  const say=D.cases[k].solo?(kind==='conflict'?card.clash||'':''):kind==='conflict'?[N.fb.conflict[on?'in':'out'],card.clash].filter(Boolean).join(' '):N.fb[kind][on?'in':'out'];
   return `<p class="card-fb ${good===false?'fb-again':good===null&&!on?'fb-plain':'fb-ok'}" id="fb-${card.id}"><span class="fb-tag">${mark} ${esc(N.kinds[kind])} · ${state_}</span>${say?' '+esc(say):''}</p>`;}
  function noticeVerdict(k,posted){const r=E.noticeCheck(k,posted);
   if(D.cases[k].solo){const parts=['missing','conflicts','promises'].filter(x=>r[x].length).map(x=>`${N.againParts[x]} ${r[x].length}장`);
