@@ -46,3 +46,16 @@ AI 학습 데이터를 직접 골라 모으며, 데이터를 "목적에 맞게" 
 아래 문장은 **교사 검수 전 초안**이다(법적·교육적 정확성 미확인).
 - 챕터 끝: 각 임무 파일 `missions/m1.js`~`m4.js`의 `chapterEnd`(요청 메시지·선택지·피드백·개념 질문·문장 틀), 공통 문구 `js/ui-chapter.js` TEXT
 - 개인정보 카드: 감독관이 막는 대사·가리기 안내·결과 한 줄 `js/privacy.js` TEXT
+
+## 글꼴(4 임무 손글씨)
+4 임무 답안 카드의 손글씨는 무료 한글 손글씨 글꼴 4종을 **필요한 글자만 남겨**(데이터·알고리즘·인공지능·머신러닝·영문 d·a·t·A·I) `css/hw-fonts.css`에 base64로 넣고, Canvas로 기울기·떨림·굵기·크기를 바꿔 그린다(이미지 생성은 한글이 깨져 쓰지 않음).
+
+| 게임 안 이름 | 원래 글꼴 | 만든 곳 | 라이선스 | 쓰는 곳 |
+|---|---|---|---|---|
+| HW Neat | Poor Story | YoonDesign Inc. | SIL OFL 1.1 | 반듯한 글씨 |
+| HW Round | Gamja Flower | YoonDesign Inc. | SIL OFL 1.1 | 둥근 아이 글씨(반듯한 글씨의 다른 학생) |
+| HW Quick | East Sea Dokdo | YoonDesign Inc. | SIL OFL 1.1 | 흘림 |
+| HW Bold | Dokdo | FONTRIX | SIL OFL 1.1 | 아주 흘린 글씨(선배 글씨) |
+
+- 라이선스 전문·저작권: `assets/fonts/OFL.txt`. 원본은 Google Fonts(github.com/google/fonts `ofl/`). 글자를 덜어 낸 수정본이라 원래 이름 대신 HW 이름으로 부른다. 나눔손글씨(펜·붓)는 OFL이지만 예약 글꼴 이름이 있어 덜어 낸 파일로 쓰지 않았다.
+- 다시 만들기(글자를 더할 때): 저장소 **밖** 임시 폴더에 `npm i subset-font` → 원본 ttf를 받아 같은 글자 목록으로 woff2를 만들고 base64로 `@font-face`에 넣는다. 원본 글꼴 파일은 저장소에 올리지 않는다.
