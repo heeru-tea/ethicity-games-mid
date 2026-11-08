@@ -1,5 +1,15 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-09, 4 임무만 4레인 — 계획 `docs/plans/2026-11-09-m4-four-lanes.md`, 설계 `docs/specs/2026-11-08-run-indoor-stages-design.md` "추가 결정")
+- **레인 수 = 임무 데이터**: `missions/m4.js lanes: 4`, 나머지는 없음 = 3(`DR.Stream.laneCount`). 쓰는 곳 = `stream.js`(레인 섞기·듬성듬성 벽 첫 레인·불꽃 레인), `input.js nextLane/startLane`(끝에서 멈춤, 출발 = 3레인 가운데 1 / 4레인 가운데 왼쪽 1), `run3d`(레인 x = (l − (n−1)/2) × 폭, 바닥 폭·레인 줄 n+1개·결승 게이트·옆 빌딩, `camRig` — 4레인은 카메라 조금 높이·뒤로·덜 따라감), `run-feedback`(불 경고 n칸, 화면 카드), `run-world`(다리 폭·가장자리 줄), `play-browser` 자동 조종.
+- 연습·1~3 임무: 3레인이면 난수 쓰는 횟수까지 그대로 → 코스가 **바이트 그대로**(`tests/fixtures/courses-before-lanes.json` = 바꾸기 전 5828537에서 만든 스냅숏, 벽·불꽃·개인정보·지지직 표시까지 — `lanes.test`. 다시 만들지 말 것). 화면도 3레인 값 그대로(`camRig`·카드 칸 계산 3레인 가지 그대로).
+- 4 임무 코스는 **의도적으로 바뀜**(레인·벽·불꽃만): 카드 종류·거리·구역·앞뒤 간격·드문/가짜 자리 = 같은 seed 3레인 코스와 같음(`lanes.test`). 4 임무 코스 스냅숏 fixture는 원래 없었음(courses-before-m4.json은 1~3 임무만) — 새로 만들 것 없음. 벽 규칙(한 거리에 막힌 레인 2개까지)은 레인 수와 상관없이 그대로 → 4레인은 빈 레인이 늘 2개 이상.
+- 화면 카드(34m 안 DOM): 4레인이면 칸 자리를 **같은 기준(러너 앞 20m)·같은 간격(가장 큰 카드 폭 + 10)**으로 — 3레인처럼 카드마다 그 거리에서 재면 앞뒤 간격(0.3초)으로 거리가 다른 옆 레인 카드가 몇 px 겹쳤음. 좁은 화면 카드 폭 = (화면 − 16)/4 − 10(390px에서 83px), 낱말 16px(`.run-feedback.lanes-4`).
+- 테스트 훅 `peek().lanes·laneX`, `DR.Run.laneScreen(d)`. 단위 `lanes.test`(7) · 브라우저 `lanes-browser`(4 임무 1280·390 키·끝에서 멈춤·네 레인 화면 안·화면 카드 안 겹침·네 레인 모두 화면 카드·레인 3 카드 잡기 / 연습 3레인 그대로 / 스와이프 ×3 = 레인 3). 스크린샷 `_shot-lanes-m4-1280/390`.
+- 참고(고치지 않음): 슬라이딩 6m 창으로 보면 1 임무 seed 1·2201 첫 판에 세 레인 벽이 모이는 자리가 있다(벽 사이 거리는 6m 넘음 — 규칙은 새 벽 자리 기준 6m 안만 봄). 배포 seed 1101은 해당 없음. 1~3 임무 코스는 그대로 두기로 해서 손대지 않음.
+- 결과: 단위 326(lanes.test 7 새로) · 브라우저 31/31(전체 `run-all`, lanes 새로 — 이번엔 bgm·m3·play·tutorial·runner 모두 한 번에 통과). 연습·1·3 임무 스크린샷(`_shot-bridge-*`)은 바꾸기 전과 나란히 놓고 봄 — 비·걸음 자세만 다름.
+- 미확인: 실제 손맛(4레인 이동 거리·카메라 높이), 실기기 휴대폰에서 83px 카드 낱말 읽기.
+
 ## ★지금 상태 (2026-11-09, "지지직" 연출 + 카드 앞뒤 간격 + 4 임무 "?" 더 번지게 — 계획 `docs/plans/2026-11-09-glitch-stagger.md`)
 - **지지직**(요청서 `docs/feedback/2026-11-08-glitch-effect.md`, 연출만): `js/glitch.js`(DR.Glitch). 대상 = 흔한 카드만(가짜·"?"·드문·개인정보 제외), 개수 = round(대상 × `mission.glitchRate`) — tutorial 0·m1 0.05·m2 0.15·m3 0.2·m4 없음(파일 안 건드림 = 0). `Stream.build` 끝에서 코스 난수와 **따로 도는** seed 난수로 표시 필드 `item.glitch`(stripe·rgb·glyph)만 붙임 → 카드·벽·불꽃·uid 그대로(`glitch.test`). `cardsOf`·`privacy.test strip`은 glitch를 뺀다. 가방 카드엔 안 들어감(`take`가 안 옮김).
   - 화면: `run3d` 원래 그림 ↔ 효과 그림 2장(처음 켜질 때 만듦, glyph는 이름표 글자만 다시 그림)을 `config.glitch` 일정(0.5초마다 0.16초 = 1초 3번 이하)으로. 거리 `clearDist` = max(속도, 기준 속도) × (catchLead + 1.0초) 안에 한 번 들어오면 **계속 선명**(느려져도 다시 안 흔들림). 화면 카드(34m 안, `run-feedback`)도 같은 상태. 밝기는 그대로(줄 밀기·R/B 채널 어긋남·글자만). 움직임 줄이기 = 효과 없이 멀 때 테두리만 흐리게(3D frame 불투명도 0.45, DOM `.glitch-soft`), 안내도 없음. 첫 등장 안내 "데이터 세계가 흔들려. 가까이 가면 또렷해져!"(달리기마다 한 번, 다른 안내가 떠 있으면 끝난 뒤). 검수·보충·결과는 CardArt 그대로라 해당 없음.
@@ -179,8 +189,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (319)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (30개: bgm·boot·bridge·cardart·chapter·city·exam·fakes·fire·flow·**glitch**·hero·keys·lost·m1·m2·m3·m4·play·playtest·polish·portraits·privacy·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (326)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (31개: bgm·boot·bridge·cardart·chapter·city·exam·fakes·fire·flow·glitch·hero·keys·**lanes**·lost·m1·m2·m3·m4·play·playtest·polish·portraits·privacy·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
