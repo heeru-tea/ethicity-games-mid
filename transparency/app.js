@@ -10,27 +10,33 @@
  // 화면에만 쓰는 상태(저장하지 않음): 지금 펼친 자료, 눌러 본 사진 구역, 잘못 누른 곳에 대한 짧은 안내.
  let view=null,regions=new Set(),tapHint='',justJudged=null,resumed=!preview&&state.scene>0,lastFocus=null,skipFocusReturn=false;
  // autoKey = 근거 자료를 자동으로 맞춘 판단 문장(한 문장에 한 번만 — 그 뒤 직접 고른 자료는 건드리지 않는다), keepFinding = 마지막 자료를 찾은 직후 자료가 바뀌어도 방금 찾은 내용을 남긴다.
- let autoKey=null,keepFinding=null,scrollJudge=false;
+ // revealCue = 마지막 자료를 막 찾아 판단할 말이 처음 나온 순간(화면을 움직이지 않고 한 줄로만 알린다).
+ let autoKey=null,keepFinding=null,revealCue=false;
  const photo=new Image();photo.src=A.photo;photo.onload=paint;
  const modal=$('#modal');
  const STEP_LABELS={hook:'궁금한 것',check:'직접 확인',choose:'선택',result:'결과',follow:'후속 조사'};
  const FACE_NAMES=['토리','루루','담이','모아','몽이'];
+ // 대사 옆 작은 얼굴: 전신 그림(1024×1536)에서 얼굴 중심(가로·세로 비율). 그림이 없는 화자(마을 사람들·반 친구·앱 알림)는 이름만.
+ const FACE_POS={moa:[.54,.12],lulu:[.51,.23],luluPaper:[.46,.23],dami:[.51,.15],bami:[.59,.13],teacher:[.48,.12],clerk:[.52,.13],clerkOpen:[.55,.12]};
  const pct=(v,t)=>(v/t*100).toFixed(3)+'%';
  const rectStyle=([x,y,w,h])=>`left:${pct(x,1536)};top:${pct(y,1024)};width:${pct(w,1536)};height:${pct(h,1024)}`;
 
  function save(){if(!preview)try{localStorage.setItem(KEY,JSON.stringify(state));saveOK=true;}catch{saveOK=false;}
   $('#save-status').textContent=preview?'S01 미리보기 · 진행 저장 안 함':saveOK?'이 기기에 자동 저장 · '+nickname:'저장할 수 없어 이 창에서만 진행해요. 창을 닫으면 기록이 사라져요.';}
- function send(a){const before=state.scene;state=E.reduce(state,a);if(state.scene!==before)arrive();save();render(state.scene!==before);}
- function arrive(){view=null;regions=new Set();tapHint='';justJudged=null;resumed=false;autoKey=null;keepFinding=null;scrollJudge=false;}
+ function send(a){const before=state.scene,k=E.caseKey(before),was=k&&E.stepOf(before)==='check'&&E.checked(state,k);state=E.reduce(state,a);
+  if(state.scene!==before)arrive();else if(k&&E.stepOf(before)==='check'&&!was&&E.checked(state,k))revealCue=true;
+  save();render(state.scene!==before);}
+ function arrive(){view=null;regions=new Set();tapHint='';justJudged=null;resumed=false;autoKey=null;keepFinding=null;revealCue=false;}
  function btn(label,act,attrs='',cls=''){return `<button ${cls?`class="${cls}"`:''} data-act="${act}" ${attrs}>${label}</button>`;}
- function line([who,text],cls=''){return `<p class="line ${cls}"><span class="who">${esc(D.names[who])}</span> ${esc(text)}</p>`;}
+ function portrait(who){const p=FACE_POS[who];return p?`<span class="portrait" style="--fx:${p[0]};--fy:${p[1]}" aria-hidden="true"><img src="${A[who]}" alt=""></span>`:'';}
+ function line([who,text],cls=''){return `<p class="line ${cls}">${portrait(who)}<span class="who">${esc(D.names[who])}</span> ${esc(text)}</p>`;}
  function more(text){return text?`<details class="more"><summary>자세히 보기</summary><p>${esc(text)}</p></details>`:'';}
  function canvas(rect,label){return `<canvas class="photo-canvas" width="${rect[2]}" height="${rect[3]}" data-crop="${rect.join(',')}" role="img" aria-label="${esc(label)}"></canvas>`;}
  function paint(){if(!photo.complete||!photo.naturalWidth)return;document.querySelectorAll('canvas[data-crop]').forEach(c=>{const r=c.dataset.crop.split(',').map(Number),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(photo,...r,0,0,c.width,c.height);});}
 
  // 장면 그림. 결과가 그림에 바로 보이게 한다(게시판 사진·입장 표시·점원 표정).
  function stage(bg,cast,{photoRect,status,boxes}={}){
-  return `<div class="stage"><img class="backdrop" src="${A.backgrounds[bg]}" alt="${D.bgNames[bg]}">${photoRect?`<div class="stage-photo">${canvas(photoRect,'게시판에 올린 사진')}</div>`:''}${boxes?`<div class="stage-boxes" aria-hidden="true">${[0,1,2].map(()=>`<span class="prop ${boxes}"></span>`).join('')}</div>`:''}${status?`<p class="stage-status">${esc(status)}</p>`:''}<div class="cast">${cast.map(c=>`<img class="actor ${c}" src="${A[c]}" alt="${esc(D.names[c])}">`).join('')}</div></div>`;
+  return `<div class="stage"><img class="backdrop" src="${A.backgrounds[bg]}" alt="${D.bgNames[bg]}">${photoRect?`<div class="stage-photo">${canvas(photoRect,'게시판에 올린 사진')}</div>`:''}${boxes?`<div class="stage-boxes" aria-hidden="true">${[0,1,2].map(()=>`<span class="prop ${boxes}"></span>`).join('')}</div>`:''}${status?`<p class="stage-status">${esc(status)}</p>`:''}<div class="cast">${cast.map(c=>`<img class="actor ${c}" src="${A[c]}" alt="${esc(D.names[c])}">`).join('')}</div><div class="name-tags" aria-hidden="true">${cast.map((c,i)=>`<span class="name-tag pos-${i} ${c}"><span>${esc(D.names[c])}</span></span>`).join('')}</div></div>`;
  }
  function caseStage(k,{result=false}={}){const c=D.cases[k],o=E.outcome(state,k),opt=c.choose.options.find(x=>x.id===o.id);
   let cast=c.cast.slice(),status='';
@@ -54,6 +60,8 @@
   if(id==='face-photo')return `<div class="compare-labels" aria-hidden="true"><span>등록된 사진</span><span>오늘 찍힌 사진</span></div><img class="evidence-photo" src="${A.faces}" alt="왼쪽은 등록된 사진, 오른쪽은 오늘 찍힌 사진. 둘 다 흐리고 문틀과 반사에 일부 가려진 가상의 고양이 얼굴이다.">`;
   return '';
  }
+ // 왼쪽 그림 칸이 지금 ‘자료’라는 것을 보이게 한다(판단 도장 ‘자료로 확인돼’가 가리키는 곳).
+ function evidenceHead(name){return `<p class="evidence-head"><span>자료</span> · ${esc(name)}</p>`;}
  function defaultView(k){if(k==='photo')return `<figure class="crop-figure">${canvas(E.AUTO,'자동으로 자른 사진. 담이 얼굴이 없다.')}<figcaption>자동으로 자른 사진</figcaption></figure>`;if(k==='writing')return report();return caseStage(k);}
 
  function nav(prev,next){return `<div class="step-nav">${prev?btn('이전','back'):'<span></span>'}${next||''}</div>`;}
@@ -66,10 +74,10 @@
    b=D.intro.lines.map(l=>line(l)).join('')+`<p>${esc(D.intro.plan)}</p>`+nav(false,btn('첫 사건 시작하기','next','','primary'))+`<p class="hint">${esc(D.intro.note)}</p>`;}
   if(step==='hook'){h=head(meta,c.title);v=caseStage(k);
    b=c.hook.map(l=>line(l)).join('')+(k==='photo'?defaultView('photo'):k==='writing'?report():'')+`<p class="question-label">궁금한 것</p><p class="question">${esc(c.question)}</p>`+nav(true,btn('직접 확인하기','next','','primary'));}
-  if(step==='check'){h=head(meta,c.question);autoEvidence(k);const item=c.checks.find(x=>x.id===view),judging=E.checked(state,k)&&judgeIndex(k)>=0;v=item?itemView(k,item.id):defaultView(k);
+  if(step==='check'){h=head(meta,c.question);autoEvidence(k);const item=c.checks.find(x=>x.id===view),judging=E.checked(state,k)&&judgeIndex(k)>=0;v=item?evidenceHead(item.name)+itemView(k,item.id):defaultView(k);
    b=`<div class="items" role="group" aria-label="확인할 자료">${c.checks.map(x=>btn(esc(x.label)+(state.evidence.includes(x.id)?' <span class="seen">· 확인함</span>':''),'item',`data-id="${x.id}" aria-pressed="${view===x.id}"`)).join('')}</div>`;
    if(!item)b+=`<p class="task">자료를 눌러 직접 확인해 봐.</p>`;
-   else{if(!state.evidence.includes(item.id))b+=`<p class="task">${esc(item.task)}</p>`;if(tapHint)b+=`<p class="tap-hint" role="status">${esc(tapHint)}</p>`;const said=keepFinding?c.checks.find(x=>x.id===keepFinding):item;if(state.evidence.includes(said.id))b+=`<div class="finding${judging?' quiet':''}" role="status">${said.finding.map(l=>line(l)).join('')}${more(said.more)}</div>`;}
+   else{if(revealCue&&judging)b+=`<p class="cue" role="status">아래에 판단할 말이 나왔어.</p>`;if(!state.evidence.includes(item.id))b+=`<p class="task">${esc(item.task)}</p>`;if(tapHint)b+=`<p class="tap-hint" role="status">${esc(tapHint)}</p>`;const said=keepFinding?c.checks.find(x=>x.id===keepFinding):item;if(state.evidence.includes(said.id))b+=`<div class="finding${judging?' quiet':''}" role="status">${said.finding.map(l=>line(l)).join('')}${more(said.more)}</div>`;}
    if(E.checked(state,k))b+=judgeBlock(k);
    const left=c.checks.filter(x=>!state.evidence.includes(x.id)).map(x=>x.name);
    b+=nav(true,btn('어떻게 할지 고르기','next',E.canAdvance(state)?'':'disabled','primary'))+(E.canAdvance(state)?'':`<p class="hint">${left.length?'남은 자료: '+esc(left.join(', ')):`말 3개를 모두 판단하면 다음으로 갈 수 있어. (지금 ${state.judgments[k].filter(x=>x&&x!=='legacy').length}/3)`}</p>`);}
@@ -78,7 +86,7 @@
    b+=`<p class="hint">${cur?'다시 고를 수 있어. 처음 고른 것도 수첩에 남아.':'고르면 바로 결과를 볼 수 있어.'}</p>`+nav(true,cur?btn('결과 다시 보기','next','','primary'):'');}
   if(step==='result'){const o=c.choose.options.find(x=>x.id===state.cases[k].final);h=head(meta,o.title);v=caseStage(k,{result:true});
    b=`<p class="status">${esc(o.status)}</p>`+o.reaction.map(l=>line(l)).join('')+line(['moa',o.feedback],'moa')+more([o.more,c.more].filter(Boolean).join(' '))+nav(false,`<span class="nav-pair">${btn('다른 선택 해 보기','rechoose')}${btn('더 조사하기','next','','primary')}</span>`)+`<p class="hint">결과는 수첩에 자동으로 적혔어.</p>`;}
-  if(step==='follow'){const f=c.follow;h=head(meta,f.question)+f.lines.map(l=>line(l)).join('')+(E.followReady(state,k)?'':`<p class="task">${esc(f.task)}</p>`);v=followView(k);
+  if(step==='follow'){const f=c.follow;h=head(meta,f.question)+f.lines.map(l=>line(l)).join('')+(E.followReady(state,k)?'':`<p class="task">${esc(f.task)}</p>`);v=evidenceHead(f.src)+followView(k);
    b=followBody(k)+nav(true,btn(k==='face'?'마지막 장면으로':'다음 사건','next',E.canAdvance(state)?'':'disabled','primary'));}
   if(step==='end'){const e=D.ending;h=head(meta,e.title);v=stage(0,['moa','lulu','dami'],{boxes:'window'});
    b=e.lines.map(l=>line(l)).join('')+`<p class="question">${esc(e.question)}</p><div class="options">${e.asks.map(([id,t])=>btn(esc(t),'ask',`data-id="${id}" aria-pressed="${state.question===id&&view===null||view===id}"`,'option')).join('')}</div>`;
@@ -91,7 +99,6 @@
   paint();
   if(moved){$('h1').focus({preventScroll:true});window.scrollTo(0,0);}
   else if(focus){const t=$('#app').querySelector(focus);(t&&!t.disabled?t:$('#work')).focus({preventScroll:true});}
-  if(scrollJudge){scrollJudge=false;if(!moved)$('.judge')?.scrollIntoView({block:matchMedia('(max-width:860px)').matches?'start':'nearest'});}
  }
  // 판단 뒤: 정답 칸에 ‘✓ 정답’, 고른 오답에 ‘내 선택’(점선). 색만으로 구분하지 않는다
  function stampButtons(act,picked,answer){return `<div class="stamps" role="group" aria-label="판단">${Object.entries(D.stamps).map(([id,label])=>{const right=!!picked&&id===answer,mine=!!picked&&id===picked&&!right;
@@ -100,9 +107,9 @@
  function verdictBox(j,picked,answer){const wrong=picked!==answer;return `<div class="finding${wrong?' again':''}" role="status">${wrong?'<p class="again-head">다시 보자</p>':''}<p>${esc(verdict(j,picked,answer))}</p></div>`;}
  const judgeIndex=k=>justJudged!==null?justJudged:E.currentJudgment(state,k);
  // 판단 문장이 바뀌면 왼쪽 자료도 그 문장의 근거로. 문장마다 한 번만 맞추고, 그 뒤 직접 고른 자료는 그대로 둔다
- function autoEvidence(k){if(!E.checked(state,k))return;const idx=judgeIndex(k),key=idx<0?null:k+idx;if(!key||key===autoKey)return;const first=autoKey===null;autoKey=key;scrollJudge=true;tapHint='';const src=D.cases[k].judges[idx].src;if(!src.includes(view)){if(first&&view)keepFinding=view;view=src[0];}}
+ function autoEvidence(k){if(!E.checked(state,k))return;const idx=judgeIndex(k),key=idx<0?null:k+idx;if(!key||key===autoKey)return;const first=autoKey===null;autoKey=key;tapHint='';const src=D.cases[k].judges[idx].src;if(!src.includes(view)){if(first&&view)keepFinding=view;view=src[0];}}
  function sourceTags(k,src){const c=D.cases[k];return `<p class="judge-src">볼 자료: ${src.map(id=>btn(esc(c.checks.find(x=>x.id===id).name),'source',`data-id="${id}" aria-pressed="${view===id}"`,'source-tag')).join(' ')}</p>`;}
- function judgeCard(who,text,num,extra){return `<h2 class="question-label judge-head">이 말은 맞을까?${num?' '+num:''}</h2><blockquote class="judge-say"><p>“${esc(text)}”</p><cite>- ${esc(D.names[who])}</cite></blockquote>${extra}`;}
+ function judgeCard(who,text,num,extra){return `<h2 class="question-label judge-head">이 말은 맞을까?${num?' '+num:''}</h2><blockquote class="judge-say"><p>“${esc(text)}”</p><cite>${portrait(who)}${esc(D.names[who])}</cite></blockquote>${extra}`;}
  function judgeBlock(k){const c=D.cases[k],js=state.judgments[k],idx=judgeIndex(k);
   if(idx<0)return `<section class="judge"><p class="question-label">판단 3개를 마쳤어</p><p>${esc(c.after)}</p></section>`;
   const j=c.judges[idx],picked=js[idx]&&js[idx]!=='legacy'?js[idx]:null,answer=E.answers[k][idx];
@@ -158,7 +165,7 @@
  function reset(){state=E.initial();arrive();skipFocusReturn=true;save();render(true);}
 
  document.addEventListener('click',e=>{
-  const b=e.target.closest('button[data-act]');if(!b||b.disabled)return;const act=b.dataset.act,k=E.caseKey(state.scene);
+  const b=e.target.closest('button[data-act]');if(!b||b.disabled)return;const act=b.dataset.act,k=E.caseKey(state.scene);revealCue=false;
   if(act==='close'){close();return;}
   if(act==='next'){send({type:'next'});return;}
   if(act==='back'){send({type:'revisit',scene:state.scene-1});return;}
