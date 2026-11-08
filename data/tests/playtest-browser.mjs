@@ -19,7 +19,7 @@ async function fillAndInspect(page, fill) {
 }
 async function submit(page) { await page.locator('#btn-submit').click(); await page.locator('#btn-confirm').click(); }
 // 컨베이어(1·2 임무)·길 안내(3 임무) 시연을 건너뛰고 장면 결과를 모은다 → 보충 준비/다음 화면 앞에서 멈춤
-async function results(page) {
+async function results(page, shot) {
   const out = [];
   for (let n = 0; n < 14; n++) {
     if (await page.locator('#screen-conveyor').isVisible()) { await page.locator('#btn-cv-skip').click(); await page.locator('#btn-cv-next').click(); continue; }
@@ -31,6 +31,7 @@ async function results(page) {
     const s = page.locator('#screen-result .result-scene');
     out.push({ scene: await s.getAttribute('data-scene'), outcome: await s.getAttribute('data-outcome'),
       lead: await s.locator('.lead').innerText(), missing: (await s.locator('.missing').allInnerTexts()).join(' / ') });
+    if (shot && shot.scene === out[out.length - 1].scene) await page.screenshot({ path: shotPath(shot.name), fullPage: true });
     await page.locator('#btn-next').click();
     await page.waitForTimeout(50);
   }
@@ -67,13 +68,12 @@ if (want(2)) {
       await toRun(page);
       await fillAndInspect(page, { ...M2_ALL, [short]: 1 });
       await submit(page);
-      const rs = await results(page);
+      const rs = await results(page, short === 'pet_crushed' ? { scene: 'S2', name: 'playtest-result-m2-S2' } : null);
       const r = rs.find((x) => x.scene === scene);
       assert.equal(r.outcome, 'inconvenience', JSON.stringify(rs));
       assert.match(r.lead, good, r.lead);
       assert.doesNotMatch(r.lead + ' ' + r.missing, bad, r.lead + ' / ' + r.missing);
       assert.ok(rs.filter((x) => x.scene !== scene).every((x) => x.outcome === 'pass'), JSON.stringify(rs));
-      if (short === 'pet_crushed') await page.screenshot({ path: shotPath('playtest-result-m2-S2') });
       assert.deepEqual(errors, []);
     } finally { await browser.close(); }
   }
