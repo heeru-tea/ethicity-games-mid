@@ -133,7 +133,7 @@
  ],
  "checks": [
   {
-   "phoneNotice": "before posting / after: photo 844/1283px, writing 844/1345px, face 875/1499px, library 844/1283px, recommend 864/1348px (viewport 844)"
+   "phoneNotice": "before posting / after: photo 844/1283px, writing 844/1345px, face 875/1522px, library 844/1307px, recommend 864/1348px (viewport 844)"
   },
   {
    "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 5)"
@@ -172,7 +172,7 @@
    "reportEdit": "desktop1280: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-08 restored on afterprint"
   },
   {
-   "noticeLayout": "phone: page 1556px / viewport 844px, first card top 388, post button bottom 1084, next bottom 1252 (feedback shown)"
+   "noticeLayout": "phone: page 1579px / viewport 844px, first card top 388, post button bottom 1107, next bottom 1276 (feedback shown)"
   },
   {
    "noticeLayoutStart": "phone: before posting page 932px / viewport 844px, post button bottom 761"
@@ -296,7 +296,7 @@
   {
    "viewport": "1366x768",
    "screen": "photo-notice-start",
-   "chars": 244,
+   "chars": 248,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 774,
@@ -307,7 +307,7 @@
   {
    "viewport": "1366x768",
    "screen": "photo-notice-done",
-   "chars": 471,
+   "chars": 480,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 1025,
@@ -318,7 +318,7 @@
   {
    "viewport": "1366x768",
    "screen": "photo-reflect",
-   "chars": 315,
+   "chars": 319,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 858,
@@ -417,7 +417,7 @@
   {
    "viewport": "1366x768",
    "screen": "writing-notice-start",
-   "chars": 262,
+   "chars": 266,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 768,
@@ -428,7 +428,7 @@
   {
    "viewport": "1366x768",
    "screen": "writing-notice-done",
-   "chars": 489,
+   "chars": 499,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 988,
@@ -439,7 +439,7 @@
   {
    "viewport": "1366x768",
    "screen": "writing-reflect",
-   "chars": 338,
+   "chars": 346,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 885,
@@ -450,7 +450,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-hook",
-   "chars": 107,
+   "chars": 112,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -538,7 +538,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-notice-start",
-   "chars": 287,
+   "chars": 291,
    "buttons": 7,
    "overflow": false,
    "pageHeight": 853,
@@ -549,10 +549,10 @@
   {
    "viewport": "1366x768",
    "screen": "face-notice-done",
-   "chars": 559,
+   "chars": 586,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 1135,
+   "pageHeight": 1158,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -560,7 +560,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-reflect",
-   "chars": 324,
+   "chars": 328,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 858,
@@ -615,7 +615,7 @@
   {
    "viewport": "1366x768",
    "screen": "library-choose",
-   "chars": 96,
+   "chars": 99,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 768,
@@ -626,7 +626,7 @@
   {
    "viewport": "1366x768",
    "screen": "library-result",
-   "chars": 162,
+   "chars": 163,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -659,7 +659,7 @@
   {
    "viewport": "1366x768",
    "screen": "library-notice-start",
-   "chars": 278,
+   "chars": 283,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 774,
@@ -670,10 +670,10 @@
   {
    "viewport": "1366x768",
    "screen": "library-notice-done",
-   "chars": 504,
+   "chars": 529,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1025,
+   "pageHeight": 1048,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -681,7 +681,7 @@
   {
    "viewport": "1366x768",
    "screen": "library-reflect",
-   "chars": 331,
+   "chars": 341,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 858,
@@ -692,7 +692,7 @@
   {
    "viewport": "1366x768",
    "screen": "recommend-hook",
-   "chars": 218,
+   "chars": 221,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 927,
@@ -780,7 +780,7 @@
   {
    "viewport": "1366x768",
    "screen": "recommend-notice-start",
-   "chars": 290,
+   "chars": 298,
    "buttons": 7,
    "overflow": false,
    "pageHeight": 821,
@@ -791,7 +791,7 @@
   {
    "viewport": "1366x768",
    "screen": "recommend-notice-done",
-   "chars": 397,
+   "chars": 408,
    "buttons": 9,
    "overflow": false,
    "pageHeight": 1049,
@@ -802,7 +802,7 @@
   {
    "viewport": "1366x768",
    "screen": "recommend-reflect",
-   "chars": 317,
+   "chars": 321,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 858,
@@ -813,7 +813,7 @@
   {
    "viewport": "1366x768",
    "screen": "end",
-   "chars": 196,
+   "chars": 200,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 900,
@@ -835,7 +835,7 @@
   {
    "viewport": "1366x768",
    "screen": "report",
-   "chars": 2521,
+   "chars": 2533,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 6502,
@@ -945,7 +945,7 @@
   {
    "viewport": "390x844",
    "screen": "photo-notice-start",
-   "chars": 220,
+   "chars": 223,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 844,
@@ -956,7 +956,7 @@
   {
    "viewport": "390x844",
    "screen": "photo-notice-done",
-   "chars": 465,
+   "chars": 474,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 1283,
@@ -967,7 +967,7 @@
   {
    "viewport": "390x844",
    "screen": "photo-reflect",
-   "chars": 359,
+   "chars": 367,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1427,
@@ -1066,7 +1066,7 @@
   {
    "viewport": "390x844",
    "screen": "writing-notice-start",
-   "chars": 230,
+   "chars": 233,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 844,
@@ -1077,7 +1077,7 @@
   {
    "viewport": "390x844",
    "screen": "writing-notice-done",
-   "chars": 494,
+   "chars": 501,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 1345,
@@ -1088,7 +1088,7 @@
   {
    "viewport": "390x844",
    "screen": "writing-reflect",
-   "chars": 362,
+   "chars": 370,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1399,
@@ -1099,7 +1099,7 @@
   {
    "viewport": "390x844",
    "screen": "face-hook",
-   "chars": 107,
+   "chars": 112,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 844,
@@ -1187,7 +1187,7 @@
   {
    "viewport": "390x844",
    "screen": "face-notice-start",
-   "chars": 258,
+   "chars": 261,
    "buttons": 7,
    "overflow": false,
    "pageHeight": 875,
@@ -1198,10 +1198,10 @@
   {
    "viewport": "390x844",
    "screen": "face-notice-done",
-   "chars": 547,
+   "chars": 574,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 1499,
+   "pageHeight": 1522,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1209,7 +1209,7 @@
   {
    "viewport": "390x844",
    "screen": "face-reflect",
-   "chars": 360,
+   "chars": 368,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1371,
@@ -1264,7 +1264,7 @@
   {
    "viewport": "390x844",
    "screen": "library-choose",
-   "chars": 96,
+   "chars": 99,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 844,
@@ -1308,7 +1308,7 @@
   {
    "viewport": "390x844",
    "screen": "library-notice-start",
-   "chars": 223,
+   "chars": 226,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 844,
@@ -1319,10 +1319,10 @@
   {
    "viewport": "390x844",
    "screen": "library-notice-done",
-   "chars": 468,
+   "chars": 492,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1283,
+   "pageHeight": 1307,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1330,7 +1330,7 @@
   {
    "viewport": "390x844",
    "screen": "library-reflect",
-   "chars": 361,
+   "chars": 369,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1371,
@@ -1341,7 +1341,7 @@
   {
    "viewport": "390x844",
    "screen": "recommend-hook",
-   "chars": 218,
+   "chars": 221,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 1216,
@@ -1429,7 +1429,7 @@
   {
    "viewport": "390x844",
    "screen": "recommend-notice-start",
-   "chars": 253,
+   "chars": 260,
    "buttons": 7,
    "overflow": false,
    "pageHeight": 864,
@@ -1440,7 +1440,7 @@
   {
    "viewport": "390x844",
    "screen": "recommend-notice-done",
-   "chars": 380,
+   "chars": 391,
    "buttons": 9,
    "overflow": false,
    "pageHeight": 1348,
@@ -1451,7 +1451,7 @@
   {
    "viewport": "390x844",
    "screen": "recommend-reflect",
-   "chars": 349,
+   "chars": 357,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1343,
@@ -1462,7 +1462,7 @@
   {
    "viewport": "390x844",
    "screen": "end",
-   "chars": 196,
+   "chars": 200,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 1188,
@@ -1473,7 +1473,7 @@
   {
    "viewport": "390x844",
    "screen": "end-done",
-   "chars": 196,
+   "chars": 200,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 1188,
@@ -1484,7 +1484,7 @@
   {
    "viewport": "390x844",
    "screen": "report",
-   "chars": 2586,
+   "chars": 2592,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 8238,
@@ -1539,7 +1539,7 @@
   {
    "viewport": "1280x800",
    "screen": "library-choose",
-   "chars": 96,
+   "chars": 99,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 800,
@@ -1583,7 +1583,7 @@
   {
    "viewport": "1280x800",
    "screen": "library-notice-start",
-   "chars": 255,
+   "chars": 259,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 800,
@@ -1594,10 +1594,10 @@
   {
    "viewport": "1280x800",
    "screen": "library-notice-done",
-   "chars": 481,
+   "chars": 505,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1025,
+   "pageHeight": 1048,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1605,7 +1605,7 @@
   {
    "viewport": "1280x800",
    "screen": "library-reflect",
-   "chars": 325,
+   "chars": 333,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 885,
@@ -1617,8 +1617,8 @@
  "summary": {
   "after1366": {
    "screens": 59,
-   "avgChars": 284,
-   "maxChars": 2521,
+   "avgChars": 287,
+   "maxChars": 2533,
    "maxButtons": 13
   },
   "originalBefore1366": {
@@ -1632,7 +1632,7 @@
   "desktopPath": {
    "judgments": 20,
    "clicks": 133,
-   "readChars": 15034
+   "readChars": 15195
   }
  }
 }
