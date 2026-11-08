@@ -715,12 +715,13 @@
     S.heroId = DR.Save ? DR.Save.hero() : 'onyu';
     S.view = buildScene();
     S.view.gate = makeGate();
-    // 빛의 다리(연습·1·3 임무): 바닥·격자·상자 빌딩 대신 다리 + 캔버스 뒤 하늘·도시 층(js/run-world.js). 2·4 임무는 없음
+    // 빛의 다리(연습·1·3 임무, world 'bridge'): 바닥·격자·상자 빌딩 대신 다리 + 캔버스 뒤 하늘·도시 층(js/run-world.js)
+    // 실내 무대(2 임무 'sorting'·4 임무 'grading', 2차): 같은 층 + 실내 벽 그림(창밖 낮 도시) + 벨트 바닥
     if (S.mission.world && root.DR.RunWorld) {
-      S.view.world = root.DR.RunWorld.create(S.view, container, { time: S.mission.worldTime || 'night', low: low, reduced: reducedMotion(), missionId: S.mission.id, laneWidth: cfg().laneWidth, lanes: lanes(), roadLen: ROAD_LEN });
+      S.view.world = root.DR.RunWorld.create(S.view, container, { world: S.mission.world, time: S.mission.worldTime || 'night', low: low, reduced: reducedMotion(), missionId: S.mission.id, laneWidth: cfg().laneWidth, lanes: lanes(), roadLen: ROAD_LEN });
       S.view.world.look(null);
     }
-    if (S.course.zones) S.scenery = root.DR.RunScenery.create(S.view, S.mission);
+    if (S.course.zones) S.scenery = root.DR.RunScenery.create(S.view, S.mission, { course: S.course, lanes: lanes(), roadW: roadW(), low: low, reduced: reducedMotion() });
     S.x = laneX(S.lane); S.camX = S.x * camRig(false).follow; // 출발 자리(3레인 = 가운데 0, 4레인은 가운데 왼쪽 레인)
     S.feedback = root.DR.RunFeedback.create(container, S.mission, S.course);
     // 조작을 막는 건 일시정지 메뉴·도움말 같은 열린 다이얼로그다. S.paused(setPaused)는 시계만 멈춘다 —

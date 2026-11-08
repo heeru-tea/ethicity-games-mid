@@ -25,7 +25,7 @@
       { id: 'S3', title: '다른 표현', short: '다른 표현' },
       { id: 'S4', title: '선배의 옛 답안', short: '옛 답안' }
     ],
-    fakeLate: 'zone', scenery: 'exam', lanes: 4, // 레인 4개 — 마지막 임무만(2026-11-09 사용자 결정, DR.Stream.laneCount)
+    fakeLate: 'zone', scenery: 'exam', world: 'grading', lanes: 4, // 무대 2차: 채점 센터 → S4 교무실 // 레인 4개 — 마지막 임무만(2026-11-09 사용자 결정, DR.Stream.laneCount)
     labelStyle: 'word', showdownScene: 'S4',
     fakeHint: '붙은 이름표가 손글씨 낱말과 맞는지 봐!',
     labels: [
