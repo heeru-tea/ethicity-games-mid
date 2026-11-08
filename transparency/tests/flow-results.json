@@ -4,7 +4,7 @@
    "tag": "desktop",
    "viewport": "1366x768",
    "judgments": 12,
-   "clicks": 79,
+   "clicks": 80,
    "reportRight": 12,
    "reportAgain": 0,
    "reportNotWritten": 4,
@@ -47,7 +47,7 @@
    "tag": "phone",
    "viewport": "390x844",
    "judgments": 12,
-   "clicks": 93,
+   "clicks": 94,
    "reportRight": 4,
    "reportAgain": 8,
    "reportNotWritten": 7,
@@ -518,8 +518,8 @@
   {
    "viewport": "1366x768",
    "screen": "end",
-   "chars": 116,
-   "buttons": 4,
+   "chars": 130,
+   "buttons": 5,
    "overflow": false,
    "pageHeight": 768,
    "questionInView": true,
@@ -529,10 +529,10 @@
   {
    "viewport": "1366x768",
    "screen": "end-done",
-   "chars": 295,
-   "buttons": 9,
+   "chars": 309,
+   "buttons": 10,
    "overflow": false,
-   "pageHeight": 1251,
+   "pageHeight": 1309,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -540,7 +540,7 @@
   {
    "viewport": "1366x768",
    "screen": "report",
-   "chars": 1554,
+   "chars": 1557,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 4231,
@@ -925,10 +925,10 @@
   {
    "viewport": "390x844",
    "screen": "end",
-   "chars": 116,
-   "buttons": 4,
+   "chars": 130,
+   "buttons": 5,
    "overflow": false,
-   "pageHeight": 917,
+   "pageHeight": 974,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -936,10 +936,10 @@
   {
    "viewport": "390x844",
    "screen": "end-done",
-   "chars": 311,
-   "buttons": 9,
+   "chars": 325,
+   "buttons": 10,
    "overflow": false,
-   "pageHeight": 1567,
+   "pageHeight": 1625,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -947,7 +947,7 @@
   {
    "viewport": "390x844",
    "screen": "report",
-   "chars": 1626,
+   "chars": 1629,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 5386,
@@ -959,8 +959,8 @@
  "summary": {
   "after1366": {
    "screens": 37,
-   "avgChars": 280,
-   "maxChars": 1554,
+   "avgChars": 281,
+   "maxChars": 1557,
    "maxButtons": 13
   },
   "originalBefore1366": {
@@ -973,8 +973,8 @@
   "phoneMaxPageHeight": 5386,
   "desktopPath": {
    "judgments": 12,
-   "clicks": 79,
-   "readChars": 9339
+   "clicks": 80,
+   "readChars": 9356
   }
  }
 }

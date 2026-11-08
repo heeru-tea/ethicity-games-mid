@@ -143,7 +143,7 @@ async function play(p,{tag,viewport,pick,judge,wrongFirst,shots,write={},note:fi
   await click(p,'.step-nav [data-act="next"]');
  }
  assert.equal((await state(p)).scene,E.END);await measure(p,'end',viewport);
- await click(p,'[data-act="ask"][data-id="criteria"]');assert.match(await p.locator('.ending-quote').innerText(),/질문이었다/);
+ assert.equal(await p.locator('[data-act="ask"]').count(),4);await click(p,'[data-act="ask"][data-id="notice"]');assert.match(await p.locator('.body .finding').innerText(),/추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요./);assert.match(await p.locator('.body .finding').innerText(),/네 질문 모두/);await click(p,'[data-act="ask"][data-id="criteria"]');assert.match(await p.locator('.ending-quote').innerText(),/질문이었다/);
  assert.match(await p.locator('label[for="final-note"]').innerText(),/앞으로 AI 서비스를 쓸 때 나는 무엇을 먼저 물어볼까\?/);if(finalNote){await p.locator('#final-note').fill(finalNote);assert.equal((await state(p)).finalNote,finalNote);}
  await measure(p,'end-done',viewport);if(shots.includes('end'))await shot(p,`${tag}-end`,viewport===PHONE);
  await click(p,'.menu [data-act="notebook"]');const note=await p.locator('#modal-body').innerText();

@@ -23,7 +23,7 @@
  const answers={photo:['confirmed','different','unknown'],writing:['unknown','confirmed','different'],face:['different','confirmed','unknown']};
  const followAnswers={photo:'different',writing:'confirmed',face:'unknown'};
  const followMarks={photo:{ids:['p1','p2','p3','p4','p5','p6'],values:['shown','cut']},writing:{ids:['run'],values:['done']},face:{ids:['r1','r2','r3','r4'],values:['open']}};
- const questions=['input','criteria','unknown'];
+ const questions=['input','criteria','unknown','notice'];
  // 미리 알리기 카드 종류: must(꼭 필요) · nice(있으면 좋음) · conflict(넣으면 다른 원칙과 부딪침) · promise(지킬 수 없는 약속). 문장과 화면 순서는 story.js.
  const noticeCards={
   photo:{must:['photo-auto','photo-choose'],nice:['photo-center'],conflict:['photo-formula'],promise:['photo-best']},

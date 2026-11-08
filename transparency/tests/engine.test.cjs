@@ -43,6 +43,13 @@ test('notice copy: story cards match engine kinds, conflict cards explain the cl
   const all=[n.title,n.paper,...n.lines.map(l=>l[1]),...n.cards.flatMap(c=>[c.text,c.clash||''])].join(' ');assert.doesNotMatch(all,DASH_EMOJI,k+' no em dash or emoji');}
  const g=D.notice;assert.doesNotMatch(JSON.stringify(g),DASH_EMOJI);for(const kind of ['must','nice','conflict','promise'])assert.ok(g.kinds[kind]&&g.fb[kind],kind);
 });
+test('ending: a fourth question asks what should have been told before use',()=>{
+ assert.deepEqual(E.questions,['input','criteria','unknown','notice']);assert.deepEqual(D.ending.asks.map(a=>a[0]),E.questions);
+ const a=D.ending.asks.find(x=>x[0]==='notice');assert.equal(a[1],'쓰기 전에 무엇을 알려 줬어야 해?');
+ assert.equal(a[2],'추천에 관심사를 쓴다는 건 처음에 알렸어요. 추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요.');
+ assert.doesNotMatch(D.ending.afterAsk,/세 질문/,'afterAsk must fit four questions');
+ let s=at(E.END);for(const k of E.CASES)s.cases[k]={first:E.choices[k][0],final:E.choices[k][0]};s=E.reduce(s,{type:'ask',id:'notice'});assert.equal(s.question,'notice');
+});
 test('notice verdict: all must in and no conflict or promise = ok; nice does not change the verdict',()=>{
  for(const k of E.CASES){const n=notice(k);
   assert.deepEqual(E.noticeCheck(k,n.must),{ok:true,missing:[],conflicts:[],promises:[],extras:[]},k);

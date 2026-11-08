@@ -7,7 +7,7 @@ function play(pick,judge){let s=E.initial(),count=0;
   if(step==='notice'){for(const id of E.noticeCards[k].must)s=E.reduce(s,{type:'notice-pick',id});if(k==='face')s=E.reduce(s,{type:'notice-pick',id:E.noticeCards[k].conflict[0]});s=E.reduce(s,{type:'notice-post'});}
   if(step==='follow'){const m=E.followMarks[k];m.ids.forEach((id,i)=>{s=E.reduce(s,{type:'mark',id,value:k==='photo'?E.truth[i]:m.values[0]});});s=E.reduce(s,{type:'follow-judge',stamp:judge(k,'follow')});count++;}
   assert.equal(E.canAdvance(s),true,'scene '+n);s=E.reduce(s,{type:'next'});}
- s=E.reduce(s,{type:'ask',id:'unknown'});s=E.reduce(s,{type:'note',text:'무엇을 기준으로'});s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.REPORT);
+ s=E.reduce(s,{type:'ask',id:'notice'});assert.equal(s.question,'notice');s=E.reduce(s,{type:'note',text:'무엇을 기준으로'});s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.REPORT);
  s=E.reduce(s,{type:'reporter',field:'name',text:'하늘'});return {s,count};}
 const right=(k,i)=>i==='follow'?E.followAnswers[k]:E.answers[k][i];
 test('all 18 choice combinations reach the ending with 12 judgments and survive reload',()=>{let n=0;
