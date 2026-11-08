@@ -1,5 +1,12 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-08, 도시 복구 그림 6장 연결 + "이어지는" 연출 — 교사 피드백 feedback2)
+- 그림 `assets/city/city-0..5.webp`(Codex, 1600×600 = 8:3, 구역 5개 × 20%, city-N = 왼쪽 N칸만 색). 받은 무손실 webp 5.0MB → sharp q90·smartSubsample 1.2MB(원본은 `art-source/city-lossless/`, gitignore). 그림 속 데이터 케이블 = 높이 **94%**(재 봄 — 지시서는 "약 88%") → `config.city.cableY`.
+- 틀: 넓은 화면 8:3·`min(100%, 56rem)`(양옆 안 잘림), ≤640px = 4:3 + cover, object-position x = 새 구역이 틀 가운데 오게(지시서 식 `(to-0.5)*20%`를 그대로 쓰면 가운데가 아니라서 cover 계산으로 — 양 끝 구역은 벽에 붙음). 두 장 같은 자리. 자리 계산 = `js/city-look.js`(DR.CityLook, 순수) → CSS 변수 넓은/좁은 두 벌.
+- 연출(`ui-city.js`, `.city-page[data-phase]` = wait → line → reveal → flash → text → ready, 시간 `config.city`): 케이블 빛(#7FF9FF 4px 글로우, from 구역 끝 → to 구역 중심) → city-to 겹 clip-path로 새 칸만 아래→위 → 새 칸 brightness 1.25 반짝 → 문구 → 0.8초 뒤 [계속](그 전엔 visibility:hidden). to = 5는 케이블 전체 + 도시 전체 반짝, m4의 2 → 5 같은 건너뜀은 3~5칸이 함께 열림. Space·Enter·클릭 = 바로 ready(`.city-instant`, 계속은 안 눌림 — 버튼은 숨어 있었고 포커스 안 줌, 끝난 뒤 키는 아무것도 안 함). 움직임 줄이기 = 처음부터 ready. 그림 두 장이 `wait`(1.5초) 안에 안 오거나 오류 = 점 5칸 + 문구 + [계속](대체 화면 그대로). 그림이 보이면 큰 점 5칸은 숨김.
+- 테스트: 단위 `city-look.test`(6) · 브라우저 `city-browser`(1280·375 × 0→1·1→2·2→3·3→4·4→5·2→5 단계 순서·시간·자리, 건너뛰기 3종, 움직임 줄이기, `DR.UI.city.path`를 없는 이름으로 → 대체 화면). 공용 `browser.mjs`는 이제 도시 그림이 빠져도 오류. 스크린샷 `_shot-city-art-*`.
+- 미확인: 실제 눈으로 본 연출 속도감·반짝 세기, 실기기(휴대폰) 성능.
+
 ## ★지금 상태 (2026-11-08, 「목적에 맞는 활용」 — 개인정보 카드 + 챕터 끝 생각 쓰기)
 - **사용자 결정(재논의 금지)**: 설계 `docs/specs/2026-11-08-data-purpose-design.md`, 계획 `docs/plans/2026-11-08-data-purpose.md`. 방향 = 개인정보는 **최대한 보호하는 쪽으로 단순하게**(챕터 끝 정답 방향은 늘 거절, 가명 처리는 한 줄만, 법 설명 없음).
 - **① 목적 밖 개인정보 카드**(`js/privacy.js` DR.Privacy, 순수): 임무 파일 `privacy: { on, cards: [{ id, key, fix: 'mask'|'remove', at, art, mask: [{x,y,w,h,look}] }] }`. 카드 = 흔한 종류 카드에 `privateId`만 붙인 것(진짜 `key` 그대로 → 가린 카드 = 그 종류의 정상 카드). `Stream.build` 끝에서 **난수 없이** 표시(그 종류 중 앞 15% 밖·`at` 비율 자리) → 카드 자리·uid·벽은 그대로, 첫 판만. 스냅숏 비교(`walls-helper cardsOf`)는 `privateId`를 빼고, `privacy.test`가 "표시만 늘었다"를 따로 지킴.
@@ -57,7 +64,7 @@
 ## ★지금 상태 (2026-11-02, 4 임무 「채점 AI」 + 도시 복구 화면 — 이야기 끝까지)
 - **4 임무 완성**(계획 `docs/plans/2026-11-02-data-runner-m4.md` Task 1~7, 설계 §5·§7). `missions/m4.js`: 이름표 = 선택지 번호 1~5(`labels`), 가짜에만 7·8(`labelExtra`), `labelStyle:'digit'`(고치기·"?" 버튼 = 동그라미 숫자 하나, 375px 한 줄), 가짜가 쌓이는 장면은 데이터 `fake.scenes`(`DR.Cards.fakeScenes` — 이름표를 바꾸면 바뀐 이름표 기준). S2·S4 위험 / S1·S3 불편. 크게 기운 1·표 답을 다 빼면 S4는 반드시 실패(테스트).
 - 흐름: 대화 → 브리핑 → 달리기(시험장 배경 `RunScenery` exam, S2·S4 들어설 때 선배 한 줄 `story.runLines`) → 검수 → 감독관 → **채점 시연**(`js/ui-grade.js`, 답안지 13장, 원인 규칙 = `DR.Conveyor.sort` + 새 원인 `any:가짜id`) → 장면 결과 → **결판**(`DR.Judge.readable` = S4 조합만, 대사 줄 `sheet` → 대화창 위 선배 답안 `DR.CardArt.sheet`, bg `showdown-senior.webp`) ─ 못 읽음 → "봐, 또 지웠잖아" → 동기 합류(`js/showdown.js`: 남은 보충 2 = NEW·뺄 수 있음 / 1 = 고정 "동기와 함께 넣음" / 0 = 고정 + 다시 제출) → 보충(동기 카드는 달리기 뒤 가방에, 그만큼 칸 비워 둠) → … ─ 읽음 → **도시 재연결 5/5** → 의뢰인(선생님·택배 기사) → (합류한 적 없으면) 동기 "챙겨 왔어" → 해커의 이후(bg `senior-after.webp`) → 마무리(토론 질문 2개, `#outro-questions`).
-- **도시 복구 화면**(`js/ui-city.js`, `#screen-city`): 튜토리얼 끝 0→1, 1~3 임무 마지막 대화 뒤(칸이 늘었을 때만), 4 임무는 늘 →5. 칸 = `DR.Save.cityCount`(records.m1~m4 + records.tutorial, '처음부터'면 0). **그림 `assets/city/city-0..5.webp`는 아직 없음** → `<img>` 오류로 그림 자리 숨기고 점 5칸 + 문구. 파일만 그 이름으로 넣으면 저절로 쓰인다. 타이틀 왼쪽 위 배지 `#title-city`("도시 n/5", role=img).
+- **도시 복구 화면**(`js/ui-city.js`, `#screen-city`): 튜토리얼 끝 0→1, 1~3 임무 마지막 대화 뒤(칸이 늘었을 때만), 4 임무는 늘 →5. 칸 = `DR.Save.cityCount`(records.m1~m4 + records.tutorial, '처음부터'면 0). 그림 `assets/city/city-0..5.webp`(2026-11-08 연결 — 위 ★), 못 읽으면 그림 자리 숨기고 점 5칸 + 문구. 타이틀 왼쪽 위 배지 `#title-city`("도시 n/5", role=img).
 - 손글씨 카드 = Canvas 같은 붓(`cardart.js` GLYPHS·PEN — 깃발 1↔7, 고리 3↔8, 각진 2↔5, 둥근 5↔2). 크게 기운 1 = 굵고 일정, 떨림 없음. 동기 "이상한 건 빼자" 한 줄이 1~3 임무 도입에도. 시험 이름 = "새빛 진학 평가"(3 임무도).
 - ⚠️ 사용자 판단: Codex `showdown-senior.webp`의 답안지에 손글씨 "1"과 빨간 ✕가 그려져 있다(설계는 "그림 안 숫자·글자 없음") — 결판에서 읽었을 때(○)도 그림 속 ✕는 그대로. S1·S3도 플레이어가 위험 가짜(7·8·5)를 다른 틀린 번호로 고쳐 2장 쌓으면 위험이 될 수 있다(그 번호로 잘못 배움 = 맞게 쓴 답에 ✕, 의도로 둠). 동기 "챙겨 왔어"는 계획대로 재연결·의뢰인 줄 뒤(설계 §5.6은 "재연결 직전").
 - 저장: 체크포인트에 `peer`·`peerPending`·`showdownPassed`. 4 임무 S4 구역은 짧다(seed 4401에서 약 8초 — 7·8 가짜가 이제 S2에 쌓여서, 설계 §5.9의 23초는 그 전 계산).
@@ -134,8 +141,8 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (264)
-- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (27개: bgm·boot·bridge·cardart·**chapter**·exam·fakes·fire·flow·hero·keys·lost·m1·m2·m3·m4·play·polish·portraits·**privacy**·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
+- 단위: `node --test "data/tests/*.test.mjs"` (270)
+- 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (28개: bgm·boot·bridge·cardart·**chapter**·**city**·exam·fakes·fire·flow·hero·keys·lost·m1·m2·m3·m4·play·polish·portraits·**privacy**·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
 - ⚠️ 2 임무 화면 개수·라벨(`DR.Cards.displayKey`): 이름표가 맞는 카드 = 그 종류, 틀린 카드(가짜·잘못 고친 카드) = **붙은 이름표의 보통 종류**로 센다. 정체를 드러내는 색·글자 금지("고침" 표시는 맞았는지 말하지 않음).
@@ -143,5 +150,5 @@
 
 ## 남은 일
 - **팀 플레이 피드백**(기획서 §11 체크리스트) → `config.js` 수치 조정. 미확인: 실기기 손맛·터치 실기기·저사양 PC 프레임.
-- 3·4 임무 완성(2026-11-02). 남은 것: 도시 복구 그림 6장(Codex, `assets/city/city-0..5.webp`), 레이스 고스트(나중에 얹는 선택 층). 1 임무 결과를 컨베이어식으로 바꿀지는 2 임무를 해 본 뒤 결정(설계 §2).
+- 3·4 임무 완성(2026-11-02). 남은 것: 레이스 고스트(나중에 얹는 선택 층). 1 임무 결과를 컨베이어식으로 바꿀지는 2 임무를 해 본 뒤 결정(설계 §2).
 - 인물 디자인(다른 팀과 맞추기)·완성 일러스트는 외부 조건.
