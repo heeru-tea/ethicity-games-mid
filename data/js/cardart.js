@@ -814,7 +814,7 @@
   // 1 임무 분실물 사진: 카드 그림 art.photo = 파일 이름(번호와 상관없이 그 사진 하나)
   var LOST_DIR = 'assets/cards/lost-found/', LOST = ['umbrella-open', 'umbrella-folded', 'wallet-closed', 'wallet-open', 'phone-front', 'phone-back'];
   // 2 임무 분리배출 사진(Codex 2026-11-08, 1 임무와 같은 실사풍 384²): art.photo(하나) 또는 art.photos(여럿 — 카드 번호로 번갈아). 아직 안 온 종류는 Canvas
-  var RECYCLE_DIR = 'assets/cards/recycle/', RECYCLE = ['can_drink', 'can_tin', 'pet_clear', 'pet_crushed', 'vinyl_bag', 'paper_news', 'paper_box'];
+  var RECYCLE_DIR = 'assets/cards/recycle/', RECYCLE = ['can_drink', 'can_tin', 'pet_clear', 'pet_crushed', 'vinyl_bag', 'paper_news', 'paper_box', 'pack_milk', 'battery_aa', 'trash_glove', 'trash_sponge', 'trash_tissue', 'receipt', 'toothbrush'];
   var photoImgs = {};
   function preloadPhotos() {
     if (typeof Image === 'undefined') return;

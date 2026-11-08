@@ -195,7 +195,9 @@ try {
     // 2 임무 분리배출 사진(assets/cards/recycle/, Codex 2026-11-08): 14장이 다 와야 m2 데이터에 켠다 — 지금은 모두 Canvas.
     // 사진 구조 자체는 가짜 임무로 확인: art.photo / art.photos(카드 번호로 번갈아) / variant 3↑(컨베이어 '처음 보는 물건') = Canvas 물건 그림
     const m2 = DR.Missions.m2;
-    out.m2 = Object.keys(m2.cardTypes).concat(m2.fakes.map((f) => f.id)).filter((id) => id !== 'f_cat' && A.card(m2, id, 0, 256, 1).photo); // f_cat = 튜토리얼 고양이 사진(전부터)
+    out.m2 = Object.keys(m2.cardTypes).concat(m2.fakes.map((f) => f.id)).filter((id) => !A.card(m2, id, 0, 256, 1).photo); // 사진이 아닌 카드(없어야 함)
+    out.m2trash = [0, 1, 2, 3].map((n) => A.card(m2, 'trash_misc', 0, 256, n).photo);
+    out.m2fakes = ['f_receipt', 'f_toothbrush', 'f_battery'].map((id) => A.card(m2, id, 0, 256, 1).photo);
     const fake = { id: 'zz', cardTypes: { a: { art: { object: 'can_drink', photo: 'can_drink' } }, p: { art: { object: 'paper_news', photos: ['paper_news', 'paper_box'] } } } };
     out.m2photo = A.card(fake, 'a', 0, 256, 1).photo;
     out.m2paper = [0, 1, 2].map((n) => A.card(fake, 'p', 0, 256, n).photo);
@@ -226,7 +228,9 @@ try {
   assert.ok(rt.std > 10, 'photo not blank');
   assert.equal(rt.thumb, '192x192', 'photo thumb = 48 cells × 4');
   assert.ok(rt.m1NotPhoto, 'other missions keep Canvas art');
-  assert.deepEqual(rt.m2, [], 'm2 stays Canvas until all 14 photos arrive');
+  assert.deepEqual(rt.m2, [], 'every m2 card kind and fake is a photo (14 arrived 2026-11-08)');
+  assert.deepEqual(rt.m2trash, ['trash_glove', 'trash_sponge', 'trash_tissue', 'trash_glove'], 'general trash rotates by card number');
+  assert.deepEqual(rt.m2fakes, ['receipt', 'toothbrush', 'battery_aa']);
   assert.equal(rt.m2photo, 'can_drink');
   assert.deepEqual(rt.m2paper, ['paper_news', 'paper_box', 'paper_news'], 'newspaper and box alternate');
   assert.equal(rt.m2conveyor.photo, '', 'conveyor variant = Canvas');
