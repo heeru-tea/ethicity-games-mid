@@ -25,6 +25,11 @@
     return require('./cards.js');
   }
 
+  function glitchApi() {
+    if (root.DR && root.DR.Glitch) return root.DR.Glitch;
+    return require('./glitch.js');
+  }
+
   function privacyApi() {
     if (root.DR && root.DR.Privacy) return root.DR.Privacy;
     return require('./privacy.js');
@@ -303,6 +308,8 @@
     if (zones) { course.zones = zones; course.supplement = !!focus; }
     // 목적 밖 개인정보 카드(첫 판만): 이미 놓인 흔한 카드에 privateId만 붙인다 — 자리·uid·벽은 그대로(DR.Privacy.mark)
     if (!focus) privacyApi().mark(mission, course);
+    // "지지직" 연출 대상(흔한 카드만, mission.glitchRate) — 따로 돌리는 난수라 코스는 그대로, 표시 필드 glitch만 붙는다(DR.Glitch.mark)
+    glitchApi().mark(mission, course, opts.seed);
     return course;
   }
 
