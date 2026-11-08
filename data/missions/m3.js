@@ -54,7 +54,7 @@
       on: true,
       cards: [
         { id: 'p_river_people', key: 'river_now', fix: 'mask', at: 0.5, what: '행인 얼굴', art: { view: 'river', time: 'day', people: true },
-          mask: [{ x: 0.14, y: 0.58, w: 0.16, h: 0.17, look: 'blur' }, { x: 0.665, y: 0.62, w: 0.15, h: 0.16, look: 'blur' }] },
+          mask: [{ x: 0.29, y: 0.6, w: 0.15, h: 0.15, look: 'blur' }, { x: 0.565, y: 0.645, w: 0.14, h: 0.14, look: 'blur' }] },
         { id: 'p_station_plate', key: 'station_now', fix: 'mask', at: 0.6, what: '차 번호판', art: { view: 'station', time: 'day', plate: true },
           mask: [{ x: 0.39, y: 0.8, w: 0.22, h: 0.1, look: 'bar' }] }
       ]
