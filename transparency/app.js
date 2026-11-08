@@ -12,12 +12,16 @@
  // autoKey = 근거 자료를 자동으로 맞춘 판단 문장(한 문장에 한 번만 — 그 뒤 직접 고른 자료는 건드리지 않는다), keepFinding = 마지막 자료를 찾은 직후 자료가 바뀌어도 방금 찾은 내용을 남긴다.
  // revealCue = 마지막 자료를 막 찾아 판단할 말이 처음 나온 순간(화면을 움직이지 않고 한 줄로만 알린다).
  let autoKey=null,keepFinding=null,revealCue=false;
+ // opened = 도서관 점수표에서 연 행(순위), tried = 사건 5(혼자)에서 눌러 봤지만 답이 아닌 곳(글 안내 대신 '아님' 표시만).
+ let opened=new Set(),tried=new Set();
  const photo=new Image();photo.src=A.photo;photo.onload=paint;
  const modal=$('#modal');
  const STEP_LABELS={hook:'궁금한 것',check:'직접 확인',choose:'선택',result:'결과',follow:'후속 조사',notice:'만든 사람이라면: 미리 알리기',reflect:'생각 정리'};
  const FACE_NAMES=['토리','루루','담이','모아','몽이'];
  // 대사 옆 작은 얼굴: 전신 그림(1024×1536)에서 얼굴 중심(가로·세로 비율). 그림이 없는 화자(마을 사람들·반 친구·앱 알림)는 이름만.
- const FACE_POS={moa:[.54,.12],lulu:[.51,.23],luluPaper:[.46,.23],dami:[.51,.15],bami:[.59,.13],teacher:[.48,.12],clerk:[.52,.13],clerkOpen:[.55,.12]};
+ const FACE_POS={moa:[.54,.12],lulu:[.51,.23],luluPaper:[.46,.23],dami:[.51,.15],bami:[.59,.13],teacher:[.48,.12],clerk:[.52,.13],clerkOpen:[.55,.12],librarian:[.48,.12]};
+ // 무대에만 쓰는 사건 4·5 새 포즈는 기본 인물의 자리·크기 규칙(.actor.dami 등)을 함께 받는다.
+ const CAST_BASE={damiBooks:'dami',moaPhone:'moa',luluCasual:'lulu'},castCls=c=>c+(CAST_BASE[c]?' '+CAST_BASE[c]:'');
  const pct=(v,t)=>(v/t*100).toFixed(3)+'%';
  const rectStyle=([x,y,w,h])=>`left:${pct(x,1536)};top:${pct(y,1024)};width:${pct(w,1536)};height:${pct(h,1024)}`;
 
@@ -26,7 +30,7 @@
  function send(a){const before=state.scene,k=E.caseKey(before),was=k&&E.stepOf(before)==='check'&&E.checked(state,k);state=E.reduce(state,a);
   if(state.scene!==before)arrive();else if(k&&E.stepOf(before)==='check'&&!was&&E.checked(state,k))revealCue=true;
   save();render(state.scene!==before);}
- function arrive(){view=null;regions=new Set();tapHint='';justJudged=null;resumed=false;autoKey=null;keepFinding=null;revealCue=false;}
+ function arrive(){view=null;regions=new Set();opened=new Set();tried=new Set();tapHint='';justJudged=null;resumed=false;autoKey=null;keepFinding=null;revealCue=false;}
  function btn(label,act,attrs='',cls=''){return `<button ${cls?`class="${cls}"`:''} data-act="${act}" ${attrs}>${label}</button>`;}
  function portrait(who){const p=FACE_POS[who];return p?`<span class="portrait" style="--fx:${p[0]};--fy:${p[1]}" aria-hidden="true"><img src="${A[who]}" alt=""></span>`:'';}
  function line([who,text],cls=''){return `<p class="line ${cls}">${portrait(who)}<span class="who">${esc(D.names[who])}</span> ${esc(text)}</p>`;}
@@ -35,14 +39,17 @@
  function paint(){if(!photo.complete||!photo.naturalWidth)return;document.querySelectorAll('canvas[data-crop]').forEach(c=>{const r=c.dataset.crop.split(',').map(Number),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(photo,...r,0,0,c.width,c.height);});}
 
  // 장면 그림. 결과가 그림에 바로 보이게 한다(게시판 사진·입장 표시·점원 표정).
- function stage(bg,cast,{photoRect,status,boxes}={}){
-  return `<div class="stage"><img class="backdrop" src="${A.backgrounds[bg]}" alt="${D.bgNames[bg]}">${photoRect?`<div class="stage-photo">${canvas(photoRect,'게시판에 올린 사진')}</div>`:''}${boxes?`<div class="stage-boxes" aria-hidden="true">${[0,1,2].map(()=>`<span class="prop ${boxes}"></span>`).join('')}</div>`:''}${status?`<p class="stage-status">${esc(status)}</p>`:''}<div class="cast">${cast.map(c=>`<img class="actor ${c}" src="${A[c]}" alt="${esc(D.names[c])}">`).join('')}</div><div class="name-tags" aria-hidden="true">${cast.map((c,i)=>`<span class="name-tag pos-${i} ${c}"><span>${esc(D.names[c])}</span></span>`).join('')}</div></div>`;
+ // screen = 무대 오른쪽 위에 코드로 그린 화면 카드(도서관 추천 화면·모임 추천 알림). 첫 줄은 작은 머리말.
+ function stage(bg,cast,{photoRect,status,boxes,screen,screenCls=''}={}){
+  return `<div class="stage"><img class="backdrop" src="${A.backgrounds[bg]}" alt="${D.bgNames[bg]}">${photoRect?`<div class="stage-photo">${canvas(photoRect,'게시판에 올린 사진')}</div>`:''}${screen?`<div class="stage-screen ${screenCls}">${screen.map((x,i)=>`<span class="${i?'screen-line':'screen-head'}">${esc(x)}</span>`).join('')}</div>`:''}${boxes?`<div class="stage-boxes" aria-hidden="true">${[0,1,2].map(()=>`<span class="prop ${boxes}"></span>`).join('')}</div>`:''}${status?`<p class="stage-status">${esc(status)}</p>`:''}<div class="cast">${cast.map(c=>`<img class="actor ${castCls(c)}" src="${A[c]}" alt="${esc(D.names[c])}">`).join('')}</div><div class="name-tags" aria-hidden="true">${cast.map((c,i)=>`<span class="name-tag pos-${i} ${castCls(c)}"><span>${esc(D.names[c])}</span></span>`).join('')}</div></div>`;
  }
  function caseStage(k,{result=false}={}){const c=D.cases[k],o=E.outcome(state,k),opt=c.choose.options.find(x=>x.id===o.id);
   let cast=c.cast.slice(),status='';
   if(k==='face'){status=result&&o.id==='release'?'입장 제한 해제':'입장 제한 중';if(result&&o.id==='release')cast=cast.map(x=>x==='clerk'?'clerkOpen':x);}
   if(k==='writing'&&result&&opt)status=opt.status;
-  return stage(c.bg,cast,{photoRect:k==='photo'?(result?o.rect:E.AUTO):null,status});
+  // 도서관: 추천 화면 카드가 결과를 보여 준다. 밤하늘(혼자): 추천 알림 카드는 그대로(상태 표시가 아님).
+  const screen=k==='library'?(result&&opt?opt.screen:c.screen):k==='recommend'?c.screen:null;
+  return stage(c.bg,cast,{photoRect:k==='photo'?(result?o.rect:E.AUTO):null,status,screen,screenCls:k==='recommend'?'phone':''});
  }
  function report(){return `<div class="document"><p class="doc-label">글 검사 결과 · AI 작성 의심</p><p>${esc(D.drafts.before)} <mark>${esc(D.drafts.revision)}</mark></p></div>`;}
 
@@ -57,47 +64,65 @@
    return `<div class="document compact"><p class="doc-label">검사기가 표시한 문장</p><p><mark>${esc(D.drafts.revision)}</mark></p></div><div class="records">${D.history.map(rec).join('')}</div>`;}
   if(id==='face-alert')return `<div class="document"><p class="doc-label">알림 기록 · 빵집 앱</p><p>${esc(D.alertText)}</p></div>`;
   if(id==='face-clerk')return `<div class="document compact"><p class="doc-label">알림 기록</p><p>${esc(D.alertText)}</p></div><div class="document"><p class="doc-label">점원의 말</p><p class="segments">${D.cases.face.clerkSegments.map(s=>btn(done&&s.found?`<mark>${esc(s.text)}</mark>`:esc(s.text),'segment',`data-id="${s.id}"`,'segment')).join(' ')}</p></div>`;
+  // 사건 4: 안내문, 대출 기록 8권(공룡 책 하나 누르기), 점수표(1·2·3·5위 행을 열면 계산식 줄)
+  const L=D.cases.library,R=D.cases.recommend,triedTag=key=>tried.has(key)?' <span class="tried-tag">아님</span>':'';
+  if(id==='library-guide')return `<div class="document"><p class="doc-label">AI 안내 · 도서관 추천</p><p>${esc(L.checks[0].guide)}</p></div>`;
+  if(id==='library-loans')return `<div class="document compact"><p class="doc-label">${esc(L.loansLabel)}</p></div><div class="records loans">${L.loans.map(([d,title,f],i)=>btn(`<span class="loan-date">${esc(d)}</span><span class="loan-title">${esc(title)}</span><span class="loan-field">${done&&f===L.top?`<mark>${esc(f)}</mark>`:esc(f)}</span>`,'loan',`data-id="${i}"`,'record loan')).join('')}</div>`;
+  if(id==='library-scores'){const S=L.scores,all=done||S.rows.filter(r=>r[5]).every(r=>opened.has(r[0]));
+   const cells=(r,show)=>`<span class="num">${r[0]}위</span><span class="score-book">${esc(r[1])}</span>${[2,3,4].map(i=>`<span class="num">${show?r[i]:'?'}</span>`).join('')}`;
+   return `<div class="document score-table"><p class="doc-label">${esc(S.label)}</p><div class="score-headrow" aria-hidden="true">${S.head.map(x=>`<span>${esc(x)}</span>`).join('')}</div>${S.rows.map(r=>{const show=!r[5]||all||opened.has(r[0]);
+    return r[5]&&!all?btn(cells(r,show),'score',`data-id="${r[0]}"${show?'':` aria-label="${r[0]}위 ${esc(r[1])} 점수 열기"`}`,'score-row'+(show?' open':'')):`<div class="score-row">${cells(r,true)}</div>`;}).join('')}${all?`<p class="score-formula">${esc(S.formula)}</p>`:''}</div>`;}
+  // 사건 5(혼자): 앱 안내, 모임 안내(끝나는 시각 누르기), 버스 시간표(탈 버스 없음 누르기)
+  if(id==='recommend-reason')return `<div class="document"><p class="doc-label">AI 안내 · 모임 추천 앱</p><p>${esc(R.checks[0].guide)}</p></div>`;
+  if(id==='recommend-meeting'){const seg=sid=>{const x=R.meeting.segments.find(s=>s.id===sid);return btn((done&&x.target?`<mark>${esc(x.text)}</mark>`:esc(x.text))+triedTag('meet:'+sid),'meet',`data-id="${sid}"`,'segment');};
+   return `<div class="document"><p class="doc-label">${esc(R.meeting.label)}</p><p class="segments">${seg('name')} · ${seg('day')} ${seg('start')}~${seg('end')} · ${seg('place')} · ${seg('fee')} · ${seg('consent')}</p></div>`;}
+  if(id==='recommend-bus'){const B=R.bus;return `<div class="document compact"><p class="doc-label">${esc(B.label)}</p></div><div class="records">${B.rows.map(r=>btn(`<span class="bus-time">${esc(r.time)}</span>${r.note?` <span class="bus-note">${esc(r.note)}</span>`:''}${triedTag('bus:'+r.id)}`,'bus',`data-id="${r.id}"`,'record')).join('')}${btn(done?`<mark>${esc(B.none)}</mark>`:esc(B.none),'bus','data-id="none"','record bus-none')}</div>`;}
   if(id==='face-photo')return `<div class="compare-labels" aria-hidden="true"><span>등록된 사진</span><span>오늘 찍힌 사진</span></div><img class="evidence-photo" src="${A.faces}" alt="왼쪽은 등록된 사진, 오른쪽은 오늘 찍힌 사진. 둘 다 흐리고 문틀과 반사에 일부 가려진 가상의 고양이 얼굴이다.">`;
   return '';
  }
  // 왼쪽 그림 칸이 지금 ‘자료’라는 것을 보이게 한다(판단 도장 ‘자료로 확인돼’가 가리키는 곳).
  function evidenceHead(name){return `<p class="evidence-head"><span>자료</span> · ${esc(name)}</p>`;}
- function defaultView(k){if(k==='photo')return `<figure class="crop-figure">${canvas(E.AUTO,'자동으로 자른 사진. 담이 얼굴이 없다.')}<figcaption>자동으로 자른 사진</figcaption></figure>`;if(k==='writing')return report();return caseStage(k);}
+ function defaultView(k){if(k!=='photo'&&k!=='writing')return caseStage(k);if(k==='photo')return `<figure class="crop-figure">${canvas(E.AUTO,'자동으로 자른 사진. 담이 얼굴이 없다.')}<figcaption>자동으로 자른 사진</figcaption></figure>`;if(k==='writing')return report();return caseStage(k);}
 
  function nav(prev,next){return `<div class="step-nav">${prev?btn('이전','back'):'<span></span>'}${next||''}</div>`;}
  function head(meta,title){return `${resumed?`<p class="resume" role="status">저장된 곳부터 이어서 해요. ${btn('처음부터 하기','reset-ask','','link')}</p>`:''}<p class="meta">${esc(meta)}</p><h1 tabindex="-1">${esc(title)}</h1>`;}
 
  function render(moved){
   const n=state.scene,step=E.stepOf(n),k=E.caseKey(n),c=k&&D.cases[k];let h='',v='',b='';
-  const meta=k?`${c.name} · ${E.CASES.indexOf(k)+1}/3 · ${STEP_LABELS[step]}`:step==='intro'?'프롤로그':step==='report'?'보고서':'마지막';
+  const meta=k?`${c.name} · ${E.CASES.indexOf(k)+1}/${E.CASES.length} · ${STEP_LABELS[step]}`:step==='intro'?'프롤로그':step==='report'?'보고서':'마지막';
   if(step==='intro'){h=head(meta,D.intro.title);v=stage(0,['moa'],{boxes:'box'});
    b=D.intro.lines.map(l=>line(l)).join('')+`<p>${esc(D.intro.plan)}</p>`+nav(false,btn('첫 사건 시작하기','next','','primary'))+`<p class="hint">${esc(D.intro.note)}</p>`;}
-  if(step==='hook'){h=head(meta,c.title);v=caseStage(k);
-   b=c.hook.map(l=>line(l)).join('')+(k==='photo'?defaultView('photo'):k==='writing'?report():'')+`<p class="question-label">궁금한 것</p><p class="question">${esc(c.question)}</p>`+nav(true,btn('직접 확인하기','next','','primary'));}
+  if(step==='hook'){h=(c.solo?`<p class="solo-note" role="note">${esc(c.soloNote)}</p>`:'')+head(meta,c.title);v=caseStage(k);
+   b=c.hook.map(l=>line(l)).join('')+(k==='photo'?defaultView('photo'):k==='writing'?report():'')+`<p class="question-label">궁금한 것</p><p class="question">${esc(c.question)}</p>`;
+   // 사건 5: 예전 마지막 장면의 질문 넷. 하나 이상 물어야 직접 확인으로 간다. 대답은 마지막에 누른 질문의 것.
+   if(c.asks){const shown=c.asks.some(a=>a[0]===view)?view:state.asked[state.asked.length-1];
+    b+=`<p class="question-label">${esc(c.askPrompt)}</p><div class="options asks">${c.asks.map(([id,q])=>btn(esc(q),'ask',`data-id="${id}" aria-pressed="${state.asked.includes(id)}"`,'option')).join('')}</div>`;
+    if(shown){const a=c.asks.find(x=>x[0]===shown);b+=`<div class="finding" role="status">${line(['recApp',a[2]])}<p>${esc(c.afterAsk)}</p></div>`;}}
+   b+=nav(true,btn('직접 확인하기','next',E.canAdvance(state)?'':'disabled','primary'))+(E.canAdvance(state)?'':`<p class="hint">${esc(c.askNeed)}</p>`);}
   if(step==='check'){h=head(meta,c.question);autoEvidence(k);const item=c.checks.find(x=>x.id===view),judging=E.checked(state,k)&&judgeIndex(k)>=0;v=item?evidenceHead(item.name)+itemView(k,item.id):defaultView(k);
    b=`<div class="items" role="group" aria-label="확인할 자료">${c.checks.map(x=>btn(esc(x.label)+(state.evidence.includes(x.id)?' <span class="seen">· 확인함</span>':''),'item',`data-id="${x.id}" aria-pressed="${view===x.id}"`)).join('')}</div>`;
    if(!item)b+=`<p class="task">자료를 눌러 직접 확인해 봐.</p>`;
-   else{if(revealCue&&judging)b+=`<p class="cue" role="status">아래에 판단할 말이 나왔어.</p>`;if(!state.evidence.includes(item.id))b+=`<p class="task">${esc(item.task)}</p>`;if(tapHint)b+=`<p class="tap-hint" role="status">${esc(tapHint)}</p>`;const said=keepFinding?c.checks.find(x=>x.id===keepFinding):item;if(state.evidence.includes(said.id))b+=`<div class="finding${judging?' quiet':''}" role="status">${said.finding.map(l=>line(l)).join('')}${more(said.more)}</div>`;}
+   else{if(revealCue&&judging)b+=`<p class="cue" role="status">아래에 판단할 말이 나왔어.</p>`;if(!state.evidence.includes(item.id))b+=`<p class="task">${esc(item.task)}</p>`;if(tapHint&&!c.solo)b+=`<p class="tap-hint" role="status">${esc(tapHint)}</p>`;const said=keepFinding?c.checks.find(x=>x.id===keepFinding):item;if(!c.solo&&state.evidence.includes(said.id))b+=`<div class="finding${judging?' quiet':''}" role="status">${said.finding.map(l=>line(l)).join('')}${more(said.more)}</div>`;}
    if(E.checked(state,k))b+=judgeBlock(k);
    const left=c.checks.filter(x=>!state.evidence.includes(x.id)).map(x=>x.name);
-   b+=nav(true,btn('어떻게 할지 고르기','next',E.canAdvance(state)?'':'disabled','primary'))+(E.canAdvance(state)?'':`<p class="hint">${left.length?'남은 자료: '+esc(left.join(', ')):`말 3개를 모두 판단하면 다음으로 갈 수 있어. (지금 ${state.judgments[k].filter(x=>x&&x!=='legacy').length}/3)`}</p>`);}
+   // 사건 5(혼자)는 '남은 자료' 힌트를 보이지 않는다.
+   b+=nav(true,btn('어떻게 할지 고르기','next',E.canAdvance(state)?'':'disabled','primary'))+(E.canAdvance(state)||left.length&&c.solo?'':`<p class="hint">${left.length?'남은 자료: '+esc(left.join(', ')):`말 3개를 모두 판단하면 다음으로 갈 수 있어. (지금 ${state.judgments[k].filter(x=>x&&x!=='legacy').length}/3)`}</p>`);}
   if(step==='choose'){const cur=state.cases[k].final;h=head(meta,c.choose.question);v=caseStage(k,{result:!!cur});
    b=`<div class="options${k==='photo'?' photo-options':''}">${c.choose.options.map(o=>btn((k==='photo'?canvas(o.id==='all'?E.ALL:E.AUTO,o.label):'')+`<span>${esc(o.label)}</span>`,'choose',`data-id="${o.id}" aria-pressed="${cur===o.id}"`,'option')).join('')}</div>`;
    b+=`<p class="hint">${cur?'다시 고를 수 있어. 처음 고른 것도 수첩에 남아.':'고르면 바로 결과를 볼 수 있어.'}</p>`+nav(true,cur?btn('결과 다시 보기','next','','primary'):'');}
   if(step==='result'){const o=c.choose.options.find(x=>x.id===state.cases[k].final);h=head(meta,o.title);v=caseStage(k,{result:true});
-   b=`<p class="status">${esc(o.status)}</p>`+o.reaction.map(l=>line(l)).join('')+line(['moa',o.feedback],'moa')+more([o.more,c.more].filter(Boolean).join(' '))+nav(false,`<span class="nav-pair">${btn('다른 선택 해 보기','rechoose')}${btn('더 조사하기','next','','primary')}</span>`)+`<p class="hint">결과는 수첩에 자동으로 적혔어.</p>`;}
+   // 사건 5(혼자): 상태 글·모아 피드백 없이 결과 한 줄(summary)과 반응만.
+   b=(o.status?`<p class="status">${esc(o.status)}</p>`:'')+(o.summary?`<p class="result-summary">${esc(o.summary)}</p>`:'')+o.reaction.map(l=>line(l)).join('')+(o.feedback?line(['moa',o.feedback],'moa'):'')+more([o.more,c.more].filter(Boolean).join(' '))+nav(false,`<span class="nav-pair">${btn('다른 선택 해 보기','rechoose')}${btn('더 조사하기','next','','primary')}</span>`)+`<p class="hint">결과는 수첩에 자동으로 적혔어.</p>`;}
   if(step==='follow'){const f=c.follow;h=head(meta,f.question)+f.lines.map(l=>line(l)).join('')+(E.followReady(state,k)?'':`<p class="task">${esc(f.task)}</p>`);v=evidenceHead(f.src)+followView(k);
    b=followBody(k)+nav(true,btn('미리 알리기','next',E.canAdvance(state)?'':'disabled','primary'));}
   if(step==='notice'){h=head(meta,c.notice.title);v=noticeStage(k);b=noticeBody(k)+nav(true,btn('생각 정리하기','next',E.canAdvance(state)?'':'disabled','primary'));}
   if(step==='reflect'){const r=state.reflections[k],toReport=state.furthest>=E.REPORT;h=head(meta,D.reflect.title);v=reflectSummary(k);
    b=`<p class="hint lead">${esc(D.reflect.lead)}</p>`+writeBox('reflect-q1',D.reflect.q1,r.q1,'data-reflect="q1"')+writeBox('reflect-q2',D.reflect.q2,r.q2,'data-reflect="q2"');
-   const next=btn(k==='face'?'마지막 장면으로':'다음 사건','next','',toReport?'':'primary');
+   const next=btn(k===E.CASES[E.CASES.length-1]?'마지막 장면으로':'다음 사건','next','',toReport?'':'primary');
    b+=nav(true,toReport?`<span class="nav-pair">${next}${btn('보고서로 돌아가기','to-report',`data-case="${k}"`,'primary')}</span>`:next);}
+  // 마지막 장면: 질문은 사건 5로 옮겼다. 대사 2줄 + 마무리 한 줄 + 마지막 문장 + 마지막 서술 + 메뉴.
   if(step==='end'){const e=D.ending;h=head(meta,e.title);v=stage(0,['moa','lulu','dami'],{boxes:'window'});
-   b=e.lines.map(l=>line(l)).join('')+`<p class="question">${esc(e.question)}</p><div class="options">${e.asks.map(([id,t])=>btn(esc(t),'ask',`data-id="${id}" aria-pressed="${state.question===id&&view===null||view===id}"`,'option')).join('')}</div>`;
-   const asked=view||state.question;
-   if(asked){const a=e.asks.find(x=>x[0]===asked);b+=`<div class="finding" role="status">${line(['app',a[2]])}<p>${esc(e.afterAsk)}</p></div>`+line(e.closing,'moa')+`<p class="ending-quote">${esc(e.quote)}</p>${writeBox('final-note',D.reflect.finalPrompt,state.finalNote,'data-note',3)}${nav(true,btn('나의 조사 보고서 보기','next','','primary'))}<div class="menu">${btn('내 수첩 보기','notebook')}${btn('참고한 실제 사례','sources')}${btn('토론 질문','discussion')}${btn('처음부터 다시 하기','reset-ask')}</div>`;}
-   if(!asked)b+=nav(true,'');}
+   b=e.lines.map(l=>line(l)).join('')+line(e.closing,'moa')+`<p class="ending-quote">${esc(e.quote)}</p>${writeBox('final-note',D.reflect.finalPrompt,state.finalNote,'data-note',3)}${nav(true,btn('나의 조사 보고서 보기','next','','primary'))}<div class="menu">${btn('내 수첩 보기','notebook')}${btn('참고한 실제 사례','sources')}${btn('토론 질문','discussion')}${btn('처음부터 다시 하기','reset-ask')}</div>`;}
   if(step==='report'){h=head(meta,D.report.title);b=reportPage()+nav(true,'');}
   const focus=moved?null:focusSelector();
   $('#app').className='step-'+step+(step==='check'&&E.checked(state,k)&&judgeIndex(k)>=0?' judging':'');
@@ -109,19 +134,21 @@
  // 판단 뒤: 정답 칸에 ‘✓ 정답’, 고른 오답에 ‘내 선택’(점선). 색만으로 구분하지 않는다
  function stampButtons(act,picked,answer){return `<div class="stamps" role="group" aria-label="판단">${Object.entries(D.stamps).map(([id,label])=>{const right=!!picked&&id===answer,mine=!!picked&&id===picked&&!right;
   return btn(esc(label)+(right?' <span class="stamp-tag">✓ 정답</span>':mine?' <span class="stamp-tag">내 선택</span>':''),act,`data-id="${id}" aria-pressed="${picked===id}" ${picked?'disabled':''}`,right?'stamp-right':mine?'stamp-mine':'');}).join('')}</div>`;}
- function verdict(j,picked,answer){return picked===answer?j.right:`${j.wrong} 정리: ${D.stamps[answer]}.`;}
- function verdictBox(j,picked,answer){const wrong=picked!==answer;return `<div class="finding${wrong?' again':''}" role="status">${wrong?'<p class="again-head">다시 보자</p>':''}<p>${esc(verdict(j,picked,answer))}</p></div>`;}
+ // 사건 5(혼자)의 판단 피드백은 '기록과 맞춰 보면: …' 한 줄(sum). 틀리면 같은 줄 끝에 '정리: …'.
+ function verdict(j,picked,answer){if(j.sum)return picked===answer?j.sum:`${j.sum} 정리: ${D.stamps[answer]}.`;return picked===answer?j.right:`${j.wrong} 정리: ${D.stamps[answer]}.`;}
+ function verdictBox(j,picked,answer){const wrong=picked!==answer;return `<div class="finding${wrong?' again':''}" role="status">${wrong&&!j.sum?'<p class="again-head">다시 보자</p>':''}<p>${esc(verdict(j,picked,answer))}</p></div>`;}
  const judgeIndex=k=>justJudged!==null?justJudged:E.currentJudgment(state,k);
  // 판단 문장이 바뀌면 왼쪽 자료도 그 문장의 근거로. 문장마다 한 번만 맞추고, 그 뒤 직접 고른 자료는 그대로 둔다
  function autoEvidence(k){if(!E.checked(state,k))return;const idx=judgeIndex(k),key=idx<0?null:k+idx;if(!key||key===autoKey)return;const first=autoKey===null;autoKey=key;tapHint='';const src=D.cases[k].judges[idx].src;if(!src.includes(view)){if(first&&view)keepFinding=view;view=src[0];}}
  function sourceTags(k,src){const c=D.cases[k];return `<p class="judge-src">볼 자료: ${src.map(id=>btn(esc(c.checks.find(x=>x.id===id).name),'source',`data-id="${id}" aria-pressed="${view===id}"`,'source-tag')).join(' ')}</p>`;}
  function judgeCard(who,text,num,extra){return `<h2 class="question-label judge-head">이 말은 맞을까?${num?' '+num:''}</h2><blockquote class="judge-say"><p>“${esc(text)}”</p><cite>${portrait(who)}${esc(D.names[who])}</cite></blockquote>${extra}`;}
  function judgeBlock(k){const c=D.cases[k],js=state.judgments[k],idx=judgeIndex(k);
-  if(idx<0)return `<section class="judge"><p class="question-label">판단 3개를 마쳤어</p><p>${esc(c.after)}</p></section>`;
+  const after=c.after?`<p>${esc(c.after)}</p>`:'';
+  if(idx<0)return `<section class="judge"><p class="question-label">판단 3개를 마쳤어</p>${after}</section>`;
   const j=c.judges[idx],picked=js[idx]&&js[idx]!=='legacy'?js[idx]:null,answer=E.answers[k][idx];
   let h=`<section class="judge judge-card" aria-label="판단할 말 ${idx+1}/3">${judgeCard(j.who,j.text,(idx+1)+'/3',sourceTags(k,j.src))}${stampButtons('judge',picked,answer)}`;
   if(js[idx]==='legacy')h+='<p class="hint">이전 저장에서 넘어와 아직 하지 않은 판단이야. 지금 해 볼 수 있어.</p>';
-  if(picked){h+=verdictBox(j,picked,answer);h+=E.currentJudgment(state,k)>=0?btn('다음 말 보기','judge-next'):`<p>${esc(c.after)}</p>`;}
+  if(picked){h+=verdictBox(j,picked,answer);h+=E.currentJudgment(state,k)>=0?btn('다음 말 보기','judge-next'):after;}
   return h+'</section>';}
  // 후속 조사
  const tally=()=>{const counts=[0,0,0,0,0];for(const r of E.FOLLOW_CROPS)for(const i of E.cutFaces(r))counts[i]++;return counts.map((n,i)=>[FACE_NAMES[i],n]).sort((a,b)=>b[1]-a[1]);};
@@ -129,15 +156,24 @@
  function chip(s){const [cls,mark]=CHIPS[s];return `<span class="chip chip-${cls}">${mark} ${esc(s)}</span>`;}
  function followView(k){const f=D.cases[k].follow,fs=state.follows[k],locked=!!fs.judgment&&fs.judgment!=='legacy';
   if(k==='photo')return `<div class="follow-grid">${E.FOLLOW_CROPS.map((r,i)=>{const id='p'+(i+1),m=fs.marks[id];return `<figure class="follow-photo">${canvas(r,'사진 '+(i+1))}<figcaption>사진 ${i+1}</figcaption><div class="mark-row" role="group" aria-label="사진 ${i+1}에 담이가 나왔나">${btn('나왔어','mark',`data-id="${id}" data-value="shown" aria-pressed="${m==='shown'}" ${locked?'disabled':''}`)}${btn('잘렸어','mark',`data-id="${id}" data-value="cut" aria-pressed="${m==='cut'}" ${locked?'disabled':''}`)}</div></figure>`;}).join('')}</div><p class="caption">${esc(f.note)}</p>`;
+  // 사건 4: 예전 안내 · 새 안내(달라진 말 누르기) · 새 점수 기록 · 업체 답장
+  if(k==='library'){const L=D.cases.library,found=fs.marks.changed==='found',seg=x=>found?(x.changed?`<mark>${esc(x.text)}</mark>`:esc(x.text)):btn(esc(x.text),'change',`data-id="${x.id}"`,'segment'),[t0,t1,t2]=f.segments;
+   return `<div class="document compact"><p class="doc-label">${esc(f.oldLabel)}</p><p>${esc(L.checks[0].guide)}</p></div><div class="document"><p class="doc-label">${esc(f.newLabel)}</p><p class="segments">${seg(t0)} · ${seg(t1)} ${seg(t2)}</p></div>`
+    +`<div class="document compact"><p class="doc-label">${esc(f.scoreLabel)}</p><p>${esc(L.scores.formula)}</p></div><div class="document compact"><p class="doc-label">${esc(f.replyLabel)}</p><p>${esc(f.reply)}</p></div>`;}
+  // 사건 5: 세 친구의 추천 목록. 세 목록을 모두 열면 같은 모임 줄이 표시된다.
+  if(k==='recommend'){const all=E.followReady(state,k);return `<div class="rec-lists">${f.lists.map(l=>{const open=fs.marks[l.id]==='open';
+   return `<div class="rec-list">${btn(`<span class="rec-name">${esc(l.name)}</span> <span class="rec-interest">관심사: ${esc(l.interest)}</span>${open?'':' <span class="row-open">목록 보기 ▸</span>'}`,'list',`data-id="${l.id}" aria-expanded="${open}"`,'record')}${open?`<ol>${l.items.map(x=>`<li>${all&&x===f.target?`<mark>${esc(x)}</mark>`:esc(x)}</li>`).join('')}</ol>`:''}</div>`;}).join('')}</div>`;}
   if(k==='writing'){const ran=fs.marks.run==='done';return `<div class="document"><p class="doc-label">${esc(f.docLabel)}${ran?' · 검사 결과':''}</p><p>${f.sentences.map((t,i)=>ran&&f.flagged.includes(i)?`<mark>${esc(t)}</mark>`:esc(t)).join(' ')}</p>${ran?'<p class="legend">노란 표시: AI 작성 의심</p>':''}</div>`;}
   return `<div class="document compact"><p class="doc-label">${esc(f.docLabel)}</p></div><div class="records">${f.rows.map(r=>{const open=fs.marks[r.id]==='open';return btn(`<span class="row-top">${chip(r.status)}${open?'':'<span class="row-open">근거 보기 ▸</span>'}</span><span class="row-item">${esc(r.item)}</span>${open?`<span class="proof">근거: ${esc(r.proof)}</span>`:''}`,'row',`data-id="${r.id}" aria-expanded="${open}"`,'record');}).join('')}</div>`;}
  function followFact(k){const f=D.cases[k].follow,fs=state.follows[k];
   if(k==='photo'){const t=tally(),mine=E.followMarks.photo.ids.filter(id=>fs.marks[id]==='cut').length;return `여섯 장 가운데 담이가 잘린 사진은 ${E.truth.filter(x=>x==='cut').length}장이다. 얼굴이 일부라도 사진 틀 밖으로 나가면 잘린 것으로 셌다. 잘린 횟수: ${t.map(([n,c])=>n+' '+c).join(' · ')}. (내가 ‘잘렸어’로 고른 사진 ${mine}장)`;}
   if(k==='writing')return '선생님이 5년 전에 쓴 글을 같은 검사기에 넣자, 세 문장 가운데 두 문장에 ‘AI 작성 의심’ 표시가 붙었다.';
+  if(f.fact)return f.fact;
   const n=s=>f.rows.filter(r=>r.status===s).length;return `점검표 ${f.rows.length}개 가운데 완료 ${n('완료')}개, 진행 중 ${n('진행 중')}개, 예정 ${n('예정')}개이고, 예정 항목에는 점검 기록이 없다.`;}
  function followBody(k){const f=D.cases[k].follow,fs=state.follows[k],m=E.followMarks[k],done=m.ids.filter(id=>fs.marks[id]).length;let b='';
   if(k==='writing')b+=btn('검사기에 넣기','run',fs.marks.run?'disabled':'');
-  else if(!E.followReady(state,k))b+=`<p class="hint">${done}/${m.ids.length} ${k==='photo'?'장 골랐어':'개 확인했어'}.</p>`;
+  else if(k==='library'){if(tapHint)b+=`<p class="tap-hint" role="status">${esc(tapHint)}</p>`;}
+  else if(!E.followReady(state,k))b+=`<p class="hint">${done}/${m.ids.length} ${k==='photo'?'장 골랐어':k==='recommend'?'개 열었어':'개 확인했어'}.</p>`;
   if(!E.followReady(state,k))return b;
   if(k==='photo'){const wrong=m.ids.map((id,i)=>fs.marks[id]!==E.truth[i]?i+1:null).filter(Boolean);b+=`<div class="finding" role="status"><p>${esc(followFact(k).replace(/ \(내가.*$/,''))}</p><p>${wrong.length?`네 표시와 기록이 다른 사진: ${wrong.join(', ')}번`:'네 표시는 기록과 같아.'}</p></div>`;}
   else b+=`<div class="finding" role="status"><p>${esc(followFact(k))}</p></div>`;
@@ -152,15 +188,17 @@
  // 카드 한 장의 피드백: 상태 글자(✓/!/○ + 종류 · 넣음/빠짐/뺐음)와 짧은 한 줄. 색만으로 구분하지 않는다.
  function cardFeedback(k,card,posted){const kind=E.noticeKind(k,card.id),on=posted.includes(card.id);
   const good=kind==='must'?on:kind==='nice'?null:!on,mark=good===null?(on?'✓':'○'):good?'✓':'!',state_=on?'넣음':kind==='must'?'빠짐':kind==='nice'?'안 넣음':'뺐음';
-  const say=kind==='conflict'?[N.fb.conflict[on?'in':'out'],card.clash].filter(Boolean).join(' '):N.fb[kind][on?'in':'out'];
-  return `<p class="card-fb ${good===false?'fb-again':good===null&&!on?'fb-plain':'fb-ok'}" id="fb-${card.id}"><span class="fb-tag">${mark} ${esc(N.kinds[kind])} · ${state_}</span> ${esc(say)}</p>`;}
+  const say=D.cases[k].solo?'':kind==='conflict'?[N.fb.conflict[on?'in':'out'],card.clash].filter(Boolean).join(' '):N.fb[kind][on?'in':'out'];
+  return `<p class="card-fb ${good===false?'fb-again':good===null&&!on?'fb-plain':'fb-ok'}" id="fb-${card.id}"><span class="fb-tag">${mark} ${esc(N.kinds[kind])} · ${state_}</span>${say?' '+esc(say):''}</p>`;}
  function noticeVerdict(k,posted){const r=E.noticeCheck(k,posted);
+  if(D.cases[k].solo){const parts=['missing','conflicts','promises'].filter(x=>r[x].length).map(x=>`${N.againParts[x]} ${r[x].length}장`);
+   return `<div class="finding${r.ok?'':' again'} notice-verdict" role="status"><p><strong>${esc(r.ok?N.ok:N.again)}</strong>${r.ok?'':' · '+esc(parts.join(' · '))+'.'}</p></div>`;}
   if(r.ok)return `<div class="finding notice-verdict" role="status"><p><strong>${esc(N.ok)}</strong> ${esc(N.okMore)}</p></div>`;
   const parts=['missing','conflicts','promises'].filter(x=>r[x].length).map(x=>`${N.againParts[x]} ${r[x].length}장`);
   return `<div class="finding again notice-verdict" role="status"><p class="again-head">${esc(N.again)}</p><p>${esc(parts.join(' · '))}. ${esc(N.againMore)}</p></div>`;}
  function noticeBody(k){const nt=D.cases[k].notice,ns=state.notices[k],posted=postedOf(k),fresh=!!posted&&sameSet(posted,ns.picked);
   // 고정 한 줄과 사건 도입 대사를 한 묶음으로 짧게: 같은 화자가 이어 말하면 얼굴·이름을 다시 쓰지 않는다.
-  const intro=[['moa',N.principle],...nt.lines].map((l,i,all)=>i&&all[i-1][0]===l[0]?`<p class="line cont">${esc(l[1])}</p>`:line(l,l[0]==='moa'?'moa':'')).join('');
+  const intro=D.cases[k].solo?`<p class="line plain">${esc(N.principle)}</p>`:[['moa',N.principle],...nt.lines].map((l,i,all)=>i&&all[i-1][0]===l[0]?`<p class="line cont">${esc(l[1])}</p>`:line(l,l[0]==='moa'?'moa':'')).join('');
   let b=`<div class="notice-intro">${intro}</div><p class="task">${esc(N.task)}</p>`;
   b+=`<div class="notice-cards" role="group" aria-label="안내문에 붙일 카드">${nt.cards.map(card=>{const on=ns.picked.includes(card.id),fb=fresh?cardFeedback(k,card,posted):'';
    return `<div class="notice-item">${btn(`<span class="pick-box" aria-hidden="true">${on?'✓':''}</span><span>${esc(card.text)}</span>`,'notice-pick',`data-id="${card.id}" aria-pressed="${on}"${fb?` aria-describedby="fb-${card.id}"`:''}`,'notice-card')}${fb}</div>`;}).join('')}</div>`;
@@ -195,6 +233,7 @@
   let h=`<section class="case-card" id="${mode}-${k}" tabindex="-1"><${H} class="case-title"><span class="case-num">사건 ${E.CASES.indexOf(k)+1}</span> ${esc(c.name)}</${H}>`;
   if(!seen.length&&!cs.final)return h+'<p class="hint">아직 시작하지 않았어.</p></section>';
   h+=group('궁금한 것',`<p>${esc(c.question)}</p>`);
+  if(c.asks)h+=group(R.asked,`<p>${state.asked.length?state.asked.map(q=>esc(c.asks.find(a=>a[0]===q)[1])).join(' · '):esc(R.notAsked)}</p>`);
   h+=group('확인한 자료',isReport?`<p>${seen.map(x=>esc(x.name)).join(' · ')||'아직 없음'}</p>`:`<ul class="facts">${seen.map(x=>`<li><strong>${esc(x.name)}</strong> ${esc(x.fact)}</li>`).join('')||'<li>아직 없음</li>'}</ul>`);
   h+=group('이 말은 맞을까?',verdicts(k));
   h+=group('조치',actions(k));
@@ -227,12 +266,12 @@
   return `<div class="write-q"><label class="frame-text" for="${id}">${frameHtml(frame)}</label><textarea id="${id}" ${data} rows="${rows}">\n${esc(value)}</textarea><p class="count"><span class="count-n">${[...value].length}자</span> · ${esc(D.reflect.recommend)}</p><p class="empty-note"${filled(value)?' hidden':''}>${esc(D.reflect.empty)}</p></div>`;}
  const today=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return {text:`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`,file:`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`};};
  // 보고서: 이 화면이 그대로 인쇄된다. 이름·학번은 이 기기 저장에만 남는다.
- function reportPage(){const e=D.ending,ask=e.asks.find(x=>x[0]===state.question),rp=state.reporter;
+ function reportPage(){const e=D.ending,rp=state.reporter;
   return `<article class="report" aria-label="${esc(R.title)}"><div class="report-head"><p class="report-game">${esc(R.game)} · ${esc(R.title)}</p><p class="report-date">작성일 ${today().text}</p>`
    +`<div class="reporter"><label>이름 <input data-reporter="name" maxlength="40" autocomplete="off" value="${esc(rp.name)}"></label><label>학번 <input data-reporter="number" maxlength="40" autocomplete="off" value="${esc(rp.number)}"></label></div>`
    +`<p class="hint no-print">${esc(R.privacy)}</p></div><div class="report-actions no-print">${btn('PDF로 저장하기','print','','primary')}<p class="hint">${esc(R.printHint)}</p></div>`
    +E.CASES.map(k=>caseCard(k,'report')).join('')
-   +`<section class="case-card" id="report-end" tabindex="-1"><h2 class="case-title">${esc(e.title)}</h2>${group('내가 고른 질문',`<p>${ask?esc(ask[1]):'아직 안 고름'}</p>`)}${group('마지막 서술',written(D.reflect.finalPrompt,state.finalNote))}<div class="card-links">${btn('서술 고치기','revisit',`data-scene="${E.END}"`)}</div></section></article>`;}
+   +`<section class="case-card" id="report-end" tabindex="-1"><h2 class="case-title">${esc(e.title)}</h2>${group('마지막 서술',written(D.reflect.finalPrompt,state.finalNote))}<div class="card-links">${btn('서술 고치기','revisit',`data-scene="${E.END}"`)}</div></section></article>`;}
  // PDF 기본 파일 이름이 되도록 인쇄하는 동안만 제목을 바꾼다.
  const baseTitle=document.title;
  function reportTitle(){const name=state.reporter.name.trim().replace(/[\\/:*?"<>|\s]+/g,'_');return ['투명성_보고서',name,today().file].filter(Boolean).join('_');}
@@ -247,12 +286,19 @@
   if(act==='next'){send({type:'next'});return;}
   if(act==='back'){send({type:'revisit',scene:state.scene-1});return;}
   if(act==='source'){view=b.dataset.id;keepFinding=null;tapHint='';render();const vis=$('.visual');if(vis&&vis.getBoundingClientRect().top<0)vis.scrollIntoView({block:'start'});return;}
-  if(act==='item'){view=b.dataset.id;keepFinding=null;tapHint='';const plain=['writing-guide','face-alert','face-photo'];if(plain.includes(view)&&!state.evidence.includes(view)){send({type:'check',id:view});}else render();
+  if(act==='item'){view=b.dataset.id;keepFinding=null;tapHint='';const plain=['writing-guide','face-alert','face-photo','library-guide','recommend-reason'];if(plain.includes(view)&&!state.evidence.includes(view)){send({type:'check',id:view});}else render();
    const vis=$('.visual');if(vis&&vis.getBoundingClientRect().top<0)vis.scrollIntoView({block:'start'});return;}
   if(act==='spot'){if(b.dataset.id==='2'){tapHint='';send({type:'check',id:'photo-original'});}else{tapHint='그 친구는 담이가 아니야. 담이는 원본 어디에 있었을까? 담이는 초록 얼굴에 등껍질을 멘 친구야.';render();}return;}
   if(act==='region'){regions.add(Number(b.dataset.id));if(regions.size===3)send({type:'check',id:'photo-rule'});else render();return;}
   if(act==='record'){const r=D.history.find(x=>x.id===b.dataset.id);if(r.target){tapHint='';send({type:'check',id:'writing-history'});}else{tapHint=r.hint;render();}return;}
   if(act==='segment'){const s=D.cases.face.clerkSegments.find(x=>x.id===b.dataset.id);if(s.found){tapHint=s.id==='rule'?s.found:'';send({type:'check',id:'face-clerk'});}else{tapHint=s.hint;render();}return;}
+  // 사건 4·5 자료 찾기
+  if(act==='loan'){const L=D.cases.library;if(L.loans[Number(b.dataset.id)][2]===L.top){tapHint='';send({type:'check',id:'library-loans'});}else{tapHint=L.checks[1].hint;render();}return;}
+  if(act==='score'){opened.add(Number(b.dataset.id));if(D.cases.library.scores.rows.filter(r=>r[5]).every(r=>opened.has(r[0])))send({type:'check',id:'library-scores'});else render();return;}
+  if(act==='meet'){const x=D.cases.recommend.meeting.segments.find(s=>s.id===b.dataset.id);if(x.target)send({type:'check',id:'recommend-meeting'});else{tried.add('meet:'+x.id);render();}return;}
+  if(act==='bus'){if(b.dataset.id==='none')send({type:'check',id:'recommend-bus'});else{tried.add('bus:'+b.dataset.id);render();}return;}
+  if(act==='change'){const x=D.cases.library.follow.segments.find(s=>s.id===b.dataset.id);if(x.changed){tapHint='';send({type:'mark',id:'changed',value:'found'});}else{tapHint=x.hint;render();}return;}
+  if(act==='list'){send({type:'mark',id:b.dataset.id,value:'open'});return;}
   if(act==='judge'){keepFinding=null;justJudged=E.currentJudgment(state,k);send({type:'judge',stamp:b.dataset.id});return;}
   if(act==='judge-next'){justJudged=null;render();$('#work .judge [data-act="judge"]')?.focus({preventScroll:true});return;}
   if(act==='notice-pick'){send({type:'notice-pick',id:b.dataset.id});return;}
@@ -270,7 +316,7 @@
   if(act==='to-report'){send({type:'revisit',scene:E.REPORT});const card=document.getElementById('report-'+b.dataset.case);if(card){card.scrollIntoView({block:'start'});card.focus({preventScroll:true});}return;}
   if(act==='revisit'){skipFocusReturn=modal.open;close();send({type:'revisit',scene:Number(b.dataset.scene)});return;}
   if(act==='sources'){sources();return;}
-  if(act==='discussion'){open('토론 질문','<ol><li>설명을 들었지만 문제가 해결되지 않은 장면은 어디였나?</li><li>끝까지 알 수 없었던 것은 무엇이고, 그래도 바꿀 수 있었던 조치는 무엇인가?</li></ol>');return;}
+  if(act==='discussion'){open('토론 질문',`<ol>${D.ending.discussion.map(q=>`<li>${esc(q)}</li>`).join('')}</ol>`);return;}
   if(act==='settings'){open('설정',`<p>진행은 이 브라우저에 자동 저장돼요. 다시 열면 하던 곳부터 이어져요. 계정 가입이나 교사용 수집은 없어요.</p><div class="menu">${btn('참고한 실제 사례','sources')}${btn('처음부터 다시 하기','reset-ask')}</div><p class="hint">플레이 시간과 교육 효과는 아직 실제 학생을 대상으로 검증하지 않았어요.</p>`);return;}
   if(act==='reset-ask'){open('처음부터 다시 하기',`<p>이 게임의 진행과 수첩 기록을 지우고 처음으로 돌아가요. 공통 플레이어 정보와 다른 게임 기록은 그대로 둬요.</p><label class="check-row"><input type="checkbox" id="reset-reporter" checked> 이름과 학번도 지우기</label><div class="menu">${btn('지우고 처음부터','reset','','primary')}${btn('취소','close')}</div>`);return;}
   if(act==='reset'){const keep=$('#reset-reporter')?.checked===false;close();reset(keep);return;}
@@ -284,6 +330,10 @@
   save();const box=t.closest('.write-q');if(box){box.querySelector('.count-n').textContent=[...t.value].length+'자';box.querySelector('.empty-note').hidden=filled(t.value);}});
  modal.addEventListener('click',e=>{if(e.target===modal){const r=modal.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close();}});
  modal.addEventListener('close',()=>{if(skipFocusReturn){skipFocusReturn=false;return;}if(lastFocus?.isConnected&&!lastFocus.disabled)lastFocus.focus({preventScroll:true});});
- window.TransparencyGame={getState:()=>JSON.parse(JSON.stringify(state)),storageKey:KEY};
+ // 사건 4·5 새 그림: 게임용 사본(.webp) → 원본(.png)을 차례로 불러 보고, 열리는 것이 있으면 그것을 쓴다. 없으면 story의 대신 그림 그대로.
+ const artFound={};
+ for(const [key,{base,bg}] of Object.entries(A.newArt||{})){const tryNext=list=>{if(!list.length)return;const src=base+'.'+list[0],img=new Image();
+  img.onload=()=>{A[key]=src;if(bg!==undefined)A.backgrounds[bg]=src;artFound[key]=src;if(['library','recommend'].includes(E.caseKey(state.scene)))render(false);};img.onerror=()=>tryNext(list.slice(1));img.src=src;};tryNext(['webp','png']);}
+ window.TransparencyGame={getState:()=>JSON.parse(JSON.stringify(state)),storageKey:KEY,art:()=>({...artFound})};
  save();render(false);
 })();

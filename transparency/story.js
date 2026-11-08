@@ -1,14 +1,20 @@
 window.TransparencyStory = (()=>{
  const s='assets/s01/', r='assets/remaining/';
- const art={backgrounds:[r+'bg-repair-shop.png',s+'bg-festival-board.png',r+'bg-school-corridor.png',r+'bg-bakery-entrance.png'],moa:s+'moa-attentive.png',lulu:s+'lulu-concerned.png',dami:s+'dami-hurt.png',bami:r+'bami-concerned.png',teacher:r+'teacher-listening.png',clerk:r+'clerk-hesitant.png',clerkOpen:r+'clerk-reconsidering.png',luluPaper:r+'lulu-manuscript.png',photo:s+'festival-group-original.png',faces:r+'face-comparison-fictional.png',expressions:r+'moa-expressions.png',props:r+'props-atlas.png'};
- const names={moa:'모아',lulu:'루루',luluPaper:'루루',dami:'담이',bami:'밤이',teacher:'선생님',clerk:'점원',clerkOpen:'점원',town:'마을 사람들',classmate:'반 친구',app:'앱 알림'};
- const bgNames=['저녁 골목과 수리점','축제 게시판 앞','학교 복도','빵집 입구'];
+ const art={backgrounds:[r+'bg-repair-shop.png',s+'bg-festival-board.png',r+'bg-school-corridor.png',r+'bg-bakery-entrance.png'],moa:s+'moa-attentive.png',lulu:s+'lulu-concerned.png',dami:s+'dami-hurt.png',bami:r+'bami-concerned.png',teacher:r+'teacher-listening.png',clerk:r+'clerk-hesitant.png',clerkOpen:r+'clerk-reconsidering.png',luluPaper:r+'lulu-manuscript.png',photo:s+'festival-group-original.png',faces:r+'face-comparison-fictional.png',expressions:r+'moa-expressions.png',props:r+'props-atlas.png',librarian:r+'teacher-listening.png'};
+ // 사건 4·5 새 그림(docs/codex-art-brief-4-5.md). 처음에는 지시서의 '대신 쓸 그림'을 쓰고, app.js가 시작할 때 base + '.webp'(게임용 사본) → '.png'(원본)을 불러 보아
+ // 열리는 것이 있으면 그것으로 바꾼다. bg = 배경 배열 자리.
+ art.backgrounds.push(r+'bg-school-corridor.png',r+'bg-repair-shop.png');
+ Object.assign(art,{library:art.backgrounds[4],observatory:art.backgrounds[5],damiBooks:art.dami,moaPhone:art.moa,luluCasual:art.lulu});
+ art.newArt={library:{base:'assets/s04/bg-school-library',bg:4},damiBooks:{base:'assets/s04/dami-books'},observatory:{base:'assets/s05/bg-observatory-hill',bg:5},moaPhone:{base:'assets/s05/moa-phone'},luluCasual:{base:'assets/s05/lulu-casual'}};
+ const names={moa:'모아',lulu:'루루',luluPaper:'루루',dami:'담이',bami:'밤이',teacher:'선생님',clerk:'점원',clerkOpen:'점원',town:'마을 사람들',classmate:'반 친구',app:'앱 알림',
+  librarian:'사서 선생님',libraryGuide:'추천 안내',recApp:'추천 앱',damiBooks:'담이',moaPhone:'모아',luluCasual:'루루'};
+ const bgNames=['저녁 골목과 수리점','축제 게시판 앞','학교 복도','빵집 입구','학교 도서관','언덕 위 관측 데크'];
  // 판단 세 갈래. 학습 목표: 자료로 확인된 것 / 자료로는 알 수 없는 것 / 자료와 다른 것을 나눈다.
  const stamps={confirmed:'자료로 확인돼',unknown:'자료로는 알 수 없어',different:'자료와 달라'};
  const intro={
   title:'다섯 친구가 찍은 사진에서, 담이 얼굴만 잘렸다.',
   lines:[['town','이유를 물으면 다들 말해. “시스템이 그렇게 정했대.”'],['moa','정말 그럴까? 직접 확인해 보자.']],
-  plan:'사건은 세 개야. 사건마다 궁금한 것 하나를 직접 확인하고, 어떻게 할지 골라.',
+  plan:'사건은 다섯 개야. 사건마다 궁금한 것 하나를 직접 확인하고, 어떻게 할지 골라.',
   note:'이 마을과 자료는 창작이에요. 실제 사례에서 문제의 구조만 참고했어요.'
  };
  const drafts={before:'긴 여행 끝에 주인공은 집 앞에 도착했다.',draft:'문을 열자 모두가 돌아와 있었다. 주인공은 기뻤다.',memo:'결말이 너무 갑작스러움. 문을 열기 전에 망설이는 장면 넣기.',revision:'주인공은 손잡이를 잡고도 한참 서 있었다. 안에서 익숙한 웃음소리가 들렸다.'};
@@ -131,12 +137,83 @@ window.TransparencyStory = (()=>{
      {id:'face-wall',text:'등록된 손님의 사진을 문에 붙여 둬요.',clash:'알리는 것도 좋지만, 등록된 손님의 사진은 그 사람의 개인정보라 부딪쳐. 알리되 얼굴 인식을 쓴다는 것만큼만.'},
      {id:'face-blur',text:'등록 사진이 흐리면 틀릴 수 있어요.'},{id:'face-report',text:'잘못 막혔다면 이곳으로 알려 주세요.'}]}},
   // ── 사건 4·5(2026-11-08 구현, 문장 전부 교사 검수 대기) ──
-  library:{name:'도서관 추천 사건',
+  library:{name:'도서관 추천 사건',title:'같은 책만 추천하는 도서관',bg:4,cast:['moa','librarian','damiBooks'],
+   hook:[['dami','나는 공룡 책만 빌렸는데, 추천은 맨날 요즘 인기 책이야.'],['librarian','추천 안내문에는 ‘읽은 책을 기준으로 추천한다’고 적혀 있어.']],
+   question:'추천 AI의 설명은 기록과 맞을까?',screen:['담이에게 추천','1위 마법학교 7'],
+   checks:[
+    {id:'library-guide',label:'AI 안내 보기',name:'AI 안내',task:'추천 안내문을 읽어 봐.',fact:'추천 안내문에는 ‘학생이 읽은 책을 기준으로 추천한다’고 적혀 있다.',
+     guide:'추천 도서 안내 · 이 추천은 학생이 읽은 책을 기준으로, 비슷한 책을 골라 보여 줍니다.',finding:[['moa','안내는 ‘읽은 책 기준’이라고만 해.']]},
+    {id:'library-loans',label:'대출 기록 보기',name:'대출 기록',task:'담이가 가장 많이 빌린 분야의 책을 하나 눌러 봐.',fact:'담이는 최근 빌린 책 8권 가운데 5권이 공룡 책이다.',
+     hint:'이 분야는 1~2권뿐이야.',finding:[['moa','여덟 권 가운데 다섯 권이 공룡 책이야.']]},
+    {id:'library-scores',label:'추천 점수 기록 보기',name:'추천 점수 기록',task:'점수가 ‘?’인 책을 눌러 점수를 하나씩 열어 봐.',fact:'추천 점수 기록에서는 인기 점수 비중(0.8)이 읽은 책과 비슷한 정도(0.2)보다 크다.',
+     finding:[['moa','제일 비슷한 책은 순위 밖이고, 인기 점수가 크게 들어가.']],more:'점수는 0~100이에요. 이야기 속 추천 AI가 남긴 가상의 기록이에요.'}
+   ],
+   loans:[['9월 2일','공룡의 발자국','공룡'],['9월 9일','티라노 탐구 노트','공룡'],['9월 16일','개미 도시','곤충'],['9월 23일','화석 캐는 날','공룡'],
+    ['10월 7일','별자리 첫걸음','우주'],['10월 14일','바다 공룡 이야기','공룡'],['10월 21일','사슴벌레 관찰기','곤충'],['10월 28일','공룡 뼈 맞추기','공룡']],
+   loansLabel:'담이의 최근 대출 기록 8권',top:'공룡',
+   // 순위·책·읽은 책과 비슷함·이번 달 인기·최종. hidden = 처음에 점수가 '?'인 행(눌러서 연다).
+   scores:{label:'추천 점수 기록 · 담이',head:['순위','책','비슷함','인기','최종'],formula:'최종 점수 = 읽은 책과 비슷함 × 0.2 + 이번 달 인기 × 0.8',
+    rows:[[1,'마법학교 7',10,95,78,true],[2,'아이돌 다이어리',5,90,73,true],[3,'공룡 대백과',90,30,42,true],[4,'우주 정거장 일기',40,35,36,false],[5,'익룡의 하늘',95,10,27,true],[6,'곤충 탐정단',70,5,18,false]]},
+   judges:[
+    {who:'libraryGuide',src:['library-scores','library-guide'],text:'이 추천은 읽은 책을 기준으로 골랐습니다.',right:'맞아, 자료와 달라. 기록에서는 인기 점수가 0.8로 훨씬 크게 들어가.',wrong:'추천 점수 기록의 계산식 줄을 다시 봐.'},
+    {who:'librarian',src:['library-scores'],text:'추천 1위 책은 이번 달 인기 점수가 95점이야.',right:'맞아, 자료로 확인돼. 점수표에 95점이 그대로 있어.',wrong:'점수표에서 1위 책의 인기 점수를 다시 찾아봐.'},
+    {who:'dami',src:['library-scores'],text:'업체가 인기 책을 많이 빌리게 하려고 일부러 이렇게 만들었어.',right:'맞아, 자료로는 알 수 없어. 왜 0.8로 정했는지는 기록에 없어.',wrong:'기록에는 숫자만 있어. 그렇게 정한 까닭은 어디에도 없어.'}
+   ],
+   after:'안내가 틀렸다는 건 확인했어. 왜 그렇게 만들었는지는 아직 몰라.',
+   choose:{question:'추천 기능을 어떻게 할까?',options:[
+    {id:'trust',label:'안내를 믿고 추천 책 빌리기',title:'추천은 그대로야',status:'추천 화면: 안내 그대로',screen:['담이에게 추천','1위 마법학교 7','안내: 읽은 책 기준'],
+     reaction:[['dami','또 인기 책이네. 공룡 책은 내가 찾아야겠어.']],feedback:'안내와 기록이 다른 걸 알고도 안내를 그대로 뒀어.'},
+    {id:'report',label:'기록과 다르다고 알리고 안내 고치기 요청',title:'차이를 알렸어',status:'추천 화면: 임시 표시가 붙음',screen:['담이에게 추천','1위 마법학교 7','임시 표시: 인기순이 크게 들어감'],
+     reaction:[['librarian','업체에 안내를 기록에 맞게 고쳐 달라고 할게.'],['dami','알고 보니 덜 헷갈려.']],feedback:'설명이 기록과 다르면, 그 차이를 알리고 설명을 고치게 하는 게 시작이야.'},
+    {id:'off',label:'추천 기능 끄기',title:'추천이 꺼졌어',status:'추천 화면: 꺼짐',screen:['추천 꺼짐'],
+     reaction:[['dami','추천이 없으니 새 공룡 책 찾기가 더 힘들어.']],feedback:'잘못된 안내는 사라졌지만, 왜 기록과 달랐는지는 여전히 몰라.'}
+   ]},
+   follow:{src:'업체 답장과 새 안내',question:'안내는 정말 고쳐졌을까?',lines:[['librarian','두 주 뒤에 업체 답장이 왔어. 다른 학교에서도 같은 문의가 있었대.']],
+    task:'새 안내에서 예전과 달라진 말을 눌러 봐.',oldLabel:'예전 안내',newLabel:'새 안내 · 11월 16일',
+    segments:[{id:'title',text:'추천 도서 안내',hint:'이 말은 예전과 같아.'},{id:'both',text:'학생이 읽은 책과 이번 달 인기를 함께 봅니다.',changed:true},{id:'weight',text:'인기 비중이 큽니다.',changed:true}],
+    replyLabel:'업체 답장 · 11월 16일',reply:'안내문을 ‘읽은 책과 이번 달 인기를 함께 봅니다. 인기 비중이 큽니다.’로 바꿨습니다. 점수 계산 방식은 그대로입니다.',
+    scoreLabel:'새 점수 기록 · 11월 16일',
+    fact:'업체는 안내문을 ‘읽은 책과 이번 달 인기를 함께 봅니다. 인기 비중이 큽니다.’로 바꿨고, 점수 계산식(비슷함 × 0.2 + 인기 × 0.8)은 그대로다.',
+    judge:{who:'dami',text:'이제 계산이 바뀌어서 추천이 내 취향을 더 잘 맞춰.',right:'맞아, 자료와 달라. 안내문만 바뀌었고 가중치는 0.2와 0.8 그대로야.',wrong:'새 점수 기록의 계산식을 다시 봐.'},
+    unknown:'인기 비중을 왜 0.8로 정했는지는 아직 몰라.',more:'설명을 기록에 맞게 고치는 것과, 추천 방식 자체를 바꾸는 것은 다른 일이에요.'},
    notice:{title:'추천 기능을 켜기 전에, 학생들에게 무엇을 알릴까?',paper:'도서관 추천 화면 안내',lines:[],
     cards:[{id:'library-perfect',text:'추천은 늘 네 취향에 딱 맞아요.'},{id:'library-record',text:'추천에 네가 빌린 책 기록을 써요.'},{id:'library-off',text:'추천을 끄거나 다시 고를 수 있어요.'},
      {id:'library-others',text:'다른 학생들이 빌린 책 목록을 보여 줘요.',clash:'알리는 것도 좋지만, 다른 학생이 빌린 책은 그 학생의 개인정보라 부딪쳐. 알리되 인기 책을 섞는다는 것만큼만.'},
      {id:'library-popular',text:'기록과 상관없는 인기 책도 섞어서 보여 줘요.'}]}},
-  recommend:{name:'모임 추천 사건',
+  // 사건 5는 모아 혼자 조사한다(solo): 모아의 해설·힌트·상태 표시를 빼고, 판단 피드백은 '기록과 맞춰 보면: …' 한 줄(sum).
+  recommend:{name:'모임 추천 사건',title:'밤하늘 관찰 모임',bg:5,cast:['moaPhone','luluCasual','dami'],solo:true,
+   soloNote:'이번에는 모아 혼자야. 물어보고, 확인하고, 정해 봐.',
+   hook:[['lulu','새 앱이 너한테 ‘밤하늘 관찰 모임’을 추천했대.']],
+   question:'이 추천, 믿고 가도 될까?',screen:['추천 알림','밤하늘 관찰 모임'],
+   // 예전 마지막 장면의 질문 넷(대답 문장 그대로)을 여기로 옮겼다.
+   askPrompt:'앱에 무엇부터 물어볼까?',askNeed:'질문을 하나 이상 하면 직접 확인할 수 있어.',
+   asks:[['input','어떤 정보를 썼어?','관심사로 고른 ‘별’과 ‘야외 활동’을 썼어요.'],['criteria','무엇을 기준으로 골랐어?','관심사와 이어진 모임을 먼저 골랐어요. 순위를 매긴 자세한 이유는 알려 주지 않았어요.'],['unknown','확인하지 못한 건 뭐야?','모임이 실제로 열리는지, 집에 오는 교통편은 확인하지 못했어요.'],
+    ['notice','쓰기 전에 무엇을 알려 줬어야 해?','추천에 관심사를 쓴다는 건 처음에 알렸어요. 추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요.']],
+   afterAsk:'네 질문 모두 상자를 여는 질문이야.',
+   checks:[
+    {id:'recommend-reason',label:'추천 이유 보기',name:'추천 이유',task:'앱이 밝힌 추천 이유를 읽어 봐.',fact:'앱은 관심사 ‘별’과 ‘야외 활동’을 보고 추천했다고 하며, 순위 계산 방법은 공개하지 않는다.',
+     guide:'선택한 관심사 ‘별’, ‘야외 활동’과 이어진 모임을 먼저 보여 줍니다. 순위 계산 방법은 공개하지 않습니다.'},
+    {id:'recommend-meeting',label:'모임 안내 보기',name:'모임 안내',task:'모임이 끝나는 시각을 눌러 봐.',fact:'모임은 토요일 21시에 시작해 23시에 끝난다.'},
+    {id:'recommend-bus',label:'버스 시간표 보기',name:'버스 시간표',task:'모임이 끝난 뒤 탈 수 있는 버스를 눌러 봐.',fact:'토요일 마지막 버스는 22시 20분이라, 모임이 끝난 뒤 탈 버스가 없다.'}
+   ],
+   meeting:{label:'모임 안내',segments:[{id:'name',text:'밤하늘 관찰 모임'},{id:'day',text:'매주 토요일'},{id:'start',text:'21:00'},{id:'end',text:'23:00',target:true},{id:'place',text:'모아마을 뒷산 전망대'},{id:'fee',text:'참가비 없음'},{id:'consent',text:'중학생은 보호자 동의서 필요'}]},
+   bus:{label:'버스 시간표 · 토요일 · 뒷산 전망대 → 모아마을',rows:[{id:'b1',time:'21:30'},{id:'b2',time:'22:00'},{id:'b3',time:'22:20',note:'막차'}],none:'탈 수 있는 버스 없음'},
+   judges:[
+    {who:'recApp',src:['recommend-meeting','recommend-bus'],text:'모임이 끝나고 버스로 집에 갈 수 있어요.',sum:'기록과 맞춰 보면: 모임은 23시에 끝나고, 토요일 막차는 22시 20분이야.'},
+    {who:'lulu',src:['recommend-reason'],text:'이 모임이 모아에게 가장 잘 맞는 모임이야.',sum:'기록과 맞춰 보면: 앱은 순위를 매긴 방법을 공개하지 않아서, 가장 잘 맞는지는 기록에 없어.'},
+    {who:'dami',src:['recommend-reason'],text:'앱은 모아가 고른 관심사 ‘별’을 썼어.',sum:'기록과 맞춰 보면: 추천 이유에 관심사 ‘별’과 ‘야외 활동’이 적혀 있어.'}
+   ],
+   after:'',
+   choose:{question:'모아는 어떻게 할까?',options:[
+    {id:'join',label:'추천대로 바로 신청하기',title:'바로 신청했어',summary:'모임은 좋았지만, 끝나고 버스가 끊겨 보호자에게 데리러 와 달라고 했다.',reaction:[['lulu','별은 멋졌대. 집에 오는 길은 힘들었고.']]},
+    {id:'ask',label:'끝나는 시각과 귀가 방법을 먼저 묻기',title:'먼저 물어봤어',summary:'운영자가 22시에 먼저 내려가는 무리가 있다고 알려 줬다. 모아는 그 무리와 함께 내려오기로 했다.',reaction:[['dami','나도 다음엔 같이 갈래.']]},
+    {id:'skip',label:'추천을 무시하고 다른 모임 찾기',title:'다른 모임을 찾았어',summary:'다른 모임을 찾느라 일주일이 지났다. 별 모임이 맞았는지는 확인하지 못했다.',reaction:[['lulu','추천이 다 틀린 건 아니었을지도.']]}
+   ]},
+   follow:{src:'세 친구의 추천 목록',question:'친구들에게도 같은 모임이 추천됐을까?',lines:[],task:'이름을 눌러 세 친구의 추천 목록을 열어 봐.',
+    lists:[{id:'moa',name:'모아',interest:'별·야외 활동',items:['밤하늘 관찰 모임','천체 사진 교실']},{id:'lulu',name:'루루',interest:'음악·실내 활동',items:['합창 동아리','밤하늘 관찰 모임']},{id:'dami',name:'담이',interest:'공룡·박물관',items:['밤하늘 관찰 모임','화석 체험 교실']}],
+    target:'밤하늘 관찰 모임',fact:'관심사가 다른 루루(2위)와 담이(1위)의 추천 목록에도 밤하늘 관찰 모임이 위에 있다.',
+    judge:{who:'recApp',text:'관심사와 이어진 모임을 먼저 보여 줍니다.',sum:'기록과 맞춰 보면: 관심사가 다른 루루와 담이에게도 이 모임이 위에 있어.'},
+    unknown:'관심사와 상관없는 친구에게도 이 모임이 위에 뜨는 까닭은 아직 몰라.',more:'광고인지 인기 때문인지는 이 기록으로 알 수 없어요. 운영자에게 물어야 해요.'},
    notice:{title:'모임 추천 앱을 내놓기 전에, 쓰는 사람에게 무엇을 알릴까?',paper:'모임 추천 앱 첫 화면 안내',lines:[],
     cards:[{id:'recommend-interest',text:'관심사 ‘별’·‘야외 활동’으로 골라요.'},{id:'recommend-safe',text:'추천한 모임은 늘 안전하고 너에게 딱 맞아요.'},{id:'recommend-unchecked',text:'모임이 끝나는 시각과 집에 갈 교통은 확인하지 않아요.'},
      {id:'recommend-off',text:'추천을 끄는 방법이 있어요.'},{id:'recommend-formula',text:'순위 계산식을 전부 공개해요.',clash:'알리는 것도 좋지만, 계산식은 너무 어려워 오히려 안 읽히고 회사 기술 비밀과도 부딪쳐. 알리되 무엇을 보고 고르는지만큼만.'},
@@ -155,18 +232,15 @@ window.TransparencyStory = (()=>{
   report:'미리 알리기',reportOk:'다 맞음',reportAgain:'고칠 점 있음',reportMissing:'빠짐'};
  const ending={title:'닫히지 않은 질문',
   lines:[['lulu','이제 상자 속을 다 알게 된 거야?'],['moa','아니. 그래도 무엇을 물어야 하는지는 알게 됐어.']],
-  question:'새 앱이 모아에게 ‘밤하늘 관찰 모임’을 추천했어. 무엇부터 물어볼까?',
-  asks:[['input','어떤 정보를 썼어?','관심사로 고른 ‘별’과 ‘야외 활동’을 썼어요.'],['criteria','무엇을 기준으로 골랐어?','관심사와 이어진 모임을 먼저 골랐어요. 순위를 매긴 자세한 이유는 알려 주지 않았어요.'],['unknown','확인하지 못한 건 뭐야?','모임이 실제로 열리는지, 집에 오는 교통편은 확인하지 못했어요.'],
-   ['notice','쓰기 전에 무엇을 알려 줬어야 해?','추천에 관심사를 쓴다는 건 처음에 알렸어요. 추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요.']],
-  afterAsk:'네 질문 모두 상자를 여는 질문이야.',
   closing:['moa','설명이 기록과 맞는지, 결과가 맞는지, 무엇을 해도 되는지는 따로 살펴야 해.'],
-  quote:'상자를 여는 첫 번째 도구는, 질문이었다.'};
+  quote:'상자를 여는 첫 번째 도구는, 질문이었다.',
+  discussion:['설명을 들었지만 문제가 해결되지 않은 장면은 어디였나?','끝까지 알 수 없었던 것은 무엇이고, 그래도 바꿀 수 있었던 조치는 무엇인가?','설명이 기록과 다를 때, 누구에게 무엇을 고쳐 달라고 할 수 있을까?']};
  // 사건마다 생각 정리(후속 조사 다음)와 마지막 '나의 조사 보고서'. 문장 틀은 입력칸 위에 실제 글로 보인다.
  const reflect={title:'이 사건에서 알게 된 것을 적어 봐.',lead:'아래 문장을 이어서 써 봐. 비워 두고 넘어가도 돼.',
   q1:'① 나는 ___ 자료를 보고, 이 AI가 ___라고 판단했다.',q2:'② 이 AI에 대해 아직 확인하지 못한 것은 ___이고, 그것을 알려면 ___가 필요하다.',
   summary:'이 사건에서 내가 고른 것',recommend:'200자 안팎이면 좋아요',empty:'보고서에 ‘작성 안 함’으로 들어가요.',
   finalPrompt:'앞으로 AI 서비스를 쓸 때 나는 무엇을 먼저 물어볼까?'};
  const report={title:'나의 조사 보고서',game:'블랙박스를 열어보는 고양이',privacy:'이름과 학번은 이 기기에만 저장돼요. 서버로 보내지 않아요.',
-  printHint:'인쇄 창에서 대상을 ‘PDF로 저장’으로 고르세요.',notWritten:'작성 안 함'};
+  printHint:'인쇄 창에서 대상을 ‘PDF로 저장’으로 고르세요.',notWritten:'작성 안 함',asked:'물어본 질문',notAsked:'아직 안 물어봄'};
  return {art,names,bgNames,stamps,intro,drafts,history,alertText,cases,notice,ending,reflect,report};
 })();

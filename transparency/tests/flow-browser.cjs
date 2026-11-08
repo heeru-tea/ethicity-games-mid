@@ -17,13 +17,17 @@ const DESKTOP={width:1366,height:768},WIDE={width:1280,height:800},PHONE={width:
 // 모든 사건을 정답으로 마치고 보고서까지 간 저장(서술은 비어 있음)
 function finishedState(){let s=E.initial();
  for(let n=0;n<E.REPORT;n++){const k=E.caseKey(n),st=E.stepOf(n);
+  if(st==='hook'&&k==='recommend')s=E.reduce(s,{type:'ask',id:'input'});
   if(st==='check'){for(const id of E.checks[k])s=E.reduce(s,{type:'check',id});for(const a of E.answers[k])s=E.reduce(s,{type:'judge',stamp:a});}
   if(st==='choose'){s=E.reduce(s,{type:'choose',id:E.choices[k][0]});continue;}
   if(st==='follow'){const m=E.followMarks[k];m.ids.forEach((id,i)=>{s=E.reduce(s,{type:'mark',id,value:k==='photo'?E.truth[i]:m.values[0]});});s=E.reduce(s,{type:'follow-judge',stamp:E.followAnswers[k]});}
   if(st==='notice'){for(const id of E.noticeCards[k].must)s=E.reduce(s,{type:'notice-pick',id});s=E.reduce(s,{type:'notice-post'});}
-  if(st==='end')s=E.reduce(s,{type:'ask',id:'input'});
   s=E.reduce(s,{type:'next'});}
  assert.equal(s.scene,E.REPORT);return s;}
+// 옛 저장(version 3·4): 사건 1~3을 다 마친 상태에서 사건 4·5 칸과 asked를 뺀다. version 3은 안내문도 없다.
+const OLD3=['photo','writing','face'];
+function oldSave(version){const s=JSON.parse(JSON.stringify(finishedState()));for(const f of ['judgments','cases','follows','reflections','notices'])for(const k of ['library','recommend'])delete s[f][k];
+ s.evidence=s.evidence.filter(id=>OLD3.some(k=>E.checks[k].includes(id)));delete s.asked;s.question='input';s.completed=true;s.version=version;if(version===3)delete s.notices;return s;}
 const results={paths:[],checks:[],readability:[]};
 let browser,url,clicks=0;
 const state=p=>p.evaluate(()=>TransparencyGame.getState());
@@ -51,8 +55,21 @@ async function discover(p,k,id,wrongFirst){
   if(wrongFirst){await click(p,'[data-act="record"][data-id="h3"]');assert.match(await p.locator('.tap-hint').innerText(),/비슷하지만/);}
   await click(p,'[data-act="record"][data-id="h4"]');}
  if(id==='face-clerk'){if(wrongFirst){await click(p,'[data-act="segment"][data-id="system"]');assert.match(await p.locator('.tap-hint').innerText(),/알림/);}await click(p,'[data-act="segment"][data-id="person"]');}
+ // 사건 4: 대출 기록에서 공룡 책 하나, 점수표 1·2·3·5위를 열면 계산식 줄
+ if(id==='library-loans'){assert.equal(await p.locator('[data-act="loan"]').count(),8);
+  if(wrongFirst){await click(p,'[data-act="loan"][data-id="2"]');assert.match(await p.locator('.tap-hint').innerText(),/1~2권뿐/);}
+  await click(p,'[data-act="loan"][data-id="0"]');assert.equal(await p.locator('.visual .loan mark').count(),5,'five dinosaur books marked');}
+ if(id==='library-scores'){assert.equal(await p.locator('[data-act="score"]').count(),4,'rows 1,2,3,5 to open');assert.match(await p.locator('.score-row').nth(3).innerText(),/우주 정거장 일기[\s\S]*36/,'row 4 visible from the start');
+  for(const r of [1,2,3]){await click(p,`[data-act="score"][data-id="${r}"]`);}assert.equal(await p.locator('.score-formula').count(),0,'formula only after all four rows');
+  await click(p,'[data-act="score"][data-id="5"]');assert.match(await p.locator('.score-formula').innerText(),/× 0\.2[\s\S]*× 0\.8/);assert.match(await p.locator('.score-row').nth(4).innerText(),/익룡의 하늘[\s\S]*95/);}
+ // 사건 5(혼자): 잘못 누르면 글 안내 없이 '아님' 표시만
+ if(id==='recommend-meeting'){if(wrongFirst){await click(p,'[data-act="meet"][data-id="start"]');assert.equal(await p.locator('.tap-hint').count(),0,'solo: no tap hint');assert.equal(await p.locator('[data-act="meet"][data-id="start"] .tried-tag').count(),1);}
+  await click(p,'[data-act="meet"][data-id="end"]');assert.equal(await p.locator('.visual .segments mark').innerText(),'23:00');}
+ if(id==='recommend-bus'){assert.equal(await p.locator('[data-act="bus"]').count(),4);if(wrongFirst){await click(p,'[data-act="bus"][data-id="b3"]');assert.equal(await p.locator('.tap-hint').count(),0,'solo: no tap hint');assert.equal(await p.locator('.tried-tag').count(),1);}
+  await click(p,'[data-act="bus"][data-id="none"]');}
  assert.ok((await state(p)).evidence.includes(id),'checked '+id);
- assert.ok((await p.locator('.finding').count())>0,'finding shown for '+id);
+ if(D.cases[k].solo){assert.equal(await p.locator('.body .finding').count(),0,'solo: no 모아 finding for '+id);assert.doesNotMatch(await p.locator('.body').innerText(),/남은 자료/,'solo: no remaining-records hint');}
+ else assert.ok((await p.locator('.finding').count())>0,'finding shown for '+id);
 }
 async function judgeThree(p,k,judge){let n=0;
  for(let i=0;i<3;i++){
@@ -60,6 +77,7 @@ async function judgeThree(p,k,judge){let n=0;
   assert.match(await p.locator('.judge .question-label').innerText(),new RegExp(`${i+1}/3`));
   const pick=judge(k,i);await click(p,`[data-act="judge"][data-id="${pick}"]`);n++;
   const fb=await p.locator('.judge .finding').innerText();if(pick!==E.answers[k][i])assert.match(fb,/정리: 자료/,'wrong pick names the right category');
+  if(D.cases[k].solo){assert.match(fb,/^기록과 맞춰 보면: /,'solo: one summary line');assert.equal(await p.locator('.judge .again-head').count(),0);assert.equal(fb.split('\n').filter(Boolean).length,1);}
   if(i<2)await click(p,'[data-act="judge-next"]');
  }
  return n;}
@@ -70,16 +88,23 @@ async function follow(p,k,judge,wrongFirst){
   const t=await p.locator('.body .finding').first().innerText();assert.match(t,/잘린 사진은 3장/);assert.match(t,wrongFirst?/다른 사진: 2, 4, 6번/:/기록과 같아/);}
  if(k==='writing'){await click(p,'[data-act="run"]');assert.equal(await p.locator('.visual mark').count(),2);}
  if(k==='face'){for(const r of ['r1','r2','r3','r4'])await click(p,`[data-act="row"][data-id="${r}"]`);assert.equal(await p.locator('.proof').count(),4);}
+ if(k==='library'){if(wrongFirst){await click(p,'[data-act="change"][data-id="title"]');assert.match(await p.locator('.tap-hint').innerText(),/예전과 같아/);}
+  await click(p,'[data-act="change"][data-id="weight"]');assert.equal(await p.locator('.visual .segments mark').count(),2,'both changed phrases marked');assert.match(await p.locator('.body .finding').first().innerText(),/그대로다/);}
+ if(k==='recommend'){for(const id of ['moa','lulu']){await click(p,`[data-act="list"][data-id="${id}"]`);}assert.equal(await p.locator('.visual mark').count(),0,'marked only after all three lists');
+  await click(p,'[data-act="list"][data-id="dami"]');assert.equal(await p.locator('.visual mark').count(),3);}
  const pick=judge(k,'follow');await click(p,`[data-act="follow-judge"][data-id="${pick}"]`);
  assert.match(await p.locator('.judge .unknown').innerText(),/아직 모르는 점/);
+ if(D.cases[k].solo)assert.match(await p.locator('.judge .finding').innerText(),/^기록과 맞춰 보면: /);
  return 1;}
 // 미리 알리기: 고정 한 줄(모두에게), 빵집 도입 대사, 카드 = 토글 버튼(aria-pressed), 한 번 붙여야 다음, 카드별 상태 글자 + 전체 판정(status), 다시 고르기.
 // plan: 'ok' 바로 맞게 / 'fix' 틀리게 붙인 뒤 고쳐 다시 붙임 / 'wrong' 틀린 채로 넘어감
 const tagOf=async(p,id)=>(await p.locator('#fb-'+id+' .fb-tag').innerText()).replace(/\s+/g,' ');
 async function notice(p,k,plan){
  assert.equal(E.stepOf((await state(p)).scene),'notice');assert.match(await p.locator('.meta').innerText(),/만든 사람이라면: 미리 알리기/);
- const lines=await p.locator('.body .line').allInnerTexts();assert.match(lines[0],/안내문은 잘못된 조치를 대신하지 않아\. 그래도 미리 알리는 건 따로 해야 할 일이야\./);
+ const lines=await p.locator('.body .line').allInnerTexts(),solo=!!D.cases[k].solo;assert.match(lines[0],/안내문은 잘못된 조치를 대신하지 않아\. 그래도 미리 알리는 건 따로 해야 할 일이야\./);
  if(k==='face')assert.match(lines[1],/가게 입구에는 얼굴 인식을 쓴다는 안내가 없었어\./);else assert.equal(lines.length,1);
+ assert.equal(await p.locator('.notice-intro .who').count(),solo?0:1,'solo: the fixed line has no speaker');
+ const fbLine=async id=>(await p.locator('#fb-'+id).innerText()).replace(/\s+/g,' ').trim();
  const n=E.noticeCards[k],cards=p.locator('[data-act="notice-pick"]');assert.equal(await cards.count(),E.noticeIds(k).length);
  assert.ok((await cards.evaluateAll(a=>a.map(b=>b.getAttribute('aria-pressed')))).every(x=>x==='false'));
  assert.equal(await p.locator('[data-act="notice-post"]').isDisabled(),true,'nothing to post yet');assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),true,'post once before moving on');
@@ -88,14 +113,16 @@ async function notice(p,k,plan){
  if(plan!=='ok'){await pick(n.must[0]);await pick(n.conflict[0]);await pick(n.promise[0]);assert.equal(await pressed(n.conflict[0]),true);
   await post();assert.match(await p.locator('.notice-verdict').innerText(),/고칠 점이 있어/);
   assert.equal(await tagOf(p,n.must[1]),'! 꼭 필요 · 빠짐');assert.equal(await tagOf(p,n.conflict[0]),'! 부딪침 · 넣음');assert.equal(await tagOf(p,n.promise[0]),'! 지킬 수 없는 약속 · 넣음');assert.equal(await tagOf(p,n.must[0]),'✓ 꼭 필요 · 넣음');
-  assert.match(await p.locator('#fb-'+n.promise[0]).innerText(),/지킬 수 없는 약속은 오히려 믿음을 깨/);
+  if(solo){assert.equal(await fbLine(n.promise[0]),'! 지킬 수 없는 약속 · 넣음','solo: tag only');assert.equal((await p.locator('.notice-verdict').innerText()).split('\n').filter(Boolean).length,1,'solo: one verdict line');}
+  else assert.match(await p.locator('#fb-'+n.promise[0]).innerText(),/지킬 수 없는 약속은 오히려 믿음을 깨/);
   assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false,'posted once: can move on even if not all right');
   assert.equal(await p.locator('.notice-paper li').count(),3,'posted notice on the paper');
   if(plan==='fix'){await pick(n.conflict[0]);assert.equal(await p.locator('.card-fb').count(),0,'old feedback hidden after a change');assert.match(await p.locator('.body .repost').innerText(),/다시 붙이/);
    assert.match(await p.locator('[data-act="notice-post"]').innerText(),/다시 붙이기/);await pick(n.promise[0]);}}
  if(plan!=='wrong'){for(const id of n.must)if(!await pressed(id))await pick(id);if(k!=='writing')await pick(n.nice[0]);
-  await post();const v=await p.locator('.notice-verdict').innerText();assert.match(v,/다 맞았어/);assert.match(v,/이제 쓰는 사람이 미리 알고 고를 수 있어/);
-  if(k!=='writing'){assert.equal(await tagOf(p,n.nice[0]),'✓ 있으면 좋음 · 넣음');assert.match(await p.locator('#fb-'+n.nice[0]).innerText(),/이것도 도움이 돼/);}
+  await post();const v=await p.locator('.notice-verdict').innerText();assert.match(v,/다 맞았어/);
+  if(solo)assert.doesNotMatch(v,/이제 쓰는 사람이/,'solo: verdict line only');else assert.match(v,/이제 쓰는 사람이 미리 알고 고를 수 있어/);
+  if(k!=='writing'){assert.equal(await tagOf(p,n.nice[0]),'✓ 있으면 좋음 · 넣음');if(!solo)assert.match(await p.locator('#fb-'+n.nice[0]).innerText(),/이것도 도움이 돼/);}
   assert.equal(await tagOf(p,n.conflict[0]),'✓ 부딪침 · 뺐음');assert.match(await p.locator('#fb-'+n.conflict[0]).innerText(),/부딪/);}
  const s=await state(p);assert.ok(Array.isArray(s.notices[k].posted));assert.equal(E.noticeCheck(k,s.notices[k].posted).ok,plan!=='wrong');
  assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false);}
@@ -113,9 +140,58 @@ async function play(p,{tag,viewport,pick,judge,wrongFirst,shots,write={},note:fi
  clicks=0;let judgments=0;
  await p.goto(url,{waitUntil:'domcontentloaded'});await assets(p);
  await measure(p,'intro',viewport);if(shots.includes('intro'))await shot(p,`${tag}-intro`,viewport===PHONE);
+ assert.match(await p.locator('.body').innerText(),/사건은 다섯 개야\./);
  await click(p,'[data-act="next"]');
- for(const k of E.CASES){
-  assert.equal(E.stepOf((await state(p)).scene),'hook');assert.match(await p.locator('.meta').innerText(),new RegExp(`${E.CASES.indexOf(k)+1}/${E.CASES.length}`));
+ for(const k of E.CASES)judgments+=await playCase(p,k,{tag,viewport,pick,judge,wrongFirst,shots,write,notices});
+ assert.equal((await state(p)).scene,E.END);await measure(p,'end',viewport);
+ await ending(p,finalNote);
+ await measure(p,'end-done',viewport);if(shots.includes('end'))await shot(p,`${tag}-end`,viewport===PHONE);
+ await click(p,'.menu [data-act="notebook"]');const note=await p.locator('#modal-body').innerText();
+ assert.match(note,/원본 사진에는 다섯 친구가 모두 있고/);assert.match(note,/3\. “/);assert.match(note,/후속 조사/);assert.match(note,/점검표 4개 가운데/);
+ assert.match(note,/담이는 최근 빌린 책 8권 가운데 5권이 공룡 책이다/);assert.match(note,/토요일 마지막 버스는 22시 20분이라/);assert.match(note,/물어본 질문[\s\S]*쓰기 전에 무엇을 알려 줬어야 해\?[\s\S]*무엇을 기준으로 골랐어\?/);
+ assert.doesNotMatch(note.split('확인한 자료')[1].split('이 말은 맞을까?')[0],/^(모아|담이|루루)/m,'facts are third-person, not character lines');
+ assert.equal(await p.locator('#modal-body .case-card').count(),5,'notebook uses the grouped case cards');assert.match(note,/내 서술/);
+ {const s=await state(p);for(const [i,k] of E.CASES.entries())noticeShown(await p.locator('#modal-body .case-card').nth(i).innerText(),k,s,'notebook');}
+ if(shots.includes('notebook'))await shot(p,`${tag}-notebook`);
+ await p.keyboard.press('Escape');
+ // 나의 조사 보고서
+ await click(p,'.step-nav [data-act="next"]');assert.equal((await state(p)).scene,E.REPORT);await measure(p,'report',viewport);
+ const rep=await reportCheck(p,write,finalNote);
+ await p.locator('[data-reporter="name"]').fill('하늘');
+ const s=await state(p);assert.equal(s.completed,true);assert.equal(s.reporter.name,'하늘');
+ await p.reload({waitUntil:'domcontentloaded'});assert.deepEqual(await state(p),s,'completed play survives reload');for(const [i,k] of E.CASES.entries())noticeShown(await p.locator('.report .case-card').nth(i).innerText(),k,s,'report after reload');assert.equal(await p.locator('[data-reporter="name"]').inputValue(),'하늘');
+ assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
+ results.paths.push({tag,viewport:viewport.width+'x'+viewport.height,judgments,clicks,reportRight:rep.right,reportAgain:rep.again,reportNotWritten:rep.empties,choices:s.cases,judgmentsPicked:s.judgments,asked:s.asked,completed:s.completed,errors:errors.length,externalRequests:external.length});
+}
+// 마지막 장면(2026-11-08 사건 4·5): 질문은 사건 5로 옮겨 여기에는 없다. 대사 2줄 + 마무리 + 마지막 문장 + 마지막 서술 + 메뉴.
+async function ending(p,finalNote){
+ assert.equal(await p.locator('[data-act="ask"]').count(),0,'no questions on the ending');assert.equal((await state(p)).completed,true,'entering the ending completes the game');
+ const b=await p.locator('.body').innerText();assert.match(b,/이제 상자 속을 다 알게 된 거야\?/);assert.match(b,/설명이 기록과 맞는지, 결과가 맞는지, 무엇을 해도 되는지는 따로 살펴야 해\./);
+ assert.match(await p.locator('.ending-quote').innerText(),/질문이었다/);
+ assert.match(await p.locator('label[for="final-note"]').innerText(),/앞으로 AI 서비스를 쓸 때 나는 무엇을 먼저 물어볼까\?/);if(finalNote){await p.locator('#final-note').fill(finalNote);assert.equal((await state(p)).finalNote,finalNote);}
+ await click(p,'.menu [data-act="discussion"]');assert.equal(await p.locator('#modal-body li').count(),3);assert.match(await p.locator('#modal-body').innerText(),/설명이 기록과 다를 때, 누구에게 무엇을 고쳐 달라고 할 수 있을까\?/);await p.keyboard.press('Escape');}
+// 보고서: 사건 카드 다섯 + 마지막. 판단은 모두 글자로 정답/다시 볼 것, 빈 서술은 '작성 안 함', 사건 5 카드에 물어본 질문.
+async function reportCheck(p,write={},finalNote=''){
+ const rep=await p.locator('.report').innerText(),cards=p.locator('.report .case-card'),s=await state(p);assert.equal(await cards.count(),6);
+ for(const [i,k] of E.CASES.entries()){const t=await cards.nth(i).innerText();assert.match(t,new RegExp('사건 '+(i+1)));assert.match(t,/확인한 자료/);assert.match(t,/처음 조치[\s\S]*최종 조치/);assert.match(t,/후속 조사/);assert.match(t,/내 서술/);assert.equal((t.match(/내 판단:/g)||[]).length,4,'3 judgments + follow-up in case '+k);noticeShown(t,k,s,'report');}
+ {const t=await cards.nth(4).innerText();assert.match(t,/물어본 질문/);for(const q of s.asked)assert.ok(t.includes(D.cases.recommend.asks.find(a=>a[0]===q)[1]),'asked '+q);}
+ assert.doesNotMatch(await cards.nth(5).innerText(),/고른 질문/,'questions moved to case 5');
+ const right=(rep.match(/· 정답/g)||[]).length,again=(rep.match(/다시 볼 것/g)||[]).length;assert.equal(right+again,20,'every judgment marked in words');
+ const empties=E.CASES.reduce((a,k)=>a+['q1','q2'].filter(q=>!(write[k]||{})[q]&&!s.reflections[k][q]).length,0)+(finalNote||s.finalNote?0:1);assert.equal((rep.match(/작성 안 함/g)||[]).length,empties,"empty answers show '작성 안 함'");
+ for(const k of E.CASES)for(const t of Object.values(write[k]||{}))assert.ok(rep.includes(t),'written reflection in report');if(finalNote)assert.ok(rep.includes(finalNote));
+ assert.match(rep,/서버로 보내지 않아요/);assert.match(rep,/인쇄 창에서 대상을 ‘PDF로 저장’으로 고르세요/);
+ return {right,again,empties};}
+// 사건 하나: 궁금한 것 → 직접 확인·판단 셋 → 선택 → 결과 → 후속 조사 → 미리 알리기 → 생각 정리
+async function playCase(p,k,{tag,viewport,pick,judge,wrongFirst,shots,write={},notices={}}){let judgments=0;const c=D.cases[k];
+  assert.equal(E.stepOf((await state(p)).scene),'hook');assert.equal(E.caseKey((await state(p)).scene),k);assert.match(await p.locator('.meta').innerText(),new RegExp(`${E.CASES.indexOf(k)+1}/${E.CASES.length}`));
+  if(c.solo){// 사건 5: 혼자 안내 한 번, 질문을 하나 이상 해야 직접 확인
+   assert.equal(await p.locator('.solo-note').count(),1);assert.equal(await p.locator('.solo-note').innerText(),c.soloNote);
+   assert.equal(await p.locator('[data-act="ask"]').count(),4);assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),true,'ask first');
+   await click(p,'[data-act="ask"][data-id="notice"]');assert.match(await p.locator('.body .finding').innerText(),/추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요\./);assert.match(await p.locator('.body .finding').innerText(),/네 질문 모두/);
+   await click(p,'[data-act="ask"][data-id="criteria"]');assert.match(await p.locator('.body .finding').innerText(),/순위를 매긴 자세한 이유는 알려 주지 않았어요/);
+   assert.deepEqual((await state(p)).asked,['notice','criteria']);assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false);}
+  else assert.equal(await p.locator('.solo-note').count(),0);
+  if(k==='library')assert.match(await p.locator('.stage-screen').innerText(),/담이에게 추천[\s\S]*마법학교 7/);
   await measure(p,k+'-hook',viewport);if(shots.includes(k+'-hook'))await shot(p,`${tag}-${k}-hook`,viewport===PHONE);
   await click(p,'.step-nav [data-act="next"]');
   await measure(p,k+'-check-start',viewport);
@@ -131,6 +207,9 @@ async function play(p,{tag,viewport,pick,judge,wrongFirst,shots,write={},note:fi
   if(k==='photo'){const crop=await p.locator('.stage-photo canvas').getAttribute('data-crop');assert.equal(crop,(pick.photo==='all'?E.ALL:E.AUTO).join(','));}
   if(k==='face'){assert.equal(await p.locator('.stage-status').innerText(),pick.face==='release'?'입장 제한 해제':'입장 제한 중');assert.equal(await p.locator('img.actor.clerkOpen').count(),pick.face==='release'?1:0);}
   if(k==='writing')assert.equal(await p.locator('.stage-status').innerText(),pick.writing==='detector'?'발표: 빠짐':'발표: 그대로 진행');
+  if(k==='library'){const o=c.choose.options.find(x=>x.id===pick.library);assert.equal(await p.locator('.body .status').innerText(),o.status);assert.ok((await p.locator('.stage-screen').innerText()).includes(o.screen[o.screen.length-1]),'screen card shows the result');assert.equal(await p.locator('.body .line.moa').count(),1);}
+  if(c.solo){const o=c.choose.options.find(x=>x.id===pick[k]);assert.equal(await p.locator('.stage-status').count(),0,'solo: no status on the picture');assert.equal(await p.locator('.body .line.moa').count(),0,'solo: no 모아 feedback');
+   assert.ok((await p.locator('.body').innerText()).includes(o.summary));assert.equal(await p.locator('.body .status').count(),0);}
   if(shots.includes(k+'-result'))await shot(p,`${tag}-${k}-result`,viewport===PHONE);
   await click(p,'.step-nav [data-act="next"]');
   await measure(p,k+'-follow-start',viewport);
@@ -140,33 +219,9 @@ async function play(p,{tag,viewport,pick,judge,wrongFirst,shots,write={},note:fi
   await measure(p,k+'-notice-start',viewport);if(viewport===PHONE)await noticeReadable(p,k);await notice(p,k,notices[k]||'ok');await measure(p,k+'-notice-done',viewport);if(shots.includes(k+'-notice'))await shot(p,`${tag}-${k}-notice`,viewport===PHONE);
   await click(p,'.step-nav [data-act="next"]');
   await reflect(p,k,write[k]);await measure(p,k+'-reflect',viewport);
+  if(k===E.CASES[E.CASES.length-1])assert.match(await p.locator('.step-nav [data-act="next"]').innerText(),/마지막 장면으로/);
   await click(p,'.step-nav [data-act="next"]');
- }
- assert.equal((await state(p)).scene,E.END);await measure(p,'end',viewport);
- assert.equal(await p.locator('[data-act="ask"]').count(),4);await click(p,'[data-act="ask"][data-id="notice"]');assert.match(await p.locator('.body .finding').innerText(),/추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요./);assert.match(await p.locator('.body .finding').innerText(),/네 질문 모두/);await click(p,'[data-act="ask"][data-id="criteria"]');assert.match(await p.locator('.ending-quote').innerText(),/질문이었다/);
- assert.match(await p.locator('label[for="final-note"]').innerText(),/앞으로 AI 서비스를 쓸 때 나는 무엇을 먼저 물어볼까\?/);if(finalNote){await p.locator('#final-note').fill(finalNote);assert.equal((await state(p)).finalNote,finalNote);}
- await measure(p,'end-done',viewport);if(shots.includes('end'))await shot(p,`${tag}-end`,viewport===PHONE);
- await click(p,'.menu [data-act="notebook"]');const note=await p.locator('#modal-body').innerText();
- assert.match(note,/원본 사진에는 다섯 친구가 모두 있고/);assert.match(note,/3\. “/);assert.match(note,/후속 조사/);assert.match(note,/점검표 4개 가운데/);
- assert.doesNotMatch(note.split('확인한 자료')[1].split('이 말은 맞을까?')[0],/^(모아|담이|루루)/m,'facts are third-person, not character lines');
- assert.equal(await p.locator('#modal-body .case-card').count(),3,'notebook uses the grouped case cards');assert.match(note,/내 서술/);
- {const s=await state(p);for(const [i,k] of E.CASES.entries())noticeShown(await p.locator('#modal-body .case-card').nth(i).innerText(),k,s,'notebook');}
- if(shots.includes('notebook'))await shot(p,`${tag}-notebook`);
- await p.keyboard.press('Escape');
- // 나의 조사 보고서
- await click(p,'.step-nav [data-act="next"]');assert.equal((await state(p)).scene,E.REPORT);await measure(p,'report',viewport);
- const rep=await p.locator('.report').innerText(),cards=p.locator('.report .case-card');assert.equal(await cards.count(),4);
- for(const [i,k] of E.CASES.entries()){const t=await cards.nth(i).innerText();assert.match(t,new RegExp('사건 '+(i+1)));assert.match(t,/확인한 자료/);assert.match(t,/처음 조치[\s\S]*최종 조치/);assert.match(t,/후속 조사/);assert.match(t,/내 서술/);assert.equal((t.match(/내 판단:/g)||[]).length,4,'3 judgments + follow-up in case '+k);noticeShown(t,k,await state(p),'report');}
- const right=(rep.match(/· 정답/g)||[]).length,again=(rep.match(/다시 볼 것/g)||[]).length;assert.equal(right+again,12,'every judgment marked in words');
- const empties=E.CASES.reduce((a,k)=>a+['q1','q2'].filter(q=>!(write[k]||{})[q]).length,0)+(finalNote?0:1);assert.equal((rep.match(/작성 안 함/g)||[]).length,empties,"empty answers show '작성 안 함'");
- for(const k of E.CASES)for(const t of Object.values(write[k]||{}))assert.ok(rep.includes(t),'written reflection in report');if(finalNote)assert.ok(rep.includes(finalNote));
- assert.match(rep,/서버로 보내지 않아요/);assert.match(rep,/인쇄 창에서 대상을 ‘PDF로 저장’으로 고르세요/);
- await p.locator('[data-reporter="name"]').fill('하늘');
- const s=await state(p);assert.equal(s.completed,true);assert.equal(s.reporter.name,'하늘');
- await p.reload({waitUntil:'domcontentloaded'});assert.deepEqual(await state(p),s,'completed play survives reload');for(const [i,k] of E.CASES.entries())noticeShown(await p.locator('.report .case-card').nth(i).innerText(),k,s,'report after reload');assert.equal(await p.locator('[data-reporter="name"]').inputValue(),'하늘');
- assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
- results.paths.push({tag,viewport:viewport.width+'x'+viewport.height,judgments,clicks,reportRight:right,reportAgain:again,reportNotWritten:empties,choices:s.cases,judgmentsPicked:s.judgments,completed:s.completed,errors:errors.length,externalRequests:external.length});
-}
+  return judgments;}
 // 휴대폰 미리 알리기: 글자 16px 이상, 누르는 곳 44px 이상(붙이기 전)
 async function noticeReadable(p,k){const r=await p.evaluate(()=>{const vis=e=>e.offsetParent&&e.textContent.trim();
   return {font:Math.min(...[...document.querySelectorAll('.body p,.body button,.body button span')].filter(vis).map(e=>parseFloat(getComputedStyle(e).fontSize))),tap:Math.min(...[...document.querySelectorAll('.body button')].filter(vis).map(b=>b.getBoundingClientRect().height))};});
@@ -178,9 +233,11 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
  browser=await chromium.launch({channel:'msedge',headless:true});
  const right=(k,i)=>i==='follow'?E.followAnswers[k]:E.answers[k][i];
  try{
-  await withPage(DESKTOP,p=>play(p,{tag:'desktop',viewport:DESKTOP,pick:{photo:'all',writing:'review',face:'release'},judge:right,wrongFirst:false,shots:['photo-check','photo-follow','writing-check-records','writing-follow','face-follow','notebook'],
-   write:{photo:{q1:'나는 AI의 자르기 기준 자료를 보고, 이 AI가 눈길이 모일 곳을 중심으로 잘랐다고 판단했다.'},face:{q2:'아직 확인하지 못한 것은 점검이 끝났는지이고, 그것을 알려면 점검 기록이 필요하다.'}},note:'어떤 정보를 썼는지 먼저 물어볼래.'}));
-  await withPage(PHONE,p=>play(p,{tag:'phone',viewport:PHONE,pick:{photo:'auto',writing:'detector',face:'maintain'},judge:()=>'confirmed',wrongFirst:true,shots:['photo-check','photo-follow','writing-check-records','face-follow'],notices:{photo:'fix',writing:'wrong',face:'fix'}}));
+  await withPage(DESKTOP,p=>play(p,{tag:'desktop',viewport:DESKTOP,pick:{photo:'all',writing:'review',face:'release',library:'report',recommend:'ask'},judge:right,wrongFirst:false,
+   shots:['photo-check','photo-follow','writing-check-records','writing-follow','face-follow','library-hook','library-check-records','library-check','library-result','library-follow','library-notice','recommend-hook','recommend-check-records','recommend-check','recommend-result','recommend-follow','recommend-notice','end','notebook'],
+   write:{photo:{q1:'나는 AI의 자르기 기준 자료를 보고, 이 AI가 눈길이 모일 곳을 중심으로 잘랐다고 판단했다.'},face:{q2:'아직 확인하지 못한 것은 점검이 끝났는지이고, 그것을 알려면 점검 기록이 필요하다.'},library:{q1:'나는 추천 점수 기록을 보고, 이 AI가 인기를 더 크게 본다고 판단했다.'},recommend:{q2:'아직 확인하지 못한 것은 이 모임이 왜 위에 뜨는지이고, 그것을 알려면 운영자의 설명이 필요하다.'}},note:'어떤 정보를 썼는지 먼저 물어볼래.'}));
+  await withPage(PHONE,p=>play(p,{tag:'phone',viewport:PHONE,pick:{photo:'auto',writing:'detector',face:'maintain',library:'trust',recommend:'join'},judge:()=>'confirmed',wrongFirst:true,
+   shots:['photo-check','photo-follow','writing-check-records','face-follow','library-hook','library-check-records','library-check','library-result','library-follow','recommend-hook','recommend-check-records','recommend-check','recommend-result','recommend-follow','end'],notices:{photo:'fix',writing:'wrong',face:'fix',library:'fix',recommend:'fix'}}));
   // 휴대폰 390: 미리 알리기 화면(카드가 가장 많은 빵집, 이어하기 안내 없음)이 붙이기 전 한 화면 안팎
   {const hs=E.CASES.map(k=>[k,results.readability.find(x=>x.viewport==='390x844'&&x.screen===k+'-notice-start').pageHeight,results.readability.find(x=>x.viewport==='390x844'&&x.screen===k+'-notice-done').pageHeight]);
    for(const [k,h] of hs)assert.ok(h<=Math.round(844*1.05),'phone '+k+' notice before posting fits about one screen: '+h);
@@ -203,9 +260,9 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    assert.match(note,/1\. “이번 사진은[^”]*”\s*내 판단: 자료로는 알 수 없어 · 다시 볼 것 \(정리: 자료로 확인돼\)/);assert.match(note,/처음 조치\s*자동으로 자른 사진/);assert.match(note,/최종 조치\s*모두 나오는 사진/);
    await p.keyboard.press('Escape');assert.equal(await p.locator('dialog').isVisible(),false);
    await click(p,'header [data-act="settings"]');await click(p,'#modal-body [data-act="reset-ask"]');await click(p,'[data-act="reset"]');
-   const saved=JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY));assert.equal((await state(p)).scene,0);assert.equal(saved.scene,0);assert.equal(saved.version,4);
+   const saved=JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY));assert.equal((await state(p)).scene,0);assert.equal(saved.scene,0);assert.equal(saved.version,5);
    assert.equal(await p.evaluate(()=>localStorage.getItem('ethicity.player')),JSON.stringify({nickname:'테스트<b>'}),'shared player data untouched');
-   results.checks.push({saveResume:'mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 4)'});
+   results.checks.push({saveResume:'mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 5)'});
   });
   // 처음부터 다시 하기: '이름과 학번도 지우기'(기본 체크) — 체크면 함께 지우고, 풀면 이름·학번만 남긴다
   await withPage(PHONE,async p=>{const done=finishedState();done.reporter={name:'하늘',number:'10203'};
@@ -228,7 +285,7 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
   // 이전 저장: version 1 revision 4 (scene 5 = 글 사건 시작), revision 3, 손상 저장
   await withPage(DESKTOP,async p=>{
    const r4={version:1,revision:4,scene:5,furthest:5,evidence:['photo-original','photo-rule'],judgments:{photo:'unknown',writing:null,face:null},cases:{photo:{first:'auto',final:'auto'},writing:{first:null,final:null},face:{first:null,final:null}},question:null,completed:false};
-   await seedPage(p,r4);let s=await state(p);assert.equal(s.version,4);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'hook');
+   await seedPage(p,r4);let s=await state(p);assert.equal(s.version,5);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'hook');
    assert.match(await p.locator('h1').innerText(),/의심 표시가 붙은 원고/);await click(p,'.step-nav [data-act="next"]');assert.equal(E.stepOf((await state(p)).scene),'check');
    await click(p,'header [data-act="notebook"]');assert.match(await p.locator('#modal-body').innerText(),/이전 저장에서 넘어와 아직 안 함/);
    await click(p,'#modal-body [data-act="revisit"][data-scene="2"]');assert.match(await p.locator('.judge .question-label').innerText(),/2\/3/);
@@ -240,19 +297,19 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
   await withPage(DESKTOP,async p=>{
    const v2={version:2,scene:7,furthest:7,evidence:[...E.checks.photo],judgments:{photo:E.answers.photo.slice(),writing:[null,null,null],face:[null,null,null]},cases:{photo:{first:'auto',final:'all'},writing:{first:null,final:null},face:{first:null,final:null}},
     follows:{photo:{marks:Object.fromEntries(E.followMarks.photo.ids.map((id,i)=>[id,E.truth[i]])),judgment:'different'},writing:{marks:{},judgment:null},face:{marks:{},judgment:null}},question:null,completed:false};
-   await seedPage(p,v2);const s=await state(p);assert.equal(s.version,4);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');
+   await seedPage(p,v2);const s=await state(p);assert.equal(s.version,5);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');
    assert.deepEqual(s.reflections.photo,{q1:'',q2:''});assert.deepEqual(s.cases.photo,{first:'auto',final:'all'});
-   assert.equal(JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY)).version,4,'same key, rewritten as version 4');
+   assert.equal(JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY)).version,5,'same key, rewritten as version 5');
    await click(p,'.step-nav [data-act="back"]');await click(p,'.step-nav [data-act="back"]');assert.equal(E.stepOf((await state(p)).scene),'reflect','new reflection screen of the photo case can be opened');
    assert.equal(await p.locator('.empty-note:visible').count(),2);
-   results.checks.push({v2Migration:'version 2 save at old scene 7 resumes at writing check as version 4 with empty reflections; photo reflection reachable'});});
+   results.checks.push({v2Migration:'version 2 save at old scene 7 resumes at writing check as version 5 with empty reflections; photo reflection reachable'});});
   // version 3 저장(옛 장면 18 = 빵집 생각 정리, 서술 있음) → version 4: 세 사건 미리 알리기는 '아직 안 함', 이어하기는 그대로
   await withPage(DESKTOP,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));
-   const v3=JSON.parse(JSON.stringify(finishedState()));delete v3.notices;v3.version=3;v3.scene=v3.furthest=18;v3.question=null;v3.completed=false;v3.reflections.face.q1='점검 기록';
-   await seedPage(p,v3);let s=await state(p);assert.equal(s.version,4);assert.equal(s.scene,E.sceneOf('face','reflect'));assert.equal(s.reflections.face.q1,'점검 기록');
-   assert.ok(E.CASES.every(k=>s.notices[k].posted==='legacy'));assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false,'not blocked');
+   const v3=oldSave(3);v3.scene=v3.furthest=18;v3.question=null;v3.completed=false;v3.reflections.face.q1='점검 기록';
+   await seedPage(p,v3);let s=await state(p);assert.equal(s.version,5);assert.equal(s.scene,E.sceneOf('face','reflect'));assert.equal(s.reflections.face.q1,'점검 기록');
+   assert.ok(OLD3.every(k=>s.notices[k].posted==='legacy'));assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false,'not blocked');
    await click(p,'header [data-act="notebook"]');assert.equal(await p.locator('#modal-body [data-act="revisit"]').filter({hasText:'미리 알리기 해 보기'}).count(),3);
-   for(const [i,k] of E.CASES.entries())noticeShown(await p.locator('#modal-body .case-card').nth(i).innerText(),k,s,'legacy notebook');
+   for(const [i,k] of OLD3.entries())noticeShown(await p.locator('#modal-body .case-card').nth(i).innerText(),k,s,'legacy notebook');
    await click(p,`#modal-body [data-act="revisit"][data-scene="${E.sceneOf('writing','notice')}"]`);s=await state(p);assert.equal(s.scene,E.sceneOf('writing','notice'));
    assert.match(await p.locator('.body').innerText(),/이전 저장에서 넘어와 아직 하지 않은 단계야/);assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false);
    for(const id of E.noticeCards.writing.must)await click(p,`[data-act="notice-pick"][data-id="${id}"]`);await click(p,'[data-act="notice-post"]');assert.match(await p.locator('.notice-verdict').innerText(),/다 맞았어/);
@@ -260,10 +317,30 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    await click(p,'header [data-act="notebook"]');const note=await p.locator('#modal-body').innerText();
    noticeShown(await p.locator('#modal-body .case-card').nth(1).innerText(),'writing',s,'notebook after legacy notice');assert.equal(await p.locator('#modal-body [data-act="revisit"]').filter({hasText:'미리 알리기 해 보기'}).count(),2);
    await p.keyboard.press('Escape');
-   // 보고서까지 간 version 3 저장: 보고서 카드에 '이전 저장에서 넘어와 아직 안 함'
-   const v3r=JSON.parse(JSON.stringify(finishedState()));delete v3r.notices;v3r.version=3;v3r.scene=v3r.furthest=20;await seedPage(p,v3r);s=await state(p);assert.equal(s.scene,E.REPORT);
-   for(const [i,k] of E.CASES.entries())noticeShown(await p.locator('.report .case-card').nth(i).innerText(),k,s,'legacy report');
-   assert.deepEqual(errors,[]);results.checks.push({v3Migration:'version 3 save at face reflect: notices legacy, not blocked, notebook 미리 알리기 해 보기 ×3 → writing notice → post → reload keeps → notebook updated; v3 report save shows legacy text'});});
+   // 보고서까지 간 version 3 저장: 새 사건 4 첫 화면부터, 수첩 카드에 '이전 저장에서 넘어와 아직 안 함'
+   const v3r=oldSave(3);v3r.scene=v3r.furthest=20;await seedPage(p,v3r);s=await state(p);assert.equal(s.scene,E.sceneOf('library','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,['input']);
+   await click(p,'header [data-act="notebook"]');for(const [i,k] of OLD3.entries())noticeShown(await p.locator('#modal-body .case-card').nth(i).innerText(),k,s,'legacy notebook (report save)');await p.keyboard.press('Escape');
+   assert.deepEqual(errors,[]);results.checks.push({v3Migration:'version 3 save at face reflect: notices legacy, not blocked, notebook 미리 알리기 해 보기 ×3 → writing notice → post → reload keeps → notebook updated; v3 report save resumes at case 4 hook with legacy notices'});});
+  // version 4 저장(2026-11-08 미리 알리기 판)에서 다 마친 저장: 사건 4 첫 화면부터 이어 해 사건 4·5를 마치고 보고서까지. 사건 1~3 기록·서술 그대로
+  await withPage(WIDE,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));
+   const v4=oldSave(4);v4.scene=v4.furthest=23;v4.question='unknown';v4.completed=true;v4.reflections.writing={q1:'작성 기록',q2:'검사 이유'};v4.finalNote='먼저 물어볼래';v4.reporter={name:'하늘',number:'10203'};
+   await seedPage(p,v4);await assets(p);let s=await state(p);assert.equal(s.version,5);assert.equal(s.scene,E.sceneOf('library','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,['unknown']);
+   assert.match(await p.locator('h1').innerText(),/같은 책만 추천하는 도서관/);assert.match(await p.locator('.resume').innerText(),/이어서/);
+   for(const k of OLD3)assert.deepEqual(s.notices[k],v4.notices[k],'posted notices kept '+k);
+   const opts={tag:'v4',viewport:WIDE,pick:{library:'off',recommend:'skip'},judge:right,wrongFirst:false,shots:[]};
+   await playCase(p,'library',opts);
+   // 옛 저장에서 이미 물어본 질문은 눌린 채로 보이고, 바로 직접 확인할 수 있다
+   assert.equal(await p.locator('[data-act="ask"][data-id="unknown"]').getAttribute('aria-pressed'),'true');assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false);
+   assert.match(await p.locator('.body .finding').innerText(),/교통편은 확인하지 못했어요/);
+   await click(p,'[data-act="ask"][data-id="input"]');await click(p,'.step-nav [data-act="next"]');
+   for(const id of E.checks.recommend)await discover(p,'recommend',id,false);await judgeThree(p,'recommend',right);await click(p,'.step-nav [data-act="next"]');
+   await click(p,'[data-act="choose"][data-id="skip"]');assert.match(await p.locator('.body').innerText(),/일주일이 지났다/);await click(p,'.step-nav [data-act="next"]');
+   await follow(p,'recommend',right,false);await click(p,'.step-nav [data-act="next"]');await notice(p,'recommend','ok');await click(p,'.step-nav [data-act="next"]');await click(p,'.step-nav [data-act="next"]');
+   s=await state(p);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.deepEqual(s.asked,['unknown','input']);
+   await click(p,'.step-nav [data-act="next"]');assert.equal((await state(p)).scene,E.REPORT);
+   await reportCheck(p,{writing:{q1:'작성 기록',q2:'검사 이유'}},'먼저 물어볼래');
+   assert.match(await p.locator('#report-library').innerText(),/추천 기능 끄기/);assert.match(await p.locator('#report-writing').innerText(),/검사 이유/);assert.equal(await p.locator('[data-reporter="name"]').inputValue(),'하늘');
+   assert.deepEqual(errors,[]);results.checks.push({v4Migration:'version 4 completed report save → case 4 hook (resume notice), cases 1~3 kept; play case 4 (off) and case 5 (old question pressed, skip) → ending → report with 5 cases'});});
   // 서술 자동 저장·이어하기, 보고서 → 서술 고치기 → 보고서, 인쇄 제목, PDF 쪽수, 캡처(1280×800·390×844)
   const done=finishedState();
   for(const [tag,vp] of [['desktop1280',WIDE],['phone',PHONE]])await withPage(vp,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));
@@ -272,7 +349,7 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
     const m=await p.evaluate(()=>{const r=s=>document.querySelector(s).getBoundingClientRect();return {page:document.documentElement.scrollHeight,vh:innerHeight,firstCard:Math.round(r('[data-act="notice-pick"]').top),post:Math.round(r('[data-act="notice-post"]').bottom),next:Math.round(r('.step-nav [data-act="next"]').bottom)};});
     results.checks.push({noticeLayout:`${tag}: page ${m.page}px / viewport ${m.vh}px, first card top ${m.firstCard}, post button bottom ${m.post}, next bottom ${m.next} (feedback shown)`});
     await shot(p,`${tag}-notice`,vp===PHONE);
-    const fresh=JSON.parse(JSON.stringify(nt));fresh.notices.face={picked:[],posted:null};fresh.furthest=fresh.scene;fresh.completed=false;fresh.question=null;fresh.finalNote='';await seedPage(p,fresh);await assets(p);
+    const fresh=JSON.parse(JSON.stringify(nt));fresh.notices.face={picked:[],posted:null};for(const k of ["library","recommend"])fresh.notices[k]={picked:[],posted:null};fresh.furthest=fresh.scene;fresh.completed=false;fresh.question=null;fresh.finalNote='';await seedPage(p,fresh);await assets(p);
     const m2=await p.evaluate(()=>({page:document.documentElement.scrollHeight,vh:innerHeight,post:Math.round(document.querySelector('[data-act="notice-post"]').getBoundingClientRect().bottom)}));
     results.checks.push({noticeLayoutStart:`${tag}: before posting page ${m2.page}px / viewport ${m2.vh}px, post button bottom ${m2.post}`});
 }
@@ -296,11 +373,13 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
     for(const k of E.CASES){const n=E.noticeCards[k],ids=[...n.must.slice(1),...n.nice,...n.conflict,...n.promise];full.notices[k]={picked:ids.slice(),posted:ids.slice()};} // 가장 긴 안내문: 빠진 카드 + 붙인 카드 모두
     for(const [label,st] of [['some empty',await state(p)],['all 200+ chars, longest notices',full]]){await seedPage(p,st);await p.emulateMedia({media:'print'});
      const hidden=await p.evaluate(()=>['header','footer','.report-actions','[data-act="print"]','#report-photo [data-act="revisit"]'].map(q=>getComputedStyle(document.querySelector(q)).display));assert.ok(hidden.every(d=>d==='none'),'print hides menu and buttons '+hidden);
-     const tags=await p.locator('.verdict .v-tag').allInnerTexts();assert.ok(tags.length===12&&tags.every(t=>t==='정답'||t==='다시 볼 것'),'right/wrong written in words');
-     const ntags=await p.locator('.notice-sum .v-tag').allInnerTexts();assert.ok(ntags.length===3&&ntags.every(t=>t==='다 맞음'||t==='고칠 점 있음'),'notice verdict in words '+ntags);
+     const tags=await p.locator('.verdict .v-tag').allInnerTexts();assert.ok(tags.length===20&&tags.every(t=>t==='정답'||t==='다시 볼 것'),'right/wrong written in words');
+     const ntags=await p.locator('.notice-sum .v-tag').allInnerTexts();assert.ok(ntags.length===5&&ntags.every(t=>t==='다 맞음'||t==='고칠 점 있음'),'notice verdict in words '+ntags);
      if(label==='some empty')await p.screenshot({path:path.join(shotDir,'print-preview.png'),fullPage:true});
      const pdf=await p.pdf({preferCSSPageSize:true});const pages=(pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g)||[]).length;
-     assert.ok(pages>=1&&pages<=3,`PDF ${label}: ${pages} pages`);results.checks.push({printPdf:`${label}: ${pages} pages (A4, 15mm)`});await p.emulateMedia({media:'screen'});}
+     assert.ok(pages>=1&&pages<=4,`PDF ${label}: ${pages} pages`);
+     // 사건 카드가 페이지 사이에서 끊기지 않는다(카드마다 break-inside: avoid)
+     assert.ok((await p.locator('.case-card').evaluateAll(a=>a.map(c=>getComputedStyle(c).breakInside))).every(v=>v==='avoid'),'cards not split');results.checks.push({printPdf:`${label}: ${pages} pages (A4, 15mm)`});await p.emulateMedia({media:'screen'});}
    }
    assert.deepEqual(errors,[]);results.checks.push({reportEdit:`${tag}: reflection autosave+reload, report → 서술 고치기 → 보고서, print title ${printed} restored on afterprint`});});
   // 피드백 2: 이름표·작은 얼굴, '자료 ·' 머리말, 세 구역을 다 눌러도 화면이 움직이지 않음

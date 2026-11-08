@@ -77,6 +77,37 @@ test('ending: entering it after the case 5 reflection completes the game; the fi
  s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.equal(E.canAdvance(s),true);
  const back=E.reduce(E.reduce(s,{type:'revisit',scene:last}),{type:'next'});assert.equal(back.completed,true,'stays completed');
 });
+// 사건 4·5 문장(교사 검수 대기)의 구조: engine id와 맞고, 판단 근거는 그 사건의 자료, 사건 5는 혼자 규칙(모아 해설 없음, 판단은 한 줄)
+test('cases 4 and 5 copy: ids match the engine, judgment sources are records of the case, case 5 has no 모아 lines',()=>{
+ for(const k of ['library','recommend']){const c=D.cases[k];
+  assert.ok(c.title&&c.question&&c.hook.length&&c.cast.length===3,k);assert.deepEqual(c.checks.map(x=>x.id),E.checks[k]);assert.deepEqual(c.choose.options.map(o=>o.id),E.choices[k]);
+  for(const x of c.checks)assert.ok(x.label&&x.name&&x.task&&x.fact,x.id);
+  assert.equal(c.judges.length,3);for(const j of c.judges){assert.ok(j.src.length&&j.src.every(id=>E.checks[k].includes(id)),k+' src');assert.ok(D.names[j.who],j.who);}
+  assert.ok(c.follow.question&&c.follow.task&&c.follow.unknown&&c.follow.fact&&c.follow.judge.text,k+' follow');
+  const all=JSON.stringify(c);assert.doesNotMatch(all,DASH_EMOJI,k+' no em dash or emoji');}
+ const L=D.cases.library,R=D.cases.recommend;
+ assert.equal(L.loans.length,8);assert.equal(L.loans.filter(x=>x[2]===L.top).length,5);
+ assert.deepEqual(L.scores.rows.filter(r=>r[5]).map(r=>r[0]),[1,2,3,5],'rows 1,2,3,5 start hidden');for(const [,,sim,pop,fin] of L.scores.rows)assert.equal(Math.round(sim*.2+pop*.8),fin,'final = sim×0.2 + pop×0.8');
+ for(const j of [...L.judges,L.follow.judge])assert.ok(j.right&&j.wrong,'case 4 has right/wrong feedback');
+ assert.equal(L.follow.segments.filter(x=>x.changed).length,2);
+ assert.equal(R.solo,true);assert.equal(R.soloNote,'이번에는 모아 혼자야. 물어보고, 확인하고, 정해 봐.');
+ for(const j of [...R.judges,R.follow.judge]){assert.match(j.sum,/^기록과 맞춰 보면: /);assert.equal(j.right,undefined);}
+ assert.ok(!R.hook.some(([w])=>w==='moa')&&!R.checks.some(x=>x.finding)&&!R.choose.options.some(o=>o.feedback||o.status)&&!R.follow.lines.some(([w])=>w==='moa'),'case 5: no 모아 lines, findings, feedback or status');
+ assert.equal(R.meeting.segments.filter(x=>x.target).map(x=>x.text).join(),'23:00');assert.equal(R.follow.lists.filter(l=>l.items.slice(0,2).includes(R.follow.target)).length,3);
+ assert.ok(D.cases.library.cast.includes('librarian')&&D.names.librarian==='사서 선생님');
+});
+test('ending moved: the four questions (same answers) are asked in case 5; the ending keeps its closing lines; five cases in the prologue',()=>{
+ const R=D.cases.recommend;assert.deepEqual(R.asks.map(a=>a[0]),E.questions);
+ assert.equal(R.asks.find(x=>x[0]==='notice')[1],'쓰기 전에 무엇을 알려 줬어야 해?');
+ assert.equal(R.asks.find(x=>x[0]==='notice')[2],'추천에 관심사를 쓴다는 건 처음에 알렸어요. 추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요.');
+ assert.equal(R.asks.find(x=>x[0]==='criteria')[2],'관심사와 이어진 모임을 먼저 골랐어요. 순위를 매긴 자세한 이유는 알려 주지 않았어요.');
+ assert.equal(R.afterAsk,'네 질문 모두 상자를 여는 질문이야.');
+ assert.equal(D.ending.asks,undefined);assert.equal(D.ending.question,undefined);assert.equal(D.ending.lines.length,2);
+ assert.equal(D.ending.closing[1],'설명이 기록과 맞는지, 결과가 맞는지, 무엇을 해도 되는지는 따로 살펴야 해.');assert.equal(D.ending.quote,'상자를 여는 첫 번째 도구는, 질문이었다.');
+ assert.equal(D.ending.discussion.length,3);assert.equal(D.ending.discussion[2],'설명이 기록과 다를 때, 누구에게 무엇을 고쳐 달라고 할 수 있을까?');
+ assert.match(D.intro.plan,/^사건은 다섯 개야\./);
+ for(const key of Object.keys(D.art.newArt))assert.ok(D.art[key],key+' has a fallback picture');assert.equal(D.art.backgrounds.length,6);assert.equal(D.bgNames.length,6);
+});
 test('notice verdict: all must in and no conflict or promise = ok; nice does not change the verdict',()=>{
  for(const k of E.CASES){const n=notice(k);
   assert.deepEqual(E.noticeCheck(k,n.must),{ok:true,missing:[],conflicts:[],promises:[],extras:[]},k);

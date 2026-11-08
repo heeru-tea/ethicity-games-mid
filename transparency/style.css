@@ -347,3 +347,43 @@ dialog .case-card{margin:12px 0}
 /* 처음부터 다시 하기 대화상자: 이름·학번 함께 지우기(기본 체크) */
 .check-row{display:flex;align-items:center;gap:10px;min-height:44px;margin:4px 0;font-weight:700;cursor:pointer;width:fit-content}
 .check-row input{flex:none;width:22px;height:22px;margin:0;accent-color:var(--accent-dark);cursor:pointer}
+
+/* 사건 4·5(2026-11-08): 무대 화면 카드, 혼자 안내, 대출 기록·점수표, 모임 안내·시간표, 친구 추천 목록 */
+.stage-screen{position:absolute;right:5%;top:8%;width:34%;display:flex;flex-direction:column;gap:2px;padding:8px 12px;background:#14202ee6;color:#f4f1e8;border:2px solid #3b4a5c;border-radius:8px;font-size:.85rem;line-height:1.35;z-index:1}
+.stage-screen .screen-head{font-size:.72rem;font-weight:800;color:#c9d3df;letter-spacing:.02em}
+.stage-screen .screen-line{font-weight:700}
+.stage-screen .screen-line:nth-child(3){color:#14202e;background:#f8d45b;border-radius:4px;padding:0 6px;margin-top:2px;width:fit-content}
+.stage-screen.phone{right:auto;left:30%;top:10%;width:26%;border-radius:14px;border-width:3px}
+.solo-note{font-weight:800;color:var(--text);background:var(--surface);border:1.5px solid #c9b88f;border-radius:10px;padding:8px 12px;margin:0 0 12px}
+.line.plain{color:var(--text)}
+.result-summary{font-size:1.06rem;margin:0 0 12px}
+.tried-tag{display:inline-block;font-size:.8rem;font-weight:800;color:#4a463f;border:1.5px dashed #6d675c;border-radius:6px;padding:0 5px;margin-left:4px;line-height:1.4;vertical-align:1px}
+.records.loans{gap:6px}
+.record.loan{display:grid;grid-template-columns:5.2em minmax(0,1fr) auto;gap:8px;align-items:center;min-height:44px;padding:6px 12px}
+.loan-date{font-size:.88rem;color:var(--muted)}
+.loan-field{font-size:.9rem;font-weight:700}
+.score-table{padding:12px 14px}
+.score-headrow,.score-row{display:grid;grid-template-columns:2.6em minmax(0,1fr) repeat(3,3.3em);gap:6px;align-items:center}
+.score-headrow{font-size:.8rem;font-weight:800;color:var(--muted);padding:0 10px 4px}
+.score-headrow span:nth-child(n+3),.score-row .num:nth-child(n+3){text-align:right}
+.score-row{padding:6px 10px;border-top:1px solid var(--border);font-size:.95rem}
+button.score-row{width:100%;min-height:44px;border:1px solid #c9c2b5;border-radius:8px;margin:4px 0}
+button.score-row:not(.open) .num:nth-child(n+3){color:#8c4008;font-weight:800}
+.score-book{word-break:keep-all}
+.score-formula{margin:10px 0 0;padding:8px 10px;background:var(--mark);border-radius:6px;font-weight:700}
+.bus-time{font-weight:800}
+.bus-note{font-size:.85rem;color:var(--muted)}
+.rec-lists{display:grid;gap:10px}
+.rec-list{background:#fff;border:1px solid var(--border);border-radius:14px;padding:6px}
+.rec-list>button{width:100%;border:0;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.rec-name{font-weight:800}
+.rec-interest{font-size:.9rem;color:var(--muted)}
+.rec-list ol{margin:2px 0 6px;padding-left:2.2em}
+@media(max-width:520px){
+ .stage-screen{font-size:.7rem;padding:4px 7px;top:5%;width:40%;border-width:1.5px}
+ .stage-screen .screen-head{font-size:.62rem}
+ .stage-screen.phone{width:32%;left:28%}
+ .score-headrow,.score-row{grid-template-columns:2.4em minmax(0,1fr) repeat(3,2.9em);gap:4px}
+ .score-row{font-size:.9rem;padding:6px 8px}
+ .record.loan{grid-template-columns:4.6em minmax(0,1fr) auto;padding:6px 10px}
+}
