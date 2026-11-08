@@ -1,7 +1,19 @@
 # CLAUDE.md — 「데이터 러너: 끊어진 도시」(data) 인수인계
 
+## ★지금 상태 (2026-11-08, 4 임무 = 낱말 손글씨판, 최고 난이도 — 설계 `docs/specs/2026-11-08-m4-words-design.md`, 계획 `docs/plans/2026-11-08-m4-words.md`)
+- **숫자 1~5 → 낱말 4개**(데이터 `data`·알고리즘 `algo`·인공지능 `ai`·머신러닝 `ml`, 이름표 id는 영문). 보기 밖 낱말 = 가짜에만 `date`('데이트')·`en_ai`('AI'), `labelExtra[].short`(→ `DR.Cards.labelShort`). `labelStyle: 'word'` = 고치기·"?" 버튼이 낱말 넷(CSS `.labels.word` 4칸 격자, ≤330px면 2×2 — 375px는 한 줄, `m4-browser D`).
+- **카드 세 갈래**(데이터 `group`): ① 이상해 보이지만 맞음(`rare`·벽) — `cur_ai`·`cur_algo`(흘림, S2)·`alt_ai`'AI'·`alt_data`'data'(S3)·`alt_ml`'머신 러닝'(S3·S4 공용)·`scrawl_ml`(아주 흘림 = 선배 글씨, S4) 19장 / ② 이상하고 틀림 — `x_scribble`(S1)·`x_algo_ai`·`x_ai_algo`(S2)·`x_date`·`x_ai_raw`(S3) 9장 / ③ 반듯한데 틀림 — `x_neat_algo`('인공지능')·`x_neat_data`('머신러닝') 4장(S1). 평범 = `neat_*` 12장(S1·S3 공용 — S3에도 반듯한 답 2장 조합 `S3_neat`, 개인정보 카드가 코스 앞 15% 밖에 놓일 자리가 생김). "?" = `q_ai`·`q_algo`(번진 흘림). 코스 46장, 첫 판 최소 16장.
+- 판정: S1·S3 빠짐 = 불편, S2·S4 아주 흘림 빠짐 = 위험, '머신 러닝'만 빠짐 = 불편(결판 "보기에 없는 낱말 · 사람 채점"). 가짜는 낙서만 불편, 나머지 위험. 이상한 걸 다 빼면 S4 반드시 실패(`m4.test`). `rareLate`는 안 씀(S2~S4에 평범한 카드가 없어 맞바꿀 짝이 없음 — 엔진 그대로).
+- **손글씨 = OFL 글꼴 4종 + Canvas**(`css/hw-fonts.css` base64 23KB, `assets/fonts/OFL.txt`, README "글꼴"): HW Neat=Poor Story·HW Round=Gamja Flower(반듯 두 학생, variant로 번갈아)·HW Quick=East Sea Dokdo(흘림)·HW Bold=Dokdo(아주 흘림). 나눔손글씨는 예약 글꼴 이름 때문에 안 씀. 남긴 글자 = 낱말 4개 + d·a·t·A·I(글자를 더하려면 저장소 밖에서 `subset-font`로 다시 — README). `cardart.js` `drawWordAnswer`·`writeWord`·`drawWordClue`·`wordSheet`, `wordsReady()`(글꼴 전 그림은 캐시 열쇠 `|hw0`로 따로 — 대체 글꼴 그림이 남지 않게), 낱말 카드 썸네일 48칸(`c.fine`). 옛 숫자 붓(GLYPHS·PEN·drawAnswer)은 남김.
+- 화면: 달리는 3D 카드 = 이름표 낱말을 큰 색 띠로(`run3d cardTexture`, 보기 밖이면 "보기에 없는 낱말" 한 줄), DOM 카드 `.run-card-word`. 브리핑 '이번 시험 실제 답안 샘플'(`briefSamples` 4장, 선배 글씨 없음). 채점 시연 14장 '학생이 쓴 답'(다른 표기는 `'AI' (= 인공지능)`)·'AI가 읽은 낱말'. 결판 글·그림 글은 데이터 `showdown.sheetWord/sheetRead/sheetCap/sheetAlt`. 결과 문구 = `cut`·`cutTemplate`(이제 4 임무도 DR.ResultLine 데이터 사용).
+- 옛 저장: `DR.Save.fitsMission`(가방의 종류·가짜·"?"·개인정보 id·이름표가 지금 임무에 다 있나) → 아니면 그 임무 브리핑으로(`App.resume`, 1 임무 침수 되돌림도 이것으로). records.m4는 그대로(`m4-browser G`).
+- **교사 검수 대기**: `missions/m4.js` 문장 전부, `ui-grade.js`·`ui-result.js` 글, **같은 낱말로 보는 표기**('AI'=인공지능, 'data'=데이터, '머신 러닝'=머신러닝 / '데이트'·'AI' 그대로 = 보기 밖). '알고리듬'은 일부러 안 넣음.
+- 그림 대기: 4 임무 카드 썸네일·결판 배경은 아직 숫자판 그림(숫자 '1'·✕).
+- 테스트: 단위 `fonts.test`·`m4.test`(24, 새로)·`save.test`(fitsMission)·`result-line.test`(4 임무 문구)·`josa`·`cards`·`privacy` 키 바꿈 — 단위 295. 브라우저 `cardart-browser`(글꼴 4종 읽힘·잉크 폭·갈래 차이·48칸) · `m4-browser`(A~G) · `chapter`·`privacy`·`playtest` 4 임무 키. 스크린샷 `_shot-cardart-m4`·`_shot-m4-run-near-1280/390`·`_shot-m4-zoom-*`·`_shot-m4-relabel-375`·`_shot-m4-inspect-*`·`_shot-m4-showdown-*`.
+- 미확인: 실제 학생이 달리며 낱말을 읽는지(헤드리스 스크린샷으로는 가까운 카드만 또렷, 먼 3D 카드는 다른 임무처럼 작음), 교사의 표기 기준 동의, 실기기.
+
 ## ★지금 상태 (2026-11-08, 플레이테스트 수정 13건 — 요청서 `docs/feedback/2026-11-08-playtest.md`, 계획 `docs/plans/2026-11-08-playtest-fixes.md`)
-- **4 임무 전용(`missions/m4.js`·`ui-grade.js`·`showdown.js`·그림)은 안 건드림**(손글씨 다시 설계 중). 공용 렌더러 수정만 4 임무에도 닿음 — 결과 문구는 4 임무에서 예전과 같음(`result-line.test` 무작위 가방 400개).
+- 4 임무 전용(`missions/m4.js`·`ui-grade.js`·`showdown.js`·그림)은 이 작업에선 안 건드림 → 그 뒤 낱말판으로 개편(위 ★). 공용 렌더러 수정만 4 임무에도 닿음 — 결과 문구는 4 임무에서 예전과 같음(`result-line.test` 무작위 가방 400개).
 - 조사 = `js/josa.js`(DR.Josa: 숫자 1·3·6·7·8·0, 영문 L·M·N·R 받침, 끝 따옴표·괄호 건너뜀, `fill('{what:이}')`) — judge 문구가 씀(9).
 - 조합 이름 = `DR.Cards.comboName`(종류 이름 하나면 그 이름 → 3 임무 '시장 골목', 여럿이면 `what` → 4 임무 '또박또박 쓴 답안', 없으면 A·B)(1).
 - 장면 결과 문구 = `js/result-line.js`(DR.ResultLine.sceneLine): 결정 조합 하나 → 조합 `cut`(없으면 기존 `fail.line`), 여럿 → 임무 `cutTemplate[종류]`에 "A와 B"(조합 `item`), 오염만 → 가짜 `cut` / 플레이어 오표기는 `cutTemplate.contam`({label}), 그 밖 → 장면 `cuts`. 1~3 임무 데이터 채움(2 임무 함 이름 = 컨베이어 wrongBin과 같게)(2). ⚠️ 교사 검수 대기 문장에 더함.
@@ -155,7 +167,7 @@
 클래식 `<script>` + 전역 `DR`(ES 모듈·fetch 금지 — `file://`로 열려야 함). 공통 패키지 `shared/`는 초등편이라 안 씀.
 
 ## 검증(재발명 금지)
-- 단위: `node --test "data/tests/*.test.mjs"` (270)
+- 단위: `node --test "data/tests/*.test.mjs"` (295)
 - 브라우저: `PLAYWRIGHT_MODULE=D:/Works/token_economy/node_modules/playwright node data/tests/run-all.mjs` (28개: bgm·boot·bridge·cardart·**chapter**·**city**·exam·fakes·fire·flow·hero·keys·lost·m1·m2·m3·m4·play·polish·portraits·**privacy**·readability·run·runner·title·touch·tutorial·zones) — `file://`로 엶. ⚠️ 전체가 10분을 넘으니 백그라운드로 돌릴 것(m2-browser만 몇 분). ⚠️ PC 메모리가 빠듯함(백그라운드 작업이 강제 종료된 적 있음) — 헤드리스 브라우저 테스트는 **한 번에 하나씩**(run-all이 차례로 돎), 다른 브라우저 테스트와 겹쳐 돌리지 말 것
 - 사람 눈: `tests/_shot-*.png`(gitignore) — 특히 `_shot-cardart.png`(1 임무 그림 시트)·`_shot-cardart-m2.png`(2 임무 물건·아이콘·선별장 컷), `_shot-conveyor-*.png`, `_shot-relabel-375.png`, `_shot-run-*.png`
 - ⚠️ 함정: 화면 전환 때 버튼 자동 포커스 금지(Space 연타가 브리핑·결과를 건너뜀 — go()가 blur). 달리기 화면은 `touch-action:none`(폰 스크롤·새로고침 제스처). `.screen[hidden]`은 `!important` — ID 셀렉터의 display가 hidden을 덮어써 숨은 화면이 클릭을 가로챘음.
