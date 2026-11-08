@@ -559,8 +559,9 @@ body { overflow: hidden; word-break: keep-all; }
 .run-fade.fail { background: #2a0714; }
 
 /* 연습 카드 */
-.practice-card.is-first { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(255,210,74,.28); }
-.mc-first { align-self: flex-start; font-size: 11.5px; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: var(--yellow); color: #10093a; }
+/* '다음은 여기'(플레이테스트 4) = 연습 카드 '처음이라면 여기부터'와 같은 모양 */
+.practice-card.is-first, .mission-card.is-next { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(255,210,74,.28); }
+.mc-first, .mc-next { align-self: flex-start; font-size: 11.5px; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: var(--yellow); color: #10093a; }
 @media (max-width: 520px) { .run-goal { top: 104px; font-size: 14px; padding: 5px 10px; } .goal-row { grid-template-columns: 3.2rem repeat(5, minmax(0, 1fr)); } }
 
 /* 오프닝·첫 시험 검수·시연(2026-11-06) */
