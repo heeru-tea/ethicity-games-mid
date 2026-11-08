@@ -313,7 +313,7 @@ dialog .case-card{margin:12px 0}
 /* 인쇄(PDF로 저장): A4 세로, 여백 15mm, 흰 바탕 검은 글자. 사건 하나가 페이지 사이에서 잘리지 않게 한다(사건마다 새 페이지는 아님). */
 @media print{
  @page{size:A4 portrait;margin:15mm}
- :root{font-size:9.5pt;line-height:1.4;background:#fff;color:#000}
+ :root{font-size:9pt;line-height:1.36;background:#fff;color:#000}
  *{outline:none!important;box-shadow:none!important;caret-color:transparent}
  body{background:#fff;color:#000}
  header,footer,nav,.skip,button,.no-print,.visual,.stage,img,.resume,.step-nav,dialog,.meta{display:none!important}
@@ -343,6 +343,13 @@ dialog .case-card{margin:12px 0}
  .n-missing{color:#333}
  .frame-text{margin:3pt 0 1pt}
  .answer{margin:0 0 3pt}
+ /* 사건 다섯 개를 4쪽 안쪽에(2026-11-08): 묶음 이름을 왼쪽 칸으로, 처음·최종 조치를 한 줄로. 문장은 그대로. */
+ .group{display:grid;grid-template-columns:5.4em minmax(0,1fr);column-gap:6pt;align-items:baseline}
+ .group>*{grid-column:2}
+ .group>.group-label{grid-column:1;grid-row:1 / span 9;align-self:start;margin:1pt 0 0}
+ .group .pair{display:inline;margin-right:10pt}
+ .group .pair+.pair{margin-left:0}
+ .group .frame-text:first-of-type{margin-top:0}
 }
 /* 처음부터 다시 하기 대화상자: 이름·학번 함께 지우기(기본 체크) */
 .check-row{display:flex;align-items:center;gap:10px;min-height:44px;margin:4px 0;font-weight:700;cursor:pointer;width:fit-content}
