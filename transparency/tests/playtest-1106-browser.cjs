@@ -14,8 +14,8 @@ const rgb=s=>s.match(/\d+(\.\d+)?/g).slice(0,3).map(Number);
 const ok=m=>console.log('  ok',m);
 // 엔진 검증(consistent)을 지나는 저장: 앞 사건을 모두 끝낸 상태로 그 사건·단계에 선다
 function finishCase(s,k,follow=true){s.evidence.push(...E.checks[k]);s.judgments[k]=E.answers[k].slice();s.cases[k]={first:E.choices[k][0],final:E.choices[k][0]};
- if(follow){const m=E.followMarks[k],marks={};m.ids.forEach((id,i)=>{marks[id]=k==='photo'?E.truth[i]:m.values[0];});s.follows[k]={marks,judgment:E.followAnswers[k]};}}
-function stateAt(k,step){const s=E.initial(),i=E.CASES.indexOf(k);E.CASES.slice(0,i).forEach(x=>finishCase(s,x));if(step==='follow')finishCase(s,k,false);s.scene=s.furthest=E.sceneOf(k,step);return s;}
+ if(follow){const m=E.followMarks[k],marks={};m.ids.forEach((id,i)=>{marks[id]=k==='photo'?E.truth[i]:m.values[0];});s.follows[k]={marks,judgment:E.followAnswers[k]};const must=E.noticeCards[k].must.slice();s.notices[k]={picked:must,posted:must.slice()};}}
+function stateAt(k,step){const s=E.initial(),i=E.CASES.indexOf(k);E.CASES.slice(0,i).forEach(x=>finishCase(s,x));if(step==='follow')finishCase(s,k,false);if(step==='notice'){finishCase(s,k);s.notices[k]={picked:[],posted:null};}s.scene=s.furthest=E.sceneOf(k,step);return s;}
 const seed=async(p,s)=>{await p.evaluate(({KEY,s})=>localStorage.setItem(KEY,JSON.stringify(s)),{KEY,s});await p.reload();assert.equal((await state(p)).scene,s.scene,'저장한 곳에서 시작');};
 async function discover(p,id){
  await p.locator(`[data-act="item"][data-id="${id}"]`).click();
@@ -81,19 +81,31 @@ async function caseRun(p,k,vp,wrong){
    assert.equal(await p.locator('.row-open').count(),4);await p.locator('[data-act="row"][data-id="r1"]').focus();await p.keyboard.press('Enter');assert.equal(await p.locator('.row-open').count(),3,'Enter로 열림');
    assert.equal(await p.locator('.proof').evaluate(n=>getComputedStyle(n).color),await p.evaluate(()=>getComputedStyle(document.body).color),'근거 줄 = 본문 색');
    await p.screenshot({path:path.join(shotDir,'_t1106-chips-1280.png')});ok('칩 16~18px·대비 4.5 이상·근거 보기·키보드');await ctx.close();}
-  // 저장(version 3): 판단 중간에서 이어하기, 키 구조 그대로
+  // 저장(version 4): 판단 중간에서 이어하기, 키 구조 그대로
   {const ctx=await browser.newContext({viewport:{width:1280,height:800}}),p=await ctx.newPage();await p.goto(url);
    const base=await p.evaluate(()=>TransparencyGame.getState()),old=stateAt('face','check');old.evidence.push(...E.checks.face);old.judgments.face=['different','confirmed',null];
    await seed(p,old);
    assert.match(await p.locator('.judge-head').innerText(),/3\/3/);assert.ok(await p.locator('.visual .evidence-photo').isVisible(),'이어하기에서도 근거 자료(비교 사진)');assert.equal(await p.locator('.compare-labels span').first().innerText(),'등록된 사진');
    await p.screenshot({path:path.join(shotDir,'_t1106-compare-1280.png')});
-   const s=await state(p);assert.equal(s.version,3);assert.deepEqual(Object.keys(s).sort(),Object.keys(base).sort(),'저장 구조 그대로');ok('version 3 이어하기');await ctx.close();}
+   const s=await state(p);assert.equal(s.version,4);assert.deepEqual(Object.keys(s).sort(),Object.keys(base).sort(),'저장 구조 그대로');ok('version 4 이어하기');await ctx.close();}
   // 후속 조사 카드·집계 기준
   {const ctx=await browser.newContext({viewport:{width:1280,height:800}}),p=await ctx.newPage();await p.goto(url);
    await seed(p,stateAt('photo','follow'));
    for(let i=0;i<6;i++)await p.locator(`[data-act="mark"][data-id="p${i+1}"][data-value="${E.truth[i]}"]`).click();
    const f=await p.locator('.body .finding').first().innerText();console.log('   ',f.split('\n')[0]);assert.match(f,/얼굴이 일부라도 사진 틀 밖으로 나가면 잘린 것으로 셌다\. 잘린 횟수: /);assert.match(f,/토리 \d/);assert.match(f,/몽이 \d/);assert.doesNotMatch(f,/다람쥐|강아지/);
    assert.equal(await p.locator('.judge-card .source-name').innerText(),'사진 6장');assert.equal(await p.locator('.judge-head').innerText(),'이 말은 맞을까?');ok('후속 조사 카드·집계 기준·이름');await ctx.close();}
+  // 미리 알리기(2026-11-08): 카드·붙이기를 키보드로, 누른 뒤 초점 유지, 피드백 태그 대비, 판정 status
+  {const ctx=await browser.newContext({viewport:{width:1280,height:800}}),p=await ctx.newPage();await p.goto(url);
+   await seed(p,stateAt('face','notice'));const n=E.noticeCards.face;
+   for(const id of [n.must[0],n.conflict[0]]){await p.locator(`[data-act="notice-pick"][data-id="${id}"]`).focus();await p.keyboard.press('Enter');
+    assert.equal(await p.evaluate(()=>document.activeElement.dataset.id),id,'Enter 뒤 초점 유지');assert.equal(await p.locator(`[data-act="notice-pick"][data-id="${id}"]`).getAttribute('aria-pressed'),'true');}
+   await p.keyboard.press('Space');assert.equal(await p.locator(`[data-act="notice-pick"][data-id="${n.conflict[0]}"]`).getAttribute('aria-pressed'),'false','Space로 다시 빼기');
+   await p.keyboard.press('Space');await p.locator('[data-act="notice-post"]').focus();await p.keyboard.press('Enter');
+   assert.equal(await p.evaluate(()=>document.activeElement.dataset.act),'notice-post');assert.equal(await p.locator('.notice-verdict[role="status"]').count(),1);
+   assert.equal(await p.locator(`[data-act="notice-pick"][data-id="${n.must[0]}"]`).getAttribute('aria-describedby'),'fb-'+n.must[0],'카드와 피드백 연결');
+   const tags=await p.evaluate(()=>[...document.querySelectorAll('.fb-tag')].map(c=>{const s=getComputedStyle(c);return {t:c.textContent,fg:s.color,bg:s.backgroundColor,bs:s.borderStyle};}));
+   tags.forEach(c=>{const cr=contrast(rgb(c.fg),rgb(c.bg));assert.ok(cr>=4.5,c.t+' 대비 '+cr);assert.ok(/^[✓!○] /.test(c.t),'기호+글자 '+c.t);assert.equal(c.bs,c.t.startsWith('!')?'dashed':'solid',c.t);});
+   const st=await state(p);assert.deepEqual(st.notices.face.posted,[n.must[0],n.conflict[0]]);ok(`미리 알리기 키보드·초점·aria-describedby·태그 ${tags.length}개 대비 4.5 이상·! 점선`);await ctx.close();}
   console.log('PASS playtest-1106');
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
