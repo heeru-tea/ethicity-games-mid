@@ -509,7 +509,7 @@
             say: '그거 아무한테도 말하지 마. 지호가 비밀로 해 달라고 한 거야',
             set: { e3fix: 'part' }, add: { repair: 1 },
             react: ['haneul: ㅇㅋ 알았어. 아무한테도 말 안 할게',
-              'narr: 지호는 아직 아무것도 모른다. [[캡처가 지금 몇 대의 휴대폰에 있는지도]] 모른다.'],
+              'narr: 지호는 아직 아무것도 모른다. [[캡처가 지금 휴대폰 몇 대에 있는지도]] 모른다.'],
             next: '@chapter:2' },
           { id: 'none', text: '이미 보낸 거니 어쩔 수 없다고 생각한다.',
             set: { e3fix: 'none' }, add: { spread: 1, 'trust.jiho': -2 },
@@ -635,7 +635,7 @@
           { kind: 'setting', text: '대화 기록 저장', meta: '켜짐' },
           { kind: 'setting', text: '입력한 대화를 서비스 개선에 활용', meta: '설정에 따라 다름 · 안내 보기' },
           'narr: AI에 입력했다고 곧바로 인터넷에 공개되는 건 아니다. 하지만 [[어디에, 얼마나 오래 남고 어떻게 쓰이는지]]는 서비스마다 설정과 정책이 다르다.',
-          { who: 'narr', text: '그리고 그 정보의 주인인 친구들은 여기에 입력되는 데 동의한 적이 없다.', if: 'e5=all|jiho' }
+          { who: 'narr', text: '그리고 그 정보의 주인인 친구들은 자기 정보가 여기에 들어가는 데 동의한 적이 없다.', if: 'e5=all|jiho' }
         ],
         prompt: '창을 닫기 전에',
         choices: [
@@ -820,10 +820,10 @@
             react: ['haneul: 지웠어. 민준이가 그 정도로 힘들어할 줄은 몰랐어', 'narr: 글은 지워졌다. [[이미 번호를 저장한 사람들은 남았다]].'], next: 'c3_e8_a' },
           { id: 'none', if: 'e7=warn|silent', text: '내가 올린 건 아니니까 그냥 둔다.',
             set: { e7b: 'none' },
-            react: ['narr: 민준이는 [[그날 저녁 내내]] 모르는 번호의 연락을 받았다.'], next: 'c3_e8_a' },
+            react: ['narr: 민준이는 [[그날 저녁 내내]] 모르는 번호로 연락을 받았다.'], next: 'c3_e8_a' },
           { id: 'hide', if: 'e7=join', text: '모르는 척한다.',
             set: { e7b: 'none' }, add: { 'trust.minjun': -1 },
-            react: ['narr: 민준이는 [[그날 저녁 내내]] 모르는 번호의 연락을 받았다. 번호를 누가 보냈는지 알게 되는 데는 오래 걸리지 않았다.'], next: 'c3_e8_a' }
+            react: ['narr: 민준이는 [[그날 저녁 내내]] 모르는 번호로 연락을 받았다. 번호를 누가 보냈는지 알게 되는 데는 오래 걸리지 않았다.'], next: 'c3_e8_a' }
         ],
         next: 'c3_e8_a'
       },
@@ -913,7 +913,7 @@
           'me: 너도 사람들 앞에서는 말 잘하네.',
           'bystander: 잠깐, 찍고 있어.',
           'narr: 한 사람이 휴대폰을 들었다. [[화면 속에 내가 보인다]].',
-          'narr: 등 뒤로 돌아가는 큰길은 아직 열려 있다.'
+          'narr: 등 뒤로 돌아갈 큰길은 아직 열려 있다.'
         ],
         prompt: '어떻게 할까?',
         choices: [
@@ -943,7 +943,7 @@
         view: { type: 'place', title: '렌즈 안에 갇힌 밤 · 학교 정문 앞', cg: 'clash' },
         lines: [
           { who: 'narr', text: '거리가 순식간에 줄었다. 서로 옷을 붙잡고 밀쳤다.', fx: 'shake' },
-          { who: 'narr', text: '주변 사람들이 휴대폰을 들어 우리 쪽을 향했다.', cg: 'recorded', rec: true },
+          { who: 'narr', text: '주변 사람들이 휴대폰을 우리 쪽으로 들어 올렸다.', cg: 'recorded', rec: true },
           'me: 찍지 마!',
           'bystander: 밖에서 하는 건데 왜?',
           'narr: 찍지 말라고 말했다. [[촬영은 멈추지 않았다]].',
@@ -985,7 +985,7 @@
         ],
         prompt: '영상은 아직 돌고 있다. 어떻게 할까?',
         choices: [
-          { id: 'support', text: '싸움에 참여한 건 인정하고, 영상 재전송을 멈춰 달라고 하고 도움을 청한다.',
+          { id: 'support', text: '싸움에 참여한 건 인정하고 영상 재전송을 멈춰 달라며 도움을 청한다.',
             say: '내가 싸움에 참여한 건 잘못했어. 그런데 그 영상을 계속 돌리는 건 멈춰 줬으면 해. 선생님께도 이야기할게.',
             set: { e8_response: 'support' }, add: { repair: 1, help: 1, 'trust.saebom': 1, 'trust.minjun': 1 },
             react: ['saebom: 알겠어. 어디에 올라왔는지부터 같이 정리하자.',
@@ -1168,7 +1168,7 @@
           { who: 'narr', text: '지호와 나 사이에는 아직 어색한 공기가 남아 있다.', if: 'trust.jiho<0' },
           { who: 'haneul', text: '야, 나 그날 이후로 PC방 가면 로그아웃부터 함 ㅋㅋ', if: 'trust.haneul>=1' },
           { who: 'narr', text: '하늘이와는 예전처럼 장난을 치지 못한다.', if: 'trust.haneul<0' },
-          { who: 'saebom', text: '정산은 다음부터 처음부터 개인톡으로만 받을게.', if: 'e1=propose|dm' },
+          { who: 'saebom', text: '정산은 다음엔 처음부터 개인톡으로만 받을게.', if: 'e1=propose|dm' },
           { who: 'saebom', text: '나도 그때 신상 올린 거, 다시 생각해 보니 무서웠어. 내가 당했던 거랑 똑같은 거였는데.', if: 'e9b=calm|del || e9=report' },
           'narr: 칠판에 선생님이 한 문장을 적었다. “누가, 누구의 정보를, 누구에게, 어떤 목적으로, 어디까지?”'
         ],
