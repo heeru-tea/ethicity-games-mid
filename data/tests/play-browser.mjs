@@ -26,7 +26,7 @@ async function autopilot(page) {
       let n = 0;
       for (const it of items) {
         if (n >= cb.need) break;
-        if (it.kind !== 'card' || it.fakeId || it.ambiguousId || !cb.keys.includes(it.key) || rows.has(it.z)) continue;
+        if (it.kind !== 'card' || it.fakeId || it.ambiguousId || it.privateId || !cb.keys.includes(it.key) || rows.has(it.z)) continue; // 개인정보 카드는 고르지 않는다(검수에서 가리기·빼기를 따로 봄 — privacy-browser)
         rows.add(it.z); targets.push(it); n++;
       }
       plan[cb.id] = n + '/' + cb.need;

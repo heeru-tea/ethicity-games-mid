@@ -141,7 +141,7 @@
   function startMission(id) {
     var m = DR.Missions[id];
     App.state = { mission: id, bag: [], supplements: 0, firstTry: null, firstFails: [], named: [], seed: seedFor(m), record: null, needRevealed: false, newIds: [],
-      peer: 'none', peerPending: false, showdownPassed: false };
+      peer: 'none', peerPending: false, showdownPassed: false, privCaught: [] };
     DR.UI.dialogue(m.story.intro, function () { missionBriefing(m); });
   }
   // 이전 임무(next가 이 임무인 것)의 기록에 따른 브리핑 한 줄. 기록이 없으면(임무 고르기로 바로 들어옴) null
@@ -159,6 +159,7 @@
       var course = DR.Stream.build(m, DR.config, { seed: App.state.seed });
       runCourse(m, course, [], function (bag) {
         App.state.bag = bag;
+        App.state.privCaught = DR.Privacy.caught(m, bag); // 가릴 수 있는 개인정보 카드 — 나중에 빠졌으면 결과에 한 줄
         App.afterRun(m);
       });
     }, recordLineFor(m));
@@ -174,7 +175,7 @@
     }
     App.state = { mission: save.mission, bag: save.bag, supplements: save.supplements, firstTry: save.firstTry,
       seed: save.seed === undefined ? seedFor(m) : save.seed, record: null, needRevealed: save.needRevealed, newIds: save.newIds, firstFails: save.firstFails || [], named: save.named || [], lost: save.lost || 0,
-      peer: save.peer || 'none', peerPending: !!save.peerPending, showdownPassed: !!save.showdownPassed };
+      peer: save.peer || 'none', peerPending: !!save.peerPending, showdownPassed: !!save.showdownPassed, privCaught: save.privCaught || [] };
     if (save.screen === 'briefing') { if (save.mission === 'tutorial') tutorialBriefing(); else missionBriefing(m); }
     else if (save.screen === 'inspect') review(m);
     else if (save.screen === 'result') judgeAndShow(m);
@@ -190,6 +191,13 @@
   }
 
   function askSupervisor(m) {
+    // 목적 밖 개인정보 카드를 처리하지 않았으면 감독관이 막는다(설계 2026-11-08 ①) — 장면 판정과는 따로
+    var pc = DR.Privacy.check(m, App.state.bag), T = DR.Privacy.TEXT;
+    if (!pc.ok) {
+      var lines = pc.reason === 'mustRemove' ? [T.blockMustRemove, T.blockMustRemove2] : [T.blockUnhandled, T.blockUnhandled2];
+      DR.UI.supervisorBlock(lines.map(function (t, i) { return { who: 'supervisor', text: t, face: i ? 'explain' : 'worried' }; }), function () { review(m); });
+      return;
+    }
     DR.UI.supervisor(m.story.supervisorQuestion, function () { review(m); }, function () { judgeAndShow(m); });
   }
 

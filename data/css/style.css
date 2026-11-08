@@ -572,3 +572,11 @@ body { overflow: hidden; word-break: keep-all; }
 #screen-profile .skip { z-index: 5; background: rgba(16, 9, 58, .78); color: #fff; }
 /* 휴대폰에서 건너뛰기와 겹치지 않게 그림 아래쪽에 */
 .opening-overlay { top: auto; bottom: 12px; right: 12px; }
+
+/* ---------- 목적 밖 개인정보 카드(설계 2026-11-08 ①): 크게 보기 '가리기' · 가린 카드 표시 · 감독관이 막을 때 ---------- */
+.bag-card.masked { border-color: var(--ink-2); }
+.bag-masked { position: absolute; top: 4px; left: 4px; font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: #101018; color: var(--ink); border: 1px solid var(--ink-2); }
+.zoom-mask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 0 0; }
+.zoom-mask .note { margin: 0; }
+.zoom-mask-note:empty { display: none; }
+.block-lines { display: grid; gap: 10px; }

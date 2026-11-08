@@ -44,6 +44,7 @@
   // 저장 내용: 미션 id, 화면, 가방 카드 목록("?" 설명표·동기 카드 고정 포함), 보충 횟수, 튜토리얼 완료, 필요 장수 공개 플래그,
   //   lost = 직전 달리기에서 노이즈로 잃은 카드 수(검수 화면 한 줄, 없는 옛 저장은 0)
   //   4 임무 결판: peer('none'|'joined'|'fixed')·peerPending(보충 뒤 동기 카드가 들어올 차례)·showdownPassed
+  //   privCaught = 첫 달리기 뒤 가방의 '가리기' 개인정보 카드 id(나중에 빠졌으면 결과 한 줄, 옛 저장은 []). 가방 카드의 privateId·masked도 그대로 남는다
   function checkpoint(screen, state, flags, st) {
     st = storage(st);
     var prev = read(st) || {};
@@ -53,6 +54,7 @@
       supplements: state.supplements || 0, firstTry: state.firstTry === undefined ? null : state.firstTry,
       seed: state.seed, needRevealed: !!state.needRevealed, newIds: state.newIds || [], firstFails: state.firstFails || [], named: state.named || [], lost: state.lost || 0,
       peer: state.peer || 'none', peerPending: !!state.peerPending, showdownPassed: !!state.showdownPassed,
+      privCaught: state.privCaught || [],
       tutorialDone: !!((flags && flags.tutorialDone) || prev.tutorialDone),
       records: prev.records || {},
       savedAt: Date.now()
@@ -69,7 +71,8 @@
       mission: o.mission || null, screen: o.screen || null, bag: o.bag || [],
       supplements: o.supplements || 0, firstTry: o.firstTry === undefined ? null : o.firstTry,
       seed: o.seed, needRevealed: !!o.needRevealed, newIds: o.newIds || [], firstFails: o.firstFails || [], named: o.named || [], lost: o.lost || 0, tutorialDone: !!o.tutorialDone,
-      peer: o.peer || 'none', peerPending: !!o.peerPending, showdownPassed: !!o.showdownPassed
+      peer: o.peer || 'none', peerPending: !!o.peerPending, showdownPassed: !!o.showdownPassed,
+      privCaught: Array.isArray(o.privCaught) ? o.privCaught : []
     };
   }
 
