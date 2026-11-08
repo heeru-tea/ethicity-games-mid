@@ -6,41 +6,71 @@ test('corrupt or impossible saves reset safely',()=>{
  let s=E.initial();s.scene=4;s.furthest=4;assert.deepEqual(E.restore(JSON.stringify(s)),E.initial(),'result scene without a choice');
  s=E.initial();s.judgments.photo=[null,'unknown',null];assert.deepEqual(E.restore(s),E.initial(),'judgment gap');
 });
-test('version 3 progress round-trips exactly',()=>{
+test('version 4 progress round-trips exactly',()=>{
  let s=E.initial();s=E.reduce(s,{type:'next'});s=E.reduce(s,{type:'next'});s=E.reduce(s,{type:'check',id:'photo-original'});
- assert.equal(s.scene,2);assert.equal(s.version,3);assert.deepEqual(E.restore(JSON.stringify(s)),s);
- for(const bad of [{reflections:null},{finalNote:3},{reporter:{name:1,number:''}},{reflections:{photo:{q1:'a'},writing:{q1:'',q2:''},face:{q1:'',q2:''}}}])
-  assert.deepEqual(E.restore(JSON.stringify({...s,...bad})),E.initial(),'broken text fields reset '+JSON.stringify(bad));
+ assert.equal(s.scene,2);assert.equal(s.version,4);assert.deepEqual(s.notices,{photo:{picked:[],posted:null},writing:{picked:[],posted:null},face:{picked:[],posted:null}});assert.deepEqual(E.restore(JSON.stringify(s)),s);
+ const n0={picked:[],posted:null},nb=x=>({notices:{photo:x,writing:n0,face:n0}});
+ for(const bad of [{reflections:null},{finalNote:3},{reporter:{name:1,number:''}},{reflections:{photo:{q1:'a'},writing:{q1:'',q2:''},face:{q1:'',q2:''}}},
+  {notices:null},{notices:undefined},nb({picked:['zzz'],posted:null}),nb({picked:['writing-human'],posted:null}),nb({picked:[],posted:[]}),nb({picked:['photo-auto','photo-auto'],posted:null}),nb({picked:[],posted:'x'})])
+  assert.deepEqual(E.restore(JSON.stringify({...s,...bad})),E.initial(),'broken fields reset '+JSON.stringify(bad));
+ // 이 단계를 지났는데 안내문이 없는 version 4 저장은 조작·손상으로 본다
+ const skip=doneCase(E.initial(),'photo');skip.notices.photo={picked:[],posted:null};skip.scene=skip.furthest=E.sceneOf('photo','reflect');assert.deepEqual(E.restore(skip),E.initial());
+ skip.notices.photo={picked:['photo-auto'],posted:['photo-auto']};assert.equal(E.restore(skip).scene,E.sceneOf('photo','reflect'));
 });
 // version 2 저장(2026-11-06 판)을 그대로 만든다: 장면 0 프롤로그, 1~5 사진, 6~10 글, 11~15 얼굴, 16 마지막. 서술 칸 없음.
 function v2(scene,furthest,extra={}){const s={version:2,scene,furthest,evidence:[],judgments:{photo:[null,null,null],writing:[null,null,null],face:[null,null,null]},
  cases:{photo:{first:null,final:null},writing:{first:null,final:null},face:{first:null,final:null}},follows:{photo:{marks:{},judgment:null},writing:{marks:{},judgment:null},face:{marks:{},judgment:null}},question:null,completed:false};return Object.assign(s,extra);}
 const doneCase=(s,k)=>{s.evidence.push(...E.checks[k]);s.judgments[k]=E.answers[k].slice();s.cases[k]={first:E.choices[k][0],final:E.choices[k][0]};
- const m=E.followMarks[k],marks={};m.ids.forEach((id,i)=>{marks[id]=k==='photo'?E.truth[i]:m.values[0];});s.follows[k]={marks,judgment:E.followAnswers[k]};return s;};
-test('version 2 saves move to version 3: same step, empty reflections, existing fields kept',()=>{
+ const m=E.followMarks[k],marks={};m.ids.forEach((id,i)=>{marks[id]=k==='photo'?E.truth[i]:m.values[0];});s.follows[k]={marks,judgment:E.followAnswers[k]};
+ if(s.notices){const must=E.noticeCards[k].must.slice();s.notices[k]={picked:must,posted:must.slice()};}return s;};
+test('version 2 saves move to version 4: same step, empty reflections, existing fields kept',()=>{
  // 글 사건 직접 확인 중(옛 scene 7)
  let old=doneCase(v2(7,7),'photo');old.evidence.push('writing-guide');
  let s=E.restore(JSON.stringify(old));
- assert.equal(s.version,3);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');assert.equal(s.furthest,s.scene);
+ assert.equal(s.version,4);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');assert.equal(s.furthest,s.scene);
+ assert.deepEqual(s.notices.photo,{picked:[],posted:'legacy'},'photo case already past the new notice step');assert.deepEqual(s.notices.writing,{picked:[],posted:null});
  assert.deepEqual(s.reflections,{photo:{q1:'',q2:''},writing:{q1:'',q2:''},face:{q1:'',q2:''}});assert.equal(s.finalNote,'');assert.deepEqual(s.reporter,{name:'',number:''});
  assert.deepEqual(s.judgments.photo,old.judgments.photo);assert.deepEqual(s.follows.photo,old.follows.photo);assert.deepEqual(s.evidence,old.evidence);
- assert.deepEqual(E.restore(JSON.stringify(s)),s,'migrated save round-trips as version 3');
+ assert.deepEqual(E.restore(JSON.stringify(s)),s,'migrated save round-trips as version 4');
  // 사진 후속 조사 중(옛 scene 5): 다음은 새 미리 알리기 화면
  old=v2(5,5);old.evidence.push(...E.checks.photo);old.judgments.photo=E.answers.photo.slice();old.cases.photo={first:'all',final:'all'};
- s=E.restore(old);assert.equal(E.stepOf(s.scene),'follow');assert.equal(E.caseKey(s.scene),'photo');
+ s=E.restore(old);assert.equal(E.stepOf(s.scene),'follow');assert.equal(E.caseKey(s.scene),'photo');assert.equal(s.notices.photo.posted,null,'not past the notice step yet');
  for(const [i,id] of E.followMarks.photo.ids.entries())s=E.reduce(s,{type:'mark',id,value:E.truth[i]});s=E.reduce(s,{type:'follow-judge',stamp:'different'});
  s=E.reduce(s,{type:'next'});assert.equal(E.stepOf(s.scene),'notice','then the new notice screen');
  // 다 끝낸 저장(옛 scene 16): 마지막 장면, 보고서로 갈 수 있다
  old=v2(16,16,{question:'criteria',completed:true});for(const k of E.CASES)doneCase(old,k);
- s=E.restore(old);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.equal(s.question,'criteria');
+ s=E.restore(old);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.equal(s.question,'criteria');assert.ok(E.CASES.every(k=>s.notices[k].posted==='legacy'));
  s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.REPORT);
  // 옛 배치에서 범위를 벗어난 장면 번호
  assert.deepEqual(E.restore(v2(17,17)),E.initial());
 });
+// version 3 저장(2026-11-08 판): 장면 0 프롤로그, 1~6 사진, 7~12 글, 13~18 얼굴, 19 마지막, 20 보고서. notices 없음.
+function v3(scene,furthest,extra={}){const s=v2(scene,furthest);s.version=3;s.reflections={photo:{q1:'',q2:''},writing:{q1:'',q2:''},face:{q1:'',q2:''}};s.finalNote='';s.reporter={name:'',number:''};return Object.assign(s,extra);}
+test('version 3 saves move to version 4: same step; cases already past the notice step become legacy and can move on',()=>{
+ // 사진 생각 정리 중(옛 scene 6): 새 배치의 사진 생각 정리, 사진 미리 알리기는 '아직 안 함'
+ let old=doneCase(v3(6,6),'photo');old.reflections.photo.q1='원본 사진';
+ let s=E.restore(JSON.stringify(old));
+ assert.equal(s.version,4);assert.equal(E.caseKey(s.scene),'photo');assert.equal(E.stepOf(s.scene),'reflect');assert.equal(s.reflections.photo.q1,'원본 사진');
+ assert.deepEqual(s.notices.photo,{picked:[],posted:'legacy'});assert.equal(E.canAdvance(s),true,'legacy does not block');
+ assert.deepEqual(E.restore(JSON.stringify(s)),s,'round-trips as version 4');
+ let r=E.reduce(s,{type:'revisit',scene:E.sceneOf('photo','notice')});assert.equal(E.canAdvance(r),true);
+ r=E.reduce(r,{type:'notice-pick',id:'photo-auto'});r=E.reduce(r,{type:'notice-post'});assert.deepEqual(r.notices.photo.posted,['photo-auto'],'can be done later');
+ // 사진 후속 조사 중(옛 scene 5): 다음 화면이 새 미리 알리기
+ old=v3(5,5);old.evidence.push(...E.checks.photo);old.judgments.photo=E.answers.photo.slice();old.cases.photo={first:'all',final:'all'};
+ s=E.restore(old);assert.equal(E.stepOf(s.scene),'follow');assert.equal(s.notices.photo.posted,null);
+ // 글 사건 직접 확인 중(옛 scene 8), 사진은 끝냄
+ old=doneCase(v3(8,8),'photo');old.evidence.push('writing-guide');s=E.restore(old);
+ assert.equal(s.scene,E.sceneOf('writing','check'));assert.equal(s.notices.photo.posted,'legacy');assert.equal(s.notices.writing.posted,null);
+ // 보고서까지 간 저장(옛 scene 20): 보고서, 세 사건 모두 legacy, 서술·이름 그대로
+ old=v3(20,20,{question:'unknown',completed:true});for(const k of E.CASES)doneCase(old,k);old.finalNote='먼저 물어볼래';old.reporter={name:'하늘',number:'10203'};
+ s=E.restore(old);assert.equal(s.scene,E.REPORT);assert.ok(E.CASES.every(k=>s.notices[k].posted==='legacy'));assert.equal(s.finalNote,'먼저 물어볼래');assert.deepEqual(s.reporter,{name:'하늘',number:'10203'});
+ // 옛 배치(마지막 20)를 벗어난 장면 번호
+ assert.deepEqual(E.restore(v3(21,21)),E.initial());
+});
 test('version 1 revision 4 save at scene 5 (writing case start) resumes at the writing case start',()=>{
  const old={version:1,revision:4,scene:5,furthest:5,evidence:['photo-original','photo-rule'],judgments:{photo:'unknown',writing:null,face:null},cases:{photo:v1c('auto'),writing:{first:null,final:null},face:{first:null,final:null}},question:null,completed:false};
  const s=E.restore(JSON.stringify(old));
- assert.equal(s.version,3);assert.equal(E.stepOf(s.scene),'hook');assert.equal(E.caseKey(s.scene),'writing');
+ assert.equal(s.version,4);assert.equal(E.stepOf(s.scene),'hook');assert.equal(E.caseKey(s.scene),'writing');assert.equal(s.notices.photo.posted,'legacy');
  assert.deepEqual(s.reflections.photo,{q1:'',q2:''},'version 1 saves also get empty reflections');
  assert.deepEqual(s.judgments.photo,['unknown','legacy','legacy'],'old pick kept as judgment 1; new ones marked as not done');
  assert.equal(s.follows.photo.judgment,'legacy');assert.deepEqual(s.cases.photo,{first:'auto',final:'auto'});
@@ -55,7 +85,7 @@ test('version 1 revision 4 at photo result continues into the new follow-up',()=
 });
 test('version 1 revision 4 completed save lands on the ending, still completed',()=>{
  const old={version:1,revision:4,scene:13,furthest:13,evidence:Object.values(E.checks).flat(),judgments:{photo:'confirmed',writing:'unknown',face:'different'},cases:{photo:v1c('all'),writing:v1c('review'),face:v1c('release')},question:'input',completed:true};
- const s=E.restore(old);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.ok(E.CASES.every(k=>s.follows[k].judgment==='legacy'));
+ const s=E.restore(old);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.ok(E.CASES.every(k=>s.follows[k].judgment==='legacy'&&s.notices[k].posted==='legacy'));
 });
 test('revision 3 save (claim-card version) still migrates through revision 4',()=>{
  const old={version:1,revision:3,scene:7,furthest:7,evidence:['P1','P2','P3','W1','W2'],tasks:{},claims:{},attempts:{},assistedScenes:[],

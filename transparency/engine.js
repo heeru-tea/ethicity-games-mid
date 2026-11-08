@@ -1,6 +1,6 @@
 (function(root){
  'use strict';
- // 저장 version 3. 사건마다 일곱 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사)
+ // 저장 version 4. 사건마다 일곱 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사)
  // → notice(만든 사람이라면: 미리 알리기) → reflect(생각 정리).
  // 마지막은 end(닫히지 않은 질문 + 마지막 서술) → report(나의 조사 보고서).
  // 장면 번호는 LAYOUT에서 계산한다. 사건 4·5를 붙일 때는 CASES·STEPS·checks·choices·answers만 늘리면 된다.
@@ -12,6 +12,8 @@
  // version 2 장면 배치(reflect·report 없음). 옛 저장의 장면 번호를 새 배치로 옮길 때 쓴다.
  const LAYOUT2=[{step:'intro',k:null}];for(const k of CASES)for(const step of SIX.slice(0,5))LAYOUT2.push({step,k});LAYOUT2.push({step:'end',k:null});
  const END2=LAYOUT2.length-1;
+ // version 3 장면 배치(notice 없음). 0 프롤로그, 1~6 사진, 7~12 글, 13~18 얼굴, 19 마지막, 20 보고서.
+ const LAYOUT3=[{step:'intro',k:null}];for(const k of CASES)for(const step of SIX)LAYOUT3.push({step,k});LAYOUT3.push({step:'end',k:null},{step:'report',k:null});
  const TEXT_MAX=4000; // 서술 칸은 강제 제한이 없다. 저장이 지나치게 커지지 않게만 막는다.
  const REPORTER=['name','number'];
  const checks={photo:['photo-original','photo-rule'],writing:['writing-guide','writing-history'],face:['face-alert','face-clerk','face-photo']};
@@ -45,7 +47,7 @@
  function sceneOf(key,step){return LAYOUT.findIndex(x=>x.k===key&&x.step===step);}
  const clone=v=>JSON.parse(JSON.stringify(v));
  const each=f=>Object.fromEntries(CASES.map(k=>[k,f(k)]));
- function initial(){return {version:3,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),question:null,completed:false,
+ function initial(){return {version:4,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),question:null,completed:false,
   reflections:each(()=>({q1:'',q2:''})),finalNote:'',reporter:{name:'',number:''},notices:each(()=>({picked:[],posted:null}))};}
  const text=v=>typeof v==='string'?v.slice(0,TEXT_MAX):'';
  function checked(s,key){return checks[key].every(id=>s.evidence.includes(id));}
@@ -98,6 +100,8 @@
    if(v.furthest>sceneOf(key,'check')&&!judged(v,key))return false;
    if(v.furthest>=sceneOf(key,'result')&&!c.final)return false;
    if(v.furthest>sceneOf(key,'follow')&&!followDone(v,key))return false;
+   const n=v.notices[key];if(v.furthest>sceneOf(key,'notice')&&!noticeDone(v,key))return false;
+   if(v.furthest<sceneOf(key,'notice')&&(n.picked.length||n.posted!==null))return false;
   }
   if(v.question&&!CASES.every(c=>v.cases[c].final))return false;
   if(v.completed!==!!v.question)return false;
@@ -162,21 +166,24 @@
    if(j)s.judgments[key]=[j,'legacy','legacy'];
    if(s.furthest>sceneOf(key,'follow'))s.follows[key].judgment='legacy';
   }
+  legacyNotices(s);
   return consistent(s)?s:initial();
  }
+ // 옛 저장에서 이미 미리 알리기 자리를 지난 사건은 '아직 안 함'(legacy)으로 둔다. 넘어가기는 막지 않고, 수첩에서 다시 열 수 있다.
+ function legacyNotices(s){for(const key of CASES)if(s.furthest>sceneOf(key,'notice')&&s.notices[key].posted===null)s.notices[key].posted='legacy';}
  function restore(raw){
   try{const v=typeof raw==='string'?JSON.parse(raw):raw;
    if(!v||typeof v!=='object')return initial();
    if(v.version===1){const r=v.revision===4?restore4(v):migrate3(v);return r?upgrade(r):initial();}
-   if(v.version!==2&&v.version!==3)return initial();
-   // version 2 → 3: 장면 번호를 새 배치로 옮기고 서술은 빈 값으로 둔다.
-   const last=v.version===2?END2:REPORT,map=n=>{if(v.version===3)return n;const x=LAYOUT2[n];return x.step==='intro'?0:x.step==='end'?END:sceneOf(x.k,x.step);};
+   if(![2,3,4].includes(v.version))return initial();
+   // version 2·3 → 4: 장면 번호를 새 배치로 옮긴다. version 2는 서술을 빈 값으로, 둘 다 안내문은 빈 값(지난 사건은 legacy)으로 둔다.
+   const OLD={2:LAYOUT2,3:LAYOUT3}[v.version],last=OLD?OLD.length-1:REPORT,map=n=>{if(!OLD)return n;const x=OLD[n];return x.step==='intro'?0:x.step==='end'?END:x.step==='report'?REPORT:sceneOf(x.k,x.step);};
    if(!Number.isInteger(v.scene)||v.scene<0||v.scene>last||!Number.isInteger(v.furthest)||v.furthest<v.scene||v.furthest>last)return initial();
    if(!Array.isArray(v.evidence)||v.evidence.some(id=>!CASES.some(k=>checks[k].includes(id))))return initial();
    if(!v.judgments||!v.cases||!v.follows||typeof v.completed!=='boolean')return initial();
    if(v.question!==null&&!questions.includes(v.question))return initial();
    const s=initial();s.scene=map(v.scene);s.furthest=map(v.furthest);s.evidence=[...new Set(v.evidence)];s.question=v.question;s.completed=v.completed;
-   if(v.version===3){
+   if(v.version>=3){
     if(!v.reflections||typeof v.reflections!=='object'||!v.reporter||typeof v.reporter!=='object'||typeof v.finalNote!=='string')return initial();
     for(const key of CASES){const r=v.reflections[key];if(!r||typeof r.q1!=='string'||typeof r.q2!=='string')return initial();s.reflections[key]={q1:text(r.q1),q2:text(r.q2)};}
     if(REPORTER.some(f=>typeof v.reporter[f]!=='string'))return initial();
@@ -189,14 +196,15 @@
     if(Object.entries(f.marks).some(([id,val])=>!m.ids.includes(id)||!m.values.includes(val)))return initial();
     s.cases[key]={first:c.first,final:c.final};if(c.legacyFirst===true)s.cases[key].legacyFirst=true;
     s.judgments[key]=j.slice();s.follows[key]={marks:{...f.marks},judgment:f.judgment};
-    if(v.notices!==undefined){const n=v.notices?.[key],ok=a=>Array.isArray(a)&&a.every(id=>noticeKind(key,id))&&new Set(a).size===a.length;
+    if(v.version===4){const n=v.notices?.[key],ok=a=>Array.isArray(a)&&a.every(id=>noticeKind(key,id))&&new Set(a).size===a.length;
      if(!n||!ok(n.picked)||!(n.posted===null||n.posted==='legacy'||ok(n.posted)&&n.posted.length))return initial();
      s.notices[key]={picked:n.picked.slice(),posted:Array.isArray(n.posted)?n.posted.slice():n.posted};}
    }
+   if(OLD)legacyNotices(s);
    return consistent(s)?s:initial();
   }catch{return initial();}
  }
  const api={initial,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,noticeIds,noticeKind,noticeCheck,noticeDone,outcome,allFaces,cutFaces,
-  CASES,STEPS,LAYOUT,LAYOUT2,END,REPORT,checks,choices,stamps,answers,followAnswers,followMarks,questions,noticeCards,AUTO,ALL,faces,FOLLOW_CROPS,truth};
+  CASES,STEPS,LAYOUT,LAYOUT2,LAYOUT3,END,REPORT,checks,choices,stamps,answers,followAnswers,followMarks,questions,noticeCards,AUTO,ALL,faces,FOLLOW_CROPS,truth};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TransparencyEngine=api;
 })(typeof window==='undefined'?globalThis:window);
