@@ -117,6 +117,17 @@
     return write(o, st);
   }
 
+  // 챕터 끝 답(설계 2026-11-08 ②): records[임무].chapter = { req: { first, last }, concept: { first, last }, note }
+  //   처음 고른 것과 마지막으로 고른 것을 둘 다 남긴다. 옛 기록(chapter 없음)·깨진 값은 빈 값으로
+  function chapterOf(recs, id) {
+    var c = recs && recs[id] && recs[id].chapter, out = { req: { first: null, last: null }, concept: { first: null, last: null }, note: '' };
+    if (!c || typeof c !== 'object') return out;
+    var str = function (v) { return typeof v === 'string' ? v : null; };
+    ['req', 'concept'].forEach(function (k) { if (c[k] && typeof c[k] === 'object') out[k] = { first: str(c[k].first), last: str(c[k].last) }; });
+    out.note = typeof c.note === 'string' ? c.note : '';
+    return out;
+  }
+
   // 도시 복구 칸 수(설계 §7): 튜토리얼 + 1~4 임무 중 깬 것, 0~5. 순서는 상관없다(임무 고르기로 건너뛰어도).
   //   튜토리얼은 기록(records.tutorial)으로 센다 — '처음부터'(clear)는 기록을 지우므로 0칸부터(튜토리얼 건너뛰기 선택지는 tutorialDone으로 남음).
   //   예전 저장은 read()가 한 번 옮겨 둔다(cityV) — 그래서 여기엔 tutorialDone 규칙이 없다('처음부터' 뒤 1 임무만 깨도 2칸이 되던 것, 리뷰 I1).
@@ -165,7 +176,7 @@
     try { if (st) st.setItem(HERO_KEY, id); } catch (e) { /* 무시 */ }
   }
 
-  var api = { KEY: KEY, SOUND_KEY: SOUND_KEY, BGM_KEY: BGM_KEY, HERO_KEY: HERO_KEY, hero: hero, setHero: setHero, checkpoint: checkpoint, load: load, hasSave: hasSave, records: records, setRecord: setRecord, markTutorialDone: markTutorialDone, cityCount: cityCount, cityStep: cityStep, finish: finish, clear: clear, soundOn: soundOn, setSound: setSound, bgmOn: bgmOn, setBgm: setBgm };
+  var api = { KEY: KEY, SOUND_KEY: SOUND_KEY, BGM_KEY: BGM_KEY, HERO_KEY: HERO_KEY, hero: hero, setHero: setHero, checkpoint: checkpoint, load: load, hasSave: hasSave, records: records, setRecord: setRecord, chapterOf: chapterOf, markTutorialDone: markTutorialDone, cityCount: cityCount, cityStep: cityStep, finish: finish, clear: clear, soundOn: soundOn, setSound: setSound, bgmOn: bgmOn, setBgm: setBgm };
   root.DR = root.DR || {};
   root.DR.Save = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

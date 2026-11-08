@@ -7,7 +7,7 @@
 (function (root) {
   'use strict';
 
-  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'conveyor', 'guide', 'grade', 'result', 'prep', 'knockout', 'city', 'outro'];
+  var SCREENS = ['title', 'profile', 'story', 'briefing', 'run', 'inspect', 'supervisor', 'conveyor', 'guide', 'grade', 'result', 'prep', 'knockout', 'city', 'chapter', 'outro'];
   var DR = root.DR;
   var STATIC = ['title', 'run']; // HTML에 고정 구조가 있는 화면(비우지 않음)
 
@@ -334,13 +334,20 @@
     ];
     if (relabels) summary.push('고친 이름표: ' + fixed + '장');
     var cityBefore = cityCount();
+    // 챕터 끝 답(설계 2026-11-08 ②)은 다시 깨도 이어 간다 — 이전 답을 채운 채 보여 주고, 처음 선택은 처음 값 그대로
+    rec.chapter = DR.Save.chapterOf(App.records, m.id);
     App.records[m.id] = rec;
     DR.Save.finish();
     DR.Save.setRecord(m.id, rec);
     var next = m.next && DR.Missions[m.next] ? function () { startMission(m.next); } : null;
     var outroOpts = { kicker: m.title + ' 완료', next: next, summary: summary };
     var step = DR.Save.cityStep(m.id, cityBefore, cityCount());
-    function toOutro() { DR.UI.outro(m.story.outro, function () { DR.Sfx.play('ui'); go('title'); }, outroOpts); }
+    function toOutro() {
+      outroOpts.summary = summary.concat(DR.UI.chapterSummary(m, DR.Save.chapterOf(App.records, m.id)));
+      DR.UI.outro(m.story.outro, function () { DR.Sfx.play('ui'); go('title'); }, outroOpts);
+    }
+    // 챕터 끝: 다른 용도 요청 → 개념 질문 → 짧은 생각(js/ui-chapter.js). 데이터가 없는 임무(옛 침수)는 건너뜀
+    function chapterEnd(next) { if (m.chapterEnd) DR.UI.chapter(m, {}, next); else next(); }
     if (m.story.after) {
       // 4 임무: 도시 재연결(늘 5/5) → 의뢰인 한 줄 → (동기가 합류한 적 없으면) 동기의 상자 → 해커의 이후(bg) → 마무리(최종 토론 질문)
       var lines = (rec.passed ? m.story.reconnect.pass : m.story.reconnect.partial).slice();
@@ -349,11 +356,12 @@
       lines = lines.concat(af.lines.map(function (l) { return Object.assign({ bg: af.bg }, l); }));
       outroOpts.headline = '도시가 다시 이어졌다';
       outroOpts.questions = m.story.questions;
-      cityScreen(m, step, function () { DR.UI.dialogue(lines, toOutro); });
+      // 챕터 끝 = 재연결 5/5 뒤·의뢰인 대사 전
+      cityScreen(m, step, function () { chapterEnd(function () { DR.UI.dialogue(lines, toOutro); }); });
       return;
     }
-    // 1~3 임무: 마지막 대화(선배·정체 공개) → 도시 복구(칸이 늘었을 때만) → 임무 완료
-    DR.UI.dialogue(revealLines(m).concat(m.story.senior), function () { cityScreen(m, step, toOutro); });
+    // 1~3 임무: 마지막 대화(선배·정체 공개) → 챕터 끝 → 도시 복구(칸이 늘었을 때만) → 임무 완료
+    DR.UI.dialogue(revealLines(m).concat(m.story.senior), function () { chapterEnd(function () { cityScreen(m, step, toOutro); }); });
   }
 
   // 테스트 훅: 달리는 중 현재 코스에서 key(또는 ambiguousId) 카드를 앞에서부터 골라 가방에 넣는다
