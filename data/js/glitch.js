@@ -78,8 +78,8 @@
     for (var y = 0; y < h;) {
       var bh = Math.max(4, Math.round(h * (0.03 + (s % 7) / 100)));
       s = Math.imul(s ^ (s >>> 13), 1274126177) >>> 0;
-      if (s % 3 === 0) {
-        var dx = Math.round(w * (0.03 + (s % 5) / 100)) * (s & 8 ? 1 : -1);
+      if (s % 2 === 0) {
+        var dx = Math.round(w * (0.06 + (s % 6) / 100)) * (s & 8 ? 1 : -1); // 멀리(3D 작은 카드)서도 보이게 6~11%
         g.drawImage(src, 0, y, w, bh, dx, y, w, bh);
         g.drawImage(src, 0, y, w, bh, dx - Math.sign(dx) * w, y, w, bh);
       }
@@ -93,7 +93,7 @@
   function rgbCanvas(src, frame) {
     var c = copy(src), g = c.getContext('2d'), w = src.width, h = src.height;
     g.drawImage(src, 0, 0);
-    var img = g.getImageData(0, 0, w, h), from = new Uint8ClampedArray(img.data), d = img.data, dx = Math.max(2, Math.round(w * (frame ? 0.02 : 0.03)));
+    var img = g.getImageData(0, 0, w, h), from = new Uint8ClampedArray(img.data), d = img.data, dx = Math.max(2, Math.round(w * (frame ? 0.045 : 0.06)));
     for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
       var i = (y * w + x) * 4, r = (y * w + Math.min(w - 1, x + dx)) * 4, b = (y * w + Math.max(0, x - dx)) * 4;
       d[i] = from[r]; d[i + 2] = from[b + 2];
