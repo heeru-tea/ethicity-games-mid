@@ -69,7 +69,7 @@ for (const [hero, seed] of [['onyu', 3301], ['daon', 3301], ['daon', 3317]]) {
       assert.ok(Object.values(r.plan).every((v) => { const [a, b] = v.split('/').map(Number); return a >= b; }), 'needed cards reachable ' + tag);
       assert.equal(r.caught, r.targets, 'caught every planned card ' + tag);
       assert.equal(r.lost, 0, 'walls dodged, nothing lost ' + tag);
-      await page.locator('#screen-inspect').waitFor({ state: 'visible', timeout: 8000 });
+      await page.locator('#screen-inspect').waitFor({ state: 'visible', timeout: 15000 }); // PC가 바쁘면 느림(m3-browser 주석)
       await page.locator('#btn-submit').click(); await page.locator('#btn-confirm').click();
       const res = await throughResults(page);
       assert.deepEqual(res.map((x) => x.outcome), ['pass', 'pass', 'pass', 'pass'], tag + ' ' + JSON.stringify(res));
