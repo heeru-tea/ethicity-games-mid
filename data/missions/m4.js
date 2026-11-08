@@ -68,6 +68,17 @@
           { type: 'stroke', text: '연필 자국 확대: 가운데가 안쪽으로 꺾인다' }
         ] }
     ],
+    // 목적 밖 개인정보 카드(설계 2026-11-08 ①, DR.Privacy): 또박또박 쓴 평범한 답(S4 독특한 답 아님)에 학생 이름 → 가리기 뒤 사용
+    // 이름은 읽히지 않는 흘림 획(cardart.js nameLine) — 숫자 모양이 아니게
+    privacy: {
+      on: true,
+      cards: [
+        { id: 'p_name_2', key: 'neat_2', fix: 'mask', at: 0.5, what: '학생 이름', art: { digit: '2', style: 'neat', name: true },
+          mask: [{ x: 0.57, y: 0.02, w: 0.39, h: 0.13, look: 'bar' }] },
+        { id: 'p_name_4', key: 'neat_4', fix: 'mask', at: 0.5, what: '학생 이름', art: { digit: '4', style: 'neat', name: true },
+          mask: [{ x: 0.57, y: 0.02, w: 0.39, h: 0.13, look: 'bar' }] }
+      ]
+    },
     // 이름표가 틀린 답안(2 임무 방식 — 고치거나 빼기). 7·8 = 선택지 밖, 2에 '5' = 선택지 안, 낙서 = 고칠 수 없음
     fakes: [
       { id: 'x_17', name: '흘려 쓴 1', label: '7', truth: 'flag_1', count: 3, harm: 'danger', scenes: ['S2'], art: { digit: '1', style: 'flag' },

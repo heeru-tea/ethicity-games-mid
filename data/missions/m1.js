@@ -34,6 +34,17 @@
       phone_front:     { label: 'phone',    icons: ['phone'],    name: '앞면 스마트폰', art: { photo: 'phone-front' } },
       phone_back:      { label: 'phone',    icons: ['phone'],    name: '뒷면 스마트폰', art: { photo: 'phone-back' }, rare: true }
     },
+    // 목적 밖 개인정보 카드(설계 2026-11-08 ①, DR.Privacy): 흔한 모습 카드에만. 신분증·메시지는 사진의 곁가지 → 가리기 뒤 사용
+    // ⚠️ wallet-id 사진은 펼친 지갑 모습이지만 설계(흔한 모습만)대로 닫힌 지갑 종류로 센다 — 사용자 확인 목록
+    privacy: {
+      on: true,
+      cards: [
+        { id: 'p_wallet_id', key: 'wallet_closed', fix: 'mask', at: 0.5, what: '신분증', art: { photo: 'wallet-id' },
+          mask: [{ x: 0.09, y: 0.43, w: 0.36, h: 0.17, look: 'bar' }] },
+        { id: 'p_phone_msg', key: 'phone_front', fix: 'mask', at: 0.6, what: '메시지 알림', art: { photo: 'phone-lock-message' },
+          mask: [{ x: 0.3, y: 0.27, w: 0.43, h: 0.32, look: 'bar' }] }
+      ]
+    },
     ambiguous: [],
     outcomeText: { pass: '종류별 목록에 올렸다', inconvenience: '일부 물건이 분류 보류로 남았다', danger: '일부 물건이 분류 보류로 남았다' },
     counts: { umbrella_open: 8, wallet_closed: 8, phone_front: 8, umbrella_folded: 5, wallet_open: 5, phone_back: 5 },

@@ -44,7 +44,7 @@
   // 달리기에서 잡은 카드 → 판정용 가방 항목
   function toBag(grabbed) {
     return grabbed.map(function (g) {
-      if (g.key) return { id: g.uid, key: g.key };
+      if (g.key) return g.privateId ? { id: g.uid, key: g.key, privateId: g.privateId } : { id: g.uid, key: g.key };
       if (g.fakeId) return { id: g.uid, fakeId: g.fakeId };
       return { id: g.uid, ambiguousId: g.ambiguousId, assigned: undefined };
     });
@@ -349,13 +349,14 @@
   }
 
   // 테스트 훅: 달리는 중 현재 코스에서 key(또는 ambiguousId) 카드를 앞에서부터 골라 가방에 넣는다
+  // 개인정보 카드(privateId)는 건너뛴다 — 부르려면 그 privateId를 id로 준다
   function debugFill(counts) {
     var items = DR.Run.course().items;
     Object.keys(counts).forEach(function (id) {
       var need = counts[id];
       for (var i = 0; i < items.length && need > 0; i++) {
         var it = items[i];
-        if (it.kind === 'card' && (it.key === id || it.ambiguousId === id || it.fakeId === id) && !DR.Run.isTaken(it.uid)) {
+        if (it.kind === 'card' && (it.privateId ? it.privateId === id : (it.key === id || it.ambiguousId === id || it.fakeId === id)) && !DR.Run.isTaken(it.uid)) {
           DR.Run.debugTake(it.uid); need--;
         }
       }

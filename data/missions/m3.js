@@ -48,6 +48,17 @@
       crossing_now:   { label: 'crossing', icons: ['crossing'], name: '학교 앞 횡단보도',             art: { view: 'crossing', time: 'day' },             dates: ['2024년 3월', '2025년 4월', '2026년 3월'] },
       crossing_rain:  { label: 'crossing', icons: ['crossing'], name: '비 오는 학교 앞',              art: { view: 'crossing', time: 'day', rain: true },  dates: ['2024년 7월', '2025년 6월', '2026년 7월'], rare: true }
     },
+    // 목적 밖 개인정보 카드(설계 2026-11-08 ①, DR.Privacy): 행인 얼굴·차 번호판은 사진의 곁가지 → 가리기(흐리게·막대) 뒤 사용
+    // 위험 조합(학교 앞 횡단보도)·시장 옛 사진은 피한다. 그림은 Canvas(cardart.js people·plate)
+    privacy: {
+      on: true,
+      cards: [
+        { id: 'p_river_people', key: 'river_now', fix: 'mask', at: 0.5, what: '행인 얼굴', art: { view: 'river', time: 'day', people: true },
+          mask: [{ x: 0.14, y: 0.58, w: 0.16, h: 0.17, look: 'blur' }, { x: 0.665, y: 0.62, w: 0.15, h: 0.16, look: 'blur' }] },
+        { id: 'p_station_plate', key: 'station_now', fix: 'mask', at: 0.6, what: '차 번호판', art: { view: 'station', time: 'day', plate: true },
+          mask: [{ x: 0.39, y: 0.8, w: 0.22, h: 0.1, look: 'bar' }] }
+      ]
+    },
     ambiguous: [],
     fakes: [
       { id: 'o_station', name: '철거 전 빌딩', label: 'station', truth: null, count: 3, art: { view: 'station', era: 'old', time: 'day' },

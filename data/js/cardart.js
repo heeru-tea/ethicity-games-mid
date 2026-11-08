@@ -24,11 +24,20 @@
   }
   function pick(r, arr) { return arr[Math.floor(r.next() * arr.length)]; }
 
+  // id: 종류 key · '?'·가짜 id · 개인정보 카드 privateId(가렸으면 'privateId#masked' — 그림은 같고 가린 모습은 card()가 얹는다)
   function artOf(mission, id) {
     if (mission.cardTypes[id]) return mission.cardTypes[id].art;
+    var pd = privateDef(mission, id);
+    if (pd) return pd.art;
     var a = (mission.ambiguous || []).concat(mission.fakes || []).filter(function (q) { return q.id === id; })[0];
     if (!a) throw new Error('알 수 없는 카드: ' + id);
     return a.art;
+  }
+
+  function privateDef(mission, id) {
+    var list = (mission.privacy && mission.privacy.cards) || [], base = String(id).split('#')[0];
+    for (var i = 0; i < list.length; i++) if (list[i].id === base) return list[i];
+    return null;
   }
 
   /* ---------- 도로 장면(S×S 좌표, 그릴 때 size/256 배율) ---------- */

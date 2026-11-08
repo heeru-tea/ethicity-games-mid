@@ -45,6 +45,16 @@
       trash_misc:  { label: 'trash',   icons: ['trash'],   name: '일반쓰레기',      art: { object: 'trash_misc', photos: ['trash_glove', 'trash_sponge', 'trash_tissue'] }, rare: true },
       battery_aa:  { label: 'battery', icons: ['battery'], name: '건전지',          art: { object: 'battery_aa', photo: 'battery_aa' }, rare: true, hazard: true }
     },
+    // 목적 밖 개인정보 카드(설계 2026-11-08 ①, DR.Privacy): 사람이 사진의 주인공 → 빼기(가리면 감독관이 막음)
+    privacy: {
+      on: true,
+      cards: [
+        { id: 'p_person_a', key: 'can_drink', fix: 'remove', at: 0.4, what: '버리는 사람 얼굴', art: { photo: 'recycle-person' },
+          mask: [{ x: 0.29, y: 0.03, w: 0.25, h: 0.25, look: 'blur' }] },
+        { id: 'p_person_b', key: 'can_drink', fix: 'remove', at: 0.8, what: '버리는 사람 얼굴', art: { photo: 'recycle-person' },
+          mask: [{ x: 0.29, y: 0.03, w: 0.25, h: 0.25, look: 'blur' }] }
+      ]
+    },
     ambiguous: [],
     fakes: [
       { id: 'f_receipt', name: '영수증', label: 'paper', truth: 'trash_misc', count: 3, art: { object: 'receipt', photo: 'receipt' },
