@@ -1,0 +1,3 @@
+# 사건 4·5 새 그림 원본 PNG(Codex 납품)는 로컬에만 둔다. 게임은 tools/art-4-5.cjs가 만든 .webp 사본을 쓴다.
+assets/s04/*.png
+assets/s05/*.png

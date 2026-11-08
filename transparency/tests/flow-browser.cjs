@@ -5,7 +5,7 @@ const {chromium}=require(PW);
 const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs'),http=require('node:http'),E=require('../engine.js');
 const root=path.resolve(__dirname,'..'),KEY='ethicity.transparency.progress.v1',shotDir=path.join(__dirname,'screens');
 fs.mkdirSync(shotDir,{recursive:true});
-const server=http.createServer((req,res)=>{const file=path.resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://x').pathname));if(file!==root&&!file.startsWith(root+path.sep)){res.writeHead(403);return res.end();}fs.readFile(file===root?path.join(root,'index.html'):file,(err,data)=>{res.writeHead(err?404:200,{'Content-Type':({'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png'})[path.extname(file)]||'text/html; charset=utf-8'});res.end(err?'missing':data);});});
+const server=http.createServer((req,res)=>{const file=path.resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://x').pathname));if(file!==root&&!file.startsWith(root+path.sep)){res.writeHead(403);return res.end();}fs.readFile(file===root?path.join(root,'index.html'):file,(err,data)=>{res.writeHead(err?404:200,{'Content-Type':({'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.webp':'image/webp'})[path.extname(file)]||'text/html; charset=utf-8'});res.end(err?'missing':data);});});
 const D=(()=>{global.window={};require('../story.js');return global.window.TransparencyStory;})(),cardText=(k,id)=>D.cases[k].notice.cards.find(c=>c.id===id).text;
 // 보고서·수첩의 '미리 알리기' 묶음: 붙인 카드 문장, 빠진 꼭 필요 카드, 판정 글자
 function noticeShown(text,k,s,where){const posted=s.notices[k].posted;assert.match(text,/미리 알리기/,where+' '+k);
@@ -397,6 +397,29 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    assert.equal(y1,y0,`no auto-scroll after the third region (${vp.width}px)`);assert.equal(await p.locator('.cue').count(),1);assert.equal(await p.locator('.judge-card').count(),1);
    assert.equal(await p.locator('.judge-say cite .portrait').count(),1);
    results.checks.push({feedback2:`${vp.width}px: name tags + alt, portraits, 자료 header, scrollY ${y0}→${y1} after third region`});});
+  // 사건 4·5 새 그림: 없으면 대신 그림, 그 경로에 .webp(게임용 사본)나 .png(원본)가 있으면 저절로 그것을 쓴다
+  {const at=JSON.parse(JSON.stringify(finishedState()));at.scene=E.sceneOf('library','hook');
+   const NEW=D.art.newArt,srcs=async p=>p.evaluate(()=>({bg:document.querySelector('.backdrop').getAttribute('src'),actors:[...document.querySelectorAll('.stage img.actor')].map(i=>i.getAttribute('src'))}));
+   const settle=async p=>{await p.waitForTimeout(600);await assets(p);};
+   // ① 파일이 하나도 없을 때(경로를 404로 막음): 지시서의 대신 그림
+   await withPage(WIDE,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));await p.route(/assets\/s0[45]\//,r=>r.fulfill({status:404,body:''}));
+    await seedPage(p,at);await settle(p);let s=await srcs(p);assert.equal(s.bg,'assets/remaining/bg-school-corridor.png');assert.ok(s.actors.includes('assets/s01/dami-hurt.png'));
+    assert.deepEqual(await p.evaluate(()=>TransparencyGame.art()),{});
+    at.scene=E.sceneOf('recommend','hook');await seedPage(p,at);await settle(p);s=await srcs(p);assert.equal(s.bg,'assets/remaining/bg-repair-shop.png');
+    assert.deepEqual(s.actors,['assets/s01/moa-attentive.png','assets/s01/lulu-concerned.png','assets/s01/dami-hurt.png']);assert.deepEqual(errors,[]);});
+   // ② .webp가 응답하면 .png보다 먼저 쓴다(원본 PNG 바이트로 흉내)
+   at.scene=E.sceneOf('library','hook');const fake=fs.readFileSync(path.join(root,'assets/remaining/bg-school-corridor.png'));
+   await withPage(WIDE,async p=>{await p.route(/assets\/s0[45]\//,r=>r.fulfill({status:404,body:''}));await p.route(/assets\/s04\/bg-school-library\.webp$/,r=>r.fulfill({status:200,contentType:'image/webp',body:fake}));
+    await seedPage(p,at);await settle(p);assert.equal((await srcs(p)).bg,'assets/s04/bg-school-library.webp');assert.deepEqual(await p.evaluate(()=>TransparencyGame.art()),{library:'assets/s04/bg-school-library.webp'});});
+   // ③ 지금 디스크에 있는 파일: 있는 것은 모두 쓰인다(.webp가 있으면 .webp)
+   const onDisk=Object.fromEntries(Object.entries(NEW).map(([k,{base}])=>[k,['webp','png'].map(x=>base+'.'+x).find(f=>fs.existsSync(path.join(root,f)))]).filter(([,f])=>f));
+   await withPage(WIDE,async p=>{await seedPage(p,at);await settle(p);assert.deepEqual(await p.evaluate(()=>TransparencyGame.art()),onDisk);
+    if(onDisk.library)assert.equal((await srcs(p)).bg,onDisk.library);if(onDisk.damiBooks)assert.ok((await srcs(p)).actors.includes(onDisk.damiBooks));});
+   // 아트 보관함: 배경 6, 새 그림 5가 모두 열린다
+   await withPage(WIDE,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));await p.goto(url+'art.html');await p.waitForFunction(()=>[...document.images].every(i=>i.complete&&i.naturalWidth>0),null,{timeout:60000});
+    assert.equal(await p.locator('#backgrounds img').count(),6);const srcs2=await p.locator('img').evaluateAll(a=>a.map(i=>i.getAttribute('src')));
+    for(const [k,f] of Object.entries(onDisk))assert.ok(srcs2.includes(f.replace(/\.png$/,'.webp'))||srcs2.includes(f),'gallery shows '+k);assert.deepEqual(errors,[]);});
+   results.checks.push({newArt:'missing → fallback pictures (corridor, repair shop, old poses); .webp preferred over .png; on disk now: '+(Object.values(onDisk).join(', ')||'none')});}
   await withPage(PHONE,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));await p.goto(url);await click(p,'[data-act="next"]');await click(p,'.step-nav [data-act="next"]');
    assert.equal((await state(p)).scene,2);assert.match(await p.locator('#save-status').innerText(),/저장할 수 없어/);assert.deepEqual(errors,[]);results.checks.push({storageBlocked:'playable in current window with notice'});},
    ()=>{Object.defineProperty(window,'localStorage',{get(){throw new Error('blocked');}});});
