@@ -107,8 +107,11 @@
     return s;
   }
 
-  function applyEffects(state, choice) {
-    var set = choice.set || {}, add = choice.add || {};
+  // v2 = story.endingV2(엔딩 판정 v2) — 켜졌으면 choice.addV2도 더한다
+  function applyEffects(state, choice, v2) {
+    var set = choice.set || {}, add = {}, k0;
+    for (k0 in (choice.add || {})) add[k0] = choice.add[k0];
+    if (v2) for (k0 in (choice.addV2 || {})) add[k0] = (add[k0] || 0) + choice.addV2[k0];
     Object.keys(set).forEach(function (k) { state.flags[k] = set[k]; });
     Object.keys(add).forEach(function (k) {
       if (k.indexOf('trust.') === 0) {
@@ -128,7 +131,7 @@
     if (!choice) throw new Error('없는 선택지: ' + state.scene + '#' + choiceId);
     var next = clone(state);
     next.history.push({ scene: state.scene, choice: choiceId, snap: snapshot(state) });
-    applyEffects(next, choice);
+    applyEffects(next, choice, story.endingV2 === true);
     next.reaction = choiceId;
     return next;
   }
@@ -227,6 +230,34 @@
     return story.endings[story.endings.length - 1];
   }
 
+  /* 엔딩 본문 줄(문자열 배열): body의 조건 줄 + ENDING_V2면 endingNotes(첫 줄에 lead) */
+  function endingBody(story, end, state) {
+    var out = [];
+    (end.body || []).forEach(function (p) {
+      if (typeof p === 'object' && !evalCond(p.if, state)) return;
+      out.push(typeof p === 'object' ? p.text : p);
+    });
+    var notes = story.endingV2 === true && story.endingNotes;
+    if (notes) {
+      var lead = (notes.lead || {})[end.code] || '';
+      notes.lines.forEach(function (n) {
+        if (!evalCond(n.if, state)) return;
+        out.push(lead + n.text); lead = '';
+      });
+    }
+    return out;
+  }
+
+  /* ENDING_V2 결과 지표: serious를 두 줄로 [{ label, value }]. ch를 주면 그 장 사건만 센다. 꺼져 있으면 null */
+  function seriousSplit(story, state, ch) {
+    if (story.endingV2 !== true || !story.seriousSplit) return null;
+    return story.seriousSplit.map(function (row) {
+      var n = 0;
+      row.items.forEach(function (it) { if ((ch == null || it.ch === ch) && evalCond(it.if, state)) n++; });
+      return { label: row.label, value: n };
+    });
+  }
+
   function eventOutcomes(story, eventId, state) {
     var ev = story.events[eventId];
     return ev.outcomes.filter(function (o) { return evalCond(o.if, state); }).map(function (o) { return o.text; });
@@ -261,6 +292,8 @@
     pendingNext: pendingNext,
     undo: undo,
     resolveEnding: resolveEnding,
+    endingBody: endingBody,
+    seriousSplit: seriousSplit,
     eventOutcomes: eventOutcomes,
     isValidState: isValidState,
     clone: clone

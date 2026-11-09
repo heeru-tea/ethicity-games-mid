@@ -12,5 +12,7 @@ window.PRIVACY_CONFIG = {
   characterImages: {},
   playerLooks: {},
   defaultAvatar: 'assets/avatar-default.svg',
-  defaultNickname: '플레이어'
+  defaultNickname: '플레이어',
+  // 엔딩 판정 v2(2026-11-09 교사 지시서 Phase A). false면 엔딩 판정·결과 화면이 이전과 똑같다. 자세한 내용은 js/story.js ENDING_V2
+  ENDING_V2: true
 };

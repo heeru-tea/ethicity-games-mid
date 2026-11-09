@@ -28,6 +28,7 @@
  *   - react : 선택 직후 바로 보이는 반응 대사(대사 규칙 동일, if 가능 — 효과 적용 후 판정)
  *   - set   : 플래그 기록  { e1:'public', school_visible:true }
  *   - add   : 수치 증감    { spread:1, 'trust.saebom':-1 }
+ *   - addV2 : ENDING_V2가 켜졌을 때만 더하는 수치(엔딩 판정 v2, 아래 ENDING_V2 참고)
  *   - next  : 다음 장면 id. '@chapter:2' = 장 전환 화면, '@ending' = 엔딩 판정
  *            조건 분기는 [{ if:'e7=stop', to:'a' }, { to:'b' }]
  *
@@ -46,8 +47,21 @@
 (function (root) {
   'use strict';
 
+  /* ENDING_V2(2026-11-09 교사 지시서 Phase A, 기본 켜짐) — 끄면 엔딩 판정·결과 화면이 이전과 똑같다.
+   *   켜면 ① 선택지의 addV2(추가 수치)도 더한다 ② 엔딩 본문 끝에 endingNotes(선택별 한 줄)를 붙인다
+   *        ③ 결과 지표 serious(현실의 안전)를 seriousSplit 두 줄(내가 위험했던 일 / 내가 남을 위험하게 한 일)로 보여 준다.
+   *   브라우저 = js/config.js PRIVACY_CONFIG.ENDING_V2, Node(검사 도구) = 환경변수 ENDING_V2=0|1. 실행 중 바꾸려면 STORY.endingV2 */
+  var ENDING_V2 = (function () {
+    var c = root.PRIVACY_CONFIG;
+    if (c && typeof c.ENDING_V2 === 'boolean') return c.ENDING_V2;
+    var env = typeof process !== 'undefined' && process.env ? process.env.ENDING_V2 : undefined;
+    if (env != null && env !== '') return !/^(0|false|off)$/i.test(env);
+    return true;
+  })();
+
   var STORY = {
     id: 'privacy',
+    endingV2: ENDING_V2,
     title: '공유한 순간',
     version: 1,
     start: 'pro_1',
@@ -220,6 +234,28 @@
           { if: 'harmed_others', text: '돌아보면 나도 상처받은 순간이 있었지만, 다른 사람의 정보를 퍼뜨린 사람이기도 했다. 둘 중 하나만 기억하면 이야기가 반쪽이 된다.' },
           { if: 'harmed_others', text: '지금이라도 할 수 있는 일이 있다. 내가 올리거나 보낸 것의 삭제를 요청하고, 피해를 입은 친구에게 먼저 사과하며 어떻게 하길 바라는지 묻고, 신고와 학교의 조사에 협조하는 것.' }
         ] }
+    ],
+
+    /* ENDING_V2: 엔딩 본문 끝에 붙는 선택별 한 줄(판정과 별개 — 좋은 엔딩이어도 이 일들은 남았다고 말해 준다). 2026-11-09 지시서 A3
+     *   lead = 그 엔딩에서 첫 줄 앞에 붙는 말(A·B는 '다만 '). 대사 교사 검토 대기 */
+    endingNotes: {
+      lead: { A: '다만 ', B: '다만 ' },
+      lines: [
+        { if: 'e1b=pass', text: '하늘이의 번호가 단톡방에 그대로 남은 걸 보고도 넘어간 순간이 있었다.' },
+        { if: 'e5=all', text: 'AI 도우미에 반 친구 28명의 이름·번호·계좌를 그대로 넣은 일은 되돌릴 수 없었다.' },
+        { if: 'e6=post && e6b=own', text: '먼저 털어놓고 지운 건 수습이었다. 그래도 하늘이의 계정을 허락 없이 쓴 일은 사과로 끝나지 않는다.' },
+        { if: 'e6=post && e6b!=own', text: '하늘이의 계정을 허락 없이 쓰고 모른 척한 일은 하늘이에게 그대로 남았다.' }
+      ]
+    },
+
+    /* ENDING_V2: 결과 지표 serious(현실의 안전이 위협받거나 위협한 상황)를 두 줄로. 2026-11-09 지시서 A4
+     *   serious를 올리는 선택마다 어느 쪽인지 적는다(ch = 그 사건의 장 — 장 요약의 '이번 장' 변화용). check-story가 빠짐없는지 검사.
+     *   정문 '친구들 모아 같이 나가자'(e8 crew)는 나도 위험해지고 친구들도 끌어들인 일이라 두 줄 모두 센다 */
+    seriousSplit: [
+      { label: '내가 위험한 상황에 놓였던 일', items: [
+        { if: 'e8=meet|crew', ch: 3 }, { if: 'alone_meet', ch: 3 }, { if: 'e8_confrontation=fight', ch: 3 }] },
+      { label: '내가 다른 사람을 위험하게 한 일', items: [
+        { if: 'e4=forward', ch: 2 }, { if: 'e6=post', ch: 2 }, { if: 'e7=join', ch: 3 }, { if: 'e8=crew', ch: 3 }, { if: 'e9=share', ch: 3 }] }
     ],
 
     /* 성찰 질문 — 기본(중학생) + 더 깊이(고등학생·심화 토론) */
@@ -608,7 +644,7 @@
         prompt: '무엇을 입력할까?',
         choices: [
           { id: 'all', text: '단톡방 대화를 통째로 붙여 넣고 “안내문 써 줘”라고 한다.',
-            set: { e5: 'all' },
+            set: { e5: 'all' }, addV2: { spread: 1, minimize: -1 }, // ENDING_V2: 친구 28명의 이름·번호·계좌를 통째로 넣음 = 필요 이상 공유
             react: ['lumi: 안내문 초안입니다. “2학년 3반 레트로 사진관에 놀러 오세요! …”',
               'lumi: 참고로 입력하신 내용에는 [[전화번호와 계좌번호]]가 들어 있어요. 안내문 작성에는 필요하지 않은 정보예요.',
               'narr: 안내문에 필요한 건 부스 이름·시간·가격뿐이었다.'], next: 'c2_e5_b' },
@@ -672,7 +708,7 @@
             react: ['narr: 메시지 미리보기가 줄줄이 보인다. [[가족 이야기, 다른 반 친구와 다툰 이야기]]…',
               'narr: 볼 수 있었다. 하지만 볼 권리가 생긴 건 아니었다.'], next: 'c2_e6_b' },
           { id: 'post', text: '옆 반 친구가 부추겨 하늘이 계정으로 “나는 바보다” 스토리를 올린다.',
-            set: { e6: 'post' }, add: { spread: 1, serious: 1, 'trust.haneul': -2 }, // 남의 계정으로 글 올리기 = 범죄가 될 수 있음
+            set: { e6: 'post' }, add: { spread: 1, serious: 1, 'trust.haneul': -2 }, addV2: { consent: -1 }, // 남의 계정으로 글 올리기 = 범죄가 될 수 있음. ENDING_V2: 허락 없이 남의 계정을 씀 → 동의에서 뺌(자백·삭제 own은 repair로 따로)
             react: ['friend: ㅋㅋㅋㅋ 미쳤다 진짜 올라갔어', 'narr: 스토리가 하늘이의 [[팔로워 418명에게]] 올라갔다.'], next: 'c2_e6_b' },
           { id: 'logout', text: '아무것도 열지 않고 로그아웃한 뒤 하늘이에게 알려 준다.',
             say: '(하늘에게) 도서관 PC에 너 스냅로그 로그인돼 있어서 로그아웃했어. 아무것도 안 열었어',

@@ -169,6 +169,8 @@ function play(pick) {
 for (let i = 0; i < SAMPLES; i++) {
   const { s, path } = play((st, cs) => cs[Math.floor(rnd() * cs.length)]);
   endingCount[s.ending] = (endingCount[s.ending] || 0) + 1;
+  // ENDING_V2(2026-11-09): 안전 지표 두 줄(seriousSplit)이 serious와 맞는지 — e8 crew는 두 줄 모두 센다. serious를 올리는 새 선택이 생기면 story.js seriousSplit에 넣을 것
+  { const sp = E.seriousSplit(story, s); if (sp && sp[0].value + sp[1].value - (E.evalCond('e8=crew', s) ? 1 : 0) !== s.stats.serious) err('seriousSplit 두 줄이 serious와 다름: ' + path.join(' > ')); }
   for (const e of eventIds) {
     const outs = E.eventOutcomes(story, e, s);
     outs.forEach((t) => seenOutcome.add(e + '|' + t));
@@ -512,6 +514,7 @@ console.log('맵 이동 거리(최단): ' + walkLengths.join(' · ') + ' · 합�
     if (typeof ODDS[e.code] !== 'number' || Math.abs(ODDS[e.code] - real) > 1) errors.push('js/odds.js 엔딩 ' + e.code + ' 확률이 실제와 다름: ' + ODDS[e.code] + '% vs ' + real.toFixed(1) + '%');
   }
 }
+console.log(`ENDING_V2=${story.endingV2} · `);
 console.log(`무작위 완주 ${SAMPLES.toLocaleString()}회 엔딩 분포: ` + story.endings.map((e) => `${e.code} ${((endingCount[e.code] || 0) / SAMPLES * 100).toFixed(1)}%`).join(' · '));
 for (const e of story.endings) {
   const r = routeResult[e.code];

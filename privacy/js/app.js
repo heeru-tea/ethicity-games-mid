@@ -714,9 +714,21 @@
   /* ── 장 전환 ───────────────────────── */
   var TRUST_WORD = function (d) { return d > 0 ? '믿음이 생김 ↑' : d < 0 ? '믿음이 줄어듦 ↓' : '그대로 →'; }; // 관계 수치는 친밀감이 아니라 신뢰
 
-  function statRows(fromStats, toStats, onlyChanged) {
+  // split = E.seriousSplit(...)(ENDING_V2): serious 한 줄 대신 '내가 위험했던 일 / 남을 위험하게 한 일' 두 줄(onlyChanged면 그 값이 곧 변화량)
+  function statRows(fromStats, toStats, onlyChanged, split) {
     var dl = el('dl', 'stat-list');
     E.STAT_KEYS.forEach(function (k) {
+      if (k === 'serious' && split) {
+        split.forEach(function (r) {
+          if (onlyChanged && !r.value) return;
+          var sr = el('div', 'stat-row');
+          sr.setAttribute('data-stat', 'serious-split');
+          sr.appendChild(el('dt', null, r.label));
+          sr.appendChild(el('dd', null, onlyChanged ? '+' + r.value : String(r.value)));
+          dl.appendChild(sr);
+        });
+        return;
+      }
       var d = (toStats[k] || 0) - (fromStats[k] || 0);
       if (onlyChanged && d === 0) return;
       var row = el('div', 'stat-row');
@@ -774,7 +786,7 @@
       var grid = el('div', 'change-grid');
       var a = el('div');
       a.appendChild(el('h3', null, '이번 장의 흐름'));
-      a.appendChild(statRows(mark.stats, run.stats, true));
+      a.appendChild(statRows(mark.stats, run.stats, true, E.seriousSplit(story, run, prev)));
       var b = el('div');
       b.appendChild(el('h3', null, '친구들의 믿음'));
       b.appendChild(trustRows(mark.trust, run.trust));
@@ -917,10 +929,7 @@
     $('e-title').textContent = end.title;
     window.PrivacyEmph.render($('e-summary'), end.summary);
     var body = $('e-body'); body.textContent = '';
-    end.body.forEach(function (p) {
-      if (typeof p === 'object' && !E.evalCond(p.if, run)) return; // 조건 줄({ if, text })
-      body.appendChild(rich('p', null, fill(typeof p === 'object' ? p.text : p)));
-    });
+    E.endingBody(story, end, run).forEach(function (t) { body.appendChild(rich('p', null, fill(t))); }); // 조건 줄 + ENDING_V2 선택별 한 줄
 
     var evs = $('e-events'); evs.textContent = '';
     [1, 2, 3].forEach(function (n) {
@@ -933,7 +942,7 @@
     var grid = el('div', 'change-grid');
     var a = el('div');
     a.appendChild(el('h3', null, '선택이 남긴 흔적'));
-    a.appendChild(statRows({}, run.stats, false));
+    a.appendChild(statRows({}, run.stats, false, E.seriousSplit(story, run)));
     var b = el('div');
     b.appendChild(el('h3', null, '친구들의 믿음 (처음과 비교)'));
     b.appendChild(trustRows(run.chapterMarks[0].trust, run.trust));
