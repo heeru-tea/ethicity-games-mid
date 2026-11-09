@@ -393,17 +393,26 @@
   function rideRequests(s, phase, ev) { return Elder.ride(s.config, phase, Demand.sortReqs(Demand.base(s.config, phase, s.seed).concat(Demand.extra(s.config, phase, ev))), elderChoice(s)); }
   function runRequests(s, ev) { return rideRequests(s, s.phase, ev).ride; }
   /* 2단계 고정 청원(2026-11-10): 사건 추첨과 상관없이 config.petition.t분에 한 번. 시뮬레이터가 낸 무작위 청원은 지우고 이 판정으로 바꾼다 */
-  function fixPetition(s, result, requests) {
+  /* 하루가 끝난 승객 기록으로 t분 시점을 다시 본다: t까지 생긴 요청 중 t분에 아직 도착 못 한(arriveT 없음 또는 t 이후) 비율이 가장 높은 출발 구역.
+   * 아무도 안 열려 있으면 t까지 탑승을 못 하고 기다린 시간 합이 가장 긴 구역, 그래도 없으면 F */
+  function petitionAt(passengers, t) {
+    var z = {}, w = {}, best = null, bw = null;
+    passengers.forEach(function (p) {
+      if (p.t > t) return;
+      var e = z[p.o] = z[p.o] || { total: 0, open: 0 };
+      e.total++;
+      if (p.arriveT == null || p.arriveT > t) e.open++;
+      w[p.o] = (w[p.o] || 0) + (Math.min(t, p.firstBoardT != null ? p.firstBoardT : Infinity) - p.t);
+    });
+    Object.keys(z).sort().forEach(function (id) { if (z[id].open && (!best || z[id].open / z[id].total > z[best].open / z[best].total)) best = id; });
+    if (!best) Object.keys(w).sort().forEach(function (id) { if (!bw || w[id] > w[bw]) bw = id; });
+    var zone = best || bw || 'F', e2 = z[zone] || { total: 0, open: 0 };
+    return { zone: zone, t: t, count: e2.open, total: e2.total };
+  }
+  function fixPetition(s, result) {
     var cp = s.config.petition;
     if (!cp || s.phase !== cp.phase) return;
-    var p = Sim.judgePetition(result.passengers, cp.t);
-    if (!p) {
-      var w = {}, best = null;
-      result.passengers.forEach(function (q) { if (q.t <= cp.t) w[q.o] = (w[q.o] || 0) + (q.waitTotal || 0); });
-      Object.keys(w).sort().forEach(function (z) { if (!best || w[z] > w[best]) best = z; });
-      var zone = best || 'F', tot = result.passengers.filter(function (q) { return q.o === zone && q.t <= cp.t; });
-      p = { zone: zone, t: cp.t, count: tot.filter(function (q) { return q.status !== 'arrived'; }).length, total: tot.length };
-    }
+    var p = petitionAt(result.passengers, cp.t);
     p.fixed = true; p.noRecord = rideRatios(s)[p.zone] === 0;
     result.petition = p;
     result.log = result.log.filter(function (e) { return e.type !== 'petition'; });
@@ -416,7 +425,7 @@
     var rr = rideRequests(s, s.phase, ev), requests = rr.ride;
     var day=dayInputs(s,s.phase),adjustments=day.adjustments;
     var result = Sim.run({ g: g, config: s.config, phase: s.phase, plan: plan, requests: requests, event: ev, adjustments:adjustments, routeChanges:day.routeChanges });
-    fixPetition(s, result, requests);
+    fixPetition(s, result);
     var baseline=adjustments.length||day.routeChanges.length?Metrics.summarize(Sim.run({g:g,config:s.config,phase:s.phase,plan:plan,requests:requests,event:ev}),g,plan,s.config):null;
     return { baseline:baseline, plan: plan, result: result, metrics: Metrics.summarize(result, g, plan, s.config), expected: expected(s, plan), requestsN: result.passengers.length, event: ev, stayed: rr.stayed };
   }
@@ -735,7 +744,7 @@
   }
 
   var api = {
-    elderChoice: elderChoice, rideRequests: rideRequests, aiView: aiView,
+    elderChoice: elderChoice, petitionAt: petitionAt, rideRequests: rideRequests, aiView: aiView,
     departChecks:departChecks,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,

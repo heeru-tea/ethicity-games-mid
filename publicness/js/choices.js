@@ -11,12 +11,11 @@
     var k = KINDS[kind];
     if (!k || (key !== 'choice' && key !== 'why')) return null;
     var cur = s[k.field] || null, v;
-    if (key === 'choice') {
-      if (k.values.indexOf(value) < 0) return cur;
-      if (!cur) cur = kind === 'petition' ? { zone: s.fixedPetition ? s.fixedPetition.zone : null } : { phase: k.phase };
-      cur.choice = value;
-    } else {
-      if (!cur) return null;
+    if (key === 'choice' && k.values.indexOf(value) < 0) return cur;
+    if (!cur && key === 'why' && !String(value == null ? '' : value).trim()) return null;
+    if (!cur) cur = kind === 'petition' ? { zone: s.fixedPetition ? s.fixedPetition.zone : null } : { phase: k.phase };
+    if (key === 'choice') cur.choice = value;
+    else {
       v = value == null ? '' : String(value).slice(0, MAX);
       if (v.trim()) cur.why = v; else delete cur.why;
     }

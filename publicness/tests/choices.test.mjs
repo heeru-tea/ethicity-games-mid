@@ -58,3 +58,27 @@ test('3단계 이후 단계는 고정 청원을 만들지 않는다', () => {
   const s = playTo(S.create(cfg), 3, balancedPlan);
   assert.equal(s.history[2].petition && s.history[2].petition.fixed, undefined);
 });
+
+test('why를 choice보다 먼저 써도 저장되고, 이후 choice에도 남는다', () => {
+  const s = playTo(S.create(cfg), 2, balancedPlan); S.nextPhase(s);
+  Choices.set(s, 'petition', 'why', '병원 가는 길'); assert.equal(s.petitionReply.why, '병원 가는 길'); assert.equal(s.petitionReply.zone, s.fixedPetition.zone);
+  assert.deepEqual(Choices.required(s), ['petition']);
+  Choices.set(s, 'petition', 'choice', 'reflect'); assert.equal(s.petitionReply.why, '병원 가는 길'); assert.deepEqual(Choices.required(s), []);
+  const e = S.create(cfg); e.phase = 4; Choices.set(e, 'elder', 'why', '이유만');
+  assert.deepEqual(e.elderPolicy, { phase: 4, why: '이유만' }); assert.equal(S.elderChoice(e), 'keep'); assert.deepEqual(Choices.required(e), ['elder']);
+});
+test('petitionAt: t 이후에 도착한 구역은 열린 것, t 전에 도착하면 아님', () => {
+  const P = (o, t, firstBoardT, arriveT) => ({ o, t, firstBoardT, arriveT });
+  const late = S.petitionAt([P('F', 10, 50, 70), P('F', 20, 55, 80), P('D', 5, 6, 20), P('D', 30, 31, 40)], 45);
+  assert.deepEqual(late, { zone: 'F', t: 45, count: 2, total: 2 });
+  const after = S.petitionAt([P('D', 5, 6, 20), P('D', 30, 31, 40), P('F', 50, 51, 60)], 45);
+  assert.equal(after.count, 0); assert.equal(after.zone, 'D', '열린 구역이 없으면 기다린 시간 합이 긴 구역(둘 다 1분씩 → D는 2, F는 t 이후라 제외)');
+  assert.equal(S.petitionAt([], 45).zone, 'F');
+});
+test('noRecord: 1단계에서 청원 구역을 안 지나면 기록 비율 0 → noRecord true, 지나면 false', () => {
+  const { withoutF } = require('./fairness-fixture.cjs');
+  const a = playTo(S.create(cfg), 2, [{ nodes: ['B', 'A', 'G', 'E'], buses: 1 }]);
+  assert.equal(a.fixedPetition.zone, 'D'); assert.equal(a.fixedPetition.noRecord, true); assert.equal(a.history[1].petition.noRecord, true);
+  const b = playTo(S.create(cfg), 2, withoutF);
+  assert.equal(b.fixedPetition.noRecord, false);
+});
