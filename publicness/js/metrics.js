@@ -146,7 +146,7 @@
     result.passengers.forEach(function (p) {
       var e = firstBoard[p.id]; if (!e || p.firstBoardT == null) return;
       var row = start[e.bus] && start[e.bus](e.t); if (!row) return;
-      row.fare += F.fare; row.riders++; if (p.status === 'arrived') row.arrived++;
+      row.fare += p.free ? 0 : F.fare; row.riders++; if (p.status === 'arrived') row.arrived++;
     });
     var out = order.map(function (key) { var r = rows[key]; r.buses = Object.keys(r.buses).length; r.fuelRaw = F.fuelPerKm * r.km; r.fuel = Math.round(r.fuelRaw); r.km = Math.round(r.km * 10) / 10; return r; });
     // 반올림 차이를 가장 많이 달린 노선에 맞춰 전체 연료비와 정확히 같게
