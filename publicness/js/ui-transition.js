@@ -12,12 +12,13 @@
  'use strict';var PB=root.PB,S=PB.Session,original=PB.UI.result;
  function el(t,a,x){return PB.App.el(t,a,x);}
  function q(panel,sel){return panel.querySelector(sel);}
- // 이번 운행에서 생긴 일(시각순): 돌발 수요·청원·긴급 조정
+ // 이번 운행에서 생긴 일(시각순): 돌발 수요·청원·운행 중 노선 고치기(2026-11-09, 예전 저장본은 긴급 조정 줄)
  function events(App,s,h){
   var out=[];
   if(h.event&&h.event.type==='demand'){var od=PB.Demand.directional(s.config,h.phase)[h.event.odIndex];if(od)out.push({t:h.event.t,text:App.clock(h.event.t)+' · '+App.nodeName(od.o)+'→'+App.nodeName(od.d)+' 요청이 12건 늘었어요(추가 수요).'});}
   if(h.petition)out.push({t:h.petition.t,text:App.clock(h.petition.t)+' · '+App.nodeName(h.petition.zone)+' 주민 청원: 그때까지 요청 '+h.petition.total+'건 중 '+h.petition.count+'건이 아직 도착하지 못했어요.'});
   (s.emergencyLog||[]).filter(function(a){return a.phase===s.phase;}).forEach(function(a){out.push({t:a.at,text:App.clock(a.at)+' · 긴급 조정 · '+(a.busId==null?'변경 없이 계속':'버스 한 대 → '+PB.Names.route(a.routeNum))});});
+  (s.midChanges||[]).filter(function(c){return c.phase===s.phase;}).forEach(function(c){out.push({t:c.at,text:PB.UI.midLine(App,c)});});
   return out.sort(function(a,b){return a.t-b.t;});
  }
  // 운행 중 들린 말: 같은 사람(주민)·같은 문장이 연속이면 한 줄로 ×N
@@ -198,9 +199,10 @@
   var key=el('section',{id:'result-key-metrics','class':'result-key-metrics'});key.appendChild(el('h3',null,'가장 오래 기다린 사람'));key.appendChild(el('p',null,most?App.duration(most.waitTotal)+' · '+(rd?rd.name:App.nodeName(most.o)+' 출발 승객'):'발생한 요청 없음'));
   key.appendChild(el('p',{'class':'note'},'목적지까지 못 간 사람이 운행이 끝날 때까지 기다린 시간도 포함해요. 잇는 노선이 없는 요청은 대기 시간과 별도로 상세 기록에서 확인해요.'));put(key);
   put(summary);
-  var decisions=(s.emergencyLog||[]).filter(function(a){return a.phase===s.phase;});
-  if(decisions.length){var report=el('section',{id:'emergency-report'});report.appendChild(el('h3',null,'운행 중 바꾼 것'));decisions.forEach(function(a){var applied=res.log.filter(function(e){return e.type==='reassign'&&e.bus===a.busId&&e.t>=a.at;})[0];report.appendChild(el('p',null,App.clock(a.at)+' · '+(a.busId==null?'변경 없이 계속':'버스 한 대 → '+PB.Names.route(a.routeNum)+(applied?' · '+App.clock(applied.data.starts)+'부터 투입':' · 운행 종료까지 안전하게 옮길 기회가 없었어요.'))));});
-   if(s.current.baseline)report.appendChild(el('p',{'class':'note'},'같은 사건에서 조정하지 않았다면 도착 '+s.current.baseline.arrived+'건 → 조정 후 '+m.arrived+'건. 출발 전 예상과는 돌발 수요 조건이 달라요.'));put(report);}
+  var decisions=(s.emergencyLog||[]).filter(function(a){return a.phase===s.phase;}),mids=(s.midChanges||[]).filter(function(c){return c.phase===s.phase;});
+  if(decisions.length||mids.length){var report=el('section',{id:'emergency-report'});report.appendChild(el('h3',null,'운행 중 바꾼 것'));
+   mids.forEach(function(c){var applied=c.kind==='move'&&res.log.filter(function(e){return e.type==='reassign'&&e.bus===c.busId&&e.t>=c.at;})[0];report.appendChild(el('p',{'class':'mid-change-line'},PB.UI.midLine(App,c)+(c.kind!=='move'?' · 그 뒤 이 노선 버스는 바뀐 정류장을 따랐어요(이번 운행만).':applied?' · '+App.clock(applied.data.starts)+'부터 달림':' · 운행이 끝날 때까지 옮겨 가지 못했어요.')));});decisions.forEach(function(a){var applied=res.log.filter(function(e){return e.type==='reassign'&&e.bus===a.busId&&e.t>=a.at;})[0];report.appendChild(el('p',null,App.clock(a.at)+' · '+(a.busId==null?'변경 없이 계속':'버스 한 대 → '+PB.Names.route(a.routeNum)+(applied?' · '+App.clock(applied.data.starts)+'부터 투입':' · 운행 종료까지 안전하게 옮길 기회가 없었어요.'))));});
+   if(s.current.baseline)report.appendChild(el('p',{'class':'note'},'같은 날 고치지 않았다면 도착 '+s.current.baseline.arrived+'건 → 고친 뒤 '+m.arrived+'건. 출발 전 예상과는 돌발 수요 조건이 달라요.'));put(report);}
   callouts.forEach(put);
   ['#route-report','#run-log'].forEach(function(id){put(q(panel,id));});
   if(news){var sec=news.querySelector('section'),old=sec.querySelector('#bubble-replay');sec.replaceChild(bubbles(App,s),old);details.appendChild(news);}
