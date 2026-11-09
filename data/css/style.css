@@ -710,7 +710,7 @@ body { overflow: hidden; word-break: keep-all; }
 .cmp-bad { color: #ff8fa6; }
 .cmp-hold { color: var(--yellow); }
 .cmp-change ul { margin: 0; padding-left: 1.1em; }
-.cmp-human { margin: 10px 0 0; padding: 10px 12px; border-left: 4px solid var(--yellow); background: rgba(255,210,74,.08); border-radius: 4px; font-weight: 600; }
+.cmp-human { margin: 12px 0 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; } /* 왼쪽 색 띠 없이(사용자: AI티, 318cd52) */
 .cmp-none { margin: 0; color: var(--ink-2); }
 @media (max-width: 520px) {
   .cmp-table thead { display: none; }
