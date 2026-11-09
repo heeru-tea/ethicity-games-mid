@@ -9,3 +9,5 @@ assets/scenes/*.fal-rejected.png
 
 # 지도 표시 그림 생성 원본·참조(로컬 기록용)
 assets/markers/raw/
+assets/scenes/house-cand-*.png
+assets/scenes/house-guide.png

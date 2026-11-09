@@ -281,7 +281,8 @@ try {
     /* e. 내 방 충돌·조사 */
     if (ONLY.includes('e')) {
       const p = await open(makeRun('pro_1', { map: true }), dev);
-      const spots = [['bed', 6, 7, '침대'], ['mypc', 15, 8, '컴퓨터'], ['plush', 15, 10, '판다'], ['dtable', 24, 10, '식탁'], ['sofa', 22, 10, '소파'], ['corkboard', 7, 7, '코르크보드'],
+      const spots = [['bed', 6, 7, '침대'], ['mypc', 15, 8, '컴퓨터'], ['plush', 15, 10, '판다'], ['dtable', 24, 8, '식탁'], ['sofa', 24, 6, '소파'], ['fridge', 28, 5, '냉장고'], ['parcel', 22, 16, '택배 상자'], // 2026-11-09 거실 그림(house.png)에 맞춘 자리
+         ['corkboard', 7, 7, '코르크보드'],
         // 그림 자리만 비워 둔 장식 6종: 조사 문구는 나오고, 칸은 막지 않는다(보이지 않는 벽 금지)
         ['phone', 6, 7, '협탁 휴대폰'], ['propbox', 11, 7, '소품 상자'], ['schoolbag', 14, 9, '책가방'], ['closet', 3, 9, '옷장·거울'], ['cushion', 10, 9, '쿠션'], ['moodlamp', 15, 9, '무드등']];
       for (const [id, x, y, label] of spots) {
@@ -302,7 +303,7 @@ try {
       }
       // 충돌: 방문 말고는 방 ↔ 거실이 막혀 있다
       const blocked = await p.evaluate(() => { const W = PRIVACY_WORLD, r = 128; let open = []; for (let x = 0; x < 32; x++) if (W.walkable(r + x, 12)) open.push(x); return { open, bed: W.walkable(r + 3, 7), desk: W.walkable(r + 14, 6), panda: W.walkable(r + 17, 11) }; });
-      rec(size, '방문은 한 칸 + 침대·책상·인형 충돌', blocked.open.join() === '10,20,21,22,23,24,25,26,27,28,29,30' && !blocked.bed && !blocked.desk && !blocked.panda, JSON.stringify(blocked));
+      rec(size, '방문은 두 칸(2026-11-09) + 침대·책상·인형 충돌', blocked.open.join() === '9,10,20,21,22,23,24,25,26,27,28' && !blocked.bed && !blocked.desk && !blocked.panda, JSON.stringify(blocked));
       await close(p);
     }
 

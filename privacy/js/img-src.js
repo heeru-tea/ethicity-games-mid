@@ -27,7 +27,9 @@
   var warmed = [], warmState = 'idle';
   function sceneUrls() {
     var W = window.PRIVACY_WORLD;
-    return W && W.SCENES ? W.SCENES.map(function (s) { return src(s.img); }) : [];
+    var out = [];
+    if (W && W.SCENES) W.SCENES.forEach(function (s) { out.push(src(s.img)); if (s.bgOuter) out.push(src(s.bgOuter)); }); // bgOuter = 우리 집 거실·현관(2026-11-09)
+    return out;
   }
   function abs(u) { try { return new URL(u, location.href).href; } catch (e) { return u; } }
   function fetched(u) { try { return performance.getEntriesByName(abs(u)).length > 0; } catch (e) { return false; } }

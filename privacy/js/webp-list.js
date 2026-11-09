@@ -71,6 +71,7 @@ window.PRIVACY_WEBP = {
  "assets/portraits/teacher.png": 1,
  "assets/room/bed.png": 1,
  "assets/room/plush.png": 1,
+ "assets/scenes/house.png": 1,
  "assets/scenes/room.png": 1,
  "assets/scenes/village.png": 1,
  "assets/scenes/yard.png": 1,
