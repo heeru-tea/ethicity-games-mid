@@ -19,6 +19,7 @@
   var Scores = NODE ? require('./scores.js') : root.PB.Scores;
   var Elder = NODE ? require('./elder.js') : root.PB.Elder;
   var Midday = NODE ? require('./midday.js') : root.PB.Midday;
+  var RideLog = NODE ? require('./ride-log.js') : root.PB.RideLog;
 
   function copyRoute(r) { return { nodes: r.nodes.slice(), stops: r.stops.slice() }; }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -352,10 +353,20 @@
     return { type: 'none' };
   }
 
+  /* 'AI가 보는 수요'(2026-11-10, js/ride-log.js): 이번 단계 기본 요청(무임 정책 반영)을 직전 단계 탑승 기록 비율로 걸러 낸다.
+   * 1단계는 예전 노선 기록(외곽 마을 0건), 기록을 못 채운 옛 저장본은 비율 1. 시뮬레이션·점수·재정은 계속 실제 수요 기준 */
+  function prevRideLog(s) { var h = s.history.filter(function (x) { return x.phase === s.phase - 1; })[0]; return h && h.rideLog ? h.rideLog : null; }
+  function rideRatios(s) { return RideLog.ratios(s.config, s.phase, prevRideLog(s), graph(s).nodes); }
+  function aiBase(s) { return rideRequests(s, s.phase, null).ride.filter(function (q) { return q.kind === 'base'; }); }
+  function aiView(s) {
+    var rs = rideRatios(s), log = s.phase > 1 ? prevRideLog(s) : null;
+    var records = log ? Object.keys(log).reduce(function (k, z) { return k + log[z].rode; }, 0) : RideLog.visible(aiBase(s), rs).length;
+    return { ratios: rs, records: records, hidden: graph(s).nodes.filter(function (z) { return rs[z] === 0; }) };
+  }
   function revealed(s) {
-    var h = s.history[s.history.length - 1];
+    var h = s.history[s.history.length - 1], rs = rideRatios(s);
     return Advisor.makeRevealed({
-      phase: s.phase, g: graph(s), requests: Demand.base(s.config, s.phase, s.seed), owned: s.owned,
+      phase: s.phase, g: graph(s), requests: RideLog.visible(aiBase(s), rs), rideRatios: rs, owned: s.owned,
       fourthAllowed: !s.config.progression && s.phase >= s.config.fourthFromPhase, fourthMustBeNew: !s.config.progression && s.fourthPhase === s.phase, prevMetrics: h ? h.metrics : null,
       prevRouteIds: prevRouteIds(s), plan: toPlan(s), config: s.config
     });
@@ -563,6 +574,7 @@
       elder: { free: c.metrics.costs.freeRiders || 0, unpaid: (c.metrics.costs.freeRiders || 0) * s.config.finance.fare, stayed: (c.stayed || []).length }
     };
     entry.eventFare = s.config.finance.fare * c.result.passengers.filter(function (p) { return p.kind === 'extra' && p.firstBoardT != null; }).length;
+    entry.rideLog = RideLog.fromRun(c.result.passengers);
     s.history.push(entry);
     settle(s, entry);
     // 두 점수(재정 건전성·이동 수요 충족) — 정산 직후 한 번 기록해 저장본에 남긴다(js/scores.js)
@@ -597,16 +609,21 @@
   function ledgerBalance(s, phase) { var row = (s.ledger || []).filter(function (r) { return r.phase === phase; })[0]; return row ? row.balance : null; }
   // 점수 기록이 없는 예전 저장본: 저장된 출발 계획·사건·긴급 조정으로 운행을 다시 계산해, 기록된 요청 수·도착 수와 같을 때만 채운다
   // (설정이 바뀌어 결과가 달라지면 채우지 않고 ‘평가 자료 없음’으로 둔다 — 없는 평가를 만들어 넣지 않는다)
+  // 탑승 기록(entry.rideLog)이 없는 예전 저장본도 같은 재실행 한 번으로 채운다(같은 검사 — 다르면 비워 두고 'AI가 보는 수요'는 비율 1)
   function rescore(s, h) {
-    var bal = ledgerBalance(s, h.phase);
-    if (!h.plan || !h.metrics || h.event === undefined || bal == null) return false;
+    var bal = ledgerBalance(s, h.phase), needScores = !h.scores || h.scores.version !== Scores.VERSION, needLog = !h.rideLog;
+    if (!needScores && !needLog) return true;
+    if (!h.plan || !h.metrics || h.event === undefined || (needScores && bal == null)) return false;
     var g = Graph.build(s.config, h.phase), day = dayInputs(s, h.phase);
     var rr = rideRequests(s, h.phase, h.event), req = rr.ride;
     var res = Sim.run({ g: g, config: s.config, phase: h.phase, plan: h.plan, requests: req, event: h.event, adjustments: day.adjustments, routeChanges: day.routeChanges });
     var arrived = res.passengers.filter(function (p) { return p.status === 'arrived'; }).length;
     if (res.passengers.length !== h.metrics.N || arrived !== h.metrics.arrived) return false;
-    h.scores = Scores.phaseScores(s.config, g, h.phase, s.seed, h.event, h.plan, res.passengers, bal, rr.stayed);
-    h.scores.recomputed = true;
+    if (needScores) {
+      h.scores = Scores.phaseScores(s.config, g, h.phase, s.seed, h.event, h.plan, res.passengers, bal, rr.stayed);
+      h.scores.recomputed = true;
+    }
+    if (needLog) h.rideLog = RideLog.fromRun(res.passengers);
     return true;
   }
   function scoresOverall(s) { return Scores.overall(s.history, s.config.phases.length); }
@@ -690,14 +707,14 @@
     if (!s.ledger) rebuildLedger(s);
     // 예전 저장본(적자 3회 규칙 시절): 연속 마이너스 잔액 횟수를 정산 기록에서 다시 센다. 이미 끝난 계약(s.end)은 그대로 둔다
     if (s.negStreak == null) s.negStreak = (s.ledger || []).reduce(function (k, r) { return r.balance < 0 ? k + 1 : 0; }, 0);
-    s.history.forEach(function (h) { if (!h.scores || h.scores.version !== Scores.VERSION) rescore(s, h); });
+    s.history.forEach(function (h) { rescore(s, h); });
     migrateTransition(s);
     if (s.stage === 'ending' && !s.end) { var bal = balance(s); s.end = { cause: financeRule(s) === 'final-balance' && bal < 0 ? 'bankrupt' : 'complete', phase: s.phase, balance: bal }; }
     return s;
   }
 
   var api = {
-    elderChoice: elderChoice, rideRequests: rideRequests,
+    elderChoice: elderChoice, rideRequests: rideRequests, aiView: aiView,
     departChecks:departChecks,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,

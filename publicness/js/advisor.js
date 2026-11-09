@@ -16,7 +16,7 @@
 
   var Evaluation = NODE ? require('./resident-evaluation.js') : root.PB.ResidentEvaluation;
 
-  var KEYS = ['phase', 'g', 'requests', 'owned', 'fourthAllowed', 'fourthMustBeNew', 'prevMetrics', 'prevRouteIds', 'plan', 'config'];
+  var KEYS = ['phase', 'g', 'requests', 'owned', 'fourthAllowed', 'fourthMustBeNew', 'prevMetrics', 'prevRouteIds', 'plan', 'config', 'rideRatios'];
 
   function makeRevealed(src) {
     var out = {};
