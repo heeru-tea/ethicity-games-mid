@@ -124,7 +124,7 @@ function countPaths(s, depth) {
 }
 const totalPaths = countPaths(E.createState(story), 0);
 // 무대·맵 개편은 이야기 분기를 바꾸지 않는다
-if (totalPaths !== 884520000) err('완주 경로 수가 바뀜: ' + totalPaths);
+if (totalPaths !== 24766560000) /* 884,520,000 × 특별 수업 28가지(설치 안 함 1 + 3×3×3, 2026-11-10) */ err('완주 경로 수가 바뀜: ' + totalPaths);
 
 // ── 4. 무작위 완주 표본(실제 상태 그대로) ──────
 const seenScene = new Set(), seenChoice = new Set(), seenLine = new Set(), seenOutcome = new Set();
@@ -139,6 +139,7 @@ function markLines(s) {
 }
 let seed = 20261017;
 const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+let seedSc = 7; const rndSc = () => (seedSc = (seedSc * 1103515245 + 12345) % 2147483648) / 2147483648; // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
 const SAMPLES = Number(process.env.SAMPLES || 100000);
 const EM_MAX = 2; // 장면당(장면 대사 + 반응) 강조 최대 개수 — 많으면 강조가 아니게 된다
 const emCount = (lines) => lines.reduce((n, l) => n + EM.parts(l.text).filter((p) => p.strong).length + (l.meta ? EM.parts(l.meta).filter((p) => p.strong).length : 0), 0);
@@ -167,7 +168,7 @@ function play(pick) {
   return { s, path };
 }
 for (let i = 0; i < SAMPLES; i++) {
-  const { s, path } = play((st, cs) => cs[Math.floor(rnd() * cs.length)]);
+  const { s, path } = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : rnd()) * cs.length)]);
   endingCount[s.ending] = (endingCount[s.ending] || 0) + 1;
   // ENDING_V2(2026-11-09): 안전 지표 두 줄(seriousSplit)이 serious와 맞는지 — e8 crew는 두 줄 모두 센다. serious를 올리는 새 선택이 생기면 story.js seriousSplit에 넣을 것
   { const sp = E.seriousSplit(story, s); if (sp && sp[0].value + sp[1].value - (E.evalCond('e8=crew', s) ? 1 : 0) !== s.stats.serious) err('seriousSplit 두 줄이 serious와 다름: ' + path.join(' > ')); }
@@ -267,7 +268,7 @@ function linesOnRoute(route) {
 }
 {
   const BAD = ['pro_1#sns', 'c1_e1_a#public', 'c1_e1_b#pass', 'c1_e2_a#shoot', 'c1_e2_b#story', 'c1_e2_d#no', 'c1_e3_b#capture', 'c1_e3_cap#none',
-    'c2_e4_a#forward', 'c2_e4_b#blame', 'c2_e5_a#all', 'c2_e5_b#close', 'c2_e6_a#post', 'c2_e6_b#deny',
+    'sc_1#on', 'sc_2#ai', 'sc_3#open', 'sc_4#open', 'c2_e4_a#forward', 'c2_e4_b#blame', 'c2_e5_a#all', 'c2_e5_b#close', 'c2_e6_a#post', 'c2_e6_b#deny',
     'c3_e7_a#join', 'c3_e7_b#hide', 'c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#fine', 'c3_e9_a#share', 'c3_e9_b#keep'];
   const bad = linesOnRoute(BAD);
   if (bad.fail) err('나쁜 경로: ' + bad.fail);

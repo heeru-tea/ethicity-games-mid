@@ -166,7 +166,8 @@
       next.ending = resolveEnding(story, next).code;
     } else if (typeof target === 'string' && target.indexOf('@chapter:') === 0) {
       next.screen = 'chapter';
-      next.nextChapter = Number(target.split(':')[1]);
+      var ck = target.split(':')[1];
+      next.nextChapter = /^\d+$/.test(ck) ? Number(ck) : ck; // 숫자 아닌 장 키도(특별 수업 'sc', 2026-11-10)
     } else {
       enterScene(story, next, target);
     }
@@ -278,6 +279,19 @@
     return s.history.every(function (h) { return h && story.scenes[h.scene] && h.snap; });
   }
 
+  /* 특별 수업 「우리 학교에 AI CCTV를 단다면」(2026-11-10): 플래그만 쓰고 엔딩·수치와 무관.
+   *   specialClassNotes = 고른 보기마다 선생님 반문 한 줄(순서: 목적 → 보관 → 열람 → 설치 안 함), specialClassRows = 결과 칸 줄(설정된 것만) */
+  function specialClassNotes(story, state) {
+    var sc = story.specialClass;
+    return sc ? sc.notes.filter(function (n) { return evalCond(n.if, state); }).map(function (n) { return n.text; }) : [];
+  }
+  function specialClassRows(story, state) {
+    var sc = story.specialClass;
+    if (!sc) return [];
+    return sc.rows.filter(function (r) { return state.flags[r.key] != null && r.values.hasOwnProperty(state.flags[r.key]); })
+      .map(function (r) { return { label: r.label, text: r.values[state.flags[r.key]] }; });
+  }
+
   var api = {
     STAT_KEYS: STAT_KEYS,
     COMPUTED: COMPUTED,
@@ -294,6 +308,8 @@
     resolveEnding: resolveEnding,
     endingBody: endingBody,
     seriousSplit: seriousSplit,
+    specialClassNotes: specialClassNotes,
+    specialClassRows: specialClassRows,
     eventOutcomes: eventOutcomes,
     isValidState: isValidState,
     clone: clone

@@ -16,6 +16,7 @@ story.endings.forEach((e) => { if (over[e.code] !== undefined) e.if = over[e.cod
 
 let seed = 20261031;
 const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+let seedSc = 7; const rndSc = () => (seedSc = (seedSc * 1103515245 + 12345) % 2147483648) / 2147483648; // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
 
 function play(pick) {
   let s = E.createState(story);
@@ -38,7 +39,7 @@ const t0 = Date.now();
 let done = 0;
 for (; done < N && Date.now() - t0 < LIMIT; done++) {
   try {
-    const s = play((st, cs) => cs[Math.floor(rnd() * cs.length)]);
+    const s = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : rnd()) * cs.length)]);
     const end = E.resolveEnding(story, s).code;
     count[end] = (count[end] || 0) + 1;
   } catch (e) { errors[e.message] = (errors[e.message] || 0) + 1; }

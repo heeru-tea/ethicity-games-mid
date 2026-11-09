@@ -59,6 +59,35 @@
     return true;
   })();
 
+
+  /* ── 특별 수업 「우리 학교에 AI CCTV를 단다면」(2026-11-10 사용자 설계, 대한민국 인공지능 윤리기준 2. 프라이버시 보호) ──
+   *   정답 없음 — 구성원 사이의 합의가 중요한 영역(사용자). 모든 보기·'설치 안 함'에 같은 무게의 반문 한 줄, 칭찬·점수 금지.
+   *   플래그: ccx = on|none, ccxPurpose = incident|guide|ai, ccxKeep = 30d|term|open, ccxAccess = self|staff|open.
+   *   notes 순서 = 목적 → 보관 → 열람 → 설치 안 함(선생님 정리·결과 칸이 이 순서). 모든 문장 교사 검수 대상. */
+  var SPECIAL_CLASS = {
+    rows: [
+      { key: 'ccx', label: '설치 여부', values: { on: '조건을 붙여 설치', none: '설치하지 않음' } },
+      { key: 'ccxPurpose', label: '촬영 목적', values: { incident: '신고된 사건 확인에만', guide: '생활지도까지', ai: 'AI 분석까지' } },
+      { key: 'ccxKeep', label: '보관 기간', values: { '30d': '30일 뒤 자동 삭제', term: '한 학기', open: '정하지 않음' } },
+      { key: 'ccxAccess', label: '열람·삭제', values: { self: '본인·보호자 열람·삭제 요청 가능', staff: '선생님만 열람', open: '정하지 않음' } }
+    ],
+    notes: [
+      { if: 'ccxPurpose=incident', text: '신고하지 못하는 피해는 어떻게 알아챌 수 있을까?' },
+      { if: 'ccxPurpose=guide', text: '지각·복장을 보려고 찍힌 영상이 다른 일에 쓰이지 않는다는 건 누가 확인하지?' },
+      { if: 'ccxPurpose=ai', text: '학교폭력을 막자고 단 카메라가 누가 어디 있었는지까지 기록하면, 그건 누구를 지키는 걸까?' },
+      { if: 'ccxKeep=30d', text: '한 달 뒤에야 신고된 피해는 어떻게 확인하지?' },
+      { if: 'ccxKeep=term', text: '한 학기 동안 내 모습이 남아 있다는 걸 다들 알고 있을까?' },
+      { if: 'ccxKeep=open', text: '필요한 때가 지난 영상은 누가, 언제 지워야 할까?' },
+      { if: 'ccxAccess=self', text: '가해 학생도 자기 영상을 보겠다고 하면, 다른 학생 얼굴은 어떻게 하지?' },
+      { if: 'ccxAccess=staff', text: '내가 찍혔는지, 어떻게 쓰이는지 확인할 방법이 없다면?' },
+      { if: 'ccxAccess=open', text: '누가 볼 수 있는지 정하지 않으면, 결국 누가 정하게 될까?' },
+      { if: 'ccx=none', text: '그럼 증거가 필요한 피해 학생은 어떻게 도울 수 있을까?' }
+    ],
+    closing: '여기엔 정답이 없어. 중요한 건 학생, 선생님, 보호자가 함께 정하고, 찍히는 사람 모두가 그 내용을 알 수 있게 하는 거야.'
+  };
+  // 칠판에 적는 한 줄(선택 반응 — 평가 없이 적기만)
+  function board(label, text) { return ['narr: 칠판에 적었다. ' + label + ': ' + text + '.']; }
+
   var STORY = {
     id: 'privacy',
     endingV2: ENDING_V2,
@@ -76,6 +105,7 @@
       guardian: { name: '보호자', initial: '보' },
       friend:   { name: '옆 반 친구', initial: '옆' },
       lumi:     { name: '루미 (가상 AI)', initial: 'AI' },
+      aidemo:   { name: 'AI 시연 프로그램', initial: 'AI' }, // 특별 수업 AI 실습실 받침대의 AI(지도 몸 없음, 2026-11-10)
       stranger: { name: '@nightfox', initial: '?' },
       bystander: { name: '구경꾼', initial: '?' },
       uploader: { name: '@ssul_zip', initial: '?' },
@@ -97,7 +127,9 @@
       1: { title: '우리끼리인데 뭐 어때?', sub: '축제 D-4 ~ D-1 낮', events: ['e1', 'e2', 'e3'], start: 'c1_e1_a' },
       2: { title: '화면 밖으로 나간 정보', sub: '축제 D-1 저녁 ~ 당일 아침', events: ['e4', 'e5', 'e6'], start: 'c2_e4_a' },
       3: { title: '공유 버튼 뒤의 사람', sub: '축제 당일 ~ 다음 날', events: ['e7', 'e8', 'e9'], start: 'c3_e7_a' },
-      4: { title: '에필로그', sub: '축제 다음 주', events: [], start: 'ep_1' }
+      4: { title: '에필로그', sub: '축제 다음 주', events: [], start: 'ep_1' },
+      // 특별 수업(2026-11-10): 1장과 2장 사이 정보 시간. 장 번호 없는 장 — 엔딩·수치와 무관(플래그 ccx*만)
+      sc: { title: '우리 학교에 AI CCTV를 단다면', sub: '축제 D-1 · 오후 5교시 · 정보 시간', events: [], start: 'sc_1' }
     },
 
     /* 사건별 결과 — 엔딩·장 전환 화면에 표시. 조건이 맞는 문장이 모두 나온다. */
@@ -238,6 +270,8 @@
 
     /* ENDING_V2: 엔딩 본문 끝에 붙는 선택별 한 줄(판정과 별개 — 좋은 엔딩이어도 이 일들은 남았다고 말해 준다). 2026-11-09 지시서 A3
      *   lead = 그 엔딩에서 첫 줄 앞에 붙는 말(A·B는 '다만 '). 대사 교사 검토 대기 */
+    specialClass: SPECIAL_CLASS,
+
     endingNotes: {
       lead: { A: '다만 ', B: '다만 ' },
       lines: [
@@ -510,7 +544,7 @@
           'jiho: 고마워. 내가 정한 만큼만 말해 줘서',
           'jiho: 꾸미기 하면서 사람 많은 데 천천히 익숙해져 볼게'
         ],
-        next: '@chapter:2'
+        next: '@chapter:sc'
       },
       c1_e3_anon: {
         chapter: 1, event: 'e3', label: '역할 재신청',
@@ -522,7 +556,7 @@
           'jiho: (개인톡) 나 당일 안내 말고 부스 정리로 역할 바꿨어! 이유 안 물어봐서 다행이다 ㅠ',
           'narr: 지호는 내가 무슨 말을 했는지 모른다. 지호의 이야기는 지호의 것으로 남았다.'
         ],
-        next: '@chapter:2'
+        next: '@chapter:sc'
       },
       c1_e3_cap: {
         chapter: 1, event: 'e3', label: '두 번째 전달',
@@ -540,18 +574,89 @@
             set: { e3fix: 'full' }, add: { repair: 2, 'trust.jiho': -1 },
             react: ['saebom: 아… 미안. 생각 없이 보여 줬어', 'saebom: 캡처 지웠어', 'haneul: 나도 지움. 다른 데 보낸 적 없어',
               'jiho: …화나. 아무한테도 말하지 말랬잖아', 'jiho: 그래도 다른 데서 듣기 전에', 'jiho: 네가 먼저 말해 줘서 그건 다행이야'],
-            next: '@chapter:2' },
+            next: '@chapter:sc' },
           { id: 'part', text: '하늘이에게만 더 퍼뜨리지 말라고 한다.',
             say: '그거 아무한테도 말하지 마. 지호가 비밀로 해 달라고 한 거야',
             set: { e3fix: 'part' }, add: { repair: 1 },
             react: ['haneul: ㅇㅋ 알았어. 아무한테도 말 안 할게',
               'narr: 지호는 아직 아무것도 모른다. [[캡처가 지금 휴대폰 몇 대에 있는지도]] 모른다.'],
-            next: '@chapter:2' },
+            next: '@chapter:sc' },
           { id: 'none', text: '이미 보낸 거니 어쩔 수 없다고 생각한다.',
             set: { e3fix: 'none' }, add: { spread: 1, 'trust.jiho': -2 },
             react: ['narr: 점심시간, 지호가 교실에 들어오자 [[몇 명이 지호를 쳐다봤다]].', 'jiho: (개인톡) 너지?'],
-            next: '@chapter:2' }
+            next: '@chapter:sc' }
         ]
+      },
+
+
+      /* ───────── 특별 수업 · 정보 시간 「우리 학교에 AI CCTV를 단다면」(2026-11-10) ─────────
+       *   AI 실습실(평소엔 못 가는 특별실). 친구 넷 찬성 둘(새봄·하늘)·반대 둘(지호·민준) — 관계와 무관한 토론 대사.
+       *   주인공 = 학급 의견을 정리하는 학생. 엔딩·수치 영향 없음(set만). */
+      sc_1: {
+        chapter: 'sc', label: 'AI CCTV 토론',
+        view: { type: 'place', title: 'AI 실습실 · D-1 오후 5교시' },
+        lines: [
+          'aidemo: 시연 모드입니다. 오늘 오전, 3층 복도에서 같은 학생을 4번 인식했습니다.',
+          'aidemo: 이 학생의 쉬는 시간 이동 경로를 보여 드릴까요?',
+          'teacher: 잠깐, 시연은 여기까지.',
+          'teacher: 오늘 정보 시간은 토론이야. 학교에서 학교폭력과 안전사고에 대비해 AI CCTV를 다는 걸 검토하고 있어.',
+          'teacher: 얼굴을 알아보고, 싸움 같은 행동을 감지하는 카메라야. 오늘 우리 반 의견을 정해서 학교에 내기로 했어.',
+          'teacher: 정답은 없어. 우리가 함께 지킬 조건을 정하는 시간이야. {name}, 오늘은 네가 우리 반 의견을 정리해 줄래?',
+          'saebom: 작년에 복도에서 다툼이 있었는데, 서로 말이 달라서 결국 아무도 도움을 못 받았대.',
+          'saebom: 기록이 있으면 억울한 사람이 덜 생길 것 같아. 나는 찬성.',
+          'haneul: 사물함에서 물건 없어지는 거, 맨날 누가 그랬는지 못 찾잖아.',
+          'haneul: 카메라가 있으면 아예 손대는 사람이 줄 것 같은데? 나도 찬성.',
+          'jiho: 누가 늘 보고 있다고 생각하면, 쉬는 시간에도 편하게 못 있을 것 같아.',
+          'jiho: 괴롭힘은 카메라 없는 화장실이나 단톡방에서 더 많이 일어나기도 하고. 나는 반대야.',
+          'minjun: 내 얼굴이 어디에, 얼마나 오래 남는지 모르는 게 싫어.',
+          'minjun: 찍힌 영상을 누가 볼 수 있는지도 우린 모르잖아. 나도 반대.'
+        ],
+        prompt: '우리 반 의견은?',
+        choices: [
+          { id: 'on', text: '조건을 붙여 설치하자고 한다.', set: { ccx: 'on' }, react: board('설치 여부', '조건을 붙여 설치'), next: 'sc_2' },
+          { id: 'none', text: '설치하지 않자고 한다.', set: { ccx: 'none' }, react: board('설치 여부', '설치하지 않음'), next: 'sc_5' }
+        ]
+      },
+      sc_2: {
+        chapter: 'sc', label: '촬영 목적',
+        view: { type: 'place', title: 'AI 실습실 · D-1 오후 5교시' },
+        lines: ['teacher: 그럼 조건을 하나씩 정해 보자. 먼저, 이 카메라는 어디에 쓰게 할까?'],
+        prompt: '어디에 쓰게 할까? (촬영 목적)',
+        choices: [
+          { id: 'incident', text: '학교폭력·안전사고가 신고됐을 때 확인하는 데만', set: { ccxPurpose: 'incident' }, react: board('촬영 목적', '신고된 사건 확인에만'), next: 'sc_3' },
+          { id: 'guide', text: '생활지도까지(지각·복장·휴대폰 사용 확인에도)', set: { ccxPurpose: 'guide' }, react: board('촬영 목적', '생활지도까지'), next: 'sc_3' },
+          { id: 'ai', text: 'AI 분석까지(얼굴로 누가 어디 있었는지 기록, ‘주의 학생’ 미리 알림)', set: { ccxPurpose: 'ai' }, react: board('촬영 목적', 'AI 분석까지'), next: 'sc_3' }
+        ]
+      },
+      sc_3: {
+        chapter: 'sc', label: '보관 기간',
+        view: { type: 'place', title: 'AI 실습실 · D-1 오후 5교시' },
+        lines: ['teacher: 찍힌 영상은 얼마나 남겨 둘까?'],
+        prompt: '얼마나 보관할까?',
+        choices: [
+          { id: '30d', text: '30일 뒤 자동 삭제(신고된 사건 영상만 사건이 끝날 때까지)', set: { ccxKeep: '30d' }, react: board('보관 기간', '30일 뒤 자동 삭제'), next: 'sc_4' },
+          { id: 'term', text: '한 학기 보관', set: { ccxKeep: 'term' }, react: board('보관 기간', '한 학기'), next: 'sc_4' },
+          { id: 'open', text: '정하지 않는다(필요할 때까지)', set: { ccxKeep: 'open' }, react: board('보관 기간', '정하지 않음'), next: 'sc_4' }
+        ]
+      },
+      sc_4: {
+        chapter: 'sc', label: '열람·삭제',
+        view: { type: 'place', title: 'AI 실습실 · D-1 오후 5교시' },
+        lines: ['teacher: 마지막으로, 찍힌 사람은 무엇을 할 수 있을까?'],
+        prompt: '찍힌 사람은 무엇을 할 수 있을까?',
+        choices: [
+          { id: 'self', text: '찍힌 학생 본인·보호자가 열람·삭제를 요청할 수 있고, 누가 봤는지 기록이 남는다', set: { ccxAccess: 'self' }, react: board('열람·삭제', '본인·보호자 열람·삭제 요청 가능'), next: 'sc_5' },
+          { id: 'staff', text: '선생님만 볼 수 있고, 학생이 요청하는 절차는 없다', set: { ccxAccess: 'staff' }, react: board('열람·삭제', '선생님만 열람'), next: 'sc_5' },
+          { id: 'open', text: '따로 정하지 않는다', set: { ccxAccess: 'open' }, react: board('열람·삭제', '정하지 않음'), next: 'sc_5' }
+        ]
+      },
+      sc_5: {
+        chapter: 'sc', label: '선생님의 질문',
+        view: { type: 'place', title: 'AI 실습실 · D-1 오후 5교시' },
+        lines: ['teacher: 좋아, 우리 반 안이 칠판에 다 적혔어. 선생님이 몇 가지 물어볼게.']
+          .concat(SPECIAL_CLASS.notes.map(function (n) { return { who: 'teacher', text: n.text, if: n.if }; }))
+          .concat([{ who: 'teacher', text: SPECIAL_CLASS.closing }]),
+        next: '@chapter:2'
       },
 
       /* ───────── 2장 · 사건4 합성 이미지 ───────── */

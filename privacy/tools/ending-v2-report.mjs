@@ -13,6 +13,7 @@ story.triggers = WORLD.triggers;
 const N = Number(process.argv[2] || 20000);
 let seed = 20261109;
 const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+let seedSc = 7; const rndSc = () => (seedSc = (seedSc * 1103515245 + 12345) % 2147483648) / 2147483648; // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
 
 function play(pick) {
   let s = E.createState(story);
@@ -35,7 +36,7 @@ for (const v2 of [false, true]) {
   story.endingV2 = v2; seed = 20261109;
   const count = {};
   for (let i = 0; i < N; i++) {
-    const s = play((st, cs) => cs[Math.floor(rnd() * cs.length)]);
+    const s = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : rnd()) * cs.length)]);
     count[s.ending] = (count[s.ending] || 0) + 1;
     if (v2) {
       const sp = E.seriousSplit(story, s), dup = E.evalCond('e8=crew', s) ? 1 : 0;
