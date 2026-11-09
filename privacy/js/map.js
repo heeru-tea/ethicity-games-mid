@@ -44,12 +44,7 @@
    *  둘 다 모양·글자(!·?)로 구분되고(색만으로 구분하지 않음), 버튼 글자와 지도 설명(aria-label)에도 같은 내용이 글로 나온다.
    *  위아래로 살짝 흔들림(움직임 줄이기면 멈춤).
    */
-  var MARK = { dest: null, talk: null };
-  ['dest', 'talk'].forEach(function (k) {
-    var im = new Image();
-    im.onload = function () { MARK[k] = im; };
-    window.PrivacyImg.load(im, 'assets/markers/' + k + '.png');
-  });
+  // 지도 위 표시는 그림 파일 대신 도형으로 그린다(drawMark, 2026-11-09). assets/markers/*.png는 버튼·안내 글의 작은 아이콘(.ico-quest·.ico-talk)이 계속 쓴다.
   var ROW = { down: 0, left: 1, right: 2, up: 3 };
   var KEY_DIR = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
   var CHAR_COLOR = window.PrivacySprite.COLOR; // 관계 보고 얼굴 대체색과 같은 색
@@ -1273,23 +1268,44 @@
   }
   // 표시 그림 크기: 16칸 그림을 정수 배로(칸 크기의 약 0.8, 최소 2배 = 32px) — 픽셀이 고르게 또렷하도록
   function markScale() { return Math.max(2, Math.round(T * 0.8 / 16)); }
-  function markSize(kind) { var im = MARK[kind], s = markScale(); return im && im.naturalWidth ? { w: im.naturalWidth * s, h: im.naturalHeight * s } : { w: 16 * s, h: 16 * s }; }
-  // 그림 하나를 (가운데 x, 가운데 y)에. 그림을 못 불러오면 같은 모양의 글자 상자(크림 바탕·잉크 테두리 + ! ?)
+  function markSize() { var size = 16 * markScale(); return { w: size, h: size }; }
+  /* 표시 하나를 (가운데 x, 가운데 y)에 — 매끈한 도형으로 그린다(2026-11-09 사용자: 픽셀 그림 !가 깨져 보임).
+   * 13×16 픽셀 그림은 윈도 화면 배율 125%·150%에서 한 칸이 화면 점 2.5·3.75개로 늘어 줄 굵기가 들쭉날쭉했다.
+   * 도형은 캔버스가 화면 배율(dpr)대로 그리므로 어느 배율에서도 또렷하다. 크기는 예전 그림 자리와 같다(16 × markScale).
+   * 목적지 = 금색 동그라미 + ! (아래 꼭지), 말 걸기 = 크림 말풍선 + ? (아래 꼬리). 모양·글자로 구분(색만으로 구분하지 않음). */
   function drawMark(kind, mx, my) {
-    var im = MARK[kind], s = markScale();
-    if (im && im.naturalWidth) {
-      var w = im.naturalWidth * s, h = im.naturalHeight * s, sm = ctx.imageSmoothingEnabled;
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(im, Math.round(mx - w / 2), Math.round(my - h / 2), w, h);
-      ctx.imageSmoothingEnabled = sm;
-      return { w: w, h: h };
+    var size = 16 * markScale(), r = size / 2, ink = '#294B40', lw = Math.max(2, size / 14);
+    ctx.save();
+    ctx.lineJoin = 'round'; ctx.lineWidth = lw; ctx.strokeStyle = ink;
+    ctx.beginPath();
+    if (kind === 'dest') {
+      ctx.arc(mx, my - size * 0.06, r * 0.86, Math.PI * 0.62, Math.PI * 2.38); // 동그라미(아래쪽은 꼭지로 이어짐)
+      ctx.lineTo(mx, my + r * 0.98);
+      ctx.closePath();
+      ctx.fillStyle = '#F3CF72';
+    } else {
+      var w = size * 0.94, h = size * 0.76, x = mx - w / 2, y = my - r, rr = size * 0.2;
+      ctx.moveTo(x + rr, y); ctx.lineTo(x + w - rr, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr); ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(mx + size * 0.08, y + h); ctx.lineTo(mx - size * 0.08, my + r * 0.98); ctx.lineTo(mx - size * 0.2, y + h); // 아래 꼬리
+      ctx.lineTo(x + rr, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr); ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
+      ctx.fillStyle = '#FFF9E7';
     }
-    var size = 16 * s;
-    ctx.fillStyle = kind === 'dest' ? '#F3CF72' : '#FFF9E7';
-    roundRect(mx - size / 2, my - size / 2, size, size, kind === 'dest' ? size / 2 : 4); ctx.fill();
-    ctx.strokeStyle = '#294B40'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#294B40'; ctx.font = 'bold ' + Math.round(size * 0.6) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(kind === 'dest' ? '!' : '?', mx, my + 1);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = ink;
+    var cy = kind === 'dest' ? my - size * 0.06 : my - r + size * 0.38;
+    if (kind === 'dest') { // ! = 둥근 막대 + 점(글꼴에 기대지 않음)
+      var bw = size * 0.14;
+      ctx.beginPath(); ctx.moveTo(mx, cy - size * 0.26); ctx.lineTo(mx, cy + size * 0.04);
+      ctx.lineWidth = bw; ctx.lineCap = 'round'; ctx.strokeStyle = ink; ctx.stroke();
+      ctx.beginPath(); ctx.arc(mx, cy + size * 0.22, bw * 0.62, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.font = '900 ' + Math.round(size * 0.56) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('?', mx, cy + 1);
+    }
+    ctx.restore();
     return { w: size, h: size };
   }
   // 위아래 살짝 흔들림(움직임 줄이기 = 0). 사람마다 박자를 조금 어긋나게
