@@ -692,7 +692,7 @@
       /* ───────── 2장 · 사건6 공용 PC ───────── */
       c2_e6_a: {
         chapter: 2, event: 'e6', label: '도서관 공용 PC',
-        view: { type: 'pc', title: '도서관 공용 PC 3번' },
+        view: { type: 'pc', title: '도서관 공용 PC 3번', login: '@haneul_sky' }, // login: 모니터 위 브라우저 줄의 로그인 표시(2026-11-09 C2)
         lines: [
           'sys: 축제 당일 · 오전 8:10',
           'narr: 안내문을 출력하러 도서관 공용 PC에 앉았다.',
@@ -721,7 +721,7 @@
       },
       c2_e6_b: {
         chapter: 2, event: 'e6', label: '그다음',
-        view: { type: 'pc', title: '도서관 공용 PC 3번' },
+        view: { type: 'pc', title: '도서관 공용 PC 3번', login: '@haneul_sky' },
         lines: [
           { who: 'friend', text: '뭐 있어? 하늘이 누구랑 싸웠대?', if: 'e6=peek' },
           { who: 'friend', text: '캡처 떠서 나한테 보내 줘 ㅋㅋ', if: 'e6=peek' },

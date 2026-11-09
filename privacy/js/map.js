@@ -301,7 +301,11 @@
     var a = WD.areaName(me.x, me.y);
     if (a !== lastArea) { lastArea = a; $('m-area').textContent = a ? '📍 ' + a : ''; if ($('m-say').textContent) sayLayout(); } // HUD 높이가 바뀌면 안내 한 줄도 따라 내려감
     if (mode === 'walk' && trig) { var mt = missionText(); if (mt !== lastMission) { lastMission = mt; $('m-mission').textContent = mt; if ($('m-say').textContent) sayLayout(); } }
+    // 걸어서 들어간 장소(장면 그림) — 조작 안내를 처음 두 장소에서만 보이게(app.js onPlace, 2026-11-09 지시서 C5)
+    var sc = mode === 'walk' ? WD.sceneAt(me.x) : null;
+    if (sc && sc.id !== lastPlace) { lastPlace = sc.id; if (o.onPlace) o.onPlace(sc.id); }
   }
+  var lastPlace = null;
   // '지금 할 일'(2026-11-09 지시서 B2): 목적지와 같은 장면에 들어오면 바로 다음 목표 — 사람이면 '새봄에게 말 걸기', 사물이면 '할 일 — 사물 이름'.
   //   다른 장면에 있으면 world.js의 mission 그대로(어디로 가야 하는지)
   var lastMission = null;
@@ -489,6 +493,8 @@
       : p.ob.name + ' 조사하기');
     btn.classList.toggle('primary', near || way);
     btn.classList.toggle('ghost', !near && !asks && !way);
+    // 2026-11-09 지시서 C5: 대상이 가까이 있을 때만 활성으로 보인다(누르면 안내 한 줄은 그대로 — 버튼을 막지는 않음)
+    if (p) btn.removeAttribute('aria-disabled'); else btn.setAttribute('aria-disabled', 'true');
     updateLabel();
   }
   // ? 표시 이유: 'target' 목적지 인물 · 'lines' 이번 걷기에서 할 말 · 'react' 지금까지의 선택에 반응하는 한 줄 · null 없음
@@ -884,10 +890,14 @@
   // 보이는 영역이 장면 안에 들어오게 하고, 되도록 캔버스 전체도 장면 안에(가려진 곳 틈으로도 빈 곳이 안 보이게).
   // loose(2026-11-03 플레이테스트): 줄여 그린 내 방은 침대가 장면 왼쪽 끝이라, 캔버스 전체를 장면 안에 두면 주인공이 폰 뒤에 숨었다 →
   //   보이는 영역만 장면 안에 두고 폰 뒤로는 장면 밖(흐린 배경)이 와도 되게 한다
+  //   2026-11-09 지시서 C3: loose여도 오른쪽 끝은 캔버스 끝까지 장면(오른쪽에 빈 칸 금지) — 장면 밖이 와도 되는 쪽은 왼쪽(폰·모니터 뒤)뿐
   function fitAxis(want, a0, len, v0, v1, full, loose) {
     if (len <= v1 - v0) return a0 + len / 2 - (v0 + v1) / 2; // 장면이 더 작으면 보이는 영역 가운데
     var lo = a0 - v0, hi = a0 + len - v1;
-    if (!loose && len >= full && Math.max(lo, a0) <= Math.min(hi, a0 + len - full)) { lo = Math.max(lo, a0); hi = Math.min(hi, a0 + len - full); }
+    if (len >= full) {
+      var lo2 = loose ? lo : Math.max(lo, a0), hi2 = Math.min(hi, a0 + len - full);
+      if (lo2 <= hi2) { lo = lo2; hi = hi2; }
+    }
     return Math.max(lo, Math.min(hi, want));
   }
   // 걷기 카메라 한 축: 장면이 캔버스 가운데에 놓여도 가림 상자에 안 걸리면 옛 배치(가운데), 보이는 영역보다 작으면 그 가운데,
@@ -945,6 +955,9 @@
     // 칸 크기: 넓은 화면은 장면 전체가 한눈에, 휴대폰은 칸이 28px 밑으로 줄지 않게(넘치면 주인공을 따라감)
     var fit = Math.min(viewW / WD.SW, viewH / WD.SH);
     T = Math.max(28, fit * (mode === 'stage' ? STAGE_ZOOM : 1));
+    // 2026-11-09 지시서 C3: 폰·PC 창이 떠 있는 동안 지도 오른쪽·아래가 빈 칸(흐린 배경)으로 보였다 — 무대가 세로로 길어(934×758) 16:9 장면이 캔버스보다 낮았다.
+    //   넓은 무대(> 720px, 창이 옆에 뜨는 배치)에서는 장면이 캔버스를 가로·세로 모두 덮는 배율 이상으로. 휴대폰 배치는 아래가 시트로 덮여 그대로(옛 배율)
+    if (mode === 'stage' && viewW > 720) T = Math.max(T, (viewW + 1) / WD.SW, (viewH + 1) / WD.SH);
     var sx0 = sc.ox * T, sw = WD.SW * T, sh = WD.SH * T;
     var px = me.fx * T + T / 2, py = me.fy * T + T / 2;
     var cx, cy;
@@ -1353,8 +1366,10 @@
     var mid = cells[Math.floor(cells.length / 2)], ms = markSize('dest'), sa = safeArea(), iconSize = 16 * markScale();
     var cx = (x0 + x1) / 2 * T - cam.x, cy = (y0 + y1) / 2 * T - cam.y;
     var mx = cx, my = (ex.dir === 'up' ? y0 * T - cam.y - ms.h / 2 - 2 : cy) + markBob(t, 0), tx0 = mx, ty0 = my;
-    mx = Math.max(sa.left + iconSize / 2, Math.min(sa.right - iconSize / 2, mx));
-    my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - iconSize / 2, my));
+    // 2026-11-09 지시서 C4: 화면 끝에 붙은 핀이 반쯤 잘려 보였다 → 끝에서 안쪽으로 당겨 그린다(옆 방향 화살표 T×0.45+6까지 화면 안, 여백 8px)
+    var pad = Math.max(iconSize / 2, T * 0.45 + 6) + 8;
+    mx = Math.max(sa.left + pad, Math.min(sa.right - pad, mx));
+    my = Math.max(sa.top + pad, Math.min(sa.bottom - pad, my));
     var jr = joy.rest && !$('joy').hidden ? joy.rest : null; // 조이스틱 받침(기본 자리)에 걸리면 그 위로
     if (jr && mx + ms.w / 2 > jr.x0 && mx - ms.w / 2 < jr.x1 && my + ms.h / 2 > jr.y0 && my - ms.h / 2 < jr.y1) my = jr.y0 - ms.h / 2 - 4;
     var off = Math.abs(mx - tx0) > 2 || Math.abs(my - ty0) > 2;
@@ -1453,6 +1468,9 @@
     var TL = Math.max(8, Math.round(T * 0.22)), top = Math.max(8, safeArea().top), feetY = who.y * T - cam.y + T * 0.98;
     if (cx < 0 || cx > viewW || feetY < 0 || by > viewH) return; // 말한 사람이 화면 밖이면 그리지 않는다(화면 안 말풍선 꼬리가 밖으로 길게 뻗어 누가 말했는지 안 보였다, 390px)
     var x = Math.max(8, Math.min(viewW - w - 8, cx - w / 2)), y = by - TL - h, flip = false;
+    // 장면 무대: 말한 사람이 보이는 지도 영역(폰·모니터·선택 상자 밖)에 있으면 말풍선도 그 안으로(모니터 옆 친구 말풍선이 모니터 밑에 반쯤 가렸다, 2026-11-09)
+    var fv = mode === 'stage' && lastView && lastView.free;
+    if (fv && cx >= fv.x0 && cx <= fv.x1 && fv.x1 - fv.x0 >= w + 16) x = Math.max(fv.x0 + 8, Math.min(fv.x1 - w - 8, x));
     var spk = bubble.who === 'me' ? 'me' : bubble.who.who;
     function over(a, yy) { return x < a.x + a.w && a.x < x + w && yy < a.y + a.h + 2 && a.y - 2 < yy + h; }
     function tagAt(yy) { return lastTags.concat(lastBubbles).filter(function (r) { return over(r, yy); })[0]; } // 이름표·먼저 그린 말풍선

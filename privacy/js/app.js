@@ -28,7 +28,8 @@
   var player = S.readPlayer('');
   player.storedNick = player.source === 'stored' ? player.nickname : '';
   var progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };
-  var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false, nickname: '', joystick: true }; // joystick: 터치 기기 가상 조이스틱 표시(2026-11-02)
+  var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false, nickname: '', joystick: true, helpPlaces: [], helpFold: false }; // joystick: 터치 기기 가상 조이스틱 표시(2026-11-02)
+  // helpPlaces·helpFold(2026-11-09 지시서 C5): 조작 안내를 본 장소(장면 그림 id, 최대 3개)·접었는지 — 세 번째 장소에 들어서면 접고, 메뉴 '조작 안내 다시 보기'로 다시
   var NAME_MAX = 10;
   // 이 게임에서만 쓰는 이름(공통 플레이어 정보가 없을 때). 제어 문자·앞뒤 공백을 빼고 10자까지
   // 주인공 이름(고른 모습 m = 온유, f = 다온) · 실제 별명(공통 정보 > 이 게임에서 적은 이름) · 화면에 쓸 이름(별명 없으면 주인공 이름)
@@ -89,6 +90,8 @@
       if (st.look === 'm' || st.look === 'f') settings.look = st.look;
       settings.nickname = cleanName(st.nickname);
       settings.joystick = st.joystick !== false;
+      settings.helpPlaces = Array.isArray(st.helpPlaces) ? st.helpPlaces.filter(function (x) { return typeof x === 'string'; }).slice(0, 3) : [];
+      settings.helpFold = st.helpFold === true;
     } else if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       settings.reduceMotion = true;
     }
@@ -101,6 +104,14 @@
     checkWriteFailure();
   }
   function saveSettings() { S.writeJSON(S.KEYS.settings, settings); checkWriteFailure(); }
+  // 2026-11-09 지시서 C5: 긴 조작 안내(.map-help)는 처음 두 장소에서만. 세 번째 장소에 들어서면 접는다
+  function applyHelp() { $('v-map').classList.toggle('help-folded', settings.helpFold); }
+  function onPlace(id) {
+    if (settings.helpFold || settings.helpPlaces.indexOf(id) >= 0) return;
+    settings.helpPlaces.push(id);
+    if (settings.helpPlaces.length > 2) settings.helpFold = true;
+    applyHelp(); saveSettings();
+  }
   var warnedWrite = false;
   function checkWriteFailure() {
     if (S.status.writeFailed && S.status.available && !warnedWrite) {
@@ -456,6 +467,18 @@
   function nextBox() { var d = progress.run ? deviceOf(progress.run.scene) : 'none'; return d === 'phone' || d === 'monitor' ? $('g-next') : $('g-dock'); }
   function clearNext() { $('g-next').textContent = ''; $('v-game').classList.remove('has-next'); }
   function syncNext() { $('v-game').classList.toggle('has-next', $('g-next').children.length > 0); }
+  // 2026-11-09 지시서 C2: 공용 PC·AI 도우미·컴퓨터로 보는 SNS(모니터)는 세로 폰처럼 보이지 않게 브라우저 줄을 단다.
+  //   사이트 이름 = view.site || 아래 기본값(SNS는 장면 제목), 로그인 표시 = view.login(공용 PC에 남은 하늘이 계정). 같은 내용이 머리글·설정 카드에 있어 화면 읽기에서는 뺀다
+  var PC_SITE = { pc: '스냅로그', ai: 'AI 도우미 루미' };
+  function pcBar(v) {
+    var bar = el('div', 'pc-bar'), dots = el('span', 'pc-dots');
+    bar.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < 3; i++) dots.appendChild(el('i'));
+    bar.appendChild(dots);
+    bar.appendChild(el('span', 'pc-url', '🔒 ' + plain(fill(v.site || PC_SITE[v.type] || (typeof v.title === 'string' ? v.title : '')))));
+    if (v.login) bar.appendChild(el('span', 'pc-login', v.login + ' 로그인됨'));
+    return bar;
+  }
   function deviceOf(sceneId) {
     var st = WD.STAGES[sceneId], v = story.scenes[sceneId].view || { type: 'place' };
     return (st && st.device) || DEVICE[v.type] || 'phone';
@@ -591,6 +614,7 @@
     var head = $('g-head');
     head.textContent = '';
     var v = scene.view || { type: 'place', title: '' };
+    if (device === 'monitor') head.appendChild(pcBar(v)); // 2026-11-09 지시서 C2: 모니터 = 머리글 위 브라우저 줄(사이트·로그인)
     $('g-phone').setAttribute('data-type', v.type);
     var ic = el('span', 'head-icon', VIEW_ICON[v.type] || '');
     ic.setAttribute('aria-hidden', 'true');
@@ -1150,6 +1174,7 @@
     $('opt-sound').addEventListener('change', function () { settings.sound = $('opt-sound').checked; settings.soundSet = true; saveSettings(); if (settings.sound) sfx('msg', true); }); // 켜면 알림음 미리듣기
     $('opt-joystick').addEventListener('change', function () { settings.joystick = $('opt-joystick').checked; saveSettings(); window.PrivacyMap.setJoystick(); });
     $('btn-menu-home').addEventListener('click', function () { $('menu').hidden = true; renderStart(); });
+    $('btn-menu-help').addEventListener('click', function () { settings.helpFold = false; settings.helpPlaces = []; applyHelp(); saveSettings(); closeOverlay('menu'); }); // 다시 두 장소 동안 보임
     $('btn-menu-restart').addEventListener('click', function () {
       $('menu').hidden = true;
       ask('처음부터 다시 할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', startNew);
@@ -1195,6 +1220,7 @@
   cgSetup();
   loadAll();
   applySettings();
+  applyHelp();
   bind();
   window.PrivacyMap.init({
     story: story,
@@ -1205,6 +1231,7 @@
     instant: function () { return settings.speed === 'instant'; },
     reduceMotion: function () { return settings.reduceMotion; },
     joystick: function () { return settings.joystick; },
+    onPlace: onPlace,
     loadPos: function () { return progress.pos; },
     savePos: function (p) { progress.pos = p; clearTimeout(posTimer); posTimer = setTimeout(saveProgress, 400); },
     onEnter: function () { clearTimeout(posTimer); setRun(E.advance(story, progress.run)); routeRun(true); }

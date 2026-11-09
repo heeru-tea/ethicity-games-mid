@@ -92,6 +92,24 @@ async function toEnding(p) {
   await p.waitForTimeout(300);
 }
 
+// C1 정적 검사(지시서 2026-11-09): 개인톡(dm) 상대, '(개인톡)' 줄·휴대폰 알림(push)을 보낸 사람은 그 장면 무대(STAGES cast)에 없다. 무대 bubbles는 무대에 선 사람만
+if (ONLY.includes('C')) {
+  const byName = {}; for (const [id, c] of Object.entries(story.characters)) byName[c.name] = id;
+  const bad = [];
+  for (const [id, sc] of Object.entries(story.scenes)) {
+    const v = sc.view || {}, st = WORLD.STAGES[id]; if (!st) continue;
+    const cast = (st.cast || []).map((c) => c.who);
+    if (v.type === 'dm' && typeof v.title === 'string' && cast.includes(byName[v.title])) bad.push(id + ' 개인톡 상대 ' + v.title);
+    for (const l of (sc.lines || []).concat(...(sc.choices || []).map((c) => c.react || []))) {
+      if (l && typeof l === 'object' && l.kind === 'push' && cast.includes(l.who)) bad.push(id + ' 알림 ' + l.who);
+      if (typeof l === 'string' && /^\w+: \(개인톡\)/.test(l) && cast.includes(l.split(':')[0])) bad.push(id + ' (개인톡) ' + l.split(':')[0]);
+    }
+    for (const b of st.bubbles || []) if (!cast.includes(b.who)) bad.push(id + ' 무대에 없는 사람 말풍선 ' + b.who);
+  }
+  table.push(['(정적)', 'C1 개인톡을 보내는 사람이 같은 무대에 서 있지 않음', bad.length ? '실패' : '통과', bad.join(', ')]);
+  ok(bad.length === 0, 'C1 ' + bad.join(', '));
+}
+
 try {
   for (const key of (process.env.SIZE || 'w,d,m').split(',')) {
     const { name: size, dev } = SIZES[key];
@@ -215,6 +233,120 @@ try {
         const s2 = await q3.evaluate(() => ({ next: (document.querySelector('#g-next button') || {}).textContent || null, choices: document.querySelectorAll('#g-dock .choice').length, scene: PrivacyApp.state().scene }));
         rec(size, 'B3 반응 뒤 "다음" → 글자 나오는 중 "모두 보기"(둘 다 폰 아래) → 선택지', s0 === '다음' && s1 === '모두 보기' && (s2.choices > 0 || s2.next === '다음'), JSON.stringify({ s0, s1, s2 }));
         await close(q3);
+      }
+    }
+    /* ── Phase C: 연출·레이아웃(개인톡 상대·공용 PC 틀·카메라 빈 칸·휴대폰·데스크톱 정리) ── */
+    if (ONLY.includes('C')) {
+      const sceneRun = (id) => ({ v: 1, run: makeRunScene(id), explored: {}, endingsSeen: [] });
+      // 장면 무대가 다 뜰 때까지(컷 카드·글자)
+      const ready = async (p) => { for (let k = 0; k < 60; k++) { const r = await p.evaluate(() => document.body.getAttribute('data-view') === 'v-game' && !PrivacyApp.staging() && !!(document.querySelector('#g-dock .choice') || document.querySelector('#g-next button') || (window.PrivacyTalk && PrivacyTalk.isOpen()))); if (r) break; await p.waitForTimeout(150); } await p.waitForTimeout(400); };
+      // 캔버스에서 장면 그림 밖(흐린 배경)이 가림 상자(폰·모니터·선택 상자·넘기기 줄·대화창) 밖으로 보이는 점의 수(8px 격자).
+      //   휴대폰 배치(무대 ≤ 720px)는 폰 위쪽 끝부터 아래가 시트 판(#v-game::before)으로 덮인다.
+      //   왼쪽은 폰·모니터 열(창 오른쪽 끝까지) 안이면 셈에서 뺀다 — 줄여 그린 내 방은 침대가 장면 왼쪽 끝이라 그쪽(창 뒤·위 여백)만 장면 밖을 허용(leftOpen = 그 밖의 왼쪽 빈 점)
+      const blank = (p) => p.evaluate(() => {
+        const cv = document.getElementById('m-canvas').getBoundingClientRect(), v = PrivacyMap.debug.view();
+        const occ = ['#g-phone', '#g-dock', '#g-next', '#talk'].map((q) => document.querySelector(q)).filter((e) => e && !e.hidden && e.getClientRects().length).map((e) => e.getBoundingClientRect()).filter((b) => b.width > 8 && b.height > 8);
+        const ph = document.getElementById('g-phone'), pr = !ph.hidden && ph.getClientRects().length ? ph.getBoundingClientRect() : null;
+        if (pr && cv.width <= 720) occ.push({ left: cv.left, right: cv.right, top: pr.top - 4, bottom: cv.bottom });
+        const s = v.scene, out = { left: 0, right: 0, top: 0, bottom: 0 };
+        let leftOpen = 0;
+        for (let y = 2; y < cv.height - 1; y += 8) for (let x = 2; x < cv.width - 1; x += 8) {
+          if (x >= s.x0 && x <= s.x1 && y >= s.y0 && y <= s.y1) continue;
+          if (occ.some((b) => x + cv.left >= b.left && x + cv.left <= b.right && y + cv.top >= b.top && y + cv.top <= b.bottom)) continue;
+          const side = x < s.x0 ? 'left' : x > s.x1 ? 'right' : y < s.y0 ? 'top' : 'bottom';
+          out[side]++;
+          if (side === 'left' && !(pr && x + cv.left <= pr.right + 2)) leftOpen++;
+        }
+        return { out, leftOpen, ok: !out.right && !out.top && !out.bottom && !leftOpen, scene: { x0: Math.round(s.x0), y0: Math.round(s.y0), x1: Math.round(s.x1), y1: Math.round(s.y1) }, cv: [Math.round(cv.width), Math.round(cv.height)] };
+      });
+      // C2 공용 PC 3번 = 모니터 틀(브라우저 줄 + 로그인 표시), 넓은 화면에서는 가로(16:10)
+      {
+        const p = await open(dev, { progress: sceneRun('c2_e6_a') });
+        await p.click('#btn-continue'); await ready(p);
+        const r = await p.evaluate(() => { const g = document.getElementById('g-phone'), b = g.getBoundingClientRect(), bar = g.querySelector('.pc-bar'); return { dev: g.getAttribute('data-device'), w: Math.round(b.width), h: Math.round(b.height), bar: bar && bar.textContent }; });
+        rec(size, 'C2 공용 PC = 모니터 틀(브라우저 줄·@haneul_sky 로그인됨' + (key === 'm' ? ')' : '·가로)'), r.dev === 'monitor' && /스냅로그/.test(r.bar || '') && /@haneul_sky 로그인됨/.test(r.bar || '') && (key === 'm' || r.w / r.h >= 1.3), JSON.stringify(r));
+        const b = await blank(p);
+        rec(size, 'C3 공용 PC 장면 빈 칸 없음', b.ok && b.out.left === 0, JSON.stringify(b));
+        // 모니터 장면: 주인공(공용 PC 앞)이 모니터·선택 상자에 가리지 않음
+        const me = await p.evaluate(() => { const bd = PrivacyMap.debug.bodies().find((q) => q.who === 'me'), cv = document.getElementById('m-canvas').getBoundingClientRect();
+          const hit = ['#g-phone', '#g-dock', '#g-next'].map((q) => document.querySelector(q)).filter((e) => e && !e.hidden && e.getClientRects().length).map((e) => e.getBoundingClientRect()).some((r) => bd && (bd.x0 + bd.x1) / 2 + cv.left > r.left && (bd.x0 + bd.x1) / 2 + cv.left < r.right && (bd.y0 + bd.y1) / 2 + cv.top > r.top && (bd.y0 + bd.y1) / 2 + cv.top < r.bottom);
+          return { bd, hit }; });
+        if (key !== 'm') rec(size, 'C2 공용 PC 장면 주인공이 모니터·선택 상자에 안 가려짐', !!me.bd && !me.hit, JSON.stringify(me));
+        ok(p.errors.length === 0, 'C2 오류 ' + p.errors);
+        await p.screenshot({ path: shot(`C-pc-${size}`) });
+        await close(p);
+      }
+      // C3 카메라 빈 칸: 밤 내 방(재료비 공지 c1_e1_b)·AI 도우미(c2_e5_a)·내 방 컴퓨터(c3_e8_a)
+      for (const id of ['c1_e1_b', 'c2_e5_a', 'c3_e8_a']) {
+        const p = await open(dev, { progress: sceneRun(id) });
+        await p.click('#btn-continue'); await ready(p);
+        const b = await blank(p);
+        rec(size, `C3 ${id} 창이 떠 있는 동안 장면 밖 빈 칸 없음(오른쪽·위·아래 0, 왼쪽은 창 뒤만)`, b.ok, JSON.stringify(b));
+        if (id === 'c1_e1_b' && key === 'm') { // C4 단톡방 창에 메시지 4개 이상
+          const n = await p.evaluate(() => { const g = document.getElementById('g-phone'), gb = g.getBoundingClientRect(), hb = document.getElementById('g-head').getBoundingClientRect();
+            return [...document.querySelectorAll('#g-log > li')].filter((li) => { const r = li.getBoundingClientRect(); return r.height > 0 && r.top >= hb.bottom - 1 && r.bottom <= gb.bottom + 1; }).length; });
+          rec(size, 'C4 단톡방 창에 메시지 4개 이상(선택지가 떠 있을 때)', n >= 4, String(n));
+        }
+        await p.screenshot({ path: shot(`C-${id}-${size}`) });
+        await close(p);
+      }
+      // C1 개인톡 장면: 상대가 무대에 없다(새봄 개인톡 c1_e3_b — 교문 앞)
+      {
+        const p = await open(dev, { progress: sceneRun('c1_e3_b') });
+        await p.click('#btn-continue'); await ready(p);
+        const r = await p.evaluate(() => ({ cast: PrivacyMap.debug.stage().cast, head: document.getElementById('g-head').textContent }));
+        rec(size, 'C1 새봄 개인톡 무대에 새봄 없음', /새봄/.test(r.head) && !r.cast.includes('saebom'), JSON.stringify(r));
+        await p.screenshot({ path: shot(`C-dm-${size}`) });
+        await close(p);
+      }
+      // C4 말풍선은 위 버튼(프롤로그·이전 선택·메뉴) 아래에만: 매점 앞 하늘(c2_e4_a, 대화창 장면)·첫 단톡방(pro_1)
+      for (const id of ['c2_e4_a', 'pro_1']) {
+        const p = await open(dev, { progress: sceneRun(id), settings: { speed: 'normal', reduceMotion: true, look: 'f' } });
+        await p.click('#btn-continue');
+        const seen = [];
+        for (let k = 0; k < 40; k++) {
+          await p.waitForTimeout(250);
+          const r = await p.evaluate(() => { const cv = document.getElementById('m-canvas').getBoundingClientRect(); const top = Math.max(...['.hud-left', '.hud .bar-actions'].map((q) => document.querySelector(q)).filter((e) => e && e.getClientRects().length).map((e) => e.getBoundingClientRect().bottom - cv.top));
+            return { top: Math.round(top), b: PrivacyMap.debug.bubbleRects().map((q) => ({ who: q.who, y: Math.round(q.y), t: q.text })) }; });
+          r.b.forEach((q) => { if (!seen.some((s) => s.t === q.t && s.who === q.who)) seen.push({ ...q, top: r.top }); });
+          const more = await p.evaluate(() => { if (window.PrivacyTalk && PrivacyTalk.isOpen()) { PrivacyTalk.next(); return true; } return !!document.querySelector('#g-next .skip-btn'); });
+          if (!more && seen.length) break;
+        }
+        const bad = seen.filter((q) => q.y < q.top);
+        rec(size, `C4 ${id} 말풍선이 위 버튼 영역 아래`, seen.length > 0 && bad.length === 0, JSON.stringify(bad.length ? bad : seen.slice(0, 3)));
+        await p.screenshot({ path: shot(`C-bubble-${id}-${size}`) });
+        await close(p);
+      }
+      // C4 첫 방(우리 집) 목적지 핀이 화면 안(잘리지 않음) · C5 조작 안내 접기 · 말 걸기 버튼 활성
+      {
+        const p = await open(dev, { player: null, settings: { speed: 'instant', reduceMotion: true, look: 'm', nickname: '' } });
+        await p.click('#btn-new'); await p.waitForTimeout(200);
+        await p.evaluate(() => { const b = document.getElementById('btn-warning-ok'); if (b && !document.getElementById('warning').hidden) b.click(); });
+        await p.waitForTimeout(900);
+        const pin = await p.evaluate(() => { const cv = document.getElementById('m-canvas').getBoundingClientRect(), m = PrivacyMap.debug.marker(); return { m, W: Math.round(cv.width), H: Math.round(cv.height) }; });
+        const m = pin.m || {};
+        rec(size, 'C4 첫 방 목적지 핀이 화면 끝에서 8px 이상 안쪽(잘리지 않음)', m.x != null && m.x - m.w / 2 >= 8 && m.x + m.w / 2 <= pin.W - 8 && m.y - m.h / 2 >= 8 && m.y + m.h / 2 <= pin.H - 8, JSON.stringify(pin));
+        await p.screenshot({ path: shot(`C-exitpin-${size}`) });
+        if (key !== 'm') {
+          const helpOn = () => p.evaluate(() => getComputedStyle(document.querySelector('#v-map .map-help')).display !== 'none');
+          const act = () => p.evaluate(() => document.getElementById('btn-map-act').getAttribute('aria-disabled'));
+          const h1 = await helpOn();
+          const W = await p.evaluate(() => Object.fromEntries(PRIVACY_WORLD.SCENES.map((s) => [s.id, s.ox])));
+          await p.evaluate((ox) => PrivacyMap.debug.place(ox + 12, 10, 'right'), W.village); await p.waitForTimeout(300);
+          const h2 = await helpOn();
+          await p.evaluate((ox) => PrivacyMap.debug.place(ox + 15, 15, 'up'), W.yard); await p.waitForTimeout(300);
+          const h3 = await helpOn();
+          rec(size, 'C5 조작 안내: 첫 두 장소(집·마을 길)에서만 보이고 세 번째(학교 마당)에서 접힘', h1 && h2 && !h3, JSON.stringify([h1, h2, h3]));
+          await p.screenshot({ path: shot(`C-helpfold-${size}`) });
+          await p.click('#btn-menu'); await p.waitForTimeout(200); await p.click('#btn-menu-help'); await p.waitForTimeout(200);
+          rec(size, 'C5 메뉴 "조작 안내 다시 보기" → 다시 보임', await helpOn());
+          const far = await act();
+          await p.evaluate((ox) => PrivacyMap.debug.place(ox + 12, 9, 'up'), W.classroom); await p.waitForTimeout(400); // 새봄(12,8) 바로 아래
+          const near = await act();
+          rec(size, 'C5 말 걸기 버튼: 대상이 없으면 흐림(aria-disabled) · 가까이 있으면 활성', far === 'true' && near === null, JSON.stringify([far, near]));
+        }
+        ok(p.errors.length === 0, 'C 걷기 오류 ' + p.errors);
+        await close(p);
       }
     }
   }

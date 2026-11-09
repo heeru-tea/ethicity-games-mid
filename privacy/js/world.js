@@ -335,13 +335,12 @@
     c1_e2_b: { place: 'room', tint: 'night', card: '그날 밤 · 내 방', cast: [] },
     c1_e2_d: { place: 'road', tint: 'day', card: 'D-2 아침 · 등굣길', cast: [] },
     c1_e3_a: { place: 'room', tint: 'night', me: BED_ME, cast: [] }, // 2026-11-03 플레이테스트: 이 걷기도 침대 조사로 열린다
-    c1_e3_b: { place: 'gate', tint: 'day', card: 'D-1 아침 · 교문 앞', cast: [who('saebom', 'yard', 16, 14, 'left')] },
-    c1_e3_ask: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'jiho']),
-      bubbles: [{ on: '고마워. 내가 정한 만큼만', who: 'jiho', text: '🙂' }] },
-    c1_e3_anon: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'jiho', 'haneul']),
-      bubbles: [{ on: '역할 바꿨어', who: 'jiho', text: '😌' }] },
-    c1_e3_cap: { place: 'classroom', tint: 'day', card: 'D-1 점심 · 교실', cast: only(classmates, ['saebom', 'jiho', 'haneul']),
-      bubbles: [{ on: '…화나. 아무한테도', who: 'jiho', text: '💢' }] },
+    // 2026-11-09 지시서 C1: 개인톡을 보내는 사람은 그 무대에 세우지 않는다(바로 옆에 서서 개인톡을 보내는 것처럼 보였다). 대사는 그대로.
+    //   단톡방(group)은 같은 교실에서 함께 봐도 자연스러워 그대로 둔다. 검사 = tests/fix-1109.mjs C1(정적 검사)
+    c1_e3_b: { place: 'gate', tint: 'day', card: 'D-1 아침 · 교문 앞', cast: [] }, // 새봄 개인톡(옛: 새봄이 바로 옆)
+    c1_e3_ask: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom']) }, // 지호 개인톡
+    c1_e3_anon: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'haneul']) }, // 지호 '(개인톡)' 줄
+    c1_e3_cap: { place: 'classroom', tint: 'day', card: 'D-1 점심 · 교실', cast: [] }, // 하늘 개인톡 + 반응에서 새봄·하늘·지호 모두 메시지
     c2_e4_a: { place: 'store', tint: 'evening', cast: [who('haneul', 'yard', 22, 14, 'left')],
       bubbles: [{ on: '누가 만든 거래', who: 'haneul', text: '이거 봐 ㅋㅋ' }, { on: '나 보낸 거 지울게', who: 'haneul', text: '…' }] },
     c2_e4_b: { place: 'road', tint: 'evening', card: '그날 저녁 · 집에 가는 길', cast: [] },
@@ -363,7 +362,7 @@
     c3_e8_e: { place: 'room', tint: 'night', card: '그날 밤 · 내 방', cast: [] },
     c3_e8_f: { place: 'classroom', tint: 'day', card: '축제 다음 날 · 아침', cast: classmates },
     c3_e8_g: { place: 'classroom', tint: 'day', cast: classmates },
-    c3_e8_i: { place: 'classroom', tint: 'day', cast: classmates },
+    c3_e8_i: { place: 'classroom', tint: 'day', cast: only(classmates, ['saebom', 'haneul', 'jiho']) }, // 민준 개인톡(C1)
     c3_e8_h: { place: 'classroom', tint: 'day', card: '상담실', cast: [] },
     c3_e9_a: { place: 'classroom', tint: 'day', cast: classmates,
       bubbles: [{ on: '다들 퍼 가 주세요', who: 'jiho', text: '…!' }, { on: '당하고만 있으면 안 돼', who: 'saebom', text: '😤' }] },
