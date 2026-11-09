@@ -75,7 +75,7 @@ test('recommendation never worsens the goal score', () => {
   for (const goal of ['profit', 'time', 'reach']) {
     const rec = A.recommendSync(r, goal);
     const t = A.targets(r);
-    const s0 = A.score(goal, rec.baseline, rec._baseSim, t), s1 = A.score(goal, rec.expected, rec._sim, t);
+    const s0 = A.score(goal, rec.baseline, rec._baseSim, t, r.plan), s1 = A.score(goal, rec.expected, rec._sim, t, rec.plan);
     assert.ok(A.compare(s1, s0) >= 0, goal);
   }
 });
