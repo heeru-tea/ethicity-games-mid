@@ -4,7 +4,7 @@
    "tag": "desktop",
    "viewport": "1366x768",
    "judgments": 20,
-   "clicks": 133,
+   "clicks": 135,
    "reportRight": 20,
    "reportAgain": 0,
    "reportNotWritten": 6,
@@ -21,13 +21,13 @@
      "first": "release",
      "final": "release"
     },
-    "library": {
-     "first": "report",
-     "final": "report"
+    "camp": {
+     "first": "accurate",
+     "final": "accurate"
     },
-    "recommend": {
-     "first": "ask",
-     "final": "ask"
+    "share": {
+     "first": "explain",
+     "final": "explain"
     }
    },
    "judgmentsPicked": {
@@ -46,20 +46,20 @@
      "confirmed",
      "unknown"
     ],
-    "library": [
+    "camp": [
+     "unknown",
+     "different",
+     "confirmed"
+    ],
+    "share": [
      "different",
      "confirmed",
      "unknown"
-    ],
-    "recommend": [
-     "different",
-     "unknown",
-     "confirmed"
     ]
    },
    "asked": [
-    "notice",
-    "criteria"
+    "appeal",
+    "who"
    ],
    "completed": true,
    "errors": 0,
@@ -69,7 +69,7 @@
    "tag": "phone",
    "viewport": "390x844",
    "judgments": 20,
-   "clicks": 161,
+   "clicks": 165,
    "reportRight": 6,
    "reportAgain": 14,
    "reportNotWritten": 11,
@@ -86,13 +86,13 @@
      "first": "maintain",
      "final": "maintain"
     },
-    "library": {
-     "first": "trust",
-     "final": "trust"
+    "camp": {
+     "first": "loud",
+     "final": "loud"
     },
-    "recommend": {
-     "first": "join",
-     "final": "join"
+    "share": {
+     "first": "keep",
+     "final": "keep"
     }
    },
    "judgmentsPicked": {
@@ -111,20 +111,20 @@
      "confirmed",
      "confirmed"
     ],
-    "library": [
+    "camp": [
      "confirmed",
      "confirmed",
      "confirmed"
     ],
-    "recommend": [
+    "share": [
      "confirmed",
      "confirmed",
      "confirmed"
     ]
    },
    "asked": [
-    "notice",
-    "criteria"
+    "appeal",
+    "who"
    ],
    "completed": true,
    "errors": 0,
@@ -133,10 +133,10 @@
  ],
  "checks": [
   {
-   "phoneNotice": "before posting / after: photo 844/1283px, writing 844/1345px, face 875/1522px, library 844/1307px, recommend 864/1348px (viewport 844)"
+   "phoneNotice": "before posting / after: photo 844/1283px, writing 844/1345px, face 875/1522px, camp 844/1419px, share 844/1261px (viewport 844)"
   },
   {
-   "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 5)"
+   "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 6)"
   },
   {
    "resetReporter": "reset dialog checkbox 이름과 학번도 지우기 checked by default → erased; unchecked → name/number kept, progress cleared, survives reload"
@@ -154,7 +154,10 @@
    "v3Migration": "version 3 save at face reflect: notices legacy, not blocked, notebook 미리 알리기 해 보기 ×3 → writing notice → post → reload keeps → notebook updated; v3 report save resumes at case 4 hook with legacy notices"
   },
   {
-   "v4Migration": "version 4 completed report save → case 4 hook (resume notice), cases 1~3 kept; play case 4 (off) and case 5 (old question pressed, skip) → ending → report with 5 cases"
+   "v4Migration": "version 4 completed save → new case 4 hook (resume notice, old question dropped), cases 1~3 kept; play case 4 (quiet) and case 5 (tag) → ending → report with 5 cases"
+  },
+  {
+   "v5Migration": "version 5 completed save → new case 4 hook (resume notice, old question dropped), cases 1~3 kept; play case 4 (quiet) and case 5 (tag) → ending → report with 5 cases"
   },
   {
    "noticeLayout": "desktop1280: page 1223px / viewport 800px, first card top 400, post button bottom 958, next bottom 1126 (feedback shown)"
@@ -169,7 +172,7 @@
    "printPdf": "all 200+ chars, longest notices: 4 pages (A4, 15mm)"
   },
   {
-   "reportEdit": "desktop1280: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-08 restored on afterprint"
+   "reportEdit": "desktop1280: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-10 restored on afterprint"
   },
   {
    "noticeLayout": "phone: page 1579px / viewport 844px, first card top 388, post button bottom 1107, next bottom 1276 (feedback shown)"
@@ -178,7 +181,7 @@
    "noticeLayoutStart": "phone: before posting page 932px / viewport 844px, post button bottom 761"
   },
   {
-   "reportEdit": "phone: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-08 restored on afterprint"
+   "reportEdit": "phone: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-10 restored on afterprint"
   },
   {
    "feedback2": "1366px: name tags + alt, portraits, 자료 header, scrollY 22→22 after third region"
@@ -187,7 +190,7 @@
    "feedback2": "390px: name tags + alt, portraits, 자료 header, scrollY 145→145 after third region"
   },
   {
-   "newArt": "missing → fallback pictures (corridor, repair shop, old poses); .webp preferred over .png; on disk now: assets/s04/bg-school-library.webp, assets/s04/dami-books.webp, assets/s05/bg-observatory-hill.webp, assets/s05/moa-phone.webp, assets/s05/lulu-casual.webp"
+   "newArt": "missing → fallback pictures (corridor, repair shop, old poses); .webp preferred over .png; on disk now: assets/s05/bg-observatory-hill.webp, assets/s05/moa-phone.webp, assets/s05/lulu-casual.webp"
   },
   {
    "storageBlocked": "playable in current window with notice"
@@ -570,129 +573,8 @@
   },
   {
    "viewport": "1366x768",
-   "screen": "library-hook",
-   "chars": 134,
-   "buttons": 2,
-   "overflow": false,
-   "pageHeight": 768,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-check-start",
-   "chars": 116,
-   "buttons": 4,
-   "overflow": false,
-   "pageHeight": 768,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-check-records",
-   "chars": 343,
-   "buttons": 9,
-   "overflow": false,
-   "pageHeight": 908,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-check-done",
-   "chars": 366,
-   "buttons": 6,
-   "overflow": false,
-   "pageHeight": 939,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-choose",
-   "chars": 99,
-   "buttons": 4,
-   "overflow": false,
-   "pageHeight": 768,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-result",
-   "chars": 163,
-   "buttons": 2,
-   "overflow": false,
-   "pageHeight": 768,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-follow-start",
-   "chars": 281,
-   "buttons": 4,
-   "overflow": false,
-   "pageHeight": 768,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-follow-done",
-   "chars": 460,
-   "buttons": 2,
-   "overflow": false,
-   "pageHeight": 952,
-   "questionInView": true,
-   "firstActionInView": false,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-notice-start",
-   "chars": 283,
-   "buttons": 6,
-   "overflow": false,
-   "pageHeight": 774,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-notice-done",
-   "chars": 529,
-   "buttons": 8,
-   "overflow": false,
-   "pageHeight": 1048,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "library-reflect",
-   "chars": 341,
-   "buttons": 2,
-   "overflow": false,
-   "pageHeight": 858,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "1366x768",
-   "screen": "recommend-hook",
-   "chars": 221,
+   "screen": "camp-hook",
+   "chars": 259,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 927,
@@ -702,8 +584,8 @@
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-check-start",
-   "chars": 84,
+   "screen": "camp-check-start",
+   "chars": 127,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 768,
@@ -713,30 +595,30 @@
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-check-records",
-   "chars": 222,
-   "buttons": 13,
+   "screen": "camp-check-records",
+   "chars": 322,
+   "buttons": 9,
    "overflow": false,
-   "pageHeight": 817,
+   "pageHeight": 908,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-check-done",
-   "chars": 224,
+   "screen": "camp-check-done",
+   "chars": 346,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 781,
+   "pageHeight": 915,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-choose",
-   "chars": 92,
+   "screen": "camp-choose",
+   "chars": 136,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 768,
@@ -746,8 +628,8 @@
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-result",
-   "chars": 116,
+   "screen": "camp-result",
+   "chars": 165,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 768,
@@ -757,8 +639,74 @@
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-follow-start",
-   "chars": 128,
+   "screen": "camp-follow-start",
+   "chars": 229,
+   "buttons": 5,
+   "overflow": false,
+   "pageHeight": 768,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "camp-follow-done",
+   "chars": 393,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 952,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "camp-notice-start",
+   "chars": 305,
+   "buttons": 7,
+   "overflow": false,
+   "pageHeight": 824,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "camp-notice-done",
+   "chars": 587,
+   "buttons": 9,
+   "overflow": false,
+   "pageHeight": 1105,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "camp-reflect",
+   "chars": 375,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 888,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "share-hook",
+   "chars": 161,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 768,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "share-check-start",
+   "chars": 119,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 768,
@@ -768,41 +716,96 @@
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-follow-done",
-   "chars": 299,
+   "screen": "share-check-records",
+   "chars": 260,
+   "buttons": 11,
+   "overflow": false,
+   "pageHeight": 817,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "share-check-done",
+   "chars": 256,
+   "buttons": 8,
+   "overflow": false,
+   "pageHeight": 834,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "share-choose",
+   "chars": 122,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 768,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "share-result",
+   "chars": 176,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 768,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "share-follow-start",
+   "chars": 118,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 768,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1366x768",
+   "screen": "share-follow-done",
+   "chars": 393,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 875,
+   "pageHeight": 905,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-notice-start",
-   "chars": 298,
+   "screen": "share-notice-start",
+   "chars": 299,
    "buttons": 7,
    "overflow": false,
-   "pageHeight": 821,
+   "pageHeight": 768,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-notice-done",
-   "chars": 408,
+   "screen": "share-notice-done",
+   "chars": 435,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 1049,
+   "pageHeight": 1009,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "1366x768",
-   "screen": "recommend-reflect",
-   "chars": 321,
+   "screen": "share-reflect",
+   "chars": 357,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 858,
@@ -813,10 +816,10 @@
   {
    "viewport": "1366x768",
    "screen": "end",
-   "chars": 200,
+   "chars": 195,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 900,
+   "pageHeight": 869,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -824,10 +827,10 @@
   {
    "viewport": "1366x768",
    "screen": "end-done",
-   "chars": 180,
+   "chars": 175,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 873,
+   "pageHeight": 841,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -835,7 +838,7 @@
   {
    "viewport": "1366x768",
    "screen": "report",
-   "chars": 2533,
+   "chars": 2629,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 6502,
@@ -1219,19 +1222,19 @@
   },
   {
    "viewport": "390x844",
-   "screen": "library-hook",
-   "chars": 134,
-   "buttons": 2,
+   "screen": "camp-hook",
+   "chars": 259,
+   "buttons": 6,
    "overflow": false,
-   "pageHeight": 844,
+   "pageHeight": 1308,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
-   "screen": "library-check-start",
-   "chars": 116,
+   "screen": "camp-check-start",
+   "chars": 127,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 844,
@@ -1241,30 +1244,30 @@
   },
   {
    "viewport": "390x844",
-   "screen": "library-check-records",
-   "chars": 343,
+   "screen": "camp-check-records",
+   "chars": 322,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 1401,
+   "pageHeight": 1520,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
-   "screen": "library-check-done",
-   "chars": 382,
+   "screen": "camp-check-done",
+   "chars": 346,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 1556,
+   "pageHeight": 1587,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
-   "screen": "library-choose",
-   "chars": 99,
+   "screen": "camp-choose",
+   "chars": 136,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 844,
@@ -1274,8 +1277,8 @@
   },
   {
    "viewport": "390x844",
-   "screen": "library-result",
-   "chars": 131,
+   "screen": "camp-result",
+   "chars": 172,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 844,
@@ -1285,32 +1288,76 @@
   },
   {
    "viewport": "390x844",
-   "screen": "library-follow-start",
-   "chars": 281,
+   "screen": "camp-follow-start",
+   "chars": 229,
+   "buttons": 5,
+   "overflow": false,
+   "pageHeight": 929,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "camp-follow-done",
+   "chars": 406,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 1576,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "camp-notice-start",
+   "chars": 252,
+   "buttons": 7,
+   "overflow": false,
+   "pageHeight": 844,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "camp-notice-done",
+   "chars": 552,
+   "buttons": 9,
+   "overflow": false,
+   "pageHeight": 1419,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "camp-reflect",
+   "chars": 411,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 1484,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "share-hook",
+   "chars": 161,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 863,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "390x844",
+   "screen": "share-check-start",
+   "chars": 119,
    "buttons": 4,
    "overflow": false,
-   "pageHeight": 1144,
-   "questionInView": true,
-   "firstActionInView": false,
-   "codes": []
-  },
-  {
-   "viewport": "390x844",
-   "screen": "library-follow-done",
-   "chars": 457,
-   "buttons": 2,
-   "overflow": false,
-   "pageHeight": 1793,
-   "questionInView": true,
-   "firstActionInView": false,
-   "codes": []
-  },
-  {
-   "viewport": "390x844",
-   "screen": "library-notice-start",
-   "chars": 226,
-   "buttons": 6,
-   "overflow": false,
    "pageHeight": 844,
    "questionInView": true,
    "firstActionInView": true,
@@ -1318,41 +1365,30 @@
   },
   {
    "viewport": "390x844",
-   "screen": "library-notice-done",
-   "chars": 492,
-   "buttons": 8,
-   "overflow": false,
-   "pageHeight": 1307,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "390x844",
-   "screen": "library-reflect",
-   "chars": 369,
-   "buttons": 2,
+   "screen": "share-check-records",
+   "chars": 262,
+   "buttons": 11,
    "overflow": false,
    "pageHeight": 1371,
    "questionInView": true,
-   "firstActionInView": false,
+   "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
-   "screen": "recommend-hook",
-   "chars": 221,
-   "buttons": 6,
+   "screen": "share-check-done",
+   "chars": 273,
+   "buttons": 8,
    "overflow": false,
-   "pageHeight": 1216,
+   "pageHeight": 1418,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
-   "screen": "recommend-check-start",
-   "chars": 84,
+   "screen": "share-choose",
+   "chars": 122,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 844,
@@ -1362,41 +1398,8 @@
   },
   {
    "viewport": "390x844",
-   "screen": "recommend-check-records",
-   "chars": 224,
-   "buttons": 13,
-   "overflow": false,
-   "pageHeight": 1302,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "390x844",
-   "screen": "recommend-check-done",
-   "chars": 224,
-   "buttons": 6,
-   "overflow": false,
-   "pageHeight": 1179,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "390x844",
-   "screen": "recommend-choose",
-   "chars": 92,
-   "buttons": 4,
-   "overflow": false,
-   "pageHeight": 844,
-   "questionInView": true,
-   "firstActionInView": true,
-   "codes": []
-  },
-  {
-   "viewport": "390x844",
-   "screen": "recommend-result",
-   "chars": 112,
+   "screen": "share-result",
+   "chars": 123,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 844,
@@ -1406,8 +1409,8 @@
   },
   {
    "viewport": "390x844",
-   "screen": "recommend-follow-start",
-   "chars": 128,
+   "screen": "share-follow-start",
+   "chars": 118,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 844,
@@ -1417,44 +1420,44 @@
   },
   {
    "viewport": "390x844",
-   "screen": "recommend-follow-done",
-   "chars": 311,
+   "screen": "share-follow-done",
+   "chars": 405,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 1538,
+   "pageHeight": 1656,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
   },
   {
    "viewport": "390x844",
-   "screen": "recommend-notice-start",
-   "chars": 260,
+   "screen": "share-notice-start",
+   "chars": 234,
    "buttons": 7,
    "overflow": false,
-   "pageHeight": 864,
+   "pageHeight": 844,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
-   "screen": "recommend-notice-done",
-   "chars": 391,
+   "screen": "share-notice-done",
+   "chars": 388,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 1348,
+   "pageHeight": 1261,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "390x844",
-   "screen": "recommend-reflect",
-   "chars": 357,
+   "screen": "share-reflect",
+   "chars": 385,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1343,
+   "pageHeight": 1399,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1462,7 +1465,7 @@
   {
    "viewport": "390x844",
    "screen": "end",
-   "chars": 200,
+   "chars": 195,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 1188,
@@ -1473,7 +1476,7 @@
   {
    "viewport": "390x844",
    "screen": "end-done",
-   "chars": 200,
+   "chars": 195,
    "buttons": 6,
    "overflow": false,
    "pageHeight": 1188,
@@ -1484,29 +1487,29 @@
   {
    "viewport": "390x844",
    "screen": "report",
-   "chars": 2592,
+   "chars": 2683,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 8238,
+   "pageHeight": 8387,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "1280x800",
-   "screen": "library-hook",
-   "chars": 152,
-   "buttons": 3,
+   "screen": "camp-hook",
+   "chars": 277,
+   "buttons": 7,
    "overflow": false,
-   "pageHeight": 800,
+   "pageHeight": 983,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "1280x800",
-   "screen": "library-check-start",
-   "chars": 116,
+   "screen": "camp-check-start",
+   "chars": 127,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 800,
@@ -1516,8 +1519,8 @@
   },
   {
    "viewport": "1280x800",
-   "screen": "library-check-records",
-   "chars": 343,
+   "screen": "camp-check-records",
+   "chars": 322,
    "buttons": 9,
    "overflow": false,
    "pageHeight": 908,
@@ -1527,19 +1530,19 @@
   },
   {
    "viewport": "1280x800",
-   "screen": "library-check-done",
-   "chars": 366,
+   "screen": "camp-check-done",
+   "chars": 346,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 939,
+   "pageHeight": 915,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "1280x800",
-   "screen": "library-choose",
-   "chars": 99,
+   "screen": "camp-choose",
+   "chars": 136,
    "buttons": 4,
    "overflow": false,
    "pageHeight": 800,
@@ -1549,8 +1552,8 @@
   },
   {
    "viewport": "1280x800",
-   "screen": "library-result",
-   "chars": 115,
+   "screen": "camp-result",
+   "chars": 157,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 800,
@@ -1560,9 +1563,9 @@
   },
   {
    "viewport": "1280x800",
-   "screen": "library-follow-start",
-   "chars": 281,
-   "buttons": 4,
+   "screen": "camp-follow-start",
+   "chars": 229,
+   "buttons": 5,
    "overflow": false,
    "pageHeight": 800,
    "questionInView": true,
@@ -1571,8 +1574,8 @@
   },
   {
    "viewport": "1280x800",
-   "screen": "library-follow-done",
-   "chars": 460,
+   "screen": "camp-follow-done",
+   "chars": 393,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 952,
@@ -1582,9 +1585,42 @@
   },
   {
    "viewport": "1280x800",
-   "screen": "library-notice-start",
-   "chars": 259,
-   "buttons": 6,
+   "screen": "camp-notice-start",
+   "chars": 294,
+   "buttons": 7,
+   "overflow": false,
+   "pageHeight": 824,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-notice-done",
+   "chars": 576,
+   "buttons": 9,
+   "overflow": false,
+   "pageHeight": 1105,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-reflect",
+   "chars": 381,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 915,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-hook",
+   "chars": 161,
+   "buttons": 2,
    "overflow": false,
    "pageHeight": 800,
    "questionInView": true,
@@ -1593,19 +1629,349 @@
   },
   {
    "viewport": "1280x800",
-   "screen": "library-notice-done",
-   "chars": 505,
-   "buttons": 8,
+   "screen": "share-check-start",
+   "chars": 119,
+   "buttons": 4,
    "overflow": false,
-   "pageHeight": 1048,
+   "pageHeight": 800,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
   },
   {
    "viewport": "1280x800",
-   "screen": "library-reflect",
-   "chars": 333,
+   "screen": "share-check-records",
+   "chars": 260,
+   "buttons": 11,
+   "overflow": false,
+   "pageHeight": 817,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-check-done",
+   "chars": 256,
+   "buttons": 8,
+   "overflow": false,
+   "pageHeight": 834,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-choose",
+   "chars": 122,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-result",
+   "chars": 129,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-follow-start",
+   "chars": 118,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-follow-done",
+   "chars": 393,
+   "buttons": 5,
+   "overflow": false,
+   "pageHeight": 905,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-notice-start",
+   "chars": 289,
+   "buttons": 7,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-notice-done",
+   "chars": 425,
+   "buttons": 9,
+   "overflow": false,
+   "pageHeight": 1009,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-reflect",
+   "chars": 369,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 885,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-hook",
+   "chars": 277,
+   "buttons": 7,
+   "overflow": false,
+   "pageHeight": 983,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-check-start",
+   "chars": 127,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-check-records",
+   "chars": 322,
+   "buttons": 9,
+   "overflow": false,
+   "pageHeight": 908,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-check-done",
+   "chars": 346,
+   "buttons": 6,
+   "overflow": false,
+   "pageHeight": 915,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-choose",
+   "chars": 136,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-result",
+   "chars": 157,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-follow-start",
+   "chars": 229,
+   "buttons": 5,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-follow-done",
+   "chars": 393,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 952,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-notice-start",
+   "chars": 294,
+   "buttons": 7,
+   "overflow": false,
+   "pageHeight": 824,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-notice-done",
+   "chars": 576,
+   "buttons": 9,
+   "overflow": false,
+   "pageHeight": 1105,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "camp-reflect",
+   "chars": 381,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 915,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-hook",
+   "chars": 161,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-check-start",
+   "chars": 119,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-check-records",
+   "chars": 260,
+   "buttons": 11,
+   "overflow": false,
+   "pageHeight": 817,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-check-done",
+   "chars": 256,
+   "buttons": 8,
+   "overflow": false,
+   "pageHeight": 834,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-choose",
+   "chars": 122,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-result",
+   "chars": 129,
+   "buttons": 2,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-follow-start",
+   "chars": 118,
+   "buttons": 4,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-follow-done",
+   "chars": 393,
+   "buttons": 5,
+   "overflow": false,
+   "pageHeight": 905,
+   "questionInView": true,
+   "firstActionInView": false,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-notice-start",
+   "chars": 289,
+   "buttons": 7,
+   "overflow": false,
+   "pageHeight": 800,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-notice-done",
+   "chars": 425,
+   "buttons": 9,
+   "overflow": false,
+   "pageHeight": 1009,
+   "questionInView": true,
+   "firstActionInView": true,
+   "codes": []
+  },
+  {
+   "viewport": "1280x800",
+   "screen": "share-reflect",
+   "chars": 369,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 885,
@@ -1617,8 +1983,8 @@
  "summary": {
   "after1366": {
    "screens": 59,
-   "avgChars": 287,
-   "maxChars": 2533,
+   "avgChars": 295,
+   "maxChars": 2629,
    "maxButtons": 13
   },
   "originalBefore1366": {
@@ -1627,12 +1993,12 @@
    "maxChars": 1127,
    "maxButtons": 32
   },
-  "desktopQuestionAndFirstActionInView": "53/59",
-  "phoneMaxPageHeight": 8238,
+  "desktopQuestionAndFirstActionInView": "52/59",
+  "phoneMaxPageHeight": 8387,
   "desktopPath": {
    "judgments": 20,
-   "clicks": 133,
-   "readChars": 15195
+   "clicks": 135,
+   "readChars": 15714
   }
  }
 }

@@ -13,9 +13,9 @@ const contrast=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((m,n)=>n-m);return (x+.0
 const rgb=s=>s.match(/\d+(\.\d+)?/g).slice(0,3).map(Number);
 const ok=m=>console.log('  ok',m);
 // 엔진 검증(consistent)을 지나는 저장: 앞 사건을 모두 끝낸 상태로 그 사건·단계에 선다
-function finishCase(s,k,follow=true){if(k==='recommend'&&!s.asked.length)s.asked=['input'];s.evidence.push(...E.checks[k]);s.judgments[k]=E.answers[k].slice();s.cases[k]={first:E.choices[k][0],final:E.choices[k][0]};
+function finishCase(s,k,follow=true){if(k==='camp'&&!s.asked.length)s.asked=['who'];s.evidence.push(...E.checks[k]);s.judgments[k]=E.answers[k].slice();s.cases[k]={first:E.choices[k][0],final:E.choices[k][0]};
  if(follow){const m=E.followMarks[k],marks={};m.ids.forEach((id,i)=>{marks[id]=k==='photo'?E.truth[i]:m.values[0];});s.follows[k]={marks,judgment:E.followAnswers[k]};const must=E.noticeCards[k].must.slice();s.notices[k]={picked:must,posted:must.slice()};}}
-function stateAt(k,step){const s=E.initial(),i=E.CASES.indexOf(k);E.CASES.slice(0,i).forEach(x=>finishCase(s,x));if(k==='recommend')s.asked=['input'];if(step==='follow')finishCase(s,k,false);if(step==='notice'){finishCase(s,k);s.notices[k]={picked:[],posted:null};}s.scene=s.furthest=E.sceneOf(k,step);return s;}
+function stateAt(k,step){const s=E.initial(),i=E.CASES.indexOf(k);E.CASES.slice(0,i).forEach(x=>finishCase(s,x));if(k==='camp')s.asked=['who'];if(step==='follow')finishCase(s,k,false);if(step==='notice'){finishCase(s,k);s.notices[k]={picked:[],posted:null};}s.scene=s.furthest=E.sceneOf(k,step);return s;}
 const seed=async(p,s)=>{await p.evaluate(({KEY,s})=>localStorage.setItem(KEY,JSON.stringify(s)),{KEY,s});await p.reload();assert.equal((await state(p)).scene,s.scene,'저장한 곳에서 시작');};
 async function discover(p,id){
  await p.locator(`[data-act="item"][data-id="${id}"]`).click();
@@ -23,14 +23,16 @@ async function discover(p,id){
  if(id==='photo-rule')for(const i of [0,1,2])await p.locator(`[data-act="region"][data-id="${i}"]`).click();
  if(id==='writing-history')await p.locator('[data-act="record"][data-id="h4"]').click();
  if(id==='face-clerk')await p.locator('[data-act="segment"][data-id="person"]').click();
- if(id==='library-loans')await p.locator('[data-act="loan"][data-id="0"]').click();
- if(id==='library-scores')for(const r of [1,2,3,5])await p.locator(`[data-act="score"][data-id="${r}"]`).click();
- if(id==='recommend-meeting')await p.locator('[data-act="meet"][data-id="end"]').click();
- if(id==='recommend-bus')await p.locator('[data-act="bus"][data-id="none"]').click();
+ if(id==='camp-page')await p.locator('[data-act="cell"][data-id="office"]').click();
+ if(id==='camp-results')await p.locator('[data-act="village"][data-id="pine"]').click();
+ if(id==='camp-criteria')for(const r of ['join','essay','order','secret'])await p.locator(`[data-act="crit"][data-id="${r}"]`).click();
+ if(id==='share-log')await p.locator('[data-act="part"][data-id="pic"]').click();
+ if(id==='share-photo')await p.locator('[data-act="skyline"][data-id="sky"]').click();
+ if(id==='share-compare')await p.locator('[data-act="said"][data-id="dm"]').click();
 }
 // 근거 자료마다 화면에서 찾을 표시
 const MARK={'photo-rule':'.guide-box','writing-guide':'.visual .document ul','writing-history':'.visual .records','face-alert':'.visual .document','face-photo':'.visual .evidence-photo',
- 'library-guide':'.visual .document','library-scores':'.visual .score-formula','recommend-reason':'.visual .document','recommend-meeting':'.visual .segments','recommend-bus':'.visual .records'};
+ 'camp-page':'.visual .document','camp-results':'.visual .camp-table','camp-criteria':'.visual .score-formula','share-log':'.visual .records','share-photo':'.visual .sky-pair','share-compare':'.visual .compare-pair'};
 async function caseRun(p,k,vp,wrong){
  const c=D.cases[k],n=E.sceneOf(k,'check');
  await seed(p,stateAt(k,'check'));
@@ -93,7 +95,7 @@ async function caseRun(p,k,vp,wrong){
    await seed(p,old);
    assert.match(await p.locator('.judge-head').innerText(),/3\/3/);assert.ok(await p.locator('.visual .evidence-photo').isVisible(),'이어하기에서도 근거 자료(비교 사진)');assert.equal(await p.locator('.compare-labels span').first().innerText(),'등록된 사진');
    await p.screenshot({path:path.join(shotDir,'_t1106-compare-1280.png')});
-   const s=await state(p);assert.equal(s.version,5);assert.deepEqual(Object.keys(s).sort(),Object.keys(base).sort(),'저장 구조 그대로');ok('version 5 이어하기');await ctx.close();}
+   const s=await state(p);assert.equal(s.version,6);assert.deepEqual(Object.keys(s).sort(),Object.keys(base).sort(),'저장 구조 그대로');ok('version 6 이어하기');await ctx.close();}
   // 후속 조사 카드·집계 기준
   {const ctx=await browser.newContext({viewport:{width:1280,height:800}}),p=await ctx.newPage();await p.goto(url);
    await seed(p,stateAt('photo','follow'));

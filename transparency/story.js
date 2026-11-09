@@ -4,10 +4,10 @@ window.TransparencyStory = (()=>{
  // 사건 4·5 새 그림(docs/codex-art-brief-4-5-v2.md). 처음에는 지시서의 '대신 쓸 그림'을 쓰고, app.js가 시작할 때 base + '.webp'(게임용 사본) → '.png'(원본)을 불러 보아
  // 열리는 것이 있으면 그것으로 바꾼다. bg = 배경 배열 자리.
  art.backgrounds.push(r+'bg-school-corridor.png',r+'bg-repair-shop.png');
- // 대신 그림: 신문부실 = 복도, 은하수·실제 사진 = 코드로 그린 하늘(app.js), 새 포즈 = 기존 인물(루루 휴대폰은 이미 있는 lulu-casual 사본).
- Object.assign(art,{newsroom:art.backgrounds[4],observatory:art.backgrounds[5],moaReporter:art.moa,damiLetter:art.dami,clerkPaper:art.clerk,moaPhone:art.moa,luluPhone:'assets/s05/lulu-casual.webp',bamiPhone:art.bami,galaxy:null,hillReal:null});
+ // 대신 그림: 신문부실 = 복도, 은하수·실제 사진 = 코드로 그린 하늘(app.js), 새 포즈 = 기존 인물(루루 휴대폰은 먼저 이미 있는 lulu-casual을 써 본다).
+ Object.assign(art,{newsroom:art.backgrounds[4],observatory:art.backgrounds[5],moaReporter:art.moa,damiLetter:art.dami,clerkPaper:art.clerk,moaPhone:art.moa,luluPhone:art.lulu,bamiPhone:art.bami,galaxy:null,hillReal:null});
  art.newArt={newsroom:{base:'assets/s04/bg-newsroom',bg:4},moaReporter:{base:'assets/s04/moa-reporter'},damiLetter:{base:'assets/s04/dami-letter'},clerkPaper:{base:'assets/s04/clerk-newspaper'},
-  observatory:{base:'assets/s05/bg-observatory-hill',bg:5},moaPhone:{base:'assets/s05/moa-phone'},luluPhone:{base:'assets/s05/lulu-phone'},bamiPhone:{base:'assets/s05/bami-phone'},galaxy:{base:'assets/s05/galaxy-ai',code:true},hillReal:{base:'assets/s05/hill-real-photo',code:true}};
+  observatory:{base:'assets/s05/bg-observatory-hill',bg:5},moaPhone:{base:'assets/s05/moa-phone'},luluPhone:{base:'assets/s05/lulu-phone',alt:'assets/s05/lulu-casual'},bamiPhone:{base:'assets/s05/bami-phone'},galaxy:{base:'assets/s05/galaxy-ai',code:true},hillReal:{base:'assets/s05/hill-real-photo',code:true}};
  const names={moa:'모아',lulu:'루루',luluPaper:'루루',dami:'담이',bami:'밤이',teacher:'선생님',clerk:'점원',clerkOpen:'점원',town:'마을 사람들',classmate:'반 친구',app:'앱 알림',
   office:'구청 청소년과',paper:'마을 신문',moaReporter:'모아',damiLetter:'담이',clerkPaper:'점원',moaPhone:'모아',luluPhone:'루루',bamiPhone:'밤이'};
  const bgNames=['저녁 골목과 수리점','축제 게시판 앞','학교 복도','빵집 입구','학교 신문부실','언덕 위 관측 데크'];
@@ -141,7 +141,7 @@ window.TransparencyStory = (()=>{
   // ── 사건 4·5(2026-11-08 구현, 문장 전부 교사 검수 대기) ──
   // 사건 4·5(2026-11-10 새로 짬, 설계 docs/2026-11-10-cases-4-5-rework-design.md). 문장 모두 교사 검수 대기.
   // 사건 4: 정부·사회의 몫. 구청 AI 선발이 본의 아니게 버스 드문 마을에 불리했다. 모아는 신문부 기자.
-  camp:{name:'구청 캠프 사건',title:'겨울 캠프 명단',bg:4,cast:['moaReporter','damiLetter','clerkPaper'],
+  camp:{name:'구청 캠프 사건',title:'겨울 캠프 명단',bg:4,cast:['moaReporter','clerkPaper','damiLetter'],
    hook:[['dami','캠프 떨어졌어. 우리 마을 애들은 거의 다 떨어졌대.'],['clerk','AI가 솔숲마을 애들을 일부러 떨어뜨린 거래!'],['teacher','신문부가 확인해서 기사로 써 보자.']],
    question:'솔숲마을 아이들만 많이 떨어진 까닭은 뭘까?',screen:['마을 신문 · 소문','“AI가 솔숲마을 차별”'],
    askPrompt:'구청에 무엇부터 물어볼까?',askNeed:'질문을 하나 이상 하면 직접 확인할 수 있어.',askWho:'office',
@@ -216,7 +216,7 @@ window.TransparencyStory = (()=>{
      summary:'토요일에 온 몇 명이 은하수가 안 보인다며 실망했다.',reaction:[['bami','그림이랑 너무 달라서 좀 속은 기분이에요.']]},
     {id:'tag',label:'‘#AI그림’ 한 줄만 붙이자고 하기',title:'한 줄을 붙였어',screen:['냥스타 · 루루','은하수 그림','이번 주 토요일, 뒷산에서 만나요!','#AI그림'],
      summary:'AI 그림인 건 알렸지만, 밤이는 여전히 은하수를 기대하고 왔다.',reaction:[['bami','AI라도 이만큼은 보일 줄 알았어요.']]},
-    {id:'explain',label:'AI로 만든 곳과 실제 하늘을 같이 밝히자고 하기',title:'고쳐 썼어',screen:['냥스타 · 루루','은하수 그림 + 지난 모임 사진','그림은 AI로 만들었어요.','실제로는 별이 이만큼 보여요.'],
+    {id:'explain',label:'AI로 만든 곳과 실제 하늘을 같이 밝히자고 하기',title:'고쳐 썼어',screen:['냥스타 · 루루','은하수 그림 + 실제 사진','그림은 AI로 만들었어요.','실제로는 별이 이만큼 보여요.'],
      summary:'게시물 글에 ‘그림은 AI로 만들었어요. 실제로는 별이 이만큼 보여요’를 쓰고 지난 모임 사진을 붙였다.',reaction:[['bami','솔직히 알려 줘서 좋아요. 그래도 가 볼래요.'],['lulu','밝혀도 내가 한 일이 줄어드는 건 아니네.']]}
    ]},
    follow:{src:'그림을 올린 세 곳',question:'같은 그림, 어디에 얼마나 알려야 할까?',lines:[],task:'세 곳을 눌러 누가 보는지 열어 봐.',
