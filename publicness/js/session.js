@@ -392,11 +392,31 @@
   function elderChoice(s) { return s.elderPolicy && s.elderPolicy.choice === 'abolish' ? 'abolish' : 'keep'; }
   function rideRequests(s, phase, ev) { return Elder.ride(s.config, phase, Demand.sortReqs(Demand.base(s.config, phase, s.seed).concat(Demand.extra(s.config, phase, ev))), elderChoice(s)); }
   function runRequests(s, ev) { return rideRequests(s, s.phase, ev).ride; }
+  /* 2단계 고정 청원(2026-11-10): 사건 추첨과 상관없이 config.petition.t분에 한 번. 시뮬레이터가 낸 무작위 청원은 지우고 이 판정으로 바꾼다 */
+  function fixPetition(s, result, requests) {
+    var cp = s.config.petition;
+    if (!cp || s.phase !== cp.phase) return;
+    var p = Sim.judgePetition(result.passengers, cp.t);
+    if (!p) {
+      var w = {}, best = null;
+      result.passengers.forEach(function (q) { if (q.t <= cp.t) w[q.o] = (w[q.o] || 0) + (q.waitTotal || 0); });
+      Object.keys(w).sort().forEach(function (z) { if (!best || w[z] > w[best]) best = z; });
+      var zone = best || 'F', tot = result.passengers.filter(function (q) { return q.o === zone && q.t <= cp.t; });
+      p = { zone: zone, t: cp.t, count: tot.filter(function (q) { return q.status !== 'arrived'; }).length, total: tot.length };
+    }
+    p.fixed = true; p.noRecord = rideRatios(s)[p.zone] === 0;
+    result.petition = p;
+    result.log = result.log.filter(function (e) { return e.type !== 'petition'; });
+    var at = result.log.length;
+    for (var i = 0; i < result.log.length; i++) { if (result.log[i].t > p.t) { at = i; break; } }
+    result.log.splice(at, 0, { t: p.t, type: 'petition', node: p.zone, data: p });
+  }
   function computeRun(s, plan) {
     var g = graph(s), ev = s.events[s.phase - 1];
     var rr = rideRequests(s, s.phase, ev), requests = rr.ride;
     var day=dayInputs(s,s.phase),adjustments=day.adjustments;
     var result = Sim.run({ g: g, config: s.config, phase: s.phase, plan: plan, requests: requests, event: ev, adjustments:adjustments, routeChanges:day.routeChanges });
+    fixPetition(s, result, requests);
     var baseline=adjustments.length||day.routeChanges.length?Metrics.summarize(Sim.run({g:g,config:s.config,phase:s.phase,plan:plan,requests:requests,event:ev}),g,plan,s.config):null;
     return { baseline:baseline, plan: plan, result: result, metrics: Metrics.summarize(result, g, plan, s.config), expected: expected(s, plan), requestsN: result.passengers.length, event: ev, stayed: rr.stayed };
   }
@@ -576,6 +596,7 @@
     entry.eventFare = s.config.finance.fare * c.result.passengers.filter(function (p) { return p.kind === 'extra' && p.firstBoardT != null; }).length;
     entry.rideLog = RideLog.fromRun(c.result.passengers);
     s.history.push(entry);
+    if (s.config.petition && s.phase === s.config.petition.phase && c.result.petition) { var fp = c.result.petition; s.fixedPetition = { phase: s.phase, zone: fp.zone, t: fp.t, count: fp.count, total: fp.total, noRecord: !!fp.noRecord }; }
     settle(s, entry);
     // 두 점수(재정 건전성·이동 수요 충족) — 정산 직후 한 번 기록해 저장본에 남긴다(js/scores.js)
     entry.scores = Scores.phaseScores(s.config, graph(s), s.phase, s.seed, c.event, c.plan, c.result.passengers, ledgerBalance(s, s.phase), c.stayed);

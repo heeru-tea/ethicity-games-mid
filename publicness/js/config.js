@@ -104,6 +104,7 @@
     elderFree: { share: 0.3, zones: ['F', 'D', 'K'], abolishStay: 0.5, policyPhase: 4 },
     /* 기울어진 탑승 기록(2026-11-10): AI 추천은 지난 운행의 탑승 기록만 본다. 1단계 기록(예전 노선)에 없는 출발 구역 = hiddenAtStart */
     rideLog: { hiddenAtStart: ['F'] },
+    petition: { phase: 2, t: 45 },
     events: { pNone: 0.60, pDemand: 0.85, timeBase: 35, timeSpan: 26, extraPerMin: 2, extraMinutes: 6 },
     defaultSeed: 42,
     rush: { share: 0.75, outbound: 8, inbound: 50, spread: 10, jitter: 4 },
