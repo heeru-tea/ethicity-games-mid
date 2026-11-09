@@ -694,3 +694,30 @@ body { overflow: hidden; word-break: keep-all; }
   .hud-peer-long { display: none; }
   .hud-peer-short { display: inline; }
 }
+
+/* 4 임무 같은 답안지 전후 비교(교사 피드백 2026-11-09, #outro-compare) — 넓은 화면 표 4칸, ≤520px 답안지마다 카드 */
+.outro-compare { margin: 20px 0; }
+.outro-compare h3 { margin: 0 0 6px; font-size: 18px; }
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.5; word-break: keep-all; }
+.cmp-table th { text-align: left; font-size: 13px; color: var(--ink-2); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.cmp-table td { padding: 10px 8px; vertical-align: top; border-bottom: 1px solid var(--line); }
+.cmp-photo { width: 9.5rem; }
+.cmp-photo img { display: block; width: 96px; height: 96px; border-radius: 8px; background: #f4f0e6; }
+.cmp-wrote, .cmp-tag { display: block; font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.cmp-tag { color: #7be0a0; }
+.cmp-v { font-weight: 700; white-space: nowrap; }
+.cmp-ok { color: #7be0a0; }
+.cmp-bad { color: #ff8fa6; }
+.cmp-hold { color: var(--yellow); }
+.cmp-change ul { margin: 0; padding-left: 1.1em; }
+.cmp-human { margin: 10px 0 0; padding: 10px 12px; border-left: 4px solid var(--yellow); background: rgba(255,210,74,.08); border-radius: 4px; font-weight: 600; }
+.cmp-none { margin: 0; color: var(--ink-2); }
+@media (max-width: 520px) {
+  .cmp-table thead { display: none; }
+  .cmp-table, .cmp-table tbody, .cmp-table tr, .cmp-table td { display: block; width: auto; }
+  .cmp-table tr { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+  .cmp-table td { border: none; padding: 4px 0; white-space: normal; }
+  .cmp-table td:not(.cmp-photo)::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 400; color: var(--ink-2); }
+  .cmp-photo { display: flex !important; gap: 10px; align-items: center; }
+  .cmp-photo img { width: 72px; height: 72px; flex: none; }
+}

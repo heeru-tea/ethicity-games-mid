@@ -3,7 +3,7 @@
 //   달리기 패널 '흘려 쓴 인공지능 1/2장' → 1장 잡으면 '2/2장 ✓' · 다 찬 자료(동기 카드로 찬 줄 포함)는 뒤에/한 줄로 · 가방 옆 '동기 자리 4칸'
 //   1 임무: 보충 패널이 모습 이름으로(결과 뒤라 hideShapes와 겹치지 않음)
 import assert from 'node:assert/strict';
-import { openGame, shotPath } from './browser.mjs';
+import { openGame, passChapter, shotPath } from './browser.mjs';
 
 const MIN = { neat_data: 1, neat_algo: 1, neat_ai: 1, neat_ml: 1, cur_ai: 2, cur_algo: 2, alt_ai: 2, alt_data: 2, alt_ml: 2, scrawl_ml: 2 };
 const step = (page, n = 3) => page.evaluate((n) => { for (let i = 0; i < n; i++) DR.Run.step(0.02); }, n);
@@ -95,7 +95,36 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     assert.equal(await page.locator('#hud-peer').count(), 0);
     console.log('ok m4 supplement', w);
 
+    // 이어서 끝까지 → 임무 완료 화면: 같은 답안지 전후 비교(교사 피드백 2026-11-09)
+    await page.locator('#btn-submit').click(); await page.locator('#btn-confirm').click();
+    await page.locator('#screen-grade').waitFor({ state: 'visible' });
+    await page.locator('#btn-gr-skip').click(); await page.locator('#btn-gr-next').click();
+    for (let n = 0; n < 80 && !(await page.locator('#screen-outro').isVisible()); n++) {
+      if (await page.locator('#screen-result .result-scene').isVisible()) await page.locator('#btn-next').click();
+      else if (await page.locator('#screen-city').isVisible()) { await page.waitForTimeout(400); await page.keyboard.press('Enter'); await page.locator('#btn-city-next').click(); }
+      else if (await page.locator('#screen-chapter').isVisible()) await passChapter(page);
+      else if (await page.locator('#screen-story').isVisible()) await page.locator('#screen-story .dialog').click();
+      else await page.waitForTimeout(200);
+    }
+    await page.locator('#screen-outro').waitFor({ state: 'visible', timeout: 4000 });
+    const rows = page.locator('#outro-compare tbody tr');
+    const ids = await rows.evaluateAll((t) => t.map((r) => r.dataset.id + ':' + r.dataset.kind));
+    assert.deepEqual(ids, ['gr4:changed', 'gr11:changed', 'gr1:control']);
+    const gr4 = page.locator('#outro-compare tr[data-id="gr4"] td');
+    assert.equal(await gr4.count(), 4);
+    assert.equal(await gr4.nth(1).innerText(), '✕ 알고리즘으로 읽음');
+    assert.equal(await gr4.nth(2).innerText(), '흘려 쓴 인공지능 1장 → 2장');
+    assert.equal(await gr4.nth(3).innerText(), '○ 인공지능으로 읽음');
+    assert.equal(await page.locator('#outro-compare tr[data-id="gr11"] td').nth(2).innerText(), '아주 흘려 쓴 머신러닝 0장 → 2장(동기 카드 2장)');
+    assert.equal(await page.locator('#outro-compare tr[data-id="gr4"] img').evaluate((i) => i.naturalWidth > 0), true);
+    assert.equal(await page.locator('.cmp-human').innerText(), '같은 답안지인데 결과가 바뀌었다. 어떤 자료를 고칠지는 AI가 아니라 사람이 정했다.');
+    // 좁은 화면 = 카드(머리줄 숨김), 넓은 화면 = 표 머리줄. 가로로 넘치지 않음
+    assert.equal(await page.locator('#outro-compare thead').isVisible(), w > 520);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'no horizontal scroll');
+    await page.locator('#outro-compare').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: shotPath('supp-compare-' + w), fullPage: true });
     assert.deepEqual(errors, []);
+    console.log('ok m4 compare', w);
   } finally { await browser.close(); }
 }
 

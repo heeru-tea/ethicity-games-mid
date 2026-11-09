@@ -173,11 +173,11 @@
     // (임무 기록 records는 그대로, 결판·동기·개인정보 진행도 처음부터 — DR.Save.fitsMission)
     if (save.mission !== 'tutorial' && !DR.Save.fitsMission(m, save.bag)) {
       save = Object.assign({}, save, { screen: 'briefing', bag: [], supplements: 0, firstTry: null, needRevealed: false, newIds: [], firstFails: [], named: [], seed: undefined,
-        lost: 0, peer: 'none', peerPending: false, showdownPassed: false, privCaught: [] });
+        lost: 0, peer: 'none', peerPending: false, showdownPassed: false, privCaught: [], firstGrade: null });
     }
     App.state = { mission: save.mission, bag: save.bag, supplements: save.supplements, firstTry: save.firstTry,
       seed: save.seed === undefined ? seedFor(m) : save.seed, record: null, needRevealed: save.needRevealed, newIds: save.newIds, firstFails: save.firstFails || [], named: save.named || [], lost: save.lost || 0,
-      peer: save.peer || 'none', peerPending: !!save.peerPending, showdownPassed: !!save.showdownPassed, privCaught: save.privCaught || [] };
+      peer: save.peer || 'none', peerPending: !!save.peerPending, showdownPassed: !!save.showdownPassed, privCaught: save.privCaught || [], firstGrade: save.firstGrade || null };
     if (save.screen === 'briefing') { if (save.mission === 'tutorial') tutorialBriefing(); else missionBriefing(m); }
     else if (save.screen === 'inspect') review(m);
     else if (save.screen === 'result') judgeAndShow(m);
@@ -213,6 +213,8 @@
       App.state.firstFails = r.scenes.filter(function (s) { return !s.pass; }).map(function (s) {
         return { scene: s.id, title: m.scenes.filter(function (x) { return x.id === s.id; })[0].title, kind: s.failKind };
       });
+      // 4 임무: 첫 판정의 채점 시연 결과 + 첫 가방 — 임무 완료 화면에서 같은 답안지로 전후를 견준다(교사 피드백 2026-11-09, 저장 선택 필드)
+      if (m.grading) App.state.firstGrade = DR.GradeCompare.snapshot(m, r, App.state.bag);
     }
     App.state.needRevealed = true; // 첫 결과부터 필요 장수 공개(P3)
     checkpoint('result');
@@ -345,6 +347,8 @@
     DR.Save.setRecord(m.id, rec);
     var next = m.next && DR.Missions[m.next] ? function () { startMission(m.next); } : null;
     var outroOpts = { kicker: m.title + ' 완료', next: next, summary: summary };
+    // 4 임무: 같은 답안지 전후 비교(답안 사진 · 처음 판정 · 내가 바꾼 자료 · 개선 후 판정). 첫 판정 기록이 없는 옛 저장이면 없음
+    if (m.grading && App.lastJudge) outroOpts.compare = DR.UI.gradeCompare(m, DR.GradeCompare.rows(m, App.state.firstGrade, App.lastJudge, App.state.bag || [], DR.config));
     var step = DR.Save.cityStep(m.id, cityBefore, cityCount());
     function toOutro() {
       outroOpts.summary = summary.concat(DR.UI.chapterSummary(m, DR.Save.chapterOf(App.records, m.id)));
