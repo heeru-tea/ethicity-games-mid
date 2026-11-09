@@ -23,11 +23,21 @@
   var VIEW_KIND = { group: '단체 대화방', dm: '개인 대화', sns: 'SNS', ai: 'AI 도우미', pc: '공용 컴퓨터', place: '장소' };
 
   /* ── 상태 ───────────────────────── */
-  var player = S.readPlayer(CFG.defaultNickname);
+  // 2026-11-09 지시서 B4: 별명이 없으면 '플레이어'가 아니라 고른 주인공 이름(온유·다온) — readPlayer는 별명이 없으면 ''를 돌려주고, 실제 표시 이름은 refreshName()이 정한다.
+  //   공통 ethicity.player는 읽기만 한다(쓰지 않음 → 빈 별명이 저장될 일도 없다)
+  var player = S.readPlayer('');
+  player.storedNick = player.source === 'stored' ? player.nickname : '';
   var progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };
   var settings = { speed: 'normal', reduceMotion: false, look: null, sound: false, nickname: '', joystick: true }; // joystick: 터치 기기 가상 조이스틱 표시(2026-11-02)
   var NAME_MAX = 10;
   // 이 게임에서만 쓰는 이름(공통 플레이어 정보가 없을 때). 제어 문자·앞뒤 공백을 빼고 10자까지
+  // 주인공 이름(고른 모습 m = 온유, f = 다온) · 실제 별명(공통 정보 > 이 게임에서 적은 이름) · 화면에 쓸 이름(별명 없으면 주인공 이름)
+  var HERO_NAME = { m: '온유', f: '다온' };
+  function heroName() { return HERO_NAME[playerLook()] || ''; }
+  function realNick() { return player.storedNick || (player.source === 'stored' ? '' : settings.nickname) || ''; }
+  function refreshName() { player.nickname = realNick() || heroName() || CFG.defaultNickname; }
+  // 시작 화면 한 줄: '온유 (별명: ○○)' / 별명이 없으면 '온유'
+  function playerSummary() { var h = heroName(), n = realNick(); return (h || '아직 고르지 않음') + (n ? ' (별명: ' + n + ')' : ''); }
   function cleanName(v) { return typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, NAME_MAX) : ''; }
   var revealTimer = null, revealQueue = [], revealDone = null;
   var typing = null, typingNode = null, typingDots = null; // 지금 쳐지는 메시지(typer 핸들·줄) / '입력 중…' 줄
@@ -83,7 +93,7 @@
       settings.reduceMotion = true;
     }
     // 공통 플레이어 정보(ethicity.player)가 있으면 그 별명이 우선. 없을 때만 이 게임에서 적은 이름을 쓴다(공통 키에는 쓰지 않음)
-    if (player.source !== 'stored' && settings.nickname) player.nickname = settings.nickname;
+    refreshName();
     if (!S.status.available) noticeMsgs.push('이 브라우저에서는 저장할 수 없어요. 플레이는 되지만, 창을 닫으면 진행이 사라져요.');
   }
   function saveProgress() {
@@ -177,16 +187,20 @@
     face.hidden = !useFace; img.hidden = !!useFace;
     if (useFace) face.setAttribute('aria-label', (look === 'f' ? '다온' : '온유') + ' 얼굴');
     else { img.src = playerAvatarSrc(); img.alt = isOfficialAvatar() ? '내 캐릭터' : '임시 아바타'; }
-    if (player.source === 'damaged') { note.hidden = false; note.textContent = '공통 캐릭터 정보를 읽지 못해 ‘' + CFG.defaultNickname + '’로 시작해요.' + (look ? '' : ' 위에서 주인공을 골라 주세요.'); }
+    if (player.source === 'damaged') { note.hidden = false; note.textContent = '공통 캐릭터 정보를 읽지 못해 이 게임에서 고른 주인공으로 시작해요.' + (look ? '' : ' 위에서 주인공을 골라 주세요.'); }
     else if (!look) { note.hidden = false; note.textContent = '위에서 주인공을 골라 주세요.'; }
-    else if (player.source === 'default') { note.hidden = false; note.textContent = (look === 'f' ? '다온으로' : '온유로') + ' 시작해요.'; }
-    else note.hidden = true;
+    else note.hidden = true; // 2026-11-09 B4: '온유로 시작해요'는 위 한 줄(이번 주인공: 온유 (별명: ○○))과 겹쳐 뺌
+    showPlayerName();
   }
 
+  function showPlayerName() {
+    refreshName();
+    $('player-name').textContent = playerSummary();
+    $('player-name').title = playerSummary();
+    $('name-input').placeholder = heroName() || CFG.defaultNickname; // 비우면 이 이름으로 시작
+  }
   function renderStart() {
     renderLookPick();
-    $('player-name').textContent = player.nickname;
-    $('player-name').title = player.nickname;
     renderPlayerChip();
     var nameField = $('name-field');
     nameField.hidden = player.source === 'stored';
@@ -377,11 +391,11 @@
     }
     revealQueue = nodes.slice();
     revealDone = done;
-    $('g-dock').textContent = '';
-    var skip = el('button', 'btn ghost skip-btn', '모두 보기 ▸▸');
+    $('g-dock').textContent = ''; clearNext();
+    var skip = el('button', 'btn ghost skip-btn', '모두 보기'); // 2026-11-09 B3: 글자가 나오는 중 = '모두 보기', 다 나오면 '다음'
     skip.type = 'button';
     skip.addEventListener('click', flushReveal);
-    $('g-dock').appendChild(skip);
+    nextBox().appendChild(skip); syncNext();
     revealNext(false);
   }
   // 다음 줄 하나. manual = 눌러서 넘긴 경우('입력 중…' 없이 바로 치기 시작)
@@ -438,6 +452,10 @@
     }
   }
 
+  // 2026-11-09 지시서 B3: 넘기기 버튼(모두 보기·다음)은 폰·PC 창 바로 아래 #g-next(같은 너비), 장소 장면(대화창)은 아래 메뉴 상자(#g-dock)
+  function nextBox() { var d = progress.run ? deviceOf(progress.run.scene) : 'none'; return d === 'phone' || d === 'monitor' ? $('g-next') : $('g-dock'); }
+  function clearNext() { $('g-next').textContent = ''; $('v-game').classList.remove('has-next'); }
+  function syncNext() { $('v-game').classList.toggle('has-next', $('g-next').children.length > 0); }
   function deviceOf(sceneId) {
     var st = WD.STAGES[sceneId], v = story.scenes[sceneId].view || { type: 'place' };
     return (st && st.device) || DEVICE[v.type] || 'phone';
@@ -585,7 +603,7 @@
 
     $('g-log').textContent = '';
     $('g-live').textContent = '';
-    $('g-dock').textContent = '';
+    $('g-dock').textContent = ''; clearNext();
     if (current !== 'v-game') show('v-game', $('g-chap'));
     if (!v.cg) cgShow(null);
     // 무대: 장면이 바뀌면 그 장소로(처음 들어갈 때만 컷 카드)
@@ -634,7 +652,7 @@
     var run = progress.run;
     var scene = story.scenes[run.scene];
     var dock = $('g-dock');
-    dock.textContent = '';
+    dock.textContent = ''; clearNext();
     if (E.needsChoice(story, run)) {
       var choices = E.visibleChoices(story, scene, run);
       if (scene.prompt) dock.appendChild(el('p', 'prompt', fill(scene.prompt)));
@@ -655,11 +673,11 @@
       dock.appendChild(list);
       focusFirst(list.querySelector('button'));
     } else {
-      var go = el('button', 'btn primary continue', '계속 ▸');
+      var go = el('button', 'btn primary continue', '다음');
       go.type = 'button';
       go.id = 'btn-next';
       go.addEventListener('click', onContinue);
-      dock.appendChild(go);
+      nextBox().appendChild(go); syncNext();
       focusFirst(go);
     }
     scrollLog(true);
@@ -676,7 +694,7 @@
     setRun(next);
     $('btn-undo').disabled = false;
     // 화면은 그대로 두고 선택 반응만 이어서 보여 준다
-    $('g-dock').textContent = '';
+    $('g-dock').textContent = ''; clearNext();
     if (deviceOf(next.scene) === 'none') {
       var tk = stageToken;
       talkLines(reactionLines(next, scene)).then(function () { if (tk === stageToken) renderDock(); });
@@ -1095,9 +1113,7 @@
     $('btn-continue').addEventListener('click', function () { if (needLook()) return; routeRun(false); });
     $('name-input').addEventListener('input', function () {
       settings.nickname = cleanName($('name-input').value);
-      player.nickname = settings.nickname || CFG.defaultNickname;
-      $('player-name').textContent = player.nickname;
-      $('player-name').title = player.nickname;
+      showPlayerName();
       saveSettings();
     });
     $('btn-start-path').addEventListener('click', function () { renderPath('v-start'); });

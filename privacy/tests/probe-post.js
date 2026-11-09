@@ -528,21 +528,21 @@
       function typeName(v) { var f = $('#name-input'); f.value = v; f.dispatchEvent(new Event('input', { bubbles: true })); }
       if (P.phase === 0) {
         ok(!!$('#name-field') && !$('#name-field').hidden, '공통 정보가 없으면 이름 입력칸 보임');
-        ok($('#player-name').textContent === '플레이어', '비워 두면 기본 이름');
+        ok($('#player-name').textContent === '다온' && PrivacyApp.player().nickname === '다온', '비워 두면 고른 주인공 이름(다온, 2026-11-09 B4)');
         typeName('<b>x</b>');
-        ok(!$('#player-name b') && $('#player-name').textContent === '<b>x</b>', '이름은 글자로만 표시');
+        ok(!$('#player-name b') && $('#player-name').textContent === '다온 (별명: <b>x</b>)', '이름은 글자로만 표시');
         typeName('  가나다라마바사아자차카  ');
-        ok($('#player-name').textContent === '가나다라마바사아자차', '앞뒤 공백 제거·10자까지: ' + $('#player-name').textContent);
+        ok($('#player-name').textContent === '다온 (별명: 가나다라마바사아자차)', '앞뒤 공백 제거·10자까지: ' + $('#player-name').textContent);
         typeName('지우');
-        ok($('#player-name').textContent === '지우', '입력한 이름 표시');
+        ok($('#player-name').textContent === '다온 (별명: 지우)' && PrivacyApp.player().nickname === '지우', '입력한 이름 표시');
         ok(ls('ethicity.player') === null, '공통 플레이어 키는 만들지 않음');
         ok(JSON.parse(ls(SK) || '{}').nickname === '지우', '이 게임 설정에만 저장');
         typeName('   ');
-        ok($('#player-name').textContent === '플레이어', '공백만 지우면 기본 이름으로');
+        ok($('#player-name').textContent === '다온', '공백만 지우면 고른 주인공 이름으로');
         typeName('지우');
         sessionStorage.setItem('probe-phase', '1'); carry(); location.reload(); return;
       }
-      ok($('#name-input').value === '지우' && $('#player-name').textContent === '지우', '새로고침해도 이름 유지');
+      ok($('#name-input').value === '지우' && $('#player-name').textContent === '다온 (별명: 지우)', '새로고침해도 이름 유지');
       $('#btn-new').click();
       await play(R.A, { upto: 0 });
       ok(/지우 넌 뭐 할래/.test($('#g-log').textContent), '대사 {name}에 입력한 이름');
@@ -766,11 +766,11 @@
         await passTalk(); await wait(50);
         ok(marksNow(4000).length === 0, '둘 다 말 걸면 마당에 ? 없음');
         ok(JSON.stringify([PrivacyApp.state().trust, PrivacyApp.state().stats, PrivacyApp.state().flags]) === st0 && PrivacyApp.state().mapTarget === 'pro_1', '말 걸기는 관계·점수·플래그를 바꾸지 않음');
-        // 교실: 목적지 새봄 = ?(핀 대신), 할 말 없는 민준은 ? 없음
+        // 교실: 목적지 새봄 = 느낌표 핀(2026-11-09 B2 — 예전엔 ?), 할 말 없는 민준은 ? 없음
         var cls = TW.SCENES[0];
         TM.place(cls.ox + 15, 12, 'up'); await wait(50); marksNow();
         var mk = TM.marker();
-        ok(mk.kind === 'talk' && mk.who === 'saebom', '같은 장면의 목적지 인물은 ? ' + JSON.stringify(mk));
+        ok(mk.kind === 'dest' && mk.who === 'saebom', '같은 장면의 목적지 인물도 느낌표 핀(2026-11-09 B2) ' + JSON.stringify(mk));
         ok(marksNow().length === 0, '할 말 없는 민준에겐 ? 없음 ' + whoList());
         // 다른 걷기: 지금 상태에서 조건이 맞는 반응 줄이 있는 사람에게만 ?(목적지 인물 제외)
         await play(R.A, { upto: 3, stopAtMap: true });
@@ -1014,9 +1014,9 @@
     }
 
     else if (s === 'no-player' || s === 'damaged-player' || s === 'wrong-player') {
-      ok($('#player-name').textContent === '플레이어', '기본 별명 ‘플레이어’');
+      ok($('#player-name').textContent === '다온' && PrivacyApp.player().nickname === '다온', '기본 이름 = 고른 주인공(다온, 2026-11-09 B4)');
       ok($('#player-avatar').getAttribute('src') === 'assets/avatar-default.svg', '기본 아바타');
-      ok(!$('#player-note').hidden, '안내 문구 표시: ' + $('#player-note').textContent);
+      ok(s === 'no-player' ? $('#player-note').hidden : !$('#player-note').hidden, '안내 문구: 공통 정보 없음 = 숨김(위 한 줄이 대신), 손상 = 표시: ' + $('#player-note').textContent);
       ok(s === 'no-player' ? ls('ethicity.player') === null : ls('ethicity.player') !== null, '공통 플레이어 키를 만들거나 고치지 않음');
       $('#btn-new').click();
       await play(R.C);

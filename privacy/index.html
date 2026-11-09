@@ -65,10 +65,7 @@
         <div class="player-chip" id="player-chip">
           <img id="player-avatar" class="avatar-img" src="assets/avatar-default.svg" alt="임시 아바타" width="36" height="36">
           <span id="player-face" class="avatar-img avatar-face" role="img" hidden></span>
-          <div class="player-text">
-            <span class="player-label">이번 주인공</span>
-            <span id="player-name" class="player-name"></span>
-          </div>
+          <p class="player-text"><span class="player-label">이번 주인공:</span> <span id="player-name" class="player-name"></span></p>
         </div>
         <p id="player-note" class="small mute" hidden></p>
         <p id="last-result" class="small mute" hidden></p>
@@ -117,7 +114,7 @@
           <!-- 교사 확인용: ?debug=1 일 때만 보인다(일반 플레이는 걸어서만) -->
           <button id="btn-map-skip" class="btn ghost" type="button" hidden>목적지로 바로 가기</button>
         </div>
-        <p class="small mute map-help">방향키나 WASD 키로 걷고 스페이스 키로 말 걸기. 휴대폰·태블릿은 왼쪽 아래 조이스틱으로 걷거나 가고 싶은 곳을 누르세요. 반짝이는 출구로 나가면 다음 장소예요. <span class="ico-quest" role="img" aria-label="목적지 표시(느낌표 핀)"></span>는 다음 목적지, <span class="ico-talk" role="img" aria-label="물음표 말풍선"></span>가 뜬 사람은 할 말이 있어 보여요.</p>
+        <p class="small mute map-help">방향키나 WASD 키로 걷고 스페이스 키로 말 걸기. 휴대폰·태블릿은 왼쪽 아래 조이스틱으로 걷거나 가고 싶은 곳을 누르세요. 반짝이는 출구로 나가면 다음 장소예요. <span class="ico-quest" role="img" aria-label="목적지 표시(느낌표 핀)"></span>는 다음 목적지(사람이면 머리 위), <span class="ico-talk" role="img" aria-label="물음표 말풍선"></span>는 해도 되고 안 해도 되는 대화예요.</p>
       </section>
 
       <!-- 2-2. 장면 -->
@@ -126,6 +123,8 @@
           <div class="phone-head" id="g-head"></div>
           <ol class="log" id="g-log"></ol>
         </div>
+        <!-- 폰·PC 장면의 넘기기 버튼(모두 보기·다음) — 창 바로 아래, 같은 너비(2026-11-09) -->
+        <div class="next-row" id="g-next"></div>
         <div class="dock" id="g-dock"></div>
         <!-- 화면 읽기용: 메시지는 글자가 다 쳐진 뒤 한 번만 읽힌다(한 글자씩 읽히지 않게) -->
         <div id="g-live" class="sr-only" aria-live="polite" aria-relevant="additions"></div>
