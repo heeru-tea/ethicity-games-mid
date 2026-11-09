@@ -268,7 +268,7 @@
     if (/^route-[ABCD]$/.test(s) || s === 'route-B-key') {
       var code = s.charAt(6);
       ok(view() === 'v-start', '시작 화면');
-      ok($('#player-name').textContent === '반짝이는 고래', '별명 표시');
+      ok($('#player-name').textContent.indexOf('(별명: 반짝이는 고래)') >= 0, '별명 표시(2026-11-09 B4: 이번 주인공: 다온 (별명: ○○))');
       $('#btn-new').click();
       await play(R[code], { keyboard: s === 'route-B-key' });
       await finishChecks(code, R[code].length);
@@ -1025,7 +1025,7 @@
 
     else if (s === 'xss') {
       var name = JSON.parse(P.PLAYER).nickname;
-      ok($('#player-name').textContent === name, '별명이 글자 그대로 표시');
+      ok($('#player-name').textContent.indexOf('(별명: ' + name + ')') >= 0 && !$('#player-name').children.length, '별명이 글자 그대로 표시(B4 한 줄 안, 태그로 해석 안 됨)');
       $('#btn-new').click();
       await play(R.A, { upto: 0 });
       ok($('#g-log').textContent.indexOf(name) >= 0, '대사 속 {name} 치환은 텍스트로');
