@@ -98,6 +98,12 @@
     var token = {};
     sprites[key] = token;
     if (official) {
+      var prepared = window.PrivacyCast.ready(official);
+      if (prepared) {
+        prepared.privacyOfficial = true;
+        sprites[key] = prepared;
+        return;
+      }
       var oi = new Image();
       oi.onload = function () {
         if (sprites[key] !== token) return;

@@ -28,6 +28,43 @@
   function portraits(who, look) { var i = id(who, look); return i ? web(dir(i) + i + '-portraits.png') : null; }
   function sleep() { return web(OWN + 'minjun-sleep.png'); }
 
+  // 첫 등장 때 내려받기·디코딩을 시작하지 않도록 시작 화면에서 두 장씩 준비한다.
+  // 이미지 참조를 보관하고, 지도에서는 준비된 시트를 바로 재사용한다.
+  var prepared = {}, warming = false;
+  function ready(src) { return prepared[src] || null; }
+  function warm() {
+    if (warming || (navigator.connection && navigator.connection.saveData)) return;
+    warming = true;
+    var ids = ['onyu', 'daon', 'saebom', 'jiho', 'haneul', 'teacher', 'minjun', 'friend', 'robot'];
+    var queue = [];
+    ids.forEach(function (who) { queue.push(walk(who), portraits(who)); });
+    queue.push(sleep());
+    function next() {
+      var src = queue.shift();
+      if (!src) return;
+      var im = new Image();
+      im.fetchPriority = 'low';
+      function finish(ok) {
+        im.onload = im.onerror = null;
+        if (ok) prepared[src] = im;
+        setTimeout(next, 0);
+      }
+      im.onload = function () {
+        if (im.decode) im.decode().then(function () { finish(true); }, function () { finish(false); });
+        else finish(true);
+      };
+      im.onerror = function () { finish(false); };
+      im.src = src;
+    }
+    next(); next();
+  }
+  function scheduleWarm() {
+    if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 500 });
+    else setTimeout(warm, 0);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleWarm);
+  else scheduleWarm();
+
   // 초상화 시트의 한 칸을 요소 배경으로(정사각형 요소 기준)
   function paintPortrait(node, who, look, expr) {
     var src = portraits(who, look);
@@ -42,7 +79,7 @@
   }
 
   window.PrivacyCast = {
-    id: id, walk: walk, portraits: portraits, sleep: sleep, paintPortrait: paintPortrait,
+    id: id, walk: walk, portraits: portraits, sleep: sleep, paintPortrait: paintPortrait, ready: ready,
     LOOK: LOOK, CELL: { w: 96, h: 128, ax: 48, ay: 120, body: 112 }, STOP_FRAME: 1
   };
 })();
