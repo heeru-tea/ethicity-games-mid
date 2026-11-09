@@ -448,6 +448,16 @@
     function toField() {
       select('fix-to', '새 노선', [{ value: '', text: '노선 고르기' }].concat(targets(st.bus).map(function (r) { return { value: r.num, text: routeLabel(r) }; })), null, function (v) { st.to = v ? Number(v) : null; });
     }
+    // 노선의 유일한 버스를 옮길 때 그 노선을 쓰고 아직 하루 이동을 마치지 않은 주요 인물(경로 = 인물 칩과 같은 직행·한 번 환승) — 옛 긴급 조정 경고와 같은 사실
+    var recs = PB.ResidentEvaluation.records(s.config, s.phase, R.res);
+    function riders(num) {
+      var routes = PB.Hud ? PB.Hud.routesNow() : [];
+      return PB.Demand.residents(s.config, s.phase).filter(function (rd) {
+        var rec = recs[rd.id]; if (rec && rec.homeT != null && rec.homeT <= at) return false;
+        var path = PB.Hud && PB.Hud.pathFor(routes, rd.o, rd.d), back = PB.Hud && PB.Hud.pathFor(routes, rd.d, rec && rec.finalDestination || rd.o);
+        return [path, back].some(function (p) { return p && p.legs.some(function (l) { return l.num === num; }); });
+      });
+    }
     function change() { return { at: at, kind: st.kind, routeNum: st.kind === 'move' ? st.to : st.num, node: st.node, pos: st.pos, busId: st.bus }; }
     // 고르면 바로 한 줄: 바뀐 노선 모양 / 버스가 새 노선에 들어가는 시각(엔진으로 미리 계산만, 결과는 그대로). 지도에는 고른 정류장 고리
     function show() {
@@ -458,7 +468,7 @@
         if (st.bus == null || st.to == null) { result.textContent = st.bus == null ? '옮길 버스를 골라요.' : '버스가 갈 노선을 골라요.'; return; }
         var p = S.emergencyPreview(s, at, st.bus, st.to), who = labs[st.bus] || PB.Names.bus(st.bus, null, cur[st.bus]);
         result.textContent = !p || p.starts == null ? who + '는 운행이 끝날 때까지 ' + PB.Names.route(st.to) + '에 들어가지 못해요.' : who + '는 ' + (p.resting ? '차고에서 출발해 ' : '승객을 다 내린 뒤 ') + App.clock(p.starts) + '부터 ' + PB.Names.route(st.to) + '을 달려요.';
-        var n = cur[st.bus]; if (n != null && (count[n] || 0) === 1) { warn.textContent = PB.Names.route(n) + ' 버스가 0대가 돼요. 이 노선에서 기다리는 사람은 버스를 못 타요.'; warn.hidden = false; }
+        var n = cur[st.bus]; if (n != null && (count[n] || 0) === 1) { var who = riders(n); warn.textContent = PB.Names.route(n) + ' 버스가 0대가 돼요. ' + (who.length ? '이 노선을 쓰는 ' + who.map(function (rd) { return rd.name + '(' + App.nodeName(rd.o) + '→' + App.nodeName(rd.d) + ')'; }).join(', ') + '의 남은 이동이 끊길 수 있어요.' : '이 노선에서 기다리는 사람은 버스를 못 타요.'); warn.hidden = false; }
         apply.disabled = false; reveal(); return;
       }
       if (!st.node) { result.textContent = st.kind === 'add' ? '더할 정류장을 골라요.' : '뺄 정류장을 골라요.'; setAlerts([]); return; }

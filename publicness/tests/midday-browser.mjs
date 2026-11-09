@@ -57,6 +57,7 @@ try{
     const after=await state(page);assert.equal(after.fixing,false);assert.equal(after.paused,false,'다시 달림');
     assert.equal(await page.evaluate(()=>PB.App.s.midChanges.length),1);
     await page.waitForFunction(()=>document.querySelector('#run-fix-why').textContent==='오늘은 이미 고쳤어요',null,{timeout:5000});assert.equal(await page.locator('#run-fix').isDisabled(),true);
+    await page.locator('#run-pause').click();await page.waitForTimeout(400);await page.screenshot({path:shot('after-1280')});await page.locator('#run-pause').click();
     const routes=await page.evaluate(()=>PB.Hud.routesNow().map(r=>r.route.nodes.join('')));assert.ok(routes.some(r=>r.includes(node)),'지도·인물 경로가 바뀐 노선 모양 '+routes);
     await page.locator('#run-skip').click();await page.locator('#resident-day-results, #result-next-bar').first().waitFor({timeout:20000});
     const events=await page.locator('#panel').innerText(),name=await page.evaluate(n=>PB.App.nodeName(n),node);
