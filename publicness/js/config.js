@@ -101,7 +101,7 @@
       service: { amount: 20000, minStops: 6, stops: [{ id: 'F', label: '외곽 마을', fromPhase: 1 }, { id: 'D', label: '병원', fromPhase: 1 }, { id: 'K', label: '복지관', fromPhase: 5 }] }
     },
     /* 어르신 무임(2026-11-10): 대상 = 일반 요청 중 이 구역을 오가는 share 비율. 폐지(abolish)는 policyPhase부터, 대상 중 abolishStay 비율은 집에 머문다 */
-    elderFree: { share: 0.4, zones: ['F', 'D', 'K'], abolishStay: 0.5, policyPhase: 4 },
+    elderFree: { share: 0.3, zones: ['F', 'D', 'K'], abolishStay: 0.5, policyPhase: 4 },
     events: { pNone: 0.60, pDemand: 0.85, timeBase: 35, timeSpan: 26, extraPerMin: 2, extraMinutes: 6 },
     defaultSeed: 42,
     rush: { share: 0.75, outbound: 8, inbound: 50, spread: 10, jitter: 4 },
