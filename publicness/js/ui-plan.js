@@ -203,11 +203,11 @@
     app().toast(P.message,{priority:true});}// 적용하면 AI 패널은 닫히고(ui-map-plan) 알림만 남는다(2026-11-01)
   UI.planSetPreview=function(on){P.preview=!!on&&!!P.rec;};
   // AI 목표별로 무엇을 기준으로 고르는지(advisor.js score와 같은 뜻, 2026-11-01). 알고리즘은 그대로이고 설명만 보탠다
-  var GOAL_DESC={time:'모든 이동의 도착까지 걸린 시간 합이 가장 짧은 계획을 골라요.',reach:'지난 운행에서 도착률이 가장 낮았던 출발 지역 두 곳의 도착률을 높여요.',profit:'이번 단계 수지(지원금 + 운임 − 비용)가 가장 큰 계획을 골라요.'};
-  // P2-4(2026-11-02): 지난 운행이 없는 1단계의 ‘소외 지역 연결’은 처음 정해 둔 출발 지역(config.reachInitial)
-  function goalDesc(id){var s=st();if(id==='reach'&&(s.phase===1||!s.history.length))return '처음 정해 둔 출발 지역('+(s.config.reachInitial||[]).map(function(n){return app().nodeName(n);}).join('·')+')의 도착률을 높여요.';return GOAL_DESC[id];}
-  function goalCriterion(rec){var names=(rec.targets||[]).map(function(id){return app().nodeName(id);}).join('·');
-    return rec.goal==='reach'?'이 제안의 ‘소외 지역’은 '+(st().phase===1||!st().history.length?'처음 정해 둔':'지난 운행에서 도착률이 가장 낮았던')+' 출발 지역'+(names?'('+names+')':'')+'이에요. 노선이 아예 없는 정류장이나 주요 인물을 따로 챙기지는 않아요.'
+  var GOAL_DESC={time:'모든 이동의 도착까지 걸린 시간 합이 가장 짧은 계획을 골라요.',reach:'사람이 정해 둔 지역과 탑승 기록이 가장 적은 지역에 버스가 서게 해요. 기록이 없어도 챙겨요.',profit:'이번 단계 수지(지원금 + 운임 − 비용)가 가장 큰 계획을 골라요.'};
+  /* 소외 지역 연결(2026-11-10): 정차 여부 우선. 대상 = 사람이 정해 둔 지역 + 탑승 기록 비율이 가장 낮은 지역(1단계는 앞부분만) */
+  function goalDesc(id){return GOAL_DESC[id];}
+  function goalCriterion(rec){var first=st().phase===1||!st().history.length;
+    return rec.goal==='reach'?'이 제안의 ‘소외 지역’은 사람이 정해 둔 지역(외곽 마을·구도심 시장)'+(first?'이에요.':'과 탑승 기록이 가장 적은 지역이에요.')
       :rec.goal==='time'?'이 제안의 ‘빠른 이동’은 모든 이동의 도착 시간 합이에요. 주요 인물을 따로 챙기지는 않아요.'
       :'이 제안의 ‘수익’은 이번 단계 수지예요. 도착 건수는 수지가 같을 때만 따져요.';}
   /* AI 비교(2026-11-05 P1-6): ‘내 노선 | AI 제안’ 두 열 표를 맨 위에. 좋아짐·나빠짐은 색과 글자 둘 다. 값은 모두 같은 예상 함수(Session.expected) */
