@@ -968,6 +968,10 @@
       var fr = freeRect();
       cx = fitAxis(px - (fr.x0 + fr.x1) / 2, sx0, sw, fr.x0, fr.x1, viewW, !!sc.bg);
       cy = fitAxis(py - (fr.y0 + (fr.y1 - fr.y0) * 0.62), 0, sh, fr.y0, fr.y1, viewH); // 몸이 칸 위로 2칸쯤 서므로 조금 아래에
+      // 2026-11-09 C3 후속: 장면으로 캔버스를 다 덮으면(위 fitAxis) 작은 창·높은 선택 상자에서 주인공이 폰·선택 상자 뒤로 들어갔다(run-probes stage-phone, 800×600).
+      //   그 축만 예전처럼 '보이는 영역만 장면 안'으로 — 가장자리에 좁은 흐린 띠가 생겨도 주인공이 보이는 쪽을 택한다(빈 칸 없음은 보통 화면 1148×977·1280×800·390×844에서 검사)
+      if (py - cy > fr.y1 || py - cy - T * 2 < fr.y0) cy = fitAxis(py - (fr.y0 + (fr.y1 - fr.y0) * 0.62), 0, sh, fr.y0, fr.y1, Infinity);
+      if (px - cx < fr.x0 || px - cx > fr.x1) cx = fitAxis(px - (fr.x0 + fr.x1) / 2, sx0, sw, fr.x0, fr.x1, Infinity, !!sc.bg);
       // 선택 상자가 늦게 나타나 영역이 바뀌면 부드럽게 옮겨 간다(움직임 줄이기·처음·크기 변경은 바로)
       var k = !camS || camS.T !== T || o.reduceMotion() ? 1 : Math.min(1, frameDt / 140);
       camS = { x: camS && k < 1 ? camS.x + (cx - camS.x) * k : cx, y: camS && k < 1 ? camS.y + (cy - camS.y) * k : cy, T: T };
