@@ -1,4 +1,4 @@
-// 사건 4·5 새 그림(docs/codex-art-brief-4-5.md): Codex 원본 PNG(커밋하지 않음, .gitignore) → 게임이 쓰는 .webp 사본(커밋).
+// 사건 4·5 새 그림(docs/codex-art-brief-4-5-v2.md): Codex 원본 PNG(커밋하지 않음, .gitignore) → 게임이 쓰는 .webp 사본(커밋).
 // 지시서 크기(배경 1672×941, 인물 1024×1536)로 맞춘다. 배경은 가운데를 채워 자르고(cover), 인물은 비율을 지켜 아래·가운데에 둔다(contain, 투명 여백).
 // 인코딩은 헤드리스 Edge(Playwright)의 canvas.toDataURL('image/webp') — 다른 게임 tools/to-webp와 같은 방식(설치 필요 없음).
 // 실행(transparency/에서): node tools/art-4-5.cjs [--q 0.86] [--root 다른폴더]
@@ -9,7 +9,10 @@ const fs=require('node:fs'),path=require('node:path');
 const args=process.argv.slice(2),opt=(n,d)=>{const i=args.indexOf(n);return i>=0?args[i+1]:d;};
 const Q=Number(opt('--q',0.86)),ROOT=path.resolve(opt('--root',path.join(__dirname,'..')));
 // [경로(확장자 없이), 너비, 높이, 투명 배경 인물인지]
-const LIST=[['assets/s04/bg-school-library',1672,941,false],['assets/s04/dami-books',1024,1536,true],['assets/s05/bg-observatory-hill',1672,941,false],['assets/s05/moa-phone',1024,1536,true],['assets/s05/lulu-casual',1024,1536,true]];
+// 2026-11-10 사건 4·5 새로 짬(docs/codex-art-brief-4-5-v2.md). 옛 사건 그림(bg-school-library·dami-books)은 이미 만든 .webp가 있어 목록에서 뺐다.
+const LIST=[['assets/s04/bg-newsroom',1672,941,false],['assets/s04/moa-reporter',1024,1536,true],['assets/s04/dami-letter',1024,1536,true],['assets/s04/clerk-newspaper',1024,1536,true],
+ ['assets/s05/bg-observatory-hill',1672,941,false],['assets/s05/moa-phone',1024,1536,true],['assets/s05/lulu-casual',1024,1536,true],['assets/s05/lulu-phone',1024,1536,true],['assets/s05/bami-phone',1024,1536,true],
+ ['assets/s05/galaxy-ai',1024,1024,false],['assets/s05/hill-real-photo',1024,1024,false]];
 const kb=n=>Math.round(n/1024).toLocaleString()+'KB';
 (async()=>{
  const todo=LIST.filter(([b])=>fs.existsSync(path.join(ROOT,b+'.png')));
