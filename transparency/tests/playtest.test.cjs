@@ -6,17 +6,17 @@ test('corrupt or impossible saves reset safely',()=>{
  let s=E.initial();s.scene=4;s.furthest=4;assert.deepEqual(E.restore(JSON.stringify(s)),E.initial(),'result scene without a choice');
  s=E.initial();s.judgments.photo=[null,'unknown',null];assert.deepEqual(E.restore(s),E.initial(),'judgment gap');
 });
-test('version 5 progress round-trips exactly',()=>{
+test('version 6 progress round-trips exactly',()=>{
  let s=E.initial();s=E.reduce(s,{type:'next'});s=E.reduce(s,{type:'next'});s=E.reduce(s,{type:'check',id:'photo-original'});
- const n0={picked:[],posted:null},nb=x=>({notices:{photo:x,writing:n0,face:n0,library:n0,recommend:n0}});
- assert.equal(s.scene,2);assert.equal(s.version,5);assert.deepEqual(s.notices,{photo:n0,writing:n0,face:n0,library:n0,recommend:n0});assert.deepEqual(s.asked,[]);assert.equal('question' in s,false);assert.deepEqual(E.restore(JSON.stringify(s)),s);
- const no=f=>{const c=JSON.parse(JSON.stringify(s[f]));delete c.recommend;return {[f]:c};};
- for(const bad of [{asked:null},{asked:['zzz']},{asked:['input','input']},{completed:true},no('cases'),no('judgments'),no('follows'),no('reflections'),no('notices'),{reflections:null},{finalNote:3},{reporter:{name:1,number:''}},{reflections:{photo:{q1:'a'},writing:{q1:'',q2:''},face:{q1:'',q2:''}}},
+ const n0={picked:[],posted:null},nb=x=>({notices:{photo:x,writing:n0,face:n0,camp:n0,share:n0}});
+ assert.equal(s.scene,2);assert.equal(s.version,6);assert.deepEqual(s.notices,{photo:n0,writing:n0,face:n0,camp:n0,share:n0});assert.deepEqual(s.asked,[]);assert.equal('question' in s,false);assert.deepEqual(E.restore(JSON.stringify(s)),s);
+ const no=f=>{const c=JSON.parse(JSON.stringify(s[f]));delete c.share;return {[f]:c};};
+ for(const bad of [{asked:null},{asked:['zzz']},{asked:['who','who']},{asked:['input']},{completed:true},no('cases'),no('judgments'),no('follows'),no('reflections'),no('notices'),{reflections:null},{finalNote:3},{reporter:{name:1,number:''}},{reflections:{photo:{q1:'a'},writing:{q1:'',q2:''},face:{q1:'',q2:''}}},
   {notices:null},{notices:undefined},nb({picked:['zzz'],posted:null}),nb({picked:['writing-human'],posted:null}),nb({picked:[],posted:[]}),nb({picked:['photo-auto','photo-auto'],posted:null}),nb({picked:[],posted:'x'})])
   assert.deepEqual(E.restore(JSON.stringify({...s,...bad})),E.initial(),'broken fields reset '+JSON.stringify(bad));
- // 사건 5 궁금한 것을 지났는데 물어본 질문이 없으면 손상으로 본다
- const fin=E.initial();for(const k of E.CASES.slice(0,4))doneCase(fin,k);fin.scene=fin.furthest=E.sceneOf('recommend','check');assert.deepEqual(E.restore(fin),E.initial());
- fin.asked=['criteria'];assert.equal(E.restore(fin).scene,E.sceneOf('recommend','check'));
+ // 사건 4 궁금한 것을 지났는데 물어본 질문이 없으면 손상으로 본다
+ const fin=E.initial();for(const k of E.CASES.slice(0,3))doneCase(fin,k);fin.scene=fin.furthest=E.sceneOf('camp','check');assert.deepEqual(E.restore(fin),E.initial());
+ fin.asked=['criteria'];assert.equal(E.restore(fin).scene,E.sceneOf('camp','check'));
  // 이 단계를 지났는데 안내문이 없는 version 4 저장은 조작·손상으로 본다
  const skip=doneCase(E.initial(),'photo');skip.notices.photo={picked:[],posted:null};skip.scene=skip.furthest=E.sceneOf('photo','reflect');assert.deepEqual(E.restore(skip),E.initial());
  skip.notices.photo={picked:['photo-auto'],posted:['photo-auto']};assert.equal(E.restore(skip).scene,E.sceneOf('photo','reflect'));
@@ -31,7 +31,7 @@ test('version 2 saves move to version 5: same step, empty reflections, existing 
  // 글 사건 직접 확인 중(옛 scene 7)
  let old=doneCase(v2(7,7),'photo');old.evidence.push('writing-guide');
  let s=E.restore(JSON.stringify(old));
- assert.equal(s.version,5);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');assert.equal(s.furthest,s.scene);
+ assert.equal(s.version,6);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');assert.equal(s.furthest,s.scene);
  assert.deepEqual(s.notices.photo,{picked:[],posted:'legacy'},'photo case already past the new notice step');assert.deepEqual(s.notices.writing,{picked:[],posted:null});
  assert.deepEqual(s.reflections,E.initial().reflections);assert.equal(s.finalNote,'');assert.deepEqual(s.asked,[]);assert.deepEqual(s.reporter,{name:'',number:''});
  assert.deepEqual(s.judgments.photo,old.judgments.photo);assert.deepEqual(s.follows.photo,old.follows.photo);assert.deepEqual(s.evidence,old.evidence);
@@ -41,10 +41,10 @@ test('version 2 saves move to version 5: same step, empty reflections, existing 
  s=E.restore(old);assert.equal(E.stepOf(s.scene),'follow');assert.equal(E.caseKey(s.scene),'photo');assert.equal(s.notices.photo.posted,null,'not past the notice step yet');
  for(const [i,id] of E.followMarks.photo.ids.entries())s=E.reduce(s,{type:'mark',id,value:E.truth[i]});s=E.reduce(s,{type:'follow-judge',stamp:'different'});
  s=E.reduce(s,{type:'next'});assert.equal(E.stepOf(s.scene),'notice','then the new notice screen');
- // 다 끝낸 저장(옛 scene 16): 새 사건 4 궁금한 것부터, 물어본 질문은 asked로
+ // 다 끝낸 저장(옛 scene 16): 새 사건 4 궁금한 것부터, 옛 질문은 버린다
  old=v2(16,16,{question:'criteria',completed:true});for(const k of OLD3)doneCase(old,k);
- s=E.restore(old);assert.equal(s.scene,E.sceneOf('library','hook'));assert.equal(s.furthest,s.scene);assert.equal(s.completed,false);assert.deepEqual(s.asked,['criteria']);assert.ok(OLD3.every(k=>s.notices[k].posted==='legacy'));
- assert.deepEqual(s.notices.library,{picked:[],posted:null});s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.sceneOf('library','check'));
+ s=E.restore(old);assert.equal(s.scene,E.sceneOf('camp','hook'));assert.equal(s.furthest,s.scene);assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);assert.ok(OLD3.every(k=>s.notices[k].posted==='legacy'));
+ assert.deepEqual(s.notices.camp,{picked:[],posted:null});s=E.reduce(E.reduce(s,{type:'ask',id:'purpose'}),{type:'next'});assert.equal(s.scene,E.sceneOf('camp','check'));
  // 옛 배치에서 범위를 벗어난 장면 번호
  assert.deepEqual(E.restore(v2(17,17)),E.initial());
 });
@@ -54,7 +54,7 @@ test('version 3 saves move to version 5: same step; cases already past the notic
  // 사진 생각 정리 중(옛 scene 6): 새 배치의 사진 생각 정리, 사진 미리 알리기는 '아직 안 함'
  let old=doneCase(v3(6,6),'photo');old.reflections.photo.q1='원본 사진';
  let s=E.restore(JSON.stringify(old));
- assert.equal(s.version,5);assert.equal(E.caseKey(s.scene),'photo');assert.equal(E.stepOf(s.scene),'reflect');assert.equal(s.reflections.photo.q1,'원본 사진');
+ assert.equal(s.version,6);assert.equal(E.caseKey(s.scene),'photo');assert.equal(E.stepOf(s.scene),'reflect');assert.equal(s.reflections.photo.q1,'원본 사진');
  assert.deepEqual(s.notices.photo,{picked:[],posted:'legacy'});assert.equal(E.canAdvance(s),true,'legacy does not block');
  assert.deepEqual(E.restore(JSON.stringify(s)),s,'round-trips as version 5');
  let r=E.reduce(s,{type:'revisit',scene:E.sceneOf('photo','notice')});assert.equal(E.canAdvance(r),true);
@@ -67,14 +67,14 @@ test('version 3 saves move to version 5: same step; cases already past the notic
  assert.equal(s.scene,E.sceneOf('writing','check'));assert.equal(s.notices.photo.posted,'legacy');assert.equal(s.notices.writing.posted,null);
  // 보고서까지 간 저장(옛 scene 20): 사건 4 궁금한 것부터, 세 사건 모두 legacy, 서술·이름 그대로
  old=v3(20,20,{question:'unknown',completed:true});for(const k of OLD3)doneCase(old,k);old.finalNote='먼저 물어볼래';old.reporter={name:'하늘',number:'10203'};
- s=E.restore(old);assert.equal(s.scene,E.sceneOf('library','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,['unknown']);assert.ok(OLD3.every(k=>s.notices[k].posted==='legacy'));assert.equal(s.finalNote,'먼저 물어볼래');assert.deepEqual(s.reporter,{name:'하늘',number:'10203'});
+ s=E.restore(old);assert.equal(s.scene,E.sceneOf('camp','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);assert.ok(OLD3.every(k=>s.notices[k].posted==='legacy'));assert.equal(s.finalNote,'먼저 물어볼래');assert.deepEqual(s.reporter,{name:'하늘',number:'10203'});
  // 옛 배치(마지막 20)를 벗어난 장면 번호
  assert.deepEqual(E.restore(v3(21,21)),E.initial());
 });
 test('version 1 revision 4 save at scene 5 (writing case start) resumes at the writing case start',()=>{
  const old={version:1,revision:4,scene:5,furthest:5,evidence:['photo-original','photo-rule'],judgments:{photo:'unknown',writing:null,face:null},cases:{photo:v1c('auto'),writing:{first:null,final:null},face:{first:null,final:null}},question:null,completed:false};
  const s=E.restore(JSON.stringify(old));
- assert.equal(s.version,5);assert.equal(E.stepOf(s.scene),'hook');assert.equal(E.caseKey(s.scene),'writing');assert.equal(s.notices.photo.posted,'legacy');
+ assert.equal(s.version,6);assert.equal(E.stepOf(s.scene),'hook');assert.equal(E.caseKey(s.scene),'writing');assert.equal(s.notices.photo.posted,'legacy');
  assert.deepEqual(s.reflections.photo,{q1:'',q2:''},'version 1 saves also get empty reflections');
  assert.deepEqual(s.judgments.photo,['unknown','legacy','legacy'],'old pick kept as judgment 1; new ones marked as not done');
  assert.equal(s.follows.photo.judgment,'legacy');assert.deepEqual(s.cases.photo,{first:'auto',final:'auto'});
@@ -89,8 +89,8 @@ test('version 1 revision 4 at photo result continues into the new follow-up',()=
 });
 test('version 1 revision 4 completed save resumes at the new case 4',()=>{
  const old={version:1,revision:4,scene:13,furthest:13,evidence:OLD3.flatMap(k=>E.checks[k]),judgments:{photo:'confirmed',writing:'unknown',face:'different'},cases:{photo:v1c('all'),writing:v1c('review'),face:v1c('release')},question:'input',completed:true};
- const s=E.restore(old);assert.equal(s.scene,E.sceneOf('library','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,['input']);assert.ok(OLD3.every(k=>s.follows[k].judgment==='legacy'&&s.notices[k].posted==='legacy'));
- assert.deepEqual(s.follows.library,{marks:{},judgment:null});
+ const s=E.restore(old);assert.equal(s.scene,E.sceneOf('camp','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);assert.ok(OLD3.every(k=>s.follows[k].judgment==='legacy'&&s.notices[k].posted==='legacy'));
+ assert.deepEqual(s.follows.camp,{marks:{},judgment:null});
 });
 test('revision 3 save (claim-card version) still migrates through revision 4',()=>{
  const old={version:1,revision:3,scene:7,furthest:7,evidence:['P1','P2','P3','W1','W2'],tasks:{},claims:{},attempts:{},assistedScenes:[],
@@ -106,21 +106,46 @@ function v4(scene,furthest,extra={}){const s=v3(scene,furthest);s.version=4;s.no
 test('version 4 saves move to version 5: case scenes unchanged; ending, report and completed saves resume at case 4',()=>{
  // 얼굴 사건 직접 확인 중(scene 16)
  let old=doneCase(doneCase(v4(16,16),'photo'),'writing');old.evidence.push('face-alert');
- let s=E.restore(JSON.stringify(old));assert.equal(s.version,5);assert.equal(s.scene,16);assert.equal(E.caseKey(s.scene),'face');assert.equal(E.stepOf(s.scene),'check');
+ let s=E.restore(JSON.stringify(old));assert.equal(s.version,6);assert.equal(s.scene,16);assert.equal(E.caseKey(s.scene),'face');assert.equal(E.stepOf(s.scene),'check');
  assert.deepEqual(s.notices.photo,old.notices.photo,'posted notices kept, not legacy');assert.deepEqual(s.judgments.writing,old.judgments.writing);assert.deepEqual(s.asked,[]);
  assert.deepEqual(E.restore(JSON.stringify(s)),s,'round-trips as version 5');
  // 마지막 장면에서 질문 전(scene 22)
- old=v4(22,22);for(const k of OLD3)doneCase(old,k);s=E.restore(old);assert.equal(s.scene,E.sceneOf('library','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);
+ old=v4(22,22);for(const k of OLD3)doneCase(old,k);s=E.restore(old);assert.equal(s.scene,E.sceneOf('camp','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);
  // 다 마친 저장(보고서, scene 23): 사건 4 첫 화면. 사건 1~3 기록·서술·안내문·이름·마지막 서술 그대로
  old=v4(23,23,{question:'notice',completed:true,finalNote:'무엇을 썼는지',reporter:{name:'하늘',number:'10203'}});for(const k of OLD3)doneCase(old,k);old.reflections.face={q1:'점검표',q2:'기록'};
  old.notices.writing={picked:['writing-human','writing-patterns'],posted:['writing-human','writing-patterns']};
  s=E.restore(JSON.stringify(old));
- assert.equal(s.scene,E.sceneOf('library','hook'));assert.equal(s.furthest,s.scene);assert.equal(s.completed,false);assert.deepEqual(s.asked,['notice']);
+ assert.equal(s.scene,E.sceneOf('camp','hook'));assert.equal(s.furthest,s.scene);assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);
  for(const k of OLD3){assert.deepEqual(s.judgments[k],old.judgments[k]);assert.deepEqual(s.cases[k],old.cases[k]);assert.deepEqual(s.follows[k],old.follows[k]);assert.deepEqual(s.notices[k],old.notices[k]);assert.deepEqual(s.reflections[k],old.reflections[k]);}
  assert.equal(s.finalNote,'무엇을 썼는지');assert.deepEqual(s.reporter,{name:'하늘',number:'10203'});
- for(const k of ['library','recommend']){assert.deepEqual(s.cases[k],{first:null,final:null});assert.deepEqual(s.judgments[k],[null,null,null]);assert.deepEqual(s.notices[k],{picked:[],posted:null});assert.deepEqual(s.reflections[k],{q1:'',q2:''});}
+ for(const k of ['camp','share']){assert.deepEqual(s.cases[k],{first:null,final:null});assert.deepEqual(s.judgments[k],[null,null,null]);assert.deepEqual(s.notices[k],{picked:[],posted:null});assert.deepEqual(s.reflections[k],{q1:'',q2:''});}
  assert.equal(E.reduce(s,{type:'revisit',scene:E.sceneOf('face','reflect')}).scene,E.sceneOf('face','reflect'),'earlier cases can be reopened');
  assert.deepEqual(E.restore(JSON.stringify(s)),s);
  // 옛 배치(마지막 23)를 벗어난 장면 번호
  assert.deepEqual(E.restore(v4(24,24)),E.initial());
+});
+// version 5 저장(2026-11-08~10 판, 옛 사건 4·5 = 도서관 library·밤하늘 recommend). 장면 번호는 지금과 같다.
+function v5(scene,furthest){const K=['photo','writing','face','library','recommend'],each=f=>Object.fromEntries(K.map(k=>[k,f()]));
+ return {version:5,scene,furthest,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),asked:[],completed:false,
+  reflections:each(()=>({q1:'',q2:''})),finalNote:'',reporter:{name:'',number:''},notices:each(()=>({picked:[],posted:null}))};}
+test('version 5 saves move to version 6: cases 1~3 kept, old cases 4·5 dropped, resume at the new case 4',()=>{
+ // 사건 1~3 도중: 그대로
+ let old=v5(9,9);doneCase(old,'photo');old.evidence.push('writing-guide');old.reflections.photo={q1:'원본',q2:'기준'};
+ let s=E.restore(JSON.stringify(old));assert.equal(s.version,6);assert.equal(s.scene,9);assert.deepEqual(s.reflections.photo,{q1:'원본',q2:'기준'});assert.deepEqual(s.evidence,old.evidence);
+ // 옛 사건 4 도중·옛 사건 5 도중·보고서·완료 → 새 사건 4 첫 화면, 완료 아님, 옛 자료·질문 버림
+ for(const [scene,completed] of [[25,false],[31,false],[36,true],[37,true]]){
+  old=v5(scene,scene);for(const k of OLD3)doneCase(old,k);old.evidence.push('library-guide','library-loans','recommend-reason');old.asked=['input','notice'];old.completed=completed;
+  old.judgments.library=['different',null,null];old.reflections.library={q1:'옛 도서관',q2:''};old.finalNote='끝';old.reporter={name:'하늘',number:'10203'};
+  old.reflections.face={q1:'점검표',q2:''};
+  s=E.restore(JSON.stringify(old));
+  assert.equal(s.version,6);assert.equal(s.scene,E.sceneOf('camp','hook'),'scene '+scene);assert.equal(s.furthest,s.scene);assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);
+  assert.ok(s.evidence.every(id=>OLD3.some(k=>E.checks[k].includes(id))),'old case 4·5 records dropped');
+  for(const k of OLD3){assert.deepEqual(s.judgments[k],old.judgments[k]);assert.deepEqual(s.cases[k],old.cases[k]);assert.deepEqual(s.notices[k],old.notices[k]);}
+  assert.deepEqual(s.reflections.face,{q1:'점검표',q2:''});assert.equal(s.finalNote,'끝');assert.deepEqual(s.reporter,{name:'하늘',number:'10203'});
+  for(const k of ['camp','share']){assert.deepEqual(s.cases[k],{first:null,final:null});assert.deepEqual(s.judgments[k],[null,null,null]);assert.deepEqual(s.reflections[k],{q1:'',q2:''});}
+  assert.equal('library' in s.cases,false);assert.deepEqual(E.restore(JSON.stringify(s)),s,'round-trips as version 6');
+  assert.equal(E.canAdvance(s),false,'must ask the 구청 first');}
+ // 옛 질문 목록에도 없는 질문은 손상
+ old=v5(9,9);doneCase(old,'photo');old.asked=['zzz'];assert.deepEqual(E.restore(old),E.initial());
+ old=v5(9,9);old.evidence=['zzz-id'];assert.deepEqual(E.restore(old),E.initial());
 });

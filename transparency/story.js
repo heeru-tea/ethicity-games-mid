@@ -1,14 +1,16 @@
 window.TransparencyStory = (()=>{
  const s='assets/s01/', r='assets/remaining/';
- const art={backgrounds:[r+'bg-repair-shop.png',s+'bg-festival-board.png',r+'bg-school-corridor.png',r+'bg-bakery-entrance.png'],moa:s+'moa-attentive.png',lulu:s+'lulu-concerned.png',dami:s+'dami-hurt.png',bami:r+'bami-concerned.png',teacher:r+'teacher-listening.png',clerk:r+'clerk-hesitant.png',clerkOpen:r+'clerk-reconsidering.png',luluPaper:r+'lulu-manuscript.png',photo:s+'festival-group-original.png',faces:r+'face-comparison-fictional.png',expressions:r+'moa-expressions.png',props:r+'props-atlas.png',librarian:r+'teacher-listening.png'};
- // 사건 4·5 새 그림(docs/codex-art-brief-4-5.md). 처음에는 지시서의 '대신 쓸 그림'을 쓰고, app.js가 시작할 때 base + '.webp'(게임용 사본) → '.png'(원본)을 불러 보아
+ const art={backgrounds:[r+'bg-repair-shop.png',s+'bg-festival-board.png',r+'bg-school-corridor.png',r+'bg-bakery-entrance.png'],moa:s+'moa-attentive.png',lulu:s+'lulu-concerned.png',dami:s+'dami-hurt.png',bami:r+'bami-concerned.png',teacher:r+'teacher-listening.png',clerk:r+'clerk-hesitant.png',clerkOpen:r+'clerk-reconsidering.png',luluPaper:r+'lulu-manuscript.png',photo:s+'festival-group-original.png',faces:r+'face-comparison-fictional.png',expressions:r+'moa-expressions.png',props:r+'props-atlas.png'};
+ // 사건 4·5 새 그림(docs/codex-art-brief-4-5-v2.md). 처음에는 지시서의 '대신 쓸 그림'을 쓰고, app.js가 시작할 때 base + '.webp'(게임용 사본) → '.png'(원본)을 불러 보아
  // 열리는 것이 있으면 그것으로 바꾼다. bg = 배경 배열 자리.
  art.backgrounds.push(r+'bg-school-corridor.png',r+'bg-repair-shop.png');
- Object.assign(art,{library:art.backgrounds[4],observatory:art.backgrounds[5],damiBooks:art.dami,moaPhone:art.moa,luluCasual:art.lulu});
- art.newArt={library:{base:'assets/s04/bg-school-library',bg:4},damiBooks:{base:'assets/s04/dami-books'},observatory:{base:'assets/s05/bg-observatory-hill',bg:5},moaPhone:{base:'assets/s05/moa-phone'},luluCasual:{base:'assets/s05/lulu-casual'}};
+ // 대신 그림: 신문부실 = 복도, 은하수·실제 사진 = 코드로 그린 하늘(app.js), 새 포즈 = 기존 인물(루루 휴대폰은 이미 있는 lulu-casual 사본).
+ Object.assign(art,{newsroom:art.backgrounds[4],observatory:art.backgrounds[5],moaReporter:art.moa,damiLetter:art.dami,clerkPaper:art.clerk,moaPhone:art.moa,luluPhone:'assets/s05/lulu-casual.webp',bamiPhone:art.bami,galaxy:null,hillReal:null});
+ art.newArt={newsroom:{base:'assets/s04/bg-newsroom',bg:4},moaReporter:{base:'assets/s04/moa-reporter'},damiLetter:{base:'assets/s04/dami-letter'},clerkPaper:{base:'assets/s04/clerk-newspaper'},
+  observatory:{base:'assets/s05/bg-observatory-hill',bg:5},moaPhone:{base:'assets/s05/moa-phone'},luluPhone:{base:'assets/s05/lulu-phone'},bamiPhone:{base:'assets/s05/bami-phone'},galaxy:{base:'assets/s05/galaxy-ai',code:true},hillReal:{base:'assets/s05/hill-real-photo',code:true}};
  const names={moa:'모아',lulu:'루루',luluPaper:'루루',dami:'담이',bami:'밤이',teacher:'선생님',clerk:'점원',clerkOpen:'점원',town:'마을 사람들',classmate:'반 친구',app:'앱 알림',
-  librarian:'사서 선생님',libraryGuide:'추천 안내',recApp:'추천 앱',damiBooks:'담이',moaPhone:'모아',luluCasual:'루루'};
- const bgNames=['저녁 골목과 수리점','축제 게시판 앞','학교 복도','빵집 입구','학교 도서관','언덕 위 관측 데크'];
+  office:'구청 청소년과',paper:'마을 신문',moaReporter:'모아',damiLetter:'담이',clerkPaper:'점원',moaPhone:'모아',luluPhone:'루루',bamiPhone:'밤이'};
+ const bgNames=['저녁 골목과 수리점','축제 게시판 앞','학교 복도','빵집 입구','학교 신문부실','언덕 위 관측 데크'];
  // 판단 세 갈래. 학습 목표: 자료로 확인된 것 / 자료로는 알 수 없는 것 / 자료와 다른 것을 나눈다.
  const stamps={confirmed:'자료로 확인돼',unknown:'자료로는 알 수 없어',different:'자료와 달라'};
  const intro={
@@ -137,87 +139,99 @@ window.TransparencyStory = (()=>{
      {id:'face-wall',text:'등록된 손님의 사진을 문에 붙여 둬요.',clash:'알리는 것도 좋지만, 등록된 손님의 사진은 그 사람의 개인정보야. 알리는 것과 개인정보 보호가 부딪치니까 얼굴 인식을 쓴다는 것까지만 알리면 돼.'},
      {id:'face-blur',text:'등록 사진이 흐리면 틀릴 수 있어요.'},{id:'face-report',text:'잘못 막혔다면 이곳으로 알려 주세요.'}]}},
   // ── 사건 4·5(2026-11-08 구현, 문장 전부 교사 검수 대기) ──
-  library:{name:'도서관 추천 사건',title:'같은 책만 추천하는 도서관',bg:4,cast:['moa','librarian','damiBooks'],
-   hook:[['dami','나는 공룡 책만 빌렸는데, 추천은 맨날 요즘 인기 책이야.'],['librarian','추천 안내문에는 ‘읽은 책을 기준으로 추천한다’고 적혀 있어.']],
-   question:'추천 AI의 설명은 기록과 맞을까?',screen:['담이에게 추천','1위 마법학교 7'],
+  // 사건 4·5(2026-11-10 새로 짬, 설계 docs/2026-11-10-cases-4-5-rework-design.md). 문장 모두 교사 검수 대기.
+  // 사건 4: 정부·사회의 몫. 구청 AI 선발이 본의 아니게 버스 드문 마을에 불리했다. 모아는 신문부 기자.
+  camp:{name:'구청 캠프 사건',title:'겨울 캠프 명단',bg:4,cast:['moaReporter','damiLetter','clerkPaper'],
+   hook:[['dami','캠프 떨어졌어. 우리 마을 애들은 거의 다 떨어졌대.'],['clerk','AI가 솔숲마을 애들을 일부러 떨어뜨린 거래!'],['teacher','신문부가 확인해서 기사로 써 보자.']],
+   question:'솔숲마을 아이들만 많이 떨어진 까닭은 뭘까?',screen:['마을 신문 · 소문','“AI가 솔숲마을 차별”'],
+   askPrompt:'구청에 무엇부터 물어볼까?',askNeed:'질문을 하나 이상 하면 직접 확인할 수 있어.',askWho:'office',
+   asks:[['purpose','AI를 어디에 썼어요?','신청서에 점수를 매기는 데 썼어요. 최종 명단은 담당자가 확인했어요.'],['criteria','무엇을 기준으로 뽑았어요?','기준표를 보내 드릴게요. 일부 항목은 업체 영업비밀이라 가렸어요.'],
+    ['who','누가 책임지는 부서예요?','구청 청소년과예요. 공개 페이지에는 아직 안 적혀 있어요.'],['appeal','결과가 이상하면 어떻게 다시 확인받아요?','아직 따로 정한 방법이 없어요.']],
+   afterAsk:'물어보면 상자가 조금 열려. 이제 받은 자료를 확인해 보자.',
    checks:[
-    {id:'library-guide',label:'AI 안내 보기',name:'AI 안내',task:'추천 안내문을 읽어 봐.',fact:'추천 안내문에는 ‘학생이 읽은 책을 기준으로 추천한다’고 적혀 있다.',
-     guide:'추천 도서 안내 · 이 추천은 학생이 읽은 책을 기준으로, 비슷한 책을 골라 보여 줍니다.',finding:[['moa','안내는 ‘읽은 책 기준’이라고만 해.']]},
-    {id:'library-loans',label:'대출 기록 보기',name:'대출 기록',task:'담이가 가장 많이 빌린 분야의 책을 하나 눌러 봐.',fact:'담이는 최근 빌린 책 8권 가운데 5권이 공룡 책이다.',
-     hint:'이 분야는 1~2권뿐이야.',finding:[['moa','여덟 권 가운데 다섯 권이 공룡 책이야.']]},
-    {id:'library-scores',label:'추천 점수 기록 보기',name:'추천 점수 기록',task:'점수가 ‘?’인 책을 눌러 점수를 하나씩 열어 봐.',fact:'추천 점수 기록에서는 인기 점수 비중(0.8)이 읽은 책과 비슷한 정도(0.2)보다 크다.',
-     finding:[['moa','제일 비슷한 책은 순위 밖이고, 인기 점수가 크게 들어가.']],more:'점수는 0~100이에요. 이야기 속 추천 AI가 남긴 가상의 기록이에요.'}
+    {id:'camp-page',label:'구청 공개 페이지 보기',name:'구청 공개 페이지',task:'공개 페이지에서 비어 있는 칸을 찾아 눌러 봐.',fact:'구청 공개 페이지에는 AI를 썼다는 것과 목적은 있지만, 담당 부서와 이의 신청 방법은 비어 있다.',
+     hint:'이 칸은 적혀 있어.',finding:[['moa','AI를 썼다는 말은 있는데, 누가 맡는지와 이의 신청 방법은 비어 있어.']]},
+    {id:'camp-results',label:'마을별 결과 보기',name:'마을별 결과',task:'합격 비율이 가장 낮은 마을을 눌러 봐.',fact:'솔숲마을은 12명이 신청해 1명이 붙어, 네 마을 가운데 합격 비율이 가장 낮다.',
+     hint:'이 마을은 절반 넘게 붙었어.',finding:[['moa','솔숲마을만 12명 가운데 1명이야. 다른 마을은 절반 넘게 붙었어.']]},
+    {id:'camp-criteria',label:'선발 기준표 보기',name:'선발 기준표',task:'비중이 ‘?’인 줄을 눌러 하나씩 열어 봐.',fact:'선발 기준표에서는 지난 구청 프로그램 참여 횟수(0.5)가 가장 크게 들어가고, 0.2만큼은 영업비밀이라 가려져 있다.',
+     finding:[['moa','참여 횟수가 절반을 차지해. 가려진 줄도 하나 있어.']],more:'비중은 모두 더하면 1이에요. 이야기 속 구청이 남긴 가상의 기록이에요. 솔숲마을에서 구청까지 가는 버스는 하루 네 번이라, 예전 프로그램에 오기 어려웠어요.'}
    ],
-   loans:[['9월 2일','공룡의 발자국','공룡'],['9월 9일','티라노 탐구 노트','공룡'],['9월 16일','개미 도시','곤충'],['9월 23일','화석 캐는 날','공룡'],
-    ['10월 7일','별자리 첫걸음','우주'],['10월 14일','바다 공룡 이야기','공룡'],['10월 21일','사슴벌레 관찰기','곤충'],['10월 28일','공룡 뼈 맞추기','공룡']],
-   loansLabel:'담이의 최근 대출 기록 8권',top:'공룡',
-   // 순위·책·읽은 책과 비슷함·이번 달 인기·최종. hidden = 처음에 점수가 '?'인 행(눌러서 연다).
-   scores:{label:'추천 점수 기록 · 담이',head:['순위','책','비슷함','인기','최종'],formula:'최종 점수 = 읽은 책과 비슷함 × 0.2 + 이번 달 인기 × 0.8',
-    rows:[[1,'마법학교 7',10,95,78,true],[2,'아이돌 다이어리',5,90,73,true],[3,'공룡 대백과',90,30,42,true],[4,'우주 정거장 일기',40,35,36,false],[5,'익룡의 하늘',95,10,27,true],[6,'곤충 탐정단',70,5,18,false]]},
+   page:{label:'구청 공개 페이지 · 청소년 겨울 캠프',rows:[{id:'use',k:'AI 활용',text:'신청서 점수 매기기'},{id:'purpose',k:'목적',text:'공정하고 빠른 선발'},{id:'office',k:'담당 부서',text:'(적혀 있지 않음)',blank:true},{id:'appeal',k:'이의 신청',text:'(적혀 있지 않음)',blank:true}]},
+   results:{label:'마을별 결과 · 겨울 캠프 40명 (가상 기록)',head:['마을','신청','합격'],rows:[{id:'city',name:'시내마을',apply:18,pass:16},{id:'river',name:'강변마을',apply:14,pass:12},{id:'hill',name:'언덕마을',apply:16,pass:11},{id:'pine',name:'솔숲마을',apply:12,pass:1,target:true}]},
+   criteria:{label:'선발 기준표 · 구청 청소년과 (가상 기록)',head:['항목','비중'],done:'참여 횟수가 가장 크게 들어가.',bus:'쪽지 · 솔숲마을에서 구청까지 버스는 하루 네 번',
+    rows:[{id:'join',name:'지난 구청 프로그램 참여 횟수',w:0.5,top:true},{id:'essay',name:'신청서 글',w:0.2},{id:'order',name:'신청 순서',w:0.1},{id:'secret',name:'업체 영업비밀이라 공개 안 함',w:0.2,hidden:true}]},
    judges:[
-    {who:'libraryGuide',src:['library-scores','library-guide'],text:'이 추천은 읽은 책을 기준으로 골랐습니다.',right:'맞아, 자료와 달라. 기록에서는 인기 점수가 0.8로 훨씬 크게 들어가.',wrong:'추천 점수 기록의 계산식 줄을 다시 봐.'},
-    {who:'librarian',src:['library-scores'],text:'추천 1위 책은 이번 달 인기 점수가 95점이야.',right:'맞아, 자료로 확인돼. 점수표에 95점이 그대로 있어.',wrong:'점수표에서 1위 책의 인기 점수를 다시 찾아봐.'},
-    {who:'dami',src:['library-scores'],text:'업체가 인기 책을 많이 빌리게 하려고 일부러 이렇게 만들었어.',right:'맞아, 자료로는 알 수 없어. 왜 0.8로 정했는지는 기록에 없어.',wrong:'기록에는 숫자만 있어. 그렇게 정한 까닭은 어디에도 없어.'}
+    {who:'clerk',src:['camp-criteria','camp-results'],text:'구청 AI가 솔숲마을 아이들을 일부러 떨어뜨렸어.',right:'맞아, 자료로는 알 수 없어. 기록에는 점수와 결과만 있어.',wrong:'기록에는 점수와 결과만 있어. 누가 무슨 마음이었는지는 어디에도 없어.'},
+    {who:'paper',src:['camp-results'],text:'솔숲마을 아이들도 다른 마을과 비슷하게 뽑혔다.',right:'맞아, 자료와 달라. 솔숲마을은 12명 가운데 1명만 붙었어.',wrong:'마을별 결과에서 솔숲마을 줄을 다시 봐.'},
+    {who:'teacher',src:['camp-criteria'],text:'선발 점수에서는 지난 프로그램 참여 횟수가 가장 크게 들어가.',right:'맞아, 자료로 확인돼. 기준표에서 참여 횟수가 0.5로 가장 커.',wrong:'선발 기준표에서 참여 횟수 비중을 다시 봐.'}
    ],
-   after:'안내가 틀렸다는 건 확인했어. 왜 그렇게 만들었는지는 아직 몰라.',
-   choose:{question:'추천 기능을 어떻게 할까?',options:[
-    {id:'trust',label:'안내를 믿고 추천 책 빌리기',title:'추천은 그대로야',status:'추천 화면: 안내 그대로',screen:['담이에게 추천','1위 마법학교 7','안내: 읽은 책 기준'],
-     reaction:[['dami','또 인기 책이네. 공룡 책은 내가 찾아야겠어.']],feedback:'안내와 기록이 다른 걸 알고도 안내를 그대로 뒀어.'},
-    {id:'report',label:'기록과 다르다고 알리고 안내를 고쳐 달라고 하기',title:'차이를 알렸어',status:'추천 화면: 임시 표시가 붙음',screen:['담이에게 추천','1위 마법학교 7','임시 표시: 인기 점수가 크게 들어감'],
-     reaction:[['librarian','업체에 안내를 기록에 맞게 고쳐 달라고 할게.'],['dami','알고 나니 덜 헷갈려.']],feedback:'설명이 기록과 다르면, 그 차이를 알리고 설명을 고치게 하는 게 시작이야.'},
-    {id:'off',label:'추천 기능 끄기',title:'추천이 꺼졌어',status:'추천 화면: 꺼짐',screen:['추천 꺼짐'],
-     reaction:[['dami','추천이 없으니 새 공룡 책 찾기가 더 힘들어.']],feedback:'잘못된 안내는 사라졌지만, 왜 기록과 달랐는지는 여전히 몰라.'}
+   after:'차별하려던 건지는 몰라. 그래도 결과가 한쪽에 불리했던 건 기록에 있어.',
+   choose:{question:'신문부 기사, 어떻게 낼까?',options:[
+    {id:'loud',label:'“AI가 솔숲마을 아이들 일부러 차별” 제목으로 내기',title:'기사가 크게 퍼졌어',status:'마을 신문: 큰 제목',screen:['마을 신문 1면','“AI가 일부러 차별”','구청: 사실과 다르다'],
+     summary:'구청은 “일부러 그런 적 없다”는 반박만 냈다. 다툼은 누구 탓이냐로 흘렀고, 기준 이야기는 묻혔다.',
+     reaction:[['dami','다들 화만 내고, 내 결과는 그대로야.']],feedback:'부풀린 제목은 관심은 끌지만, 고쳐야 할 기준을 가려.'},
+    {id:'accurate',label:'기록에 맞는 제목으로 내고, 구청에 기준 공개와 재검토를 요청하기',title:'기록대로 썼어',status:'마을 신문: 기록에 맞는 제목',screen:['마을 신문 1면','참여 횟수 기준, 솔숲마을에 불리','구청: 고치겠습니다'],
+     summary:'구청은 “공개 페이지를 고치고 재검토 방법을 만들겠다”고 답했다.',
+     reaction:[['dami','내가 왜 떨어졌는지 이제 알겠어.']],feedback:'기록에 맞게 쓰고, 다시 확인받을 길을 요구하는 게 시작이야.'},
+    {id:'quiet',label:'구청 발표대로 “AI가 공정하게 뽑았다”고 싣기',title:'기사가 조용히 지나갔어',status:'마을 신문: 작은 기사',screen:['마을 신문 6면','“AI가 공정하게 뽑았다”'],
+     summary:'솔숲마을 아이들은 왜 떨어졌는지 모른 채 겨울을 보냈다.',
+     reaction:[['clerk','공정하다니 됐네.'],['dami','그럼 우리 마을은 왜 다 떨어진 거야?']],feedback:'줄여서 쓴 기사도 기록과 다르면, 고칠 기회를 놓쳐.'}
    ]},
-   follow:{src:'업체 답장과 새 안내',question:'안내는 정말 고쳐졌을까?',lines:[['librarian','두 주 뒤에 업체 답장이 왔어. 다른 학교에서도 같은 문의가 있었대.']],
-    task:'새 안내에서 예전과 달라진 말을 눌러 봐.',oldLabel:'예전 안내',newLabel:'새 안내 · 11월 16일',
-    segments:[{id:'title',text:'추천 도서 안내',hint:'이 말은 예전과 같아.'},{id:'both',text:'학생이 읽은 책과 이번 달 인기를 함께 봅니다.',changed:true},{id:'weight',text:'인기 비중이 큽니다.',changed:true}],
-    replyLabel:'업체 답장 · 11월 16일',reply:'안내문을 ‘읽은 책과 이번 달 인기를 함께 봅니다. 인기 비중이 큽니다.’로 바꿨습니다. 점수 계산 방식은 그대로입니다.',
-    scoreLabel:'새 점수 기록 · 11월 16일',
-    fact:'업체는 안내문을 ‘읽은 책과 이번 달 인기를 함께 봅니다. 인기 비중이 큽니다.’로 바꿨고, 점수 계산식(비슷함 × 0.2 + 인기 × 0.8)은 그대로다.',
-    judge:{who:'dami',text:'이제 계산이 바뀌어서 추천이 내 취향을 더 잘 맞춰.',right:'맞아, 자료와 달라. 안내문만 바뀌었고 가중치는 0.2와 0.8 그대로야.',wrong:'새 점수 기록의 계산식을 다시 봐.'},
-    unknown:'인기 비중을 왜 0.8로 정했는지는 아직 몰라.',more:'설명을 기록에 맞게 고치는 것과, 추천 방식 자체를 바꾸는 것은 다른 일이에요.'},
-   notice:{title:'추천 기능을 켜기 전에, 학생들에게 무엇을 알릴까?',paper:'도서관 추천 화면 안내',lines:[],
-    cards:[{id:'library-perfect',text:'추천은 늘 네 취향에 딱 맞아요.'},{id:'library-record',text:'추천에 네가 빌린 책 기록을 써요.'},{id:'library-off',text:'추천을 끄거나 다시 고를 수 있어요.'},
-     {id:'library-others',text:'다른 학생들이 빌린 책 목록을 보여 줘요.',clash:'알리는 것도 좋지만, 다른 학생이 빌린 책은 그 학생의 개인정보야. 알리는 것과 개인정보 보호가 부딪치니까 인기 책을 섞는다는 것까지만 알리면 돼.'},
-     {id:'library-popular',text:'기록과 상관없는 인기 책도 섞어서 보여 줘요.'}]}},
-  // 사건 5는 모아 혼자 조사한다(solo): 모아의 해설·힌트·상태 표시를 빼고, 판단 피드백은 '기록과 맞춰 보면: …' 한 줄(sum).
-  recommend:{name:'모임 추천 사건',title:'밤하늘 관찰 모임',bg:5,cast:['moaPhone','luluCasual','dami'],solo:true,
-   soloNote:'이번에는 모아 혼자야. 물어보고, 확인하고, 정해 봐.',
-   hook:[['lulu','새 앱이 너한테 ‘밤하늘 관찰 모임’을 추천했대.']],
-   question:'이 추천, 믿고 가도 될까?',screen:['추천 알림','밤하늘 관찰 모임'],
-   // 예전 마지막 장면의 질문 넷(대답 문장 그대로)을 여기로 옮겼다.
-   askPrompt:'앱에 무엇부터 물어볼까?',askNeed:'질문을 하나 이상 하면 직접 확인할 수 있어.',
-   asks:[['input','어떤 정보를 썼어?','관심사로 고른 ‘별’과 ‘야외 활동’을 썼어요.'],['criteria','무엇을 기준으로 골랐어?','관심사와 이어진 모임을 먼저 골랐어요. 순위를 매긴 자세한 이유는 알려 주지 않았어요.'],['unknown','확인하지 못한 건 뭐야?','모임이 실제로 열리는지와 집에 오는 교통편은 확인하지 못했어요.'],
-    ['notice','앱을 쓰기 전에 무엇을 알려 줬어야 해?','추천에 관심사를 쓴다는 건 처음에 알렸어요. 추천이 틀릴 수 있다는 점과 끄는 방법은 알리지 않았어요.']],
-   afterAsk:'질문 네 개 모두 상자를 여는 질문이야.',
+   // 후속 조사는 선택과 상관없이 하나(엔진 구조). 결과 문장은 이것과 어긋나지 않게 썼다.
+   follow:{src:'예전·새 공개 페이지',question:'구청은 정말 다 고쳤을까?',lines:[['teacher','석 달 뒤, 다른 마을에서도 문의가 이어져 구청이 공개 페이지를 고쳤대.']],
+    task:'새 공개 페이지에서 예전과 달라진 말을 눌러 봐.',oldLabel:'예전 공개 페이지',newLabel:'새 공개 페이지 · 3월 2일',
+    segments:[{id:'use',text:'AI 활용: 신청서 점수 매기기.',hint:'이 말은 예전과 같아.'},{id:'office',text:'담당 부서: 구청 청소년과.',changed:true},{id:'appeal',text:'이의 신청: 결과 발표 뒤 14일 안에 재검토 신청.',changed:true},{id:'criteria',text:'선발 기준: 일부 항목 비공개.',hint:'이 말은 예전 기준표와 같아.'}],
+    fact:'새 공개 페이지에는 담당 부서(구청 청소년과)와 이의 신청 방법(결과 발표 뒤 14일 안에 재검토)이 생겼지만, 선발 기준의 일부 항목은 여전히 비공개다.',
+    judge:{who:'office',text:'이제 선발 기준을 모두 공개합니다.',right:'맞아, 자료와 달라. 가려진 항목은 그대로야.',wrong:'새 공개 페이지의 선발 기준 줄을 다시 봐.'},
+    unknown:'가려진 항목이 결과를 얼마나 바꿨는지는 아직 몰라.',more:'영업비밀은 지켜야 할 정보이기도 해요. 그래도 결과에 얼마나 영향을 줬는지는 설명할 수 있어야 해요. 어디까지 알릴지 정하는 기준은 나라와 사회가 만들어요.'},
+   notice:{title:'구청이 AI로 뽑기 전에, 시민에게 무엇을 공개할까?',paper:'구청 공개 페이지',lines:[],
+    cards:[{id:'camp-role',text:'AI가 점수를 매기고, 담당자가 최종 확인해요.'},{id:'camp-never',text:'AI가 뽑으니 절대 차별이 없어요.'},{id:'camp-office',text:'담당 부서는 구청 청소년과예요.'},
+     {id:'camp-everyone',text:'신청자 모두의 이름과 점수를 공개해요.',clash:'기준을 알리는 건 좋지만, 다른 사람의 이름과 점수는 개인정보야. 기준과 내 점수만 알 수 있으면 돼.'},
+     {id:'camp-appeal',text:'이의가 있으면 14일 안에 재검토를 신청해요.'},{id:'camp-items',text:'점수에 쓰는 항목과 비중을 알려 드려요.'}]},
+   reflect:{q1:'① 나는 ___ 자료를 보고, 구청이 ___을(를) 더 공개하거나 설명해야 한다고 판단했다.',q2:'② 이 선발에 대해 아직 확인하지 못한 것은 ___이고, 그것을 알려면 ___가 필요하다.'}},
+  // 사건 5: 이용자도 알릴 의무. 사건 2에서 억울하게 의심받았던 루루가 이번엔 정말 AI로 그림을 만들었다.
+  // 모아(학생) 혼자 판단한다(solo): 모아의 해설·힌트·상태 표시를 빼고, 판단 피드백은 '기록과 맞춰 보면: …' 한 줄(sum).
+  share:{name:'은하수 그림 사건',title:'은하수 홍보 그림',bg:5,cast:['luluPhone','moaPhone','bamiPhone'],solo:true,
+   soloNote:'이번에는 모아 혼자야. 확인하고, 정해 봐.',
+   hook:[['lulu','관찰 모임 홍보 그림, AI로 만들었어. 그런데 그렇게 쓰면 또 내가 안 한 걸로 볼까 봐.'],['bami','뒷산에서 진짜 이렇게 보여요?']],
+   question:'이 그림, AI로 만들었다고 밝혀야 할까?',screen:['냥스타 · 루루','은하수 그림','이번 주 토요일, 뒷산에서 만나요!','공유 37'],
    checks:[
-    {id:'recommend-reason',label:'추천 이유 보기',name:'추천 이유',task:'앱이 밝힌 추천 이유를 읽어 봐.',fact:'앱은 관심사 ‘별’과 ‘야외 활동’을 보고 추천했다고 하며, 순위 계산 방법은 공개하지 않는다.',
-     guide:'선택한 관심사 ‘별’, ‘야외 활동’과 이어진 모임을 먼저 보여 줍니다. 순위 계산 방법은 공개하지 않습니다.'},
-    {id:'recommend-meeting',label:'모임 안내 보기',name:'모임 안내',task:'모임이 끝나는 시각을 눌러 봐.',fact:'모임은 토요일 21시에 시작해 23시에 끝난다.'},
-    {id:'recommend-bus',label:'버스 시간표 보기',name:'버스 시간표',task:'모임이 끝난 뒤 탈 수 있는 버스를 눌러 봐.',fact:'토요일 마지막 버스는 22시 20분이라, 모임이 끝난 뒤 탈 버스가 없다.'}
+    {id:'share-log',label:'루루의 작업 기록 보기',name:'작업 기록',task:'AI가 처음부터 만든 부분을 눌러 봐.',fact:'홍보물의 은하수 그림은 AI 도구로 만들었고, 소개 글은 루루가 쓴 뒤 AI로 맞춤법만 다듬었다.'},
+    {id:'share-photo',label:'지난 모임 사진 보기',name:'지난 모임 사진',task:'실제 하늘에서 보인 것을 적은 줄을 눌러 봐.',fact:'지난 모임에서 찍은 실제 사진에는 별 몇 개만 보이고, 은하수는 마을 불빛 때문에 거의 보이지 않았다.'},
+    {id:'share-compare',label:'DM과 게시물 비교하기',name:'DM과 게시물',task:'둘 가운데 AI라고 밝힌 말을 눌러 봐.',fact:'루루는 모아에게 보낸 DM에서는 AI로 만들었다고 밝혔지만, 냥스타 게시물에는 적지 않았다.'}
    ],
-   meeting:{label:'모임 안내',segments:[{id:'name',text:'밤하늘 관찰 모임'},{id:'day',text:'매주 토요일'},{id:'start',text:'21:00'},{id:'end',text:'23:00',target:true},{id:'place',text:'모아마을 뒷산 전망대'},{id:'fee',text:'참가비 없음'},{id:'consent',text:'중학생은 보호자 동의서 필요'}]},
-   bus:{label:'버스 시간표 · 토요일 · 뒷산 전망대 → 모아마을',rows:[{id:'b1',time:'21:30'},{id:'b2',time:'22:00'},{id:'b3',time:'22:20',note:'막차'}],none:'탈 수 있는 버스 없음'},
+   logLabel:'루루의 작업 기록 · 관찰 모임 홍보물',
+   log:[{id:'pic',part:'은하수 그림',how:'AI 그림 도구로 만듦',target:true},{id:'text',part:'소개 글',how:'루루가 쓰고, AI로 맞춤법만 다듬음'},{id:'time',part:'모임 시간과 장소',how:'루루가 직접 적음'}],
+   photos:{label:'지난달 관찰 모임 기록 · 뒷산 전망대',caption:'왼쪽: 홍보 그림 · 오른쪽: 지난 모임 실제 사진',
+    lines:[{id:'date',text:'10월 11일 토요일 21시'},{id:'sky',text:'마을 불빛 때문에 은하수는 거의 안 보임',target:true},{id:'people',text:'참가 9명'}]},
+   compare:{dm:{label:'DM · 루루가 모아에게',text:'AI로 만들어 봤어 ㅎㅎ',target:true},post:{label:'냥스타 게시물 · 루루',text:'이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임',meta:'공유 37'}},
    judges:[
-    {who:'recApp',src:['recommend-meeting','recommend-bus'],text:'모임이 끝나고 버스로 집에 갈 수 있어요.',sum:'기록과 맞춰 보면: 모임은 23시에 끝나고, 토요일 막차는 22시 20분이야.'},
-    {who:'lulu',src:['recommend-reason'],text:'이 모임이 모아에게 가장 잘 맞는 모임이야.',sum:'기록과 맞춰 보면: 앱은 순위를 매긴 방법을 공개하지 않아서, 가장 잘 맞는지는 기록에 없어.'},
-    {who:'dami',src:['recommend-reason'],text:'앱은 모아가 고른 관심사 ‘별’을 썼어.',sum:'기록과 맞춰 보면: 추천 이유에 관심사 ‘별’과 ‘야외 활동’이 적혀 있어.'}
+    {who:'bami',src:['share-photo'],text:'뒷산에 가면 이 그림처럼 은하수를 볼 수 있어요.',sum:'기록과 맞춰 보면: 지난 모임 사진에는 별 몇 개만 있고, 은하수는 거의 안 보였어.'},
+    {who:'lulu',src:['share-log'],text:'그림은 AI로 만들었고, 모임 시간과 장소는 내가 적었어.',sum:'기록과 맞춰 보면: 작업 기록에 그림은 AI 도구, 시간과 장소는 루루가 적었다고 나와.'},
+    {who:'classmate',src:['share-compare'],text:'게시물을 공유한 37명은 다 AI 그림인 줄 알고 공유했을 거야.',sum:'기록과 맞춰 보면: 공유 숫자만 있고, 누가 무엇을 알고 공유했는지는 기록에 없어.'}
    ],
    after:'',
-   choose:{question:'모아는 어떻게 할까?',options:[
-    {id:'join',label:'추천대로 바로 신청하기',title:'바로 신청했어',summary:'모임은 좋았지만, 끝나고 버스가 끊겨 보호자에게 데리러 와 달라고 했다.',reaction:[['lulu','별은 멋졌대. 집에 오는 길은 힘들었고.']]},
-    {id:'ask',label:'끝나는 시각과 귀가 방법을 먼저 묻기',title:'먼저 물어봤어',summary:'운영자가 22시에 먼저 내려가는 무리가 있다고 알려 줬다. 모아는 그 무리와 함께 내려오기로 했다.',reaction:[['dami','나도 다음엔 같이 갈래.']]},
-    {id:'skip',label:'추천을 무시하고 다른 모임 찾기',title:'다른 모임을 찾았어',summary:'다른 모임을 찾느라 일주일이 지났다. 별 모임이 맞았는지는 확인하지 못했다.',reaction:[['lulu','추천이 다 틀린 건 아니었을지도.']]}
+   choose:{question:'루루에게 뭐라고 할까?',options:[
+    {id:'keep',label:'그대로 둬도 괜찮다고 하기',title:'게시물을 그대로 뒀어',screen:['냥스타 · 루루','은하수 그림','이번 주 토요일, 뒷산에서 만나요!'],
+     summary:'토요일에 온 몇 명이 은하수가 안 보인다며 실망했다.',reaction:[['bami','그림이랑 너무 달라서 좀 속은 기분이에요.']]},
+    {id:'tag',label:'‘#AI그림’ 한 줄만 붙이자고 하기',title:'한 줄을 붙였어',screen:['냥스타 · 루루','은하수 그림','이번 주 토요일, 뒷산에서 만나요!','#AI그림'],
+     summary:'AI 그림인 건 알렸지만, 밤이는 여전히 은하수를 기대하고 왔다.',reaction:[['bami','AI라도 이만큼은 보일 줄 알았어요.']]},
+    {id:'explain',label:'AI로 만든 곳과 실제 하늘을 같이 밝히자고 하기',title:'고쳐 썼어',screen:['냥스타 · 루루','은하수 그림 + 지난 모임 사진','그림은 AI로 만들었어요.','실제로는 별이 이만큼 보여요.'],
+     summary:'게시물 글에 ‘그림은 AI로 만들었어요. 실제로는 별이 이만큼 보여요’를 쓰고 지난 모임 사진을 붙였다.',reaction:[['bami','솔직히 알려 줘서 좋아요. 그래도 가 볼래요.'],['lulu','밝혀도 내가 한 일이 줄어드는 건 아니네.']]}
    ]},
-   follow:{src:'세 친구의 추천 목록',question:'친구들에게도 같은 모임이 추천됐을까?',lines:[],task:'이름을 눌러 세 친구의 추천 목록을 열어 봐.',
-    lists:[{id:'moa',name:'모아',interest:'별·야외 활동',items:['밤하늘 관찰 모임','천체 사진 교실']},{id:'lulu',name:'루루',interest:'음악·실내 활동',items:['합창 동아리','밤하늘 관찰 모임']},{id:'dami',name:'담이',interest:'공룡·박물관',items:['밤하늘 관찰 모임','화석 체험 교실']}],
-    target:'밤하늘 관찰 모임',fact:'관심사가 다른 루루(2위)와 담이(1위)의 추천 목록에도 밤하늘 관찰 모임이 위에 있다.',
-    judge:{who:'recApp',text:'관심사와 이어진 모임을 먼저 보여 줍니다.',sum:'기록과 맞춰 보면: 관심사가 다른 루루와 담이에게도 이 모임이 위에 있어.'},
-    unknown:'관심사와 상관없는 친구에게도 이 모임이 위에 뜨는 까닭은 아직 몰라.',more:'광고 때문인지 인기 때문인지는 이 기록으로 알 수 없어요. 운영자에게 물어야 해요.'},
-   notice:{title:'모임 추천 앱을 내놓기 전에, 쓰는 사람에게 무엇을 알릴까?',paper:'모임 추천 앱 첫 화면 안내',lines:[],
-    cards:[{id:'recommend-interest',text:'관심사 ‘별’·‘야외 활동’을 보고 모임을 골라요.'},{id:'recommend-safe',text:'추천한 모임은 늘 안전하고 너에게 딱 맞아요.'},{id:'recommend-unchecked',text:'모임 끝나는 시각과 집에 갈 교통편은 확인하지 않아요.'},
-     {id:'recommend-off',text:'추천을 끄는 방법이 있어요.'},{id:'recommend-formula',text:'순위 계산식을 전부 공개해요.',clash:'알리는 것도 좋지만, 계산식은 너무 어려워서 오히려 안 읽히고 회사 기술 비밀과도 부딪쳐. 무엇을 보고 고르는지 정도만 알리면 돼.'},
-     {id:'recommend-ad',text:'광고로 위에 올린 모임이면 ‘광고’라고 표시해요.'}]}}
+   follow:{src:'그림을 올린 세 곳',question:'같은 그림, 어디에 얼마나 알려야 할까?',lines:[],task:'세 곳을 눌러 누가 보는지 열어 봐.',
+    places:[{id:'dm',name:'모아에게 보낸 DM',who:'모아 한 명',know:'루루가 AI로 만든 걸 안다.'},
+     {id:'post',name:'냥스타 게시물',who:'팔로워와, 공유로 본 모르는 사람들',know:'만든 방법을 모른다. 진짜 사진인지 가릴 단서는 게시물 글뿐이다.'},
+     {id:'board',name:'동아리 홍보 게시판(학교 복도)',who:'학교 학생과 선생님',know:'동아리 공식 홍보라서 그대로 믿는다.'}],
+    allLine:'보는 사람이 사정을 모를수록, 더 분명하게 알려야 해.',
+    fact:'DM을 본 모아만 AI 그림인 걸 알고, 냥스타 게시물과 학교 게시판을 본 사람들은 만든 방법을 알 수 없다.',
+    judge:{who:'lulu',text:'DM에서 AI라고 말했으니, 어디에 올려도 따로 안 알려도 돼.',sum:'기록과 맞춰 보면: 게시물과 게시판을 본 사람들은 DM을 보지 못했어.'},
+    unknown:'공유된 게시물을 본 사람 가운데 몇 명이 진짜 사진으로 믿었는지는 아직 몰라.',more:'친한 친구와의 DM처럼 사정을 아는 사이에서는 짧게 말해도 돼요. 모르는 사람이 보는 곳일수록 무엇이 AI이고 실제와 무엇이 다른지 분명히 적어야 해요.'},
+   notice:{title:'루루와 함께, 냥스타 게시물에 무엇을 붙일까?',paper:'냥스타 게시물 글',lines:[],principle:'알리는 건 벌이 아니야. 보는 사람이 제대로 고를 수 있게 하는 정보야.',
+    cards:[{id:'share-same',text:'토요일에 이 그림처럼 보일 거예요.'},{id:'share-ai',text:'은하수 그림은 AI로 만들었어요.'},{id:'share-photo',text:'지난 모임의 진짜 사진도 함께 올려요.'},
+     {id:'share-settings',text:'AI 도구에 넣은 말과 설정을 전부 적어요.',clash:'알리는 건 좋지만, 보는 사람에게 필요한 건 ‘AI로 만들었고 실제와 다르다’는 거야. 설정을 다 적으면 오히려 중요한 말이 묻혀.'},
+     {id:'share-real',text:'실제 뒷산에서는 은하수가 거의 안 보여요.'},{id:'share-spell',text:'소개 글은 AI로 맞춤법만 다듬었어요.'}]},
+   reflect:{q1:'① 나는 ___ 자료를 보고, 루루가 ___에는 AI로 만들었다고 알려야 한다고 판단했다.',q2:'② 내가 AI로 만든 것을 나눈다면, ___에는 ___라고 알리겠다.'}}
  };
  // 미리 알리기 공통 문장(교사 검수 대기). 카드별 피드백 = 상태 글자(종류 · 넣음/빠짐/뺐음) + 짧은 한 줄.
  const notice={principle:'안내문이 잘못된 조치를 바로잡아 주지는 않아. 그래도 미리 알리는 건 따로 해야 할 일이야.',
@@ -232,9 +246,9 @@ window.TransparencyStory = (()=>{
   report:'미리 알리기',reportOk:'다 맞음',reportAgain:'고칠 점 있음',reportMissing:'빠짐'};
  const ending={title:'닫히지 않은 질문',
   lines:[['lulu','이제 상자 속을 다 알게 된 거야?'],['moa','아니. 그래도 무엇을 물어야 하는지는 알게 됐어.']],
-  closing:['moa','설명이 기록과 맞는지, 결과가 맞는지, 무엇을 해도 되는지는 따로 살펴야 해.'],
+  closing:['moa','AI를 만드는 쪽, 쓰는 쪽, 지켜보는 쪽이 각자 물어야 할 게 있어.'],
   quote:'상자를 여는 첫 번째 도구는, 질문이었다.',
-  discussion:['설명을 들었지만 문제가 해결되지 않은 장면은 어디였나?','끝까지 알 수 없었던 것은 무엇이고, 그래도 바꿀 수 있었던 조치는 무엇인가?','설명이 기록과 다를 때, 누구에게 무엇을 고쳐 달라고 할 수 있을까?']};
+  discussion:['설명을 들었지만 문제가 해결되지 않은 장면은 어디였나?','끝까지 알 수 없었던 것은 무엇이고, 그래도 바꿀 수 있었던 조치는 무엇인가?','AI로 만든 것을 나눌 때, 어디에 얼마나 알려야 할까?','공공기관이 AI로 우리 일을 정할 때, 무엇을 공개해 달라고 할 수 있을까?']};
  // 사건마다 생각 정리(후속 조사 다음)와 마지막 '나의 조사 보고서'. 문장 틀은 입력칸 위에 실제 글로 보인다.
  const reflect={title:'이 사건에서 알게 된 것을 적어 봐.',lead:'아래 문장을 이어서 써 봐. 비워 두고 넘어가도 돼.',
   q1:'① 나는 ___ 자료를 보고, 이 AI가 ___라고 판단했다.',q2:'② 이 AI에 대해 아직 확인하지 못한 것은 ___이고, 그것을 알려면 ___가 필요하다.',

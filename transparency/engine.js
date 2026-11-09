@@ -1,17 +1,17 @@
 (function(root){
  'use strict';
- // 저장 version 5. 사건 다섯 개, 사건마다 일곱 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사)
+ // 저장 version 6(2026-11-10 사건 4·5 새로 짬: camp·share). 사건 다섯 개, 사건마다 일곱 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사)
  // → notice(만든 사람이라면: 미리 알리기) → reflect(생각 정리).
- // 마지막은 end(마무리 + 마지막 서술) → report(나의 조사 보고서). 질문 고르기는 사건 5(recommend)의 궁금한 것 화면에서 한다.
- // 장면 번호는 LAYOUT에서 계산한다: 0 프롤로그, 1~7 사진, 8~14 글, 15~21 얼굴, 22~28 도서관, 29~35 밤하늘, 36 마지막, 37 보고서.
- const CASES=['photo','writing','face','library','recommend'];
+ // 마지막은 end(마무리 + 마지막 서술) → report(나의 조사 보고서). 질문 고르기(구청에 묻기)는 사건 4(camp)의 궁금한 것 화면에서 한다.
+ // 장면 번호는 LAYOUT에서 계산한다: 0 프롤로그, 1~7 사진, 8~14 글, 15~21 얼굴, 22~28 구청 캠프, 29~35 은하수 그림, 36 마지막, 37 보고서.
+ const CASES=['photo','writing','face','camp','share'];
  const OLD3=CASES.slice(0,3); // 저장 version 1~4에 있던 사건
  const SIX=['hook','check','choose','result','follow','reflect'],SEVEN=['hook','check','choose','result','follow','notice','reflect'];
  const STEPS=Object.fromEntries(CASES.map(k=>[k,SEVEN]));
  const LAYOUT=[{step:'intro',k:null}];for(const k of CASES)for(const step of STEPS[k])LAYOUT.push({step,k});LAYOUT.push({step:'end',k:null},{step:'report',k:null});
  const END=LAYOUT.findIndex(x=>x.step==='end'),REPORT=LAYOUT.length-1;
  // 옛 저장(version 1~4)의 마지막·보고서 자리는 새로 생긴 사건 4 첫 화면이 된다(다 마친 저장도 새 사건부터 이어 한다).
- const RESUME=LAYOUT.findIndex(x=>x.k==='library'&&x.step==='hook');
+ const RESUME=LAYOUT.findIndex(x=>x.k==='camp'&&x.step==='hook');
  // version 2 장면 배치(reflect·report 없음). 옛 저장의 장면 번호를 새 배치로 옮길 때 쓴다.
  const LAYOUT2=[{step:'intro',k:null}];for(const k of OLD3)for(const step of SIX.slice(0,5))LAYOUT2.push({step,k});LAYOUT2.push({step:'end',k:null});
  const END2=LAYOUT2.length-1;
@@ -22,23 +22,26 @@
  const TEXT_MAX=4000; // 서술 칸은 강제 제한이 없다. 저장이 지나치게 커지지 않게만 막는다.
  const REPORTER=['name','number'];
  const checks={photo:['photo-original','photo-rule'],writing:['writing-guide','writing-history'],face:['face-alert','face-clerk','face-photo'],
-  library:['library-guide','library-loans','library-scores'],recommend:['recommend-reason','recommend-meeting','recommend-bus']};
- const choices={photo:['auto','all'],writing:['detector','review','draft'],face:['maintain','release','crowd'],library:['trust','report','off'],recommend:['join','ask','skip']};
+  camp:['camp-page','camp-results','camp-criteria'],share:['share-log','share-photo','share-compare']};
+ // version 5 저장에 있던 옛 사건 4·5(도서관·밤하늘) 자료. 옛 저장 검사에만 쓰고 버린다.
+ const OLD5_CHECKS=['library-guide','library-loans','library-scores','recommend-reason','recommend-meeting','recommend-bus'];
+ const choices={photo:['auto','all'],writing:['detector','review','draft'],face:['maintain','release','crowd'],camp:['loud','accurate','quiet'],share:['keep','tag','explain']};
  const stamps=['confirmed','unknown','different'];
  // 사건마다 판단 셋. 세 칸이 사건마다 한 번씩 정답이 된다.
- const answers={photo:['confirmed','different','unknown'],writing:['unknown','confirmed','different'],face:['different','confirmed','unknown'],library:['different','confirmed','unknown'],recommend:['different','unknown','confirmed']};
- const followAnswers={photo:'different',writing:'confirmed',face:'unknown',library:'different',recommend:'different'};
- // 후속 조사 표시: 도서관은 새 안내에서 달라진 말 하나를 찾으면 끝, 밤하늘은 세 친구의 추천 목록을 모두 연다.
+ const answers={photo:['confirmed','different','unknown'],writing:['unknown','confirmed','different'],face:['different','confirmed','unknown'],camp:['unknown','different','confirmed'],share:['different','confirmed','unknown']};
+ const followAnswers={photo:'different',writing:'confirmed',face:'unknown',camp:'different',share:'different'};
+ // 후속 조사 표시: 구청 캠프는 새 공개 페이지에서 달라진 말 하나를 찾으면 끝, 은하수 그림은 세 곳(DM·냥스타·게시판)을 모두 연다.
  const followMarks={photo:{ids:['p1','p2','p3','p4','p5','p6'],values:['shown','cut']},writing:{ids:['run'],values:['done']},face:{ids:['r1','r2','r3','r4'],values:['open']},
-  library:{ids:['changed'],values:['found']},recommend:{ids:['moa','lulu','dami'],values:['open']}};
- const questions=['input','criteria','unknown','notice'];
+  camp:{ids:['changed'],values:['found']},share:{ids:['dm','post','board'],values:['open']}};
+ // 사건 4 구청에 묻기. 옛 저장(version 1~5)의 질문(옛 사건 5 앱에 묻기)은 OLD_QUESTIONS로 검사만 하고 버린다.
+ const questions=['purpose','criteria','who','appeal'],OLD_QUESTIONS=['input','criteria','unknown','notice'];
  // 미리 알리기 카드 종류: must(꼭 필요) · nice(있으면 좋음) · conflict(넣으면 다른 원칙과 부딪침) · promise(지킬 수 없는 약속). 문장과 화면 순서는 story.js.
  const noticeCards={
   photo:{must:['photo-auto','photo-choose'],nice:['photo-center'],conflict:['photo-formula'],promise:['photo-best']},
   writing:{must:['writing-human','writing-teacher'],nice:['writing-process'],conflict:['writing-patterns'],promise:['writing-perfect']},
   face:{must:['face-use','face-staff','face-report'],nice:['face-blur'],conflict:['face-wall'],promise:['face-never']},
-  library:{must:['library-record','library-popular'],nice:['library-off'],conflict:['library-others'],promise:['library-perfect']},
-  recommend:{must:['recommend-interest','recommend-unchecked','recommend-ad'],nice:['recommend-off'],conflict:['recommend-formula'],promise:['recommend-safe']}};
+  camp:{must:['camp-role','camp-office','camp-appeal'],nice:['camp-items'],conflict:['camp-everyone'],promise:['camp-never']},
+  share:{must:['share-ai','share-real'],nice:['share-photo','share-spell'],conflict:['share-settings'],promise:['share-same']}};
  const KINDS=['must','nice','conflict','promise'];
  function noticeIds(key){return KINDS.flatMap(t=>noticeCards[key][t]);}
  function noticeKind(key,id){return KINDS.find(t=>noticeCards[key][t].includes(id))||null;}
@@ -57,8 +60,8 @@
  function sceneOf(key,step){return LAYOUT.findIndex(x=>x.k===key&&x.step===step);}
  const clone=v=>JSON.parse(JSON.stringify(v));
  const each=f=>Object.fromEntries(CASES.map(k=>[k,f(k)])),eachOld=f=>Object.fromEntries(OLD3.map(k=>[k,f(k)]));
- // asked = 사건 5 궁금한 것에서 물어본 질문(누른 순서). completed = 마지막 장면에 들어갔음.
- function initial(){return {version:5,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),asked:[],completed:false,
+ // asked = 사건 4 궁금한 것에서 물어본 질문(누른 순서). completed = 마지막 장면에 들어갔음.
+ function initial(){return {version:6,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),asked:[],completed:false,
   reflections:each(()=>({q1:'',q2:''})),finalNote:'',reporter:{name:'',number:''},notices:each(()=>({picked:[],posted:null}))};}
  // 처음부터 다시 하기: 진행은 모두 지운다. 이름·학번은 기본으로 함께 지우고(공용 PC), keepReporter일 때만 남긴다.
  function restart(s,{keepReporter=false}={}){const n=initial();if(keepReporter&&s&&s.reporter)for(const f of REPORTER)n.reporter[f]=typeof s.reporter[f]==='string'?s.reporter[f]:'';return n;}
@@ -75,7 +78,7 @@
  function canAdvance(s){
   const k=caseKey(s.scene),step=stepOf(s.scene);
   if(step==='intro')return true;
-  if(step==='hook')return k!=='recommend'||s.asked.length>0; // 사건 5는 질문을 하나 이상 해야 직접 확인으로 간다
+  if(step==='hook')return k!=='camp'||s.asked.length>0; // 사건 4는 질문을 하나 이상 해야 직접 확인으로 간다
   if(step==='check')return judged(s,k);
   if(step==='choose'||step==='result')return !!s.cases[k].final;
   if(step==='follow')return followDone(s,k);
@@ -100,7 +103,7 @@
   if(action.type==='reporter'&&step==='report'&&REPORTER.includes(action.field)&&typeof action.text==='string')s.reporter[action.field]=action.text.replace(/[\u0000-\u001f\u007f]/g,'').slice(0,40);
   if(action.type==='next'&&s.scene<REPORT&&canAdvance(s)){s.scene++;s.furthest=Math.max(s.furthest,s.scene);if(s.scene===END)s.completed=true;}
   if(action.type==='revisit'&&Number.isInteger(action.scene)&&action.scene>=0&&action.scene<=s.furthest)s.scene=action.scene;
-  if(action.type==='ask'&&step==='hook'&&k==='recommend'&&questions.includes(action.id)&&!s.asked.includes(action.id))s.asked.push(action.id);
+  if(action.type==='ask'&&step==='hook'&&k==='camp'&&questions.includes(action.id)&&!s.asked.includes(action.id))s.asked.push(action.id);
   return s;
  }
  function outcome(s,key){const id=s.cases[key].final;return {id,restricted:key==='face'?id!=='release':undefined,excluded:key==='writing'?id==='detector':undefined,rect:key==='photo'?(id==='all'?ALL:AUTO):undefined};}
@@ -117,7 +120,7 @@
    const n=v.notices[key];if(v.furthest>sceneOf(key,'notice')&&!noticeDone(v,key))return false;
    if(v.furthest<sceneOf(key,'notice')&&(n.picked.length||n.posted!==null))return false;
   }
-  if(v.furthest>sceneOf('recommend','hook')&&!v.asked.length)return false;
+  if(v.furthest>sceneOf('camp','hook')&&!v.asked.length)return false;
   if(v.completed!==(v.furthest>=END))return false;
   return true;
  }
@@ -160,7 +163,7 @@
   if(!Number.isInteger(v.scene)||v.scene<0||v.scene>13||!Number.isInteger(v.furthest)||v.furthest<v.scene||v.furthest>13)return null;
   if(!Array.isArray(v.evidence)||v.evidence.some(id=>!OLD3.some(k=>checks[k].includes(id))))return null;
   if(!v.judgments||typeof v.judgments!=='object'||!v.cases||typeof v.cases!=='object'||typeof v.completed!=='boolean')return null;
-  if(v.question!==null&&v.question!==undefined&&!questions.includes(v.question))return null;
+  if(v.question!==null&&v.question!==undefined&&!OLD_QUESTIONS.includes(v.question))return null;
   for(const key of OLD3){const c=v.cases[key],j=v.judgments[key];
    if(!c||typeof c!=='object'||['first','final'].some(p=>c[p]!==null&&!choices[key].includes(c[p])))return null;
    if(j!==null&&!stamps.includes(j)&&j!=='legacy')return null;
@@ -174,8 +177,8 @@
  function upgrade(r){
   const s=initial(),map=n=>n===0?0:n===13?RESUME:sceneOf(key4(n),step4(n));
   // 이미 지나간 사건의 생각 정리(reflect)는 비워 둔 채로 지나간 것으로 본다(보고서에 '작성 안 함').
-  // 옛 마지막 장면은 사건 4 첫 화면으로 옮기므로 완료가 아니다. 그때 고른 질문은 사건 5에서 이미 물은 것으로 둔다.
-  s.scene=map(r.scene);s.furthest=map(r.furthest);s.evidence=r.evidence.slice();s.asked=r.question?[r.question]:[];
+  // 옛 마지막 장면은 사건 4 첫 화면으로 옮기므로 완료가 아니다. 그때 고른 질문은 지금 사건에 없어서 버린다.
+  s.scene=map(r.scene);s.furthest=map(r.furthest);s.evidence=r.evidence.slice();
   for(const key of OLD3){const j=r.judgments[key];s.cases[key]=clone(r.cases[key]);
    if(j)s.judgments[key]=[j,'legacy','legacy'];
    if(s.furthest>sceneOf(key,'follow'))s.follows[key].judgment='legacy';
@@ -189,15 +192,18 @@
   try{const v=typeof raw==='string'?JSON.parse(raw):raw;
    if(!v||typeof v!=='object')return initial();
    if(v.version===1){const r=v.revision===4?restore4(v):migrate3(v);return r?upgrade(r):initial();}
-   if(![2,3,4,5].includes(v.version))return initial();
+   if(![2,3,4,5,6].includes(v.version))return initial();
    // version 2·3·4 → 5: 장면 번호를 새 배치로 옮긴다(옛 마지막·보고서는 사건 4 첫 화면, 완료 아님). version 2는 서술을, 2·3은 안내문을 빈 값(지난 사건은 legacy)으로 둔다.
-   // 옛 저장의 마지막 질문(question)은 사건 5에서 이미 물은 질문(asked)이 된다. 사건 4·5 칸은 빈 값.
-   const OLD={2:LAYOUT2,3:LAYOUT3,4:LAYOUT4}[v.version],KEYS=OLD?OLD3:CASES,last=OLD?OLD.length-1:REPORT,map=n=>{if(!OLD)return n;const x=OLD[n];return x.step==='intro'?0:x.step==='end'||x.step==='report'?RESUME:sceneOf(x.k,x.step);};
+   // version 5(옛 사건 4·5 = 도서관·밤하늘) → 6: 사건 1~3은 그대로, 장면 22 이상(옛 사건 4·5·마지막·보고서)은 새 사건 4 첫 화면(완료 아님). 옛 사건 4·5 칸·자료는 버린다.
+   // 옛 저장의 질문(question·asked)은 지금 사건에 없는 질문이라 검사만 하고 버린다. 새 사건 4·5 칸은 빈 값.
+   const OLD={2:LAYOUT2,3:LAYOUT3,4:LAYOUT4,5:LAYOUT}[v.version],KEYS=OLD?OLD3:CASES,last=OLD?OLD.length-1:REPORT,map=n=>{if(!OLD)return n;if(OLD===LAYOUT)return n>=RESUME?RESUME:n;const x=OLD[n];return x.step==='intro'?0:x.step==='end'||x.step==='report'?RESUME:sceneOf(x.k,x.step);};
    if(!Number.isInteger(v.scene)||v.scene<0||v.scene>last||!Number.isInteger(v.furthest)||v.furthest<v.scene||v.furthest>last)return initial();
-   if(!Array.isArray(v.evidence)||v.evidence.some(id=>!KEYS.some(k=>checks[k].includes(id))))return initial();
+   const ownId=id=>KEYS.some(k=>checks[k].includes(id));
+   if(!Array.isArray(v.evidence)||v.evidence.some(id=>!ownId(id)&&!(v.version===5&&OLD5_CHECKS.includes(id))))return initial();
    if(!v.judgments||!v.cases||!v.follows||typeof v.completed!=='boolean')return initial();
-   const s=initial();s.scene=map(v.scene);s.furthest=map(v.furthest);s.evidence=[...new Set(v.evidence)];
-   if(OLD){if(v.question!==null&&!questions.includes(v.question))return initial();s.asked=v.question?[v.question]:[];}
+   const s=initial();s.scene=map(v.scene);s.furthest=map(v.furthest);s.evidence=[...new Set(v.evidence.filter(ownId))];
+   if(v.version===5){if(!Array.isArray(v.asked)||v.asked.some(q=>!OLD_QUESTIONS.includes(q)))return initial();}
+   else if(OLD){if(v.question!==null&&!OLD_QUESTIONS.includes(v.question))return initial();}
    else{if(!Array.isArray(v.asked)||v.asked.some(q=>!questions.includes(q))||new Set(v.asked).size!==v.asked.length)return initial();s.asked=v.asked.slice();s.completed=v.completed;}
    if(v.version>=3){
     if(!v.reflections||typeof v.reflections!=='object'||!v.reporter||typeof v.reporter!=='object'||typeof v.finalNote!=='string')return initial();
@@ -221,6 +227,6 @@
   }catch{return initial();}
  }
  const api={initial,restart,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,noticeIds,noticeKind,noticeCheck,noticeDone,outcome,allFaces,cutFaces,
-  CASES,STEPS,LAYOUT,LAYOUT2,LAYOUT3,LAYOUT4,END,REPORT,RESUME,checks,choices,stamps,answers,followAnswers,followMarks,questions,noticeCards,AUTO,ALL,faces,FOLLOW_CROPS,truth};
+  CASES,STEPS,LAYOUT,OLD_QUESTIONS,LAYOUT2,LAYOUT3,LAYOUT4,END,REPORT,RESUME,checks,choices,stamps,answers,followAnswers,followMarks,questions,noticeCards,AUTO,ALL,faces,FOLLOW_CROPS,truth};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TransparencyEngine=api;
 })(typeof window==='undefined'?globalThis:window);
