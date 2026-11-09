@@ -1190,7 +1190,7 @@
   }
   var tags = [];
   function drawTags() {
-    var fs = Math.max(12, Math.round(T * 0.26)), h = Math.max(T * 0.34, fs + 6), placed = [], top = mode === 'walk' ? safeArea().top : 0;
+    var fs = Math.max(12, Math.round(T * 0.26)), h = Math.max(T * 0.34, fs + 6), placed = [], top = safeArea().top; // 위 HUD(시간·할 일·되돌리기·메뉴) 아래 — 장면 무대도(2026-11-09: 휴대폰 첫 단톡방에서 하늘 이름표가 '이전 선택' 밑으로)
     var plaques = window.PrivacySchool && window.PrivacySchool.plaques ? window.PrivacySchool.plaques(T, cam) : [];
     function hit(r) { return placed.concat(plaques).some(function (q) { return r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h; }); }
     ctx.font = '600 ' + fs + 'px sans-serif';
@@ -1203,7 +1203,7 @@
     function clearOfBodies(r, t) { // 발밑이 남의 몸에 걸리면 주인 머리 위로(그 자리도 걸리면 발밑 그대로 두고 흐리게)
       if (!onBody(r, t) || !t.body) return;
       var up = { x: r.x, y: t.body.y0 - h - 2, w: r.w, h: r.h };
-      if (!onBody(up, t) && !hit(up)) r.y = up.y;
+      if (!onBody(up, t) && !hit(up) && up.y >= top) r.y = up.y; // 머리 위가 위 버튼 영역 밑이면 올리지 않는다(발밑 그대로, 겹치면 흐리게)
     }
     tags.forEach(function (t) {
       var w = ctx.measureText(t.label).width + 10, r = { x: t.cx - w / 2, y: t.y, w: w, h: h };
@@ -1366,10 +1366,11 @@
     var mid = cells[Math.floor(cells.length / 2)], ms = markSize('dest'), sa = safeArea(), iconSize = 16 * markScale();
     var cx = (x0 + x1) / 2 * T - cam.x, cy = (y0 + y1) / 2 * T - cam.y;
     var mx = cx, my = (ex.dir === 'up' ? y0 * T - cam.y - ms.h / 2 - 2 : cy) + markBob(t, 0), tx0 = mx, ty0 = my;
-    // 2026-11-09 지시서 C4: 화면 끝에 붙은 핀이 반쯤 잘려 보였다 → 끝에서 안쪽으로 당겨 그린다(옆 방향 화살표 T×0.45+6까지 화면 안, 여백 8px)
-    var pad = Math.max(iconSize / 2, T * 0.45 + 6) + 8;
+    // 2026-11-09 지시서 C4: 화면 끝에 붙은 핀이 반쯤 잘려 보였다 → 끝에서 안쪽으로 당겨 그린다
+    //   가로만 도형 반지름 + 4px(핀 끝이 화면 옆 끝에서 10px 안, 옆 방향 화살표 T×0.45+6도 화면 안). 위아래는 safeArea가 이미 HUD·버튼 줄에서 8px 떨어져 있어 반지름만
+    var pad = iconSize / 2 + 4;
     mx = Math.max(sa.left + pad, Math.min(sa.right - pad, mx));
-    my = Math.max(sa.top + pad, Math.min(sa.bottom - pad, my));
+    my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - iconSize / 2, my));
     var jr = joy.rest && !$('joy').hidden ? joy.rest : null; // 조이스틱 받침(기본 자리)에 걸리면 그 위로
     if (jr && mx + ms.w / 2 > jr.x0 && mx - ms.w / 2 < jr.x1 && my + ms.h / 2 > jr.y0 && my - ms.h / 2 < jr.y1) my = jr.y0 - ms.h / 2 - 4;
     var off = Math.abs(mx - tx0) > 2 || Math.abs(my - ty0) > 2;

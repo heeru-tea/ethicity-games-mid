@@ -303,16 +303,18 @@ try {
       for (const id of ['c2_e4_a', 'pro_1']) {
         const p = await open(dev, { progress: sceneRun(id), settings: { speed: 'normal', reduceMotion: true, look: 'f' } });
         await p.click('#btn-continue');
-        const seen = [];
+        const seen = [], tagUnder = new Set();
         for (let k = 0; k < 40; k++) {
           await p.waitForTimeout(250);
           const r = await p.evaluate(() => { const cv = document.getElementById('m-canvas').getBoundingClientRect(); const top = Math.max(...['.hud-left', '.hud .bar-actions'].map((q) => document.querySelector(q)).filter((e) => e && e.getClientRects().length).map((e) => e.getBoundingClientRect().bottom - cv.top));
-            return { top: Math.round(top), b: PrivacyMap.debug.bubbleRects().map((q) => ({ who: q.who, y: Math.round(q.y), t: q.text })) }; });
+            return { top: Math.round(top), b: PrivacyMap.debug.bubbleRects().map((q) => ({ who: q.who, y: Math.round(q.y), t: q.text })), tags: PrivacyMap.debug.tags().map((t) => ({ l: t.label, y: Math.round(t.y) })) }; });
+          r.tags.forEach((t) => { if (t.y < r.top - 1) tagUnder.add(t.l + '@' + t.y + '<' + r.top); }); // 이름표도 위 버튼 영역 밑으로 들어가지 않음(2026-11-09 휴대폰 첫 단톡방 하늘)
           r.b.forEach((q) => { if (!seen.some((s) => s.t === q.t && s.who === q.who)) seen.push({ ...q, top: r.top }); });
           const more = await p.evaluate(() => { if (window.PrivacyTalk && PrivacyTalk.isOpen()) { PrivacyTalk.next(); return true; } return !!document.querySelector('#g-next .skip-btn'); });
           if (!more && seen.length) break;
         }
         const bad = seen.filter((q) => q.y < q.top);
+        rec(size, `C4 ${id} 이름표가 위 버튼 영역 아래`, tagUnder.size === 0, [...tagUnder].join(', '));
         rec(size, `C4 ${id} 말풍선이 위 버튼 영역 아래`, seen.length > 0 && bad.length === 0, JSON.stringify(bad.length ? bad : seen.slice(0, 3)));
         await p.screenshot({ path: shot(`C-bubble-${id}-${size}`) });
         await close(p);

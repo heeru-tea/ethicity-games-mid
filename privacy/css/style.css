@@ -316,6 +316,8 @@ body[data-view="v-chapter"] .hud { display: none; }
 }
 /* 2026-11-09 지시서 C5: 긴 조작 안내는 처음 두 장소에서만 보이고 접는다(메뉴 '조작 안내 다시 보기') */
 #v-map.help-folded .map-help { display: none; }
+/* 조작 안내 줄이 원래 안 보이는 화면(휴대폰 세로 ≤480px·가로 낮은 화면 ≤500px)에서는 메뉴의 '조작 안내 다시 보기'도 숨김 — 가로 화면 메뉴가 길어져 닫기 버튼이 스크롤 밑으로 갔다 */
+@media (max-width: 480px), (max-height: 500px) { #btn-menu-help { display: none; } }
 /* 근처에 말 걸거나 조사할 대상이 없으면 흐리게(눌러도 '가까이 가서 눌러 보세요' 안내만 나옴) */
 #v-map .map-controls #btn-map-act[aria-disabled="true"] { opacity: .5; cursor: default; }
 /* 가상 조이스틱(터치 기기, 2026-11-02): 말 걸기 버튼 위 왼쪽. 영역(#joy)은 보이지 않고, 누른 자리에 받침이 뜬다.
@@ -466,12 +468,13 @@ body[data-view="v-map"] .talk { bottom: 64px; }
 
 /* 좁은 무대(휴대폰): 폰은 아래에서 올라오는 시트, 위쪽에 맵이 보인다 */
 @container (max-width: 720px) {
-  /* 위 22%는 맵 자리(말풍선이 보이게), 그 아래 폰, 맨 아래 넘기기 버튼 또는 선택 상자(둘은 함께 뜨지 않아 같은 줄 — 빈 줄 틈을 없앰) */
+  /* 위 30%는 맵 자리(말풍선이 보이게), 그 아래 폰, 맨 아래 넘기기 버튼 또는 선택 상자(둘은 함께 뜨지 않아 같은 줄 — 빈 줄 틈을 없앰) */
   #v-game, #v-game[data-device="monitor"] {
-    grid-template-columns: 1fr; grid-template-rows: 22% minmax(0, 1fr) auto; gap: 8px; padding: 0 8px 8px;
+    grid-template-columns: 1fr; grid-template-rows: 30% minmax(0, 1fr) auto; gap: 8px; padding: 0 8px 8px;
   }
-  /* 2026-11-09 지시서 C4: 단톡방 창에 메시지가 2개만 보였다 → 지도 띠 30% → 22%, 넘기기·선택 같은 줄, 대화 줄 간격·선택지·머리글 여백을 줄여 4개 이상.
+  /* 2026-11-09 지시서 C4: 단톡방 창에 메시지가 2개만 보였다 → 선택지가 떠 있을 때만 지도 띠 30% → 22%(고르기 전에 대화를 읽어야 해서 — 평소엔 인물 다섯이 위 버튼에 안 가리게 30%), 넘기기·선택 같은 줄, 대화 줄 간격·선택지·머리글 여백을 줄여 4개 이상.
      시트(폰·넘기기·선택 상자) 뒤에는 판을 깔아 시트 사이 틈·양옆 여백으로 장면 밖(흐린 배경)이 비치지 않게(C3) */
+  #v-game:has(#g-dock .choice) { grid-template-rows: 22% minmax(0, 1fr) auto; }
   #v-game .log { gap: 6px; padding: 8px 10px; }
   #v-game .phone-head { padding-top: 6px; padding-bottom: 6px; }
   #v-game .pc-bar { margin-top: -6px; }
