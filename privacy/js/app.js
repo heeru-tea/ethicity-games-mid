@@ -110,7 +110,14 @@
     if (settings.helpFold || settings.helpPlaces.indexOf(id) >= 0) return;
     settings.helpPlaces.push(id);
     if (settings.helpPlaces.length > 2) settings.helpFold = true;
-    applyHelp(); saveSettings();
+    applyHelp(); saveHelp();
+  }
+  // 걷다가 장소를 지날 때는 안내 기록 두 칸만 저장한다(설정 전체를 쓰면 메모리에만 둔 임시값 — OS 움직임 줄이기·검사용 속도 — 까지 굳어 버렸다, 2026-11-09 nf-resume 프로브)
+  function saveHelp() {
+    var st = S.readJSON(S.KEYS.settings).value;
+    if (!st || typeof st !== 'object') { saveSettings(); return; } // 저장된 설정이 없으면(주인공을 고르기 전) 지금 설정 그대로
+    st.helpPlaces = settings.helpPlaces.slice(); st.helpFold = settings.helpFold;
+    S.writeJSON(S.KEYS.settings, st); checkWriteFailure();
   }
   var warnedWrite = false;
   function checkWriteFailure() {
