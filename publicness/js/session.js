@@ -17,6 +17,7 @@
   var Schedule = NODE ? require('./schedule.js') : root.PB.Schedule;
   var Layout = NODE ? require('./layout.js') : root.PB.Layout;
   var Scores = NODE ? require('./scores.js') : root.PB.Scores;
+  var Elder = NODE ? require('./elder.js') : root.PB.Elder;
   var Midday = NODE ? require('./midday.js') : root.PB.Midday;
 
   function copyRoute(r) { return { nodes: r.nodes.slice(), stops: r.stops.slice() }; }
@@ -368,7 +369,7 @@
   // 예상 = 추가 사건 없는 기본 수요로 같은 엔진을 돌린 결과(출발 경고·AI 예상이 같은 기준을 쓴다)
   function expectedRun(s, plan) {
     var p = runnable(s, plan || toPlan(s)), g = graph(s);
-    var res = Sim.run({ g: g, config: s.config, phase: s.phase, plan: p, requests: Demand.base(s.config, s.phase, s.seed) });
+    var res = Sim.run({ g: g, config: s.config, phase: s.phase, plan: p, requests: rideRequests(s, s.phase, null).ride });
     var m = Metrics.summarize(res, g, p, s.config);
     m.residents = residentRecords(s, res);
     return { result: res, metrics: m, plan: p };
@@ -376,14 +377,17 @@
   function expected(s, plan) { return expectedRun(s, plan).metrics; }
 
   // 이번 단계 실제 운행(기본 수요 + 이 세션의 사건). 같은 계획이면 언제 다시 계산해도 같은 결과
-  function runRequests(s, ev) { return Demand.sortReqs(Demand.base(s.config, s.phase, s.seed).concat(Demand.extra(s.config, s.phase, ev))); }
+  /* 어르신 무임 정책(2026-11-10): 세션에 정책이 없으면 유지(keep). 4단계 폐지는 그 뒤 단계에 이어진다(Elder.ride가 단계를 본다) */
+  function elderChoice(s) { return s.elderPolicy && s.elderPolicy.choice === 'abolish' ? 'abolish' : 'keep'; }
+  function rideRequests(s, phase, ev) { return Elder.ride(s.config, phase, Demand.sortReqs(Demand.base(s.config, phase, s.seed).concat(Demand.extra(s.config, phase, ev))), elderChoice(s)); }
+  function runRequests(s, ev) { return rideRequests(s, s.phase, ev).ride; }
   function computeRun(s, plan) {
     var g = graph(s), ev = s.events[s.phase - 1];
-    var requests = runRequests(s, ev);
+    var rr = rideRequests(s, s.phase, ev), requests = rr.ride;
     var day=dayInputs(s,s.phase),adjustments=day.adjustments;
     var result = Sim.run({ g: g, config: s.config, phase: s.phase, plan: plan, requests: requests, event: ev, adjustments:adjustments, routeChanges:day.routeChanges });
     var baseline=adjustments.length||day.routeChanges.length?Metrics.summarize(Sim.run({g:g,config:s.config,phase:s.phase,plan:plan,requests:requests,event:ev}),g,plan,s.config):null;
-    return { baseline:baseline, plan: plan, result: result, metrics: Metrics.summarize(result, g, plan, s.config), expected: expected(s, plan), requestsN: result.passengers.length, event: ev };
+    return { baseline:baseline, plan: plan, result: result, metrics: Metrics.summarize(result, g, plan, s.config), expected: expected(s, plan), requestsN: result.passengers.length, event: ev, stayed: rr.stayed };
   }
   function startRun(s) {
     if (s.stage !== 'plan' || validate(s).length) return null;
@@ -555,13 +559,14 @@
     var entry = {
       phase: s.phase, plan: c.plan, routeIds: Sim.operatingRoutes(c.plan).map(function (r) { return r.id; }),
       metrics: c.metrics, expected: c.expected, requestsN: c.requestsN, D: D, trustBefore: before, trustAfter: clone(s.trust),
-      event: c.event, petition: c.result.petition, residents: residentRecords(s, c.result), goal: s.goal
+      event: c.event, petition: c.result.petition, residents: residentRecords(s, c.result), goal: s.goal,
+      elder: { free: c.metrics.costs.freeRiders || 0, unpaid: (c.metrics.costs.freeRiders || 0) * s.config.finance.fare, stayed: (c.stayed || []).length }
     };
     entry.eventFare = s.config.finance.fare * c.result.passengers.filter(function (p) { return p.kind === 'extra' && p.firstBoardT != null; }).length;
     s.history.push(entry);
     settle(s, entry);
     // 두 점수(재정 건전성·이동 수요 충족) — 정산 직후 한 번 기록해 저장본에 남긴다(js/scores.js)
-    entry.scores = Scores.phaseScores(s.config, graph(s), s.phase, s.seed, c.event, c.plan, c.result.passengers, ledgerBalance(s, s.phase));
+    entry.scores = Scores.phaseScores(s.config, graph(s), s.phase, s.seed, c.event, c.plan, c.result.passengers, ledgerBalance(s, s.phase), c.stayed);
     s.stage = 'result';
     return entry;
   }
@@ -596,11 +601,11 @@
     var bal = ledgerBalance(s, h.phase);
     if (!h.plan || !h.metrics || h.event === undefined || bal == null) return false;
     var g = Graph.build(s.config, h.phase), day = dayInputs(s, h.phase);
-    var req = Demand.sortReqs(Demand.base(s.config, h.phase, s.seed).concat(Demand.extra(s.config, h.phase, h.event)));
+    var rr = rideRequests(s, h.phase, h.event), req = rr.ride;
     var res = Sim.run({ g: g, config: s.config, phase: h.phase, plan: h.plan, requests: req, event: h.event, adjustments: day.adjustments, routeChanges: day.routeChanges });
     var arrived = res.passengers.filter(function (p) { return p.status === 'arrived'; }).length;
     if (res.passengers.length !== h.metrics.N || arrived !== h.metrics.arrived) return false;
-    h.scores = Scores.phaseScores(s.config, g, h.phase, s.seed, h.event, h.plan, res.passengers, bal);
+    h.scores = Scores.phaseScores(s.config, g, h.phase, s.seed, h.event, h.plan, res.passengers, bal, rr.stayed);
     h.scores.recomputed = true;
     return true;
   }
@@ -692,6 +697,7 @@
   }
 
   var api = {
+    elderChoice: elderChoice, rideRequests: rideRequests,
     departChecks:departChecks,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,

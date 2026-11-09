@@ -377,7 +377,7 @@
     var freeRiders = users.filter(function (p) { return p.free; }).length;
     var costs = finance(config, g, input.phase, plan, timelines, users.length - freeRiders);
     costs.freeRiders = freeRiders;
-    costs.paidUnfinished = users.filter(function (p) { return p.status !== 'arrived'; }).length;
+    costs.paidUnfinished = users.filter(function (p) { return !p.free && p.status !== 'arrived'; }).length;
 
     return { timelines: timelines, passengers: passengers, log: log, costs: costs, petition: petition };
   }
