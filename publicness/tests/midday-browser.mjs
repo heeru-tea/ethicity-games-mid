@@ -12,6 +12,7 @@ async function phase3(page){
   await page.evaluate(()=>{localStorage.clear();PB.App.startGame();const s=PB.App.s;s.tutorialSeen=true;s.phase=3;s.owned=4;s.draft.buses=[1,2,3,4].map(id=>({id,routeNum:id<=2?id:null,offset:0}));PB.Session.beginPlan(s);
     PB.Session.updateRoute(s,1,{nodes:['F','C','B','A'],stops:[true,true,true,true]});PB.Session.updateRoute(s,2,{nodes:['D','A','G'],stops:[true,true,true]});PB.Session.startRun(s);PB.App.go('run');});
   for(let i=0;i<20&&await page.locator('dialog:modal').count();i++){await page.keyboard.press('Escape');await page.waitForTimeout(50);}
+  await page.evaluate(()=>{if(!PB.UI.runState().paused)document.querySelector('#run-pause').click();}); // 3D(swiftshader)는 느려 시작 직후 1×로도 11:00을 넘길 수 있어 멈춘 채 시작(⏭가 다시 달림)
 }
 const state=page=>page.evaluate(()=>PB.UI.runState());
 const why=(page,id='run-fix')=>page.locator('#'+id+'-why').innerText();
@@ -29,15 +30,16 @@ try{
     await page.locator('#run-fix').waitFor();
     assert.equal(await page.locator('#run-fix').isDisabled(),true,'창 밖이면 꺼짐');assert.equal(await why(page),'11:00~15:00에 한 번 쓸 수 있어요');
     assert.equal(await page.locator('#run-fix').innerText(),'노선 고치기 · 한 번');
-    await page.locator('#run-pause').click();await page.screenshot({path:shot('closed-1280')});await page.locator('#run-pause').click();
+    await page.screenshot({path:shot('closed-1280')});
     const st=await toWindow(page);assert.equal(st.tf,40);
     assert.match(await page.locator('#run-statusbar-text').innerText(),/^11:00 .*이제 15:00까지 노선을 한 번 고칠 수 있어요/);
     assert.equal(await page.locator('#run-fix').isDisabled(),false);assert.equal(await why(page),'지금 한 번 고칠 수 있어요');
     await page.screenshot({path:shot('open-1280')});
     // 다시 달리다가 아무 때나 누름
     await page.locator('#run-pause').click();await page.waitForFunction(()=>PB.UI.runState().tf>44,null,{timeout:30000,polling:20});
-    await page.locator('#run-fix').click();
-    const at=await page.evaluate(()=>PB.UI.runState().pendingEmergency);assert.ok(at>=44&&at<=66,'고친 시각 '+at);
+    const pre=await page.evaluate(()=>({tf:PB.UI.runState().tf,dis:document.querySelector('#run-fix').disabled,why:document.querySelector('#run-fix-why').textContent}));
+    await page.locator('#run-fix').dispatchEvent('click'); /* 재생 중 누름 — 3D 헤드리스는 프레임이 느려 click()의 ‘안정’ 대기 동안 15:00을 넘김 */
+    const at=await page.evaluate(()=>PB.UI.runState().pendingEmergency);assert.ok(at>=44&&at<=66,'고친 시각 '+at+' '+JSON.stringify(pre)+' '+JSON.stringify(await page.evaluate(()=>({tf:PB.UI.runState().tf,why:document.querySelector('#run-fix-why').textContent}))));
     assert.equal(await page.evaluate(()=>PB.App.s.runCursor),at);
     const tf1=(await state(page)).tf;await page.waitForTimeout(400);assert.equal((await state(page)).tf,tf1,'창이 열린 동안 멈춤');
     const box=await page.evaluate(()=>{const d=document.querySelector('#emergency-dialog'),r=d.getBoundingClientRect(),m=document.querySelector('#stage').getBoundingClientRect();return {modal:d.matches(':modal'),inPanel:!!d.closest('#panel'),overlap:!(r.right<=m.left||r.left>=m.right||r.bottom<=m.top||r.top>=m.bottom),text:d.innerText};});
