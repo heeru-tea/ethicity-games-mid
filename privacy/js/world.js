@@ -309,7 +309,7 @@
     c2_e6_a: { time: '축제 당일 · 아침', mission: '도서관 공용 PC 3번에서 안내문 출력하기', target: { obj: 'pc3' }, spawn: 'gate', tint: 'day',
       cast: [who('friend', 'library', 23, 8, 'right'), who('saebom', 'yard', 7, 14, 'up'), who('jiho', 'yard', 4, 11, 'right')] },
     c3_e7_a: { time: '축제 당일 · 오후', mission: '마당 부스 옆 하늘이네에게 가기', target: { npc: 'haneul' }, spawn: 'hall', tint: 'day',
-      cast: [who('haneul', 'yard', 16, 13, 'left'), who('friend', 'yard', 17, 12, 'left'),
+      cast: [who('haneul', 'yard', 16, 13, 'left'), who('friend', 'yard', 18, 12, 'left'),
         who('minjun', 'classroom', 29, 11, 'up'), who('saebom', 'yard', 7, 14, 'up'), who('jiho', 'yard', 4, 11, 'right')] },
     c3_e8_a: { time: '축제 당일 · 저녁', mission: '집에 가서 쉬기 — 내 방 컴퓨터', target: { obj: 'mypc' }, spawn: 'yard', tint: 'evening',
       cast: [who('haneul', 'yard', 16, 13, 'left'), who('teacher', 'yard', 16, 8, 'down')],
@@ -351,7 +351,8 @@
   var ATDESK = rp(25, 10, 'up'); // 내 방 책상 컴퓨터 앞
   // 침대에 누운 자리(2026-11-03 플레이테스트): 머리가 베개에 오도록 발 기준 칸 좌표(소수) + pose 'lie'(map.js: 윗몸만 그리고 아래는 이불 속)
   var BED_ME = P('room', 3.7, 5.84, 'down', { pose: 'lie' });
-  var BOOTH = [who('haneul', 'yard', 16, 13, 'left'), who('friend', 'yard', 17, 12, 'left'),
+  // 2026-11-10 사용자 버그: 옆 반 친구가 하늘 바로 오른쪽 위(17,12)에 붙어 서서 하늘 머리 위 느낌표가 옆으로 비키며 선이 생겼다 → 한 칸 오른쪽(18,12)
+  var BOOTH = [who('haneul', 'yard', 16, 13, 'left'), who('friend', 'yard', 18, 12, 'left'),
     who('saebom', 'yard', 7, 14, 'up'), who('jiho', 'yard', 4, 11, 'right')];
 
   var SC_CAST = TRIGGERS.sc_1.cast; // 특별 수업 무대 = 걷기 때 자리 그대로

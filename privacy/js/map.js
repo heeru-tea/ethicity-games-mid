@@ -1243,11 +1243,13 @@
   }
   // 2026-11-03 플레이테스트: ?가 다른 인물의 몸·이름표에 걸리면 그 사람 것처럼 보인다(민준이의 ?가 하늘이 이름표 옆) →
   //   걸린 것 반대쪽(대상 머리 위쪽)으로 x만 비킨다. 비켰으면 tail = true → drawTail이 대상 머리까지 꼬리를 잇는다
-  function clearMark(c, mx, my, w, h) {
+  // skipMe(2026-11-10 사용자 버그): 목적지 핀은 내 몸·내 이름표를 피해 옆으로 비키지 않는다 — 하늘 앞에 서면 핀이 옆으로 비키며 머리까지 선이 생겼다.
+  //   내 캐릭터와 겹치는 핀은 drawMarker의 다음 규칙이 내 머리 위로 올린다(선 없음)
+  function clearMark(c, mx, my, w, h, skipMe) {
     var pad = markPad(), self = c.who;
     function blockers(x) {
-      var a = lastBodies.filter(function (b) { return b.who !== self; })
-        .concat(lastTags.filter(function (r) { return r.who !== self; }).map(function (r) { return { x0: r.x, x1: r.x + r.w, y0: r.y, y1: r.y + r.h }; }));
+      var a = lastBodies.filter(function (b) { return b.who !== self && !(skipMe && b.who === 'me'); })
+        .concat(lastTags.filter(function (r) { return r.who !== self && !(skipMe && r.me); }).map(function (r) { return { x0: r.x, x1: r.x + r.w, y0: r.y, y1: r.y + r.h }; }));
       return a.filter(function (b) { return x + w / 2 + 2 > b.x0 && x - w / 2 - 2 < b.x1 && my + h / 2 + pad > b.y0 && my - h / 2 - pad < b.y1; });
     }
     var hit = blockers(mx);
@@ -1408,7 +1410,7 @@
     if (tc && bubbles.some(function (q) { return q.who === tc && q.until > performance.now(); })) { lastMarker = { x: null, y: null, tx: b.x, ty: b.y, kind: kind, hidden: true }; return; }
     var bob = markBob(t, 0), anchor = b.obj && b.obj.pin; // pin: 사물의 표시 기준점(침대 = 매트리스 가운데)
     var mx = anchor ? anchor.x * T - cam.x : (b.x + b.w / 2) * T - cam.x, my = tc ? headY(tc) : anchor ? anchor.y * T - cam.y : b.y * T - cam.y - T * 0.55;
-    var clr = tc ? clearMark(tc, tc.x * T - cam.x + T / 2, my, markSize('talk').w, markSize('talk').h) : null;
+    var clr = tc ? clearMark(tc, tc.x * T - cam.x + T / 2, my, markSize('talk').w, markSize('talk').h, true) : null;
     if (clr) mx = clr.x;
     // 화면 밖이거나 위 안내 상자·아래 버튼에 가리는 자리면, 보이는 띠 안으로 옮기고 방향 화살표를 단다
     var iconSize = 16 * markScale(), sa = safeArea(), ms = markSize(kind);
