@@ -165,6 +165,7 @@ body[data-screen=run] .person-chip-time, body[data-screen=run] .person-chip-trip
 .note-blank.note-reason { width: calc(100% - 5.5em); min-width: 10em; }
 .note-blank:focus-visible { outline: 2px solid var(--sem-action); outline-offset: 1px; border-color: var(--sem-action); }
 .note-josa { margin-left: 1px; }
+.note-nowrap { white-space: nowrap; }
 .note-views { display: inline-flex; flex-wrap: wrap; gap: 6px; vertical-align: middle; margin: 0 4px; }
 .note-view { min-height: 44px; padding: 6px 12px; }
 .note-view[aria-pressed="true"] { border: 2px solid var(--sem-action); background: var(--accent-soft); color: var(--accent-ink); }

@@ -134,8 +134,9 @@
  function blank(s,h,box,field,id,label,kind,max){
   var NT=PB.StageNotes,inp=el('input',{type:'text',id:id,'class':'note-blank'+(kind?'':' note-reason'),maxlength:String(max||40),autocomplete:'off','aria-label':label,placeholder:kind?'누구·무엇':'짧게'});
   inp.value=NT.get(s,h.phase)[field];var frag=document.createDocumentFragment();frag.appendChild(inp);
-  var js=kind?el('span',{id:id+'-josa','class':'note-josa'},NT.particle(inp.value,kind)):null;if(js)frag.appendChild(js);
-  inp.addEventListener('input',function(){NT.set(s,h.phase,field,inp.value);if(js)js.textContent=NT.particle(inp.value,kind);noteSaved(box,PB.App.save());});
+  /* 2026-11-11 플레이테스트 11: 빈칸이 비어 있으면 뒤 조사를 보이지 않는다(‘AI는 을(를) 바꾸자고 했다’처럼 틀이 그대로 읽히던 것). 낱말을 쓰면 그 받침에 맞는 조사가 붙는다 */
+  var josaOf=function(){return inp.value.trim()?NT.particle(inp.value,kind):'';},js=kind?el('span',{id:id+'-josa','class':'note-josa'},josaOf()):null;if(js)frag.appendChild(js);
+  inp.addEventListener('input',function(){NT.set(s,h.phase,field,inp.value);if(js)js.textContent=josaOf();noteSaved(box,PB.App.save());});
   return frag;
  }
  function line(parts){var p=el('p',{'class':'note-line'});parts.forEach(function(x){p.appendChild(typeof x==='string'?document.createTextNode(x):x);});return p;}
@@ -152,7 +153,7 @@
   Object.keys(NT.VIEWS).forEach(function(k){var b=el('button',{type:'button','class':'btn note-view','data-ai-view':k,'aria-pressed':String(NT.get(s,h.phase).aiView===k)},NT.VIEWS[k]);
    b.addEventListener('click',function(){NT.set(s,h.phase,'aiView',NT.get(s,h.phase).aiView===k?'':k);var now=NT.get(s,h.phase).aiView;pick.querySelectorAll('[data-ai-view]').forEach(function(n){n.setAttribute('aria-pressed',String(n.dataset.aiView===now));});noteSaved(box,PB.App.save());});pick.appendChild(b);});
   box.appendChild(line(['나는 ',pick,'이다.']));
-  box.appendChild(line(['왜냐하면 ',blank(s,h,box,'aiWhy','note-ai-why','그렇게 생각한 까닭',null,120)]));
+  box.appendChild(line([el('span',{'class':'note-nowrap'},'왜냐하면 '),blank(s,h,box,'aiWhy','note-ai-why','그렇게 생각한 까닭',null,120)]));/* ‘왜냐하 / 면’으로 끊기지 않게 */
   box.appendChild(el('p',{'class':'note note-saved',role:'status'}));return box;
  }
  /* 2026-11-09 교사 플레이테스트 4: 같은 조건으로 다시 한 게임의 같은 단계와 비교 한두 줄(js/run-compare.js — 이미 계산된 숫자만).
