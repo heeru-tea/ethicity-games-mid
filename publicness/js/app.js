@@ -24,11 +24,11 @@
   // 저장 결과를 돌려준다(2026-11-10 검토 3번): true = 저장됨, false = 저장 안 됨(접근 차단·용량 초과), null = 저장할 것이 없음(첫 화면).
   // 실패 안내는 상단 바 #save-status 한 곳만 갱신한다(입력마다 알림을 쌓지 않는다). 다시 저장되면 숨긴다. 게임과 입력은 저장 여부와 상관없이 이어진다
   App.saveOk = null;
-  App.SAVE_FAIL = '지금은 저장이 안 돼요. 이 창에서는 계속할 수 있지만 새로고침하면 기록이 사라질 수 있어요.';
+  App.SAVE_FAIL = '저장이 안 돼요. 이 창에서는 계속할 수 있지만 새로고침하면 기록이 사라질 수 있어요.';
   App.save = function () {
     if (!App.s || document.body.getAttribute('data-screen') === 'title') return null;
     var ok = PB.Storage.writeSave({ version: cfg.SCENARIO_VERSION, savedAt: Date.now(), session: S.serialize(App.s) });
-    if (ok !== App.saveOk) { App.saveOk = ok; var n = $('#save-status'); if (n) { n.hidden = ok; n.textContent = ok ? '' : App.SAVE_FAIL; } }
+    if (ok !== App.saveOk) { App.saveOk = ok; var n = $('#save-status'); if (n) { n.hidden = ok; n.textContent = ok ? '' : App.SAVE_FAIL; n.title = ok ? '' : App.SAVE_FAIL; } document.body.classList.toggle('save-failed', !ok); /* 상단 바 자리 확보(css) */ }
     return ok;
   };
   // 입력 칸 옆 상태 줄에 쓸 말 — 성공했을 때만 ‘저장했어요.’
@@ -619,14 +619,14 @@
     // 소개 컷 → 지도 계획 위에 Stage 1 카드(2026-11-01 사용자: Stage 카드가 안 뜬다)
     function newGame() { PB.Cutscene.play('intro', function () { App.startGame(); var c = App.s.config; PB.Cutscene.play('stage', function () {}, null, { number: 1, total: c.phases.length, name: c.phases[0] }); }); }
     // 저장된 진행이 있으면 ‘이어하기’를 먼저 보여 주고, 새로 시작은 지워도 되는지 한 번 묻는다
-    if (!PB.Storage.canSave() && $('#save-note')) $('#save-note').textContent = '이 브라우저에서는 진행을 저장할 수 없어요. 이 창에서는 끝까지 할 수 있지만 새로고침하거나 창을 닫으면 기록이 사라져요.';
+    if (!PB.Storage.canSave() && $('#save-note')) { $('#save-note').textContent = '이 브라우저에서는 진행을 저장할 수 없어요. 이 창에서는 끝까지 할 수 있지만 새로고침하거나 창을 닫으면 기록이 사라져요.'; $('#save-note').classList.add('is-alert'); /* 간단 화면에서도 보이게 */ }
     // 이어하기는 검사를 통과한 저장본만(뼈대 + stage·phase 범위). 깨진 저장본은 이어하기를 켜지 않고 한 줄로 알린 뒤 새 게임을 받는다 — 원문은 새 게임 전에 따로 남긴다
     function validSave(o) { return !S.checkSave(o.session, cfg); }
     function readState() { return PB.Storage.saveState(cfg.SCENARIO_VERSION, null, validSave); }
     var first = readState(), saved = first.save, cont = $('#btn-continue'), brokenSave = first.state === 'broken';
     function showBroken() {
       brokenSave = true; if (cont) cont.hidden = true;
-      $('#continue-note').textContent = '저장된 진행을 불러오지 못해서 이어할 수 없어요. 새로 시작할 수 있어요.';
+      $('#continue-note').textContent = '저장된 진행을 불러오지 못해서 이어할 수 없어요. 새로 시작할 수 있어요.'; $('#continue-note').classList.add('is-alert'); /* 간단 화면에서도 보이게 */
       $('#btn-start').textContent = '첫 운행 계획하기'; $('#btn-start').classList.add('btn-primary');
     }
     if (brokenSave) showBroken();
