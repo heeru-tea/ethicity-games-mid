@@ -23,7 +23,7 @@
       inp = App.el('input', { type: 'text', id: id + '-why', 'class': 'note-blank note-reason', maxlength: '200', autocomplete: 'off', 'aria-label': '그렇게 고른 까닭', placeholder: '짧게' });
     inp.value = field(s, kind).why || '';
     inp.addEventListener('input', function () {
-      PB.Choices.set(s, kind, 'why', inp.value); App.save(); status.textContent = '저장했어요.';
+      PB.Choices.set(s, kind, 'why', inp.value); status.textContent = App.savedText(App.save());
       var n = document.getElementById('why-nudge'); if (n) n.remove();
     });
     p.appendChild(document.createTextNode('왜냐하면 ')); p.appendChild(inp); p.appendChild(document.createTextNode('.'));

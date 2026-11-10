@@ -117,12 +117,12 @@
  /* 2026-11-09 테스터 6번(6-A): 단계별 생각 쓰기 — 문장 틀 빈칸(비워도 됨, 점수·진행과 상관없음). 입력마다 s.stageNotes[단계]에 저장(js/stage-notes.js), 다시 그리면 그대로.
   * 학생은 낱말만 쓰고 뒤 조사(을/를·이/가)는 쓴 낱말에 맞춰 바뀐다. 마지막 엔딩 보고서에 문장으로 모인다 */
  function noteBox(id,title){var box=el('div',{id:id,'class':'think-note',role:'group','aria-labelledby':id+'-h'});box.appendChild(el('h4',{id:id+'-h'},title));box.appendChild(el('p',{'class':'note'},'빈칸을 채워 보세요. 비워도 괜찮아요. 점수와는 상관없어요.'));return box;}
- function noteSaved(box){var st=box.querySelector('.note-saved');if(st)st.textContent='저장했어요.';}
+ function noteSaved(box,ok){var st=box.querySelector('.note-saved');if(st)st.textContent=PB.App.savedText(ok);}/* 성공했을 때만 성공 문구(2026-11-10 검토 3번, 문구는 App.savedText 한 곳) */
  function blank(s,h,box,field,id,label,kind,max){
   var NT=PB.StageNotes,inp=el('input',{type:'text',id:id,'class':'note-blank'+(kind?'':' note-reason'),maxlength:String(max||40),autocomplete:'off','aria-label':label,placeholder:kind?'누구·무엇':'짧게'});
   inp.value=NT.get(s,h.phase)[field];var frag=document.createDocumentFragment();frag.appendChild(inp);
   var js=kind?el('span',{id:id+'-josa','class':'note-josa'},NT.particle(inp.value,kind)):null;if(js)frag.appendChild(js);
-  inp.addEventListener('input',function(){NT.set(s,h.phase,field,inp.value);if(js)js.textContent=NT.particle(inp.value,kind);PB.App.save();noteSaved(box);});
+  inp.addEventListener('input',function(){NT.set(s,h.phase,field,inp.value);if(js)js.textContent=NT.particle(inp.value,kind);noteSaved(box,PB.App.save());});
   return frag;
  }
  function line(parts){var p=el('p',{'class':'note-line'});parts.forEach(function(x){p.appendChild(typeof x==='string'?document.createTextNode(x):x);});return p;}
@@ -137,7 +137,7 @@
   box.appendChild(line(['AI는 ',blank(s,h,box,'aiWhat','note-ai-what','AI가 바꾸자고 한 것','을를'),' 바꾸자고 했다.']));
   var pick=el('span',{'class':'note-views',role:'group','aria-label':'AI와 같은 생각인지 다른 생각인지'});
   Object.keys(NT.VIEWS).forEach(function(k){var b=el('button',{type:'button','class':'btn note-view','data-ai-view':k,'aria-pressed':String(NT.get(s,h.phase).aiView===k)},NT.VIEWS[k]);
-   b.addEventListener('click',function(){NT.set(s,h.phase,'aiView',NT.get(s,h.phase).aiView===k?'':k);var now=NT.get(s,h.phase).aiView;pick.querySelectorAll('[data-ai-view]').forEach(function(n){n.setAttribute('aria-pressed',String(n.dataset.aiView===now));});PB.App.save();noteSaved(box);});pick.appendChild(b);});
+   b.addEventListener('click',function(){NT.set(s,h.phase,'aiView',NT.get(s,h.phase).aiView===k?'':k);var now=NT.get(s,h.phase).aiView;pick.querySelectorAll('[data-ai-view]').forEach(function(n){n.setAttribute('aria-pressed',String(n.dataset.aiView===now));});noteSaved(box,PB.App.save());});pick.appendChild(b);});
   box.appendChild(line(['나는 ',pick,'이다.']));
   box.appendChild(line(['왜냐하면 ',blank(s,h,box,'aiWhy','note-ai-why','그렇게 생각한 까닭',null,120)]));
   box.appendChild(el('p',{'class':'note note-saved',role:'status'}));return box;

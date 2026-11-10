@@ -6,7 +6,7 @@
  *   ethicity.publicness.speed  운행 재생 배속(1·2). 없으면 1, 예전 값 4는 2로 바꿔 둔다
  *   ethicity.publicness.save   진행 자동 저장 {version, savedAt, session} — 시나리오 버전이 다르면 버린다
  *   ethicity.publicness.busHint 첫 버스 끌어 놓기 안내를 봤는지('1') — ui-map-plan.js가 직접 읽고 쓴다
- * 저장소가 막혔거나 손상됐으면 조용히 건너뛴다.
+ * 저장소가 막혔거나 손상됐으면 게임은 멈추지 않는다. 진행 저장(writeSave)의 성공 여부는 돌려주고, 화면이 알린다(App.save → #save-status).
  */
 (function (root) {
   'use strict';
@@ -56,6 +56,9 @@
 
   var SAVE_KEY = 'ethicity.publicness.save';
   function writeSave(data, s) { try { var st = store(s); if (!st) return false; st.setItem(SAVE_KEY, JSON.stringify(data)); return true; } catch (e) { return false; } }
+  // 이 브라우저에 쓸 수 있는지(시작 화면 저장 안내용). 시험 값은 바로 지운다. 용량이 거의 찬 경우처럼 여기서는 되고 실제 저장은 안 될 수도 있다 — 그때는 writeSave가 false
+  var PROBE_KEY = 'ethicity.publicness.probe';
+  function canSave(s) { try { var st = store(s); if (!st) return false; st.setItem(PROBE_KEY, '1'); st.removeItem(PROBE_KEY); return true; } catch (e) { return false; } }
   function readSave(version, s) {
     try { var st = store(s), raw = st && st.getItem(SAVE_KEY); if (!raw) return null; var o = JSON.parse(raw);
       return o && o.version === version && o.session ? o : null; } catch (e) { return null; }
@@ -63,7 +66,7 @@
   function clearSave(s) { try { var st = store(s); if (st) st.removeItem(SAVE_KEY); } catch (e) { /* 무시 */ } }
 
   var api = { readPlayer: readPlayer, writeResult: writeResult, readSound: readSound, writeSound: writeSound, readSpeed: readSpeed, writeSpeed: writeSpeed,
-    readSave: readSave, writeSave: writeSave, clearSave: clearSave, RESULT_KEY: RESULT_KEY, SOUND_KEY: SOUND_KEY, SPEED_KEY: SPEED_KEY, SAVE_KEY: SAVE_KEY, SPEEDS: SPEEDS };
+    readSave: readSave, writeSave: writeSave, canSave: canSave, clearSave: clearSave, RESULT_KEY: RESULT_KEY, SOUND_KEY: SOUND_KEY, SPEED_KEY: SPEED_KEY, SAVE_KEY: SAVE_KEY, SPEEDS: SPEEDS };
   root.PB = root.PB || {};
   root.PB.Storage = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

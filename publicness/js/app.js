@@ -21,10 +21,18 @@
   App.contractTitle = function (end) { return end && end.balance >= 0 ? '적자 누적으로 운영 계약 종료(이전 규칙)' : '잔액 부족으로 운영 계약 종료'; };
   App.setSpeed = function (v) { if (PB.Storage.SPEEDS.indexOf(v) < 0) return; App.speed = v; PB.Storage.writeSpeed(v); };
   // 자동 저장 — 화면을 그릴 때마다(계획 편집·출발·결과·다음 단계). 운행 결과는 저장하지 않고 다시 계산한다
+  // 저장 결과를 돌려준다(2026-11-10 검토 3번): true = 저장됨, false = 저장 안 됨(접근 차단·용량 초과), null = 저장할 것이 없음(첫 화면).
+  // 실패 안내는 상단 바 #save-status 한 곳만 갱신한다(입력마다 알림을 쌓지 않는다). 다시 저장되면 숨긴다. 게임과 입력은 저장 여부와 상관없이 이어진다
+  App.saveOk = null;
+  App.SAVE_FAIL = '지금은 저장이 안 돼요. 이 창에서는 계속할 수 있지만 새로고침하면 기록이 사라질 수 있어요.';
   App.save = function () {
-    if (!App.s || document.body.getAttribute('data-screen') === 'title') return;
-    PB.Storage.writeSave({ version: cfg.SCENARIO_VERSION, savedAt: Date.now(), session: S.serialize(App.s) });
+    if (!App.s || document.body.getAttribute('data-screen') === 'title') return null;
+    var ok = PB.Storage.writeSave({ version: cfg.SCENARIO_VERSION, savedAt: Date.now(), session: S.serialize(App.s) });
+    if (ok !== App.saveOk) { App.saveOk = ok; var n = $('#save-status'); if (n) { n.hidden = ok; n.textContent = ok ? '' : App.SAVE_FAIL; } }
+    return ok;
   };
+  // 입력 칸 옆 상태 줄에 쓸 말 — 성공했을 때만 ‘저장했어요.’
+  App.savedText = function (ok) { return ok === true ? '저장했어요.' : ok === false ? '저장하지 못했어요.' : ''; };
   App.resume = function (saved) {
     App.s = S.restore(saved.session, cfg);
     App._sceneKey = null; App.arrival = { phase: App.s.phase, at: 0, changes: App.phaseChanges(App.s), line: '', done: true }; /* 이어하기: 배너는 다시 안 띄우고 ‘새’ 표시만(P1-3) */
@@ -607,6 +615,7 @@
     // 소개 컷 → 지도 계획 위에 Stage 1 카드(2026-11-01 사용자: Stage 카드가 안 뜬다)
     function newGame() { PB.Cutscene.play('intro', function () { App.startGame(); var c = App.s.config; PB.Cutscene.play('stage', function () {}, null, { number: 1, total: c.phases.length, name: c.phases[0] }); }); }
     // 저장된 진행이 있으면 ‘이어하기’를 먼저 보여 주고, 새로 시작은 지워도 되는지 한 번 묻는다
+    if (!PB.Storage.canSave() && $('#save-note')) $('#save-note').textContent = '이 브라우저에서는 진행을 저장할 수 없어요. 이 창에서는 끝까지 할 수 있지만 새로고침하거나 창을 닫으면 기록이 사라져요.';
     var saved = PB.Storage.readSave(cfg.SCENARIO_VERSION), cont = $('#btn-continue');
     if (saved && cont) {
       var ss = saved.session, total = (ss.config ? ss.config.phases.length : cfg.phases.length);
