@@ -350,7 +350,7 @@
     DR.Save.setRecord(m.id, rec);
     var next = m.next && DR.Missions[m.next] ? function () { startMission(m.next); } : null;
     var outroOpts = { kicker: m.title + ' 완료', next: next, summary: summary };
-    // 4 임무: 같은 답안지 전후 비교(답안 사진 · 처음 판정 · 내가 바꾼 자료 · 개선 후 판정). 첫 판정 기록이 없는 옛 저장이면 없음
+    // 4 임무: 같은 답안지 전후 비교(답안 사진 · 처음 판정 · 내가 바꾼 자료 · 마지막 판정). 첫 판정 기록이 없는 옛 저장이면 없음
     if (m.grading && App.lastJudge) outroOpts.compare = DR.UI.gradeCompare(m, DR.GradeCompare.rows(m, App.state.firstGrade, App.lastJudge, App.state.bag || [], DR.config));
     var step = DR.Save.cityStep(m.id, cityBefore, cityCount());
     function toOutro() {

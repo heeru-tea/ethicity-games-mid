@@ -705,6 +705,7 @@ body { overflow: hidden; word-break: keep-all; }
 .cmp-photo img { display: block; width: 96px; height: 96px; border-radius: 8px; background: #f4f0e6; }
 .cmp-wrote, .cmp-tag { display: block; font-size: 13px; color: var(--ink-2); margin-top: 4px; }
 .cmp-tag { color: #7be0a0; }
+.cmp-tag-worse { color: #ff8fa6; }
 .cmp-v { font-weight: 700; white-space: nowrap; }
 .cmp-ok { color: #7be0a0; }
 .cmp-bad { color: #ff8fa6; }
