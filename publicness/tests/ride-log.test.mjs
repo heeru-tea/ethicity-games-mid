@@ -50,13 +50,13 @@ test('ratios: 1단계 숨김 0·나머지 1 / 2단계 이후 기록 비율, 기�
   assert.deepEqual(RideLog.ratios(cfg, 2, log, ['A', 'F', 'H']), { A: 1, F: 0.25, H: 1 });
   assert.deepEqual(RideLog.ratios(cfg, 3, null, ['F', 'A']), { F: 1, A: 1 }, '기록을 못 채운 옛 저장본은 1');
 });
-test('visible·seenFor: 출발 구역별 앞에서 round(r×개수)개, 돌아오는 이동 제외 — 같은 규칙', () => {
+test('visible·seenFor: 출발 구역별 고르게 퍼뜨려 floor(r×개수)개, 돌아오는 이동 제외 — 같은 규칙', () => {
   const q = (key, o, leg) => ({ key, o, d: 'A', kind: 'base', leg });
   const reqs = [q('f1', 'F'), q('b1', 'B'), q('f2', 'F'), q('f3', 'F'), q('b2', 'B'), q('r1', 'F', 'return'), q('c1', 'C')];
   const ratios = { F: 0.5, B: 0, C: 1 };
-  assert.deepEqual(RideLog.visible(reqs, ratios).map(x => x.key), ['f1', 'f2', 'c1']);
+  assert.deepEqual(RideLog.visible(reqs, ratios).map(x => x.key), ['f2', 'c1']); /* E1: 앞에서 round → 고른 간격 floor(3×0.5)=1건 */
   const log = { F: { requests: 2, rode: 1, arrived: 1 }, B: { requests: 3, rode: 0, arrived: 0 }, C: { requests: 1, rode: 1, arrived: 0 } };
-  assert.deepEqual(RideLog.seenFor(cfg, 2, log, reqs), { F: 2, B: 0, C: 1 });
+  assert.deepEqual(RideLog.seenFor(cfg, 2, log, reqs), { F: 1, B: 0, C: 1 });
   const base = S.rideRequests(S.create(cfg), 1, null).ride.filter(x => x.kind === 'base');
   const seen = RideLog.seenFor(cfg, 1, null, base), vis = RideLog.visible(base, RideLog.ratios(cfg, 1, null, Object.keys(seen)));
   assert.equal(seen.F, 0); assert.ok(seen.A > 0);
@@ -85,4 +85,13 @@ test('옛 저장본: entry.rideLog 없으면 다시 계산해 채우고, 못 하
   Object.keys(v.ratios).forEach(z => assert.equal(v.ratios[z], 1, z));
   assert.deepEqual(v.hidden, []);
   assert.ok(S.revealed(r2).requests.some(q => q.o === 'F'));
+});
+test('E1: 부분 비율은 하루 전체에서 고르게 — 이른 시간만 남지 않는다, 개수=seenFor, 결정적', () => {
+  const reqs = Array.from({ length: 10 }, (_, i) => ({ key: 'f' + i, o: 'F', d: 'A', kind: 'base', t: 60 + i * 60 }));
+  const a = RideLog.visible(reqs, { F: 0.5 }), b = RideLog.visible(reqs, { F: 0.5 });
+  assert.equal(a.length, 5); assert.deepEqual(a.map(x => x.key), b.map(x => x.key));
+  const ts = a.map(x => x.t), med = reqs[4].t;
+  assert.ok(Math.max(...ts) > med && Math.min(...ts) < med);
+  assert.equal(RideLog.seenFor(cfg, 2, { F: { requests: 10, rode: 5, arrived: 0 } }, reqs).F, 5);
+  assert.equal(RideLog.visible(reqs, { F: 1 }).length, 10); assert.equal(RideLog.visible(reqs, { F: 0 }).length, 0);
 });
