@@ -743,7 +743,29 @@
     return s;
   }
 
+  /* 저장본 검사(2026-11-10 검토 4번) — 되살리기 전에 최소 뼈대와 stage·phase 범위를 본다. 문제없으면 null, 있으면 이유(문자열).
+   * 나중에 생긴 선택 필드(ledger·negStreak·scores·rideLog·runId·stageNotes …)는 보지 않는다 — restore가 채우거나 없는 대로 둔다 */
+  var STAGES = ['reveal', 'plan', 'run', 'result', 'ending'], MODES = ['default', 'random', 'fixed'];
+  function obj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+  function checkSave(d, baseConfig) {
+    if (!obj(d)) return 'session';
+    if (MODES.indexOf(d.mode) < 0) return 'mode';
+    if (typeof d.seed !== 'number' || !isFinite(d.seed)) return 'seed';
+    var c = d.config || (d.mode === 'default' ? baseConfig : null);
+    if (!obj(c) || !Array.isArray(c.phases) || !Array.isArray(c.nodes) || !obj(c.bus)) return 'config';
+    if (typeof d.phase !== 'number' || d.phase % 1 !== 0 || d.phase < 1 || d.phase > c.phases.length) return 'phase';
+    if (STAGES.indexOf(d.stage) < 0) return 'stage';
+    if (!Array.isArray(d.history) || !d.history.every(obj)) return 'history';
+    if (!obj(d.draft) || !Array.isArray(d.draft.routes) || !Array.isArray(d.draft.buses)) return 'draft';
+    return null;
+  }
+  // 검사하고 되살린다. 검사를 통과했어도 되살리다 예외가 나면(기록 속이 깨짐) 던지지 않고 null — 화면은 이어하기를 끄고 새 게임을 받는다
+  function safeRestore(d, baseConfig) {
+    try { if (checkSave(d, baseConfig)) return null; var s = restore(d, baseConfig); return obj(s) && obj(s.config) && Array.isArray(s.history) ? s : null; } catch (e) { return null; }
+  }
+
   var api = {
+    checkSave: checkSave, safeRestore: safeRestore,
     elderChoice: elderChoice, petitionAt: petitionAt, rideRequests: rideRequests, aiView: aiView,
     departChecks:departChecks,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
