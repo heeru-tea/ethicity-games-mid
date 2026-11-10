@@ -201,3 +201,52 @@ test('review 1: case 4 never claims 담이\'s own reason is known; the record-ma
  // 아직 모르는 것은 그대로 모른다고 말한다
  assert.match(C.follow.unknown,/아직 몰라/);assert.match(C.reflect.q2,/아직 확인하지 못한 것/);
 });
+// 2. 사진 사건 문장에 든 범위 말(만·모두·전부·늘·다)을 실제 자르기 좌표(engine AUTO·ALL·faces·FOLLOW_CROPS)와 맞춰 본다.
+//    새 문장에 범위 말이 들어가면 아래 표에 '무엇으로 확인했는지'를 적어야 통과한다.
+test('review 2: photo sentences with range words (만·모두·늘·다) agree with the real crops',()=>{
+ const W=1536,H=1024,FULL=[0,0,W,H],TORI=0,LULU=1,DAMI=2,P=D.cases.photo;
+ const overlaps=([x,y,w,h],[fx,fy,fw,fh])=>fx<x+w&&fx+fw>x&&fy<y+h&&fy+fh>y;
+ const cx=f=>f[0]+f[2]/2,bottom=f=>f[1]+f[3];
+ const counts=[0,0,0,0,0];for(const r of E.FOLLOW_CROPS)for(const i of E.cutFaces(r))counts[i]++;
+ const shownIn=E.truth.filter(t=>t==='shown').length,cutIn=E.truth.filter(t=>t==='cut').length;
+ // 도입: 자동으로 자른 사진에서 얼굴이 잘린 친구는 넷이다. '담이 얼굴만'은 사실이 아니고, 담이 얼굴은 조금도 남지 않는다.
+ assert.deepEqual(E.cutFaces(E.AUTO),[0,1,2,3]);
+ assert.equal(D.intro.title,'다섯 친구가 찍은 사진에서, 담이 얼굴이 사라졌다.');
+ assert.equal(overlaps(E.AUTO,E.faces[DAMI]),false,'담이 얼굴은 자동으로 자른 사진에 조금도 남지 않는다');
+ const allIn=r=>E.cutFaces(r).length===0;
+ const front=()=>{assert.equal(Math.max(...E.faces.map(bottom)),bottom(E.faces[DAMI]),'앞줄: 다섯 얼굴 가운데 가장 아래');
+  assert.equal([...E.faces].sort((a,b)=>cx(a)-cx(b)).indexOf(E.faces[DAMI]),2,'가운데: 왼쪽에서 셋째');
+  assert.equal(Math.min(...E.faces.map(f=>Math.abs(cx(f)-W/2))),Math.abs(cx(E.faces[DAMI])-W/2),'가운데: 사진 가운데에 가장 가깝다');};
+ const notCrop=()=>{}; // 자르기 범위가 아닌 것(기록·안내문 카드)을 말하는 문장
+ const audited={
+  '이 마을과 자료는 창작이에요. 실제 사례에서 문제의 구조만 참고했어요.':notCrop,
+  '원본 사진에는 다섯 친구가 모두 있고, 담이는 앞줄 가운데에 있다.':()=>{assert.ok(allIn(FULL));front();},
+  '원본에는 다섯 친구가 모두 나와요. 자동으로 자른 사진에는 오른쪽 부분만 남았어요.':()=>{assert.ok(allIn(FULL));assert.ok(E.AUTO[0]>=W/2,'자동으로 남긴 부분은 모두 사진 오른쪽 절반 안');},
+  '기록에는 점수만 있어. 왜 오른쪽이 8점인지는 어디에도 없어.':notCrop,
+  '모두 나오는 사진':()=>assert.ok(allIn(E.ALL)),
+  '모두 나오는 사진을 올렸어':()=>assert.ok(allIn(E.ALL)),
+  '게시판: 다섯 친구가 모두 나온 사진':()=>{assert.ok(allIn(E.ALL));assert.equal(E.faces.length,5);},
+  '이제 다 보여. 이게 우리가 올리고 싶던 사진이야.':()=>assert.ok(allIn(E.ALL)),
+  '같은 날 찍은 사진 여섯 장도 앱이 모두 자동으로 잘랐어.':()=>{assert.equal(E.FOLLOW_CROPS.length,6);for(const r of E.FOLLOW_CROPS)assert.ok(r[2]<W&&r[3]<H,'여섯 장 모두 원본보다 작게 잘렸다');},
+  // 판단할 말(일부러 틀린 주장): 정답이 '자료와 달라'여야 하고, 실제로 담이가 나온 사진이 있고 다른 친구도 잘린다.
+  '여섯 장을 보니, 이 AI는 담이만 늘 잘라.':()=>{assert.equal(E.followAnswers.photo,'different');assert.ok(shownIn>0,'늘 잘리지는 않는다');assert.ok(counts.some((n,i)=>i!==DAMI&&n>0),'담이만 잘리지는 않는다');},
+  'AI가 늘 가장 좋은 사진을 골라 줘요.':()=>assert.equal(E.noticeKind('photo','photo-best'),'promise'), // 지킬 수 없는 약속 카드
+  '점수 계산식을 전부 공개해요.':()=>assert.equal(E.noticeKind('photo','photo-formula'),'conflict'), // 부딪침 카드
+  '알리는 것도 좋지만, 계산식은 너무 어려워 오히려 안 읽히고 회사 기술 비밀과도 부딪쳐. 알리되 기준 요약만큼만.':notCrop
+ };
+ const texts=[];const walk=v=>{if(typeof v==='string')texts.push(v);else if(v&&typeof v==='object')Object.values(v).forEach(walk);};
+ walk(D.intro);walk(P);
+ const RANGE=/(?<!지)만(?=[\s.,?!”’)]|$)|모두|전부|(?<=^|\s)(늘|다)(?=\s)/;
+ const found=texts.filter(t=>RANGE.test(t));
+ assert.deepEqual(found.filter(t=>!audited[t]),[],'좌표와 맞춰 보지 않은 범위 말 문장');
+ assert.deepEqual(Object.keys(audited).filter(t=>!found.includes(t)),[],'지금은 없는 문장이 표에 남아 있음');
+ for(const t of found)audited[t]();
+ // 후속 조사: 묻는 말에 '담이만'을 미리 깔지 않는다. 숫자를 말하는 피드백은 세어 본 값과 같다.
+ assert.equal(P.follow.question,'다른 사진에서도 담이가 잘릴까?');
+ const NUM=['영','한','두','세','네','다섯','여섯'];
+ assert.equal(P.follow.judge.right,`맞아, 자료와 달라. 담이는 ${NUM[cutIn]} 장에서 잘렸지만 ${NUM[shownIn]} 장에서는 나왔고, 다른 친구들도 잘렸어.`);
+ assert.equal(P.follow.judge.wrong,`세어 본 결과를 다시 봐. 담이는 ${NUM[shownIn]} 장에서 나왔고, 루루는 ${NUM[counts[LULU]]} 장에서 잘렸어.`);
+ assert.ok(counts[TORI]>0);
+ // 결과 화면의 상태 글: 자동 사진에는 담이 얼굴이 없다
+ assert.equal(P.choose.options[0].status,'게시판: 담이 얼굴이 빠진 사진');assert.ok(E.cutFaces(E.outcome({cases:{photo:{final:'auto'}}},'photo').rect).includes(DAMI));
+});
