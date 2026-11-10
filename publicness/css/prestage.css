@@ -152,9 +152,10 @@ body[data-screen=run] .person-chip-time, body[data-screen=run] .person-chip-trip
 #result-ai-body p { margin: 0 0 6px; }
 #result-ai-rows { margin: 0 0 8px; padding: 0; list-style: none; }
 #result-ai-rows li { margin: 0; padding: 4px 8px; border-radius: 8px; word-break: keep-all; }
-#result-ai-rows li.ai-picked { background: #fff; box-shadow: inset 3px 0 0 var(--accent, var(--text)); }
-.ai-picked-tag { margin-left: 6px; font-size: 13px; font-weight: 700; color: var(--text-mute); white-space: nowrap; }
-.ai-picked-tag[hidden] { display: none; }
+/* 표시된 줄은 흰 바탕 + 얇은 전체 테두리(왼쪽 색 띠 없음). ‘내가 고른 기준’(실제로 적용한 AI 제안) · ‘내 목표와 가까운 기준’(결과 화면에서 고른 목표) — 2026-11-11 */
+#result-ai-rows li.ai-picked, #result-ai-rows li.ai-applied { background: #fff; box-shadow: inset 0 0 0 1px var(--border); }
+.ai-tag { margin-left: 6px; font-size: 13px; font-weight: 700; color: var(--text-mute); white-space: nowrap; }
+.ai-tag[hidden] { display: none; }
 /* 2026-11-09 테스터 6번: 단계별 생각 쓰기(#think-note · #ai-note) — 문장 안 빈칸, 쓴 낱말에 맞춰 조사가 바뀜. 카드 안에 또 상자를 만들지 않고 윗줄로만 나눔 */
 .think-note { margin: 16px 0 0; padding: 14px 0 0; border-top: 1px solid var(--border); }
 .think-note h4 { margin: 0 0 2px; font-size: 17px; }

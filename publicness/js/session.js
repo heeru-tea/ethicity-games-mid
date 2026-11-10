@@ -363,9 +363,11 @@
     var records = log ? Object.keys(log).reduce(function (k, z) { return k + log[z].rode; }, 0) : RideLog.visible(aiBase(s), rs).length;
     return { ratios: rs, records: records, hidden: graph(s).nodes.filter(function (z) { return rs[z] === 0; }) };
   }
-  function revealed(s) {
+  /* opts.allowNodes(2026-11-11): 후보 노선에 쓸 정류장을 좁힌다 — 결과 화면 ‘AI라면?’이 다음 단계 수요로 계산하면서도 아직 지도에 없는 정류장을 추천하지 않게 */
+  function revealed(s, opts) {
     var h = s.history[s.history.length - 1], rs = rideRatios(s);
     return Advisor.makeRevealed({
+      allowNodes: opts && opts.allowNodes ? opts.allowNodes.slice() : null,
       phase: s.phase, g: graph(s), requests: RideLog.visible(aiBase(s), rs), rideRatios: rs, owned: s.owned,
       fourthAllowed: !s.config.progression && s.phase >= s.config.fourthFromPhase, fourthMustBeNew: !s.config.progression && s.fourthPhase === s.phase, prevMetrics: h ? h.metrics : null,
       prevRouteIds: prevRouteIds(s), plan: toPlan(s), config: s.config
