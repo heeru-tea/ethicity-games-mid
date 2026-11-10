@@ -143,7 +143,7 @@
   }
 
   /* ── 화면 전환 ───────────────────── */
-  var VIEWS = ['v-start', 'v-game', 'v-map', 'v-chapter', 'v-ending', 'v-path', 'v-reflect'];
+  var VIEWS = ['v-start', 'v-game', 'v-map', 'v-chapter', 'v-ending', 'v-path', 'v-reflect', 'v-card'];
   var current = 'v-start';
   var STAGE_VIEWS = ['v-map', 'v-game', 'v-chapter']; // 맵 무대 위에 겹쳐 뜨는 화면
   function show(id, focusEl) {
@@ -151,6 +151,7 @@
     if (STAGE_VIEWS.indexOf(id) < 0) { window.PrivacyMap.hide(); stagedScene = null; stageToken++; }
     if (id !== 'v-map') window.PrivacyTalk.close();
     if (id !== 'v-game') cgShow(null);
+    if (id !== 'v-card') cardAfterPrint(); // 인쇄 제목이 남아 있으면 되돌린다(afterprint가 오지 않는 브라우저)
     if (id !== 'v-ending' && $('finale')) { clearTimeout(finaleTimer); finaleState = null; $('finale').hidden = true; }
     $('stage').hidden = STAGE_VIEWS.indexOf(id) < 0;
     VIEWS.forEach(function (v) { $(v).hidden = v !== id; });
@@ -240,6 +241,7 @@
     var hasFinished = !!(run && run.screen === 'ending');
     $('start-links').hidden = !(hasFinished || result);
     $('btn-start-path').hidden = !hasFinished;
+    $('btn-start-card').hidden = !hasFinished; // 성찰 카드는 엔딩을 본 진행이 있을 때만
     show('v-start', null);
   }
 
@@ -1212,6 +1214,115 @@
     show('v-reflect');
   }
 
+  /* ── 성찰 카드(2026-11-10) ───────────────
+   * 엔딩 뒤에 여는 한 장: 게임에서 한 선택(자동) + 큰 토픽 세 개에 쓰는 칸 + 이름·학번 → 브라우저 인쇄 창으로 PDF 저장.
+   *   로직 = js/card.js(PrivacyCard), 문구 = story.card. 쓴 글·이름·학번은 이 기기에만(ethicity.privacy.card.v1), 입력할 때마다 저장.
+   *   지우는 때: 「이 게임 기록 지우기」, 새 진행 시작(startNew). 쓴 글이 있으면 새로 시작하기 전에 먼저 묻는다(guardCard).
+   *   인쇄하는 동안만 문서 제목 = 공유한순간_성찰카드_학번_이름(저장되는 PDF 이름) → 끝나면 되돌린다. */
+  var Card = window.PrivacyCard, CARD = story.card;
+  var card = null, cardBack = 'v-ending';
+  var baseTitle = document.title, printTitled = false;
+  var CARD_NUM = ['①', '②', '③', '④', '⑤'];
+  function cardRaw() { return S.readJSON(S.KEYS.card).value; }
+  function cardSave() { if (card) { S.writeJSON(S.KEYS.card, card); checkWriteFailure(); } }
+  function cardWipe() { S.remove(S.KEYS.card); card = null; }
+  // 새 진행을 시작하기 전: 카드에 쓴 글이 있으면 먼저 묻고, 없으면 바로 next(이름·학번만 있으면 묻지 않는다 — startNew가 함께 지운다)
+  function guardCard(next) {
+    if (!Card.hasText(cardRaw())) { next(); return; }
+    ask(CARD.wipeTitle, CARD.wipeAsk, '지우고 새로 시작', next);
+  }
+  function todayText() { var d = new Date(); return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; }
+  function cardNeed() {
+    var t = card && card.sid && card.name ? '' : CARD.needNote, n = $('k-need');
+    if (n.textContent !== t) n.textContent = t;
+    n.hidden = !t;
+  }
+  function renderCard(back) {
+    var run = progress.run;
+    if (!Card.finished(run)) { renderStart(); return; } // 엔딩을 본 진행이 있을 때만
+    cardBack = back || cardBack;
+    var r = Card.read(cardRaw(), run);
+    card = r.card;
+    if (r.stale) cardSave(); // 다른 진행에서 쓴 글은 섞지 않는다(빈 카드로 덮어씀)
+    var end = endingOf(run.ending);
+    $('k-eyebrow').textContent = CARD.title;
+    $('k-intro').textContent = CARD.intro;
+    $('k-game').textContent = story.title + ' · ' + CARD.title;
+    $('k-title').textContent = CARD.heading;
+    $('k-sid').value = card.sid;
+    $('k-name').value = card.name;
+    $('k-date').textContent = todayText();
+    $('k-ending').textContent = end ? '엔딩 ' + end.code + ' · ' + end.title : '';
+    $('k-device').textContent = CARD.deviceNote;
+    $('k-pdf').textContent = CARD.pdfNote;
+    var box = $('k-topics');
+    box.textContent = '';
+    Card.topics(story, E, run).forEach(function (t, i) {
+      var sec = el('section', 'rcard-topic'), id = 'k-a' + (i + 1);
+      sec.setAttribute('data-topic', t.id);
+      var h = el('h2');
+      h.appendChild(el('span', 'rcard-num', CARD_NUM[i] || String(i + 1)));
+      h.appendChild(document.createTextNode(' ' + t.title));
+      sec.appendChild(h);
+      // 게임이 채우는 칸: 내가 한 선택(평가 없이 사실만)
+      var auto = el('div', 'rcard-auto');
+      auto.appendChild(el('p', 'rcard-auto-label', t.label));
+      if (t.items.length) {
+        var ul = el('ul');
+        t.items.forEach(function (it) {
+          var li = el('li');
+          if (it.head) li.appendChild(el('span', 'rcard-ev', it.head));
+          li.appendChild(el('span', 'rcard-out', fill(it.text)));
+          ul.appendChild(li);
+        });
+        auto.appendChild(ul);
+      } else auto.appendChild(el('p', 'rcard-empty', t.empty));
+      sec.appendChild(auto);
+      // 학생이 쓰는 칸: 화면에서는 textarea, 인쇄에서는 같은 글을 문단으로(비우면 '작성 안 함')
+      var lab = el('label', 'rcard-q', t.q);
+      lab.setAttribute('for', id);
+      sec.appendChild(lab);
+      var ta = document.createElement('textarea');
+      ta.id = id; ta.className = 'rcard-input'; ta.rows = 3; ta.maxLength = Card.MAX_TEXT;
+      ta.value = card.answers[i] || '';
+      ta.setAttribute('aria-describedby', id + '-count');
+      sec.appendChild(ta);
+      var cnt = el('p', 'rcard-count');
+      cnt.id = id + '-count';
+      sec.appendChild(cnt);
+      var out = el('p', 'rcard-answer print-only');
+      out.setAttribute('aria-hidden', 'true');
+      sec.appendChild(out);
+      function sync() {
+        var v = Card.printText(ta.value);
+        cnt.textContent = ta.value.length + ' / ' + Card.MAX_TEXT + '자';
+        out.textContent = v || CARD.none;
+        out.classList.toggle('none', !v);
+      }
+      ta.addEventListener('input', function () { if (!card) return; card.answers[i] = Card.cleanText(ta.value); sync(); cardSave(); });
+      sync();
+      box.appendChild(sec);
+    });
+    cardNeed();
+    show('v-card');
+  }
+  function cardField(inputId, key, max) {
+    $(inputId).addEventListener('input', function () {
+      if (!card) return;
+      card[key] = Card.cleanLine($(inputId).value, max);
+      cardNeed(); cardSave();
+    });
+  }
+  function cardFileTitle() { return Card.fileName(CARD.fileBase, card ? card.sid : '', card ? card.name : ''); }
+  // 인쇄 창이 뜨는 동안만 문서 제목을 파일 이름으로(Ctrl+P로 직접 인쇄해도 같다)
+  function cardBeforePrint() { if (current === 'v-card' && card) { document.title = cardFileTitle(); printTitled = true; } }
+  function cardAfterPrint() { if (printTitled) { document.title = baseTitle; printTitled = false; } }
+  function cardPrint() {
+    cardBeforePrint();
+    try { window.print(); }
+    catch (e) { cardAfterPrint(); showNotice('이 브라우저에서는 인쇄 창을 열 수 없어요. 컴퓨터의 크롬·엣지에서 다시 열어 주세요.'); }
+  }
+
   /* ── 메뉴·확인 창 ─────────────────── */
   var lastFocus = null;
   function openOverlay(id) {
@@ -1259,6 +1370,7 @@
   }
   function startNew() {
     stopReveal();
+    cardWipe(); // 성찰 카드에 쓴 글·이름·학번(쓴 글이 있으면 guardCard가 먼저 물었다)
     progress.pos = null;
     setRun(E.createState(story));
     routeRun(true);
@@ -1272,8 +1384,8 @@
     $('btn-new').addEventListener('click', function () {
       if (needLook()) return;
       if (progress.run && progress.run.screen !== 'ending') {
-        ask('처음부터 시작할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', function () { showWarning(startNew); });
-      } else showWarning(startNew);
+        ask('처음부터 시작할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', function () { guardCard(function () { showWarning(startNew); }); });
+      } else guardCard(function () { showWarning(startNew); });
     });
     $('btn-continue').addEventListener('click', function () { if (needLook()) return; routeRun(false); });
     $('name-input').addEventListener('input', function () {
@@ -1286,7 +1398,15 @@
     $('btn-chapter-go').addEventListener('click', function () { setRun(E.advance(story, progress.run)); routeRun(true); });
     $('btn-end-path').addEventListener('click', function () { renderPath('v-ending'); });
     $('btn-end-reflect').addEventListener('click', function () { renderReflect('v-ending'); });
-    $('btn-end-replay').addEventListener('click', startNew);
+    $('btn-end-replay').addEventListener('click', function () { guardCard(startNew); });
+    $('btn-end-card').addEventListener('click', function () { renderCard('v-ending'); });
+    $('btn-start-card').addEventListener('click', function () { renderCard('v-start'); });
+    $('btn-card-back').addEventListener('click', function () { goTo(cardBack); });
+    $('btn-card-print').addEventListener('click', cardPrint);
+    cardField('k-sid', 'sid', Card.MAX_SID);
+    cardField('k-name', 'name', Card.MAX_NAME);
+    window.addEventListener('beforeprint', cardBeforePrint);
+    window.addEventListener('afterprint', cardAfterPrint);
     $('btn-path-reflect').addEventListener('click', function () { renderReflect('v-path'); });
     $('btn-path-back').addEventListener('click', function () { goTo(pathBack); });
     $('btn-reflect-back').addEventListener('click', function () { goTo(reflectBack); });
@@ -1319,11 +1439,12 @@
     $('btn-menu-help').addEventListener('click', function () { settings.helpFold = false; settings.helpPlaces = []; applyHelp(); saveSettings(); closeOverlay('menu'); }); // 다시 두 장소 동안 보임
     $('btn-menu-restart').addEventListener('click', function () {
       $('menu').hidden = true;
-      ask('처음부터 다시 할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', startNew);
+      ask('처음부터 다시 할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', function () { guardCard(startNew); });
     });
     $('btn-menu-wipe').addEventListener('click', function () {
       $('menu').hidden = true;
-      ask('이 게임 기록을 모두 지울까요?', '‘공유한 순간’의 진행, 지난 선택 기록, 완료 결과가 지워져요. 공통 캐릭터와 다른 게임 기록은 지우지 않아요.', '지우기', function () {
+      ask('이 게임 기록을 모두 지울까요?', '‘공유한 순간’의 진행, 지난 선택 기록, 완료 결과, 성찰 카드에 쓴 글과 이름·학번이 지워져요. 공통 캐릭터와 다른 게임 기록은 지우지 않아요.', '지우기', function () {
+        cardWipe();
         S.remove(S.KEYS.progress);
         S.remove(S.KEYS.result);
         progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };

@@ -139,7 +139,113 @@ run('endingsSame', () => {
   }
 });
 
-/* @@CARD@@ */
+/* ───────── C. 성찰 카드(js/card.js 순수 로직 + story.card 문구) ───────── */
+const Card = require('../js/card.js');
+const ROUTES = require('./routes.js');
+const prefsOf = (route) => Object.fromEntries(route.map((x) => x.split('#')));
+const noSc = (s) => Object.assign({}, s, { flags: Object.fromEntries(Object.entries(s.flags).filter(([k]) => !/^ccx/.test(k))) });
+
+run('cardTopics', () => {
+  const T1 = ['e1', 'e2', 'e3', 'e6', 'e7', 'e8', 'e9'];
+  for (const code of ['A', 'B', 'C', 'D']) {
+    const s = play(prefsOf(ROUTES[code]));
+    ok(s.ending === code, '대표 경로 ' + code + ' 도착');
+    const t = Card.topics(story, E, s);
+    ok(t.length === 3 && same(t.map((x) => x.id), ['share', 'ai', 'cctv']) && same(t.map((x) => x.n), [1, 2, 3]), code + ' 토픽 세 개');
+    ok(t.every((x) => x.title && x.q && x.label), code + ' 토픽 이름·물음·자동 칸 이름');
+    // ① 사건 1·2·3·6·7·8·9: 사건마다 결과 문장 첫 줄(엔딩 화면 「사건별 결과」와 같은 문장)
+    ok(same(t[0].items.map((i) => i.head), T1.map((e) => story.events[e].title)) && same(t[0].items.map((i) => i.text), T1.map((e) => EM.plain(E.eventOutcomes(story, e, s)[0]))), code + ' ① 일곱 사건 첫 줄 ' + t[0].items.length);
+    // ② 사건 4·5 결과 문장 모두
+    const want2 = ['e4', 'e5'].flatMap((e) => E.eventOutcomes(story, e, s).map((x, k) => ({ head: k === 0 ? story.events[e].title : '', text: EM.plain(x) })));
+    ok(same(t[1].items, want2) && want2.length >= 2, code + ' ② 사건 4·5 결과 문장 ' + want2.length + '줄');
+    ok(t[1].items[0].head === 'AI가 만든 가짜 춤 영상', code + ' ② 첫 줄 = 가짜 춤 영상');
+    // ③ 우리 반이 정한 AI CCTV 안
+    const rows = E.specialClassRows(story, s);
+    ok(same(t[2].items, rows.map((r) => ({ head: r.label, text: r.text }))) && t[2].items.length === (s.flags.ccx === 'none' ? 1 : 4) && t[2].empty === '', code + ' ③ 우리 반 안 ' + t[2].items.length + '줄');
+    ok(t[2].label === '우리 반이 정한 AI CCTV 안' && t[0].label === '내 선택', code + ' 자동 칸 이름');
+    // 특별 수업을 하지 않은 옛 진행
+    const o = Card.topics(story, E, noSc(s));
+    ok(o[2].items.length === 0 && o[2].empty === '이번 진행에는 특별 수업 기록이 없어요.' && !!o[2].q && same(o[0].items, t[0].items), code + ' 옛 진행: ③ 자동 칸은 안내 문구, 쓰는 칸은 그대로');
+  }
+  // 옛 알림 범위 값이 든 저장: 그 줄만 —
+  const s = play(prefsOf(ROUTES.A)); s.flags.ccxPurpose = 'guide';
+  const t = Card.topics(story, E, s);
+  ok(t[2].items.length === 4 && t[2].items[1].text === '—', '옛 알림 범위 값 → 그 줄만 —');
+  // 무작위 600회: 깨지지 않고, 줄 수가 한 장에 들어갈 범위
+  let seed = 20261110; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  let max = [0, 0, 0], bad = 0, marks = 0, praise = 0, longest = 0;
+  for (let i = 0; i < 600; i++) {
+    const r = play({}, null, rnd);
+    let tt; try { tt = Card.topics(story, E, r); } catch (e) { bad++; continue; }
+    tt.forEach((x, k) => { max[k] = Math.max(max[k], x.items.length); x.items.forEach((it) => { if (/\[\[|\]\]/.test(it.text)) marks++; if (/잘했|훌륭|정답|칭찬|점수|등급/.test(it.text)) praise++; longest = Math.max(longest, it.text.length); }); });
+    if (tt[0].items.length !== 7) bad++;
+  }
+  ok(bad === 0, '무작위 600회: 토픽 만들기 실패·① 줄 수 어긋남 0 (' + bad + ')');
+  ok(max[0] === 7 && max[1] <= 5 && max[2] <= 4, '자동 칸 줄 수 최대 ' + max.join('·') + '(① 7 · ② ≤5 · ③ ≤4)');
+  ok(marks === 0 && praise === 0, '자동 칸 글자에 강조 기호·평가 낱말 없음');
+  ok(longest <= 70, '자동 칸 한 줄 최대 ' + longest + '자(≤ 70 — 인쇄 한 장 계산의 바탕)');
+});
+
+run('cardText', () => {
+  const c = story.card;
+  ok(c.wipeAsk === '성찰 카드에 쓴 글이 지워져요. PDF로 저장했나요?', '새로 시작 전 확인 문구(설계 11.5)');
+  ok(c.deviceNote === '이 카드는 이 기기에만 저장돼요. 제출은 PDF로 저장해서 선생님이 알려 준 곳에 올려요.', '이 기기에만 저장 안내(설계 7.4)');
+  ok(c.pdfNote.startsWith('PDF 저장은 컴퓨터의 크롬·엣지에서 가장 잘 돼요'), 'PDF 안내(설계 11.1)');
+  ok(c.fileBase === '공유한순간_성찰카드' && c.none === '작성 안 함', '파일 이름 머리·빈 칸 문구');
+  ok(same(c.topics.map((t) => t.title), ['내가 공유한 순간', 'AI가 만든 것, AI에 넘긴 것', 'AI가 지켜보는 교실']), '토픽 이름 셋');
+  ok(same(c.topics[0].events, ['e1', 'e2', 'e3', 'e6', 'e7', 'e8', 'e9']) && c.topics[0].first === true && same(c.topics[1].events, ['e4', 'e5']) && c.topics[2].plan === true, '토픽이 묶는 사건');
+  ok(c.topics.flatMap((t) => t.events || []).slice().sort().join() === Object.keys(story.events).sort().join(), '아홉 사건이 빠짐없이 한 번씩');
+  const all = [c.title, c.heading, c.intro, c.autoLabel, c.none, c.deviceNote, c.pdfNote, c.needNote, c.wipeAsk].concat(c.topics.flatMap((t) => [t.title, t.q, t.empty || '', t.label || '']));
+  ok(!all.some((t) => /잘했|훌륭|정답|점수|등급/.test(t)), '카드 문구에 평가 낱말 없음');
+});
+
+run('cardFileName', () => {
+  const B = story.card.fileBase;
+  ok(Card.fileName(B, '20315', '김온유') === '공유한순간_성찰카드_20315_김온유', '기본');
+  ok(Card.fileName(B, ' 2 03 15 ', ' 김 온유 ') === '공유한순간_성찰카드_2_03_15_김_온유', '공백 → _');
+  ok(Card.fileName(B, '2/3:1*5?', 'a\\b"c<d>e|f') === '공유한순간_성찰카드_2_3_1_5_a_b_c_d_e_f', '파일 이름에 못 쓰는 글자 → _ : ' + Card.fileName(B, '2/3:1*5?', 'a\\b"c<d>e|f'));
+  ok(Card.fileName(B, '', '') === '공유한순간_성찰카드' && Card.fileName(B, '', '김온유') === '공유한순간_성찰카드_김온유' && Card.fileName(B, '20315', '   ') === '공유한순간_성찰카드_20315', '비어 있는 칸은 건너뜀(막지 않음)');
+  ok(Card.fileName(B, '..', '...김..') === '공유한순간_성찰카드_김', '앞뒤 점 떼기: ' + Card.fileName(B, '..', '...김..'));
+  ok(Card.fileName(B, '1\n2\t3', '김\u0000온\u007f유') === '공유한순간_성찰카드_1_2_3_김_온_유', '제어 문자 → _');
+  ok(Card.fileName(B, '1'.repeat(40), '가'.repeat(60)) === '공유한순간_성찰카드_' + '1'.repeat(12) + '_' + '가'.repeat(20), '길이 제한(학번 12 · 이름 20)');
+  ok(Card.fileName(B, null, undefined) === '공유한순간_성찰카드' && Card.fileName(B, 20315, {}) === '공유한순간_성찰카드', '글자가 아닌 값');
+  const bad = /[\\/:*?"<>|\s\u0000-\u001f]/;
+  for (const [a, b] of [['<script>', '../../etc'], ['COM1', 'a b\tc'], ['😀 1', '이 름']]) ok(!bad.test(Card.fileName(B, a, b)), '금지 글자 없음: ' + Card.fileName(B, a, b));
+});
+
+run('cardStore', () => {
+  const s = play(prefsOf(ROUTES.B)), s2 = play(prefsOf(ROUTES.A)), mid = play({}, (x) => x.screen === 'scene' && x.scene === 'c2_e4_a');
+  const b = Card.blank(s);
+  ok(b.v === 1 && b.ending === 'B' && typeof b.sig === 'string' && b.sig.length > 0 && b.sid === '' && b.name === '' && same(b.answers, ['', '', '']), '빈 카드 ' + JSON.stringify(b));
+  ok(Card.KEY === 'ethicity.privacy.card.v1' && fs.readFileSync(path.join(ROOT, 'js/storage.js'), 'utf8').includes("card: '" + Card.KEY + "'"), '저장 키');
+  ok(Card.finished(s) && !Card.finished(mid) && !Card.finished(null), '엔딩을 본 진행만');
+  // 그대로 읽기
+  const saved = Object.assign({}, b, { sid: '20315', name: '김온유', answers: ['첫째 답', '', '셋째\n답'] });
+  const r = Card.read(JSON.parse(JSON.stringify(saved)), s);
+  ok(!r.stale && r.found && same(r.card, saved), '저장한 그대로 읽힘');
+  // 다른 진행의 글은 섞이지 않는다: 엔딩 코드가 다르거나, 같은 엔딩이라도 선택 경로가 다르면
+  ok(Card.read(saved, s2).stale && same(Card.read(saved, s2).card.answers, ['', '', '']) && Card.read(saved, s2).card.name === '', '다른 엔딩의 진행 → 버림');
+  const sameEnd = Object.assign({}, s, { history: s.history.slice(0, -1).concat([Object.assign({}, s.history[s.history.length - 1], { choice: 'x' })]) });
+  ok(Card.sig(sameEnd) !== Card.sig(s) && Card.read(saved, sameEnd).stale, '같은 엔딩 코드라도 선택이 다른 진행 → 버림');
+  ok(Card.sig(JSON.parse(JSON.stringify(s))) === Card.sig(s), '저장했다 불러온 같은 진행 → 같은 지문');
+  ok(Card.read(saved, mid).stale && Card.read(saved, null).stale, '엔딩 전·진행 없음 → 쓰지 않음');
+  // 손상된 값
+  for (const raw of [null, undefined, 'x', 7, [], {}, { v: 2 }, { v: 1 }]) { let ok1 = true, c = null; try { c = Card.read(raw, s).card; } catch (e) { ok1 = false; } ok(ok1 && !!c && same(c.answers, ['', '', '']), '손상된 저장 ' + JSON.stringify(raw) + ' → 빈 카드'); }
+  const odd = Card.read(Object.assign({}, b, { sid: 20315, name: ' 김\n온유 '.repeat(5), answers: ['가'.repeat(500), 5, null, '넷째'] }), s).card;
+  ok(odd.sid === '' && odd.name.length <= Card.MAX_NAME && !/\n/.test(odd.name) && odd.answers.length === 3 && odd.answers[0].length === Card.MAX_TEXT && odd.answers[1] === '' && odd.answers[2] === '', '엉뚱한 칸은 다듬어 읽음 ' + JSON.stringify([odd.sid, odd.name]));
+  // 새로 시작하기 전에 물을지
+  ok(Card.hasText(saved) && !Card.hasText(b) && !Card.hasText(Object.assign({}, b, { sid: '20315', name: '김온유' })), '쓴 글이 있을 때만 묻는다(이름·학번만 있으면 묻지 않음)');
+  ok(!Card.hasText(Object.assign({}, b, { answers: ['  ', '\n', ''] })) && !Card.hasText(null) && !Card.hasText({ answers: 'x' }) && Card.hasText({ answers: [null, 'a'] }), '공백만·손상된 값');
+  // 인쇄용 답
+  ok(Card.printText('  가나다  ') === '가나다' && Card.printText('') === '' && Card.printText('\n \n') === '', '앞뒤 공백·빈 값');
+  ok(Card.printText('가\n\n\n나\n다\n라\n마\n바') === '가\n나\n다\n라 마 바' && Card.printText('\n'.repeat(200)) === '', '줄바꿈은 세 번까지(엔터만 쳐도 한 장을 넘지 않게)');
+  ok(Card.cleanText('가\r\n나\u0000다').length === 4 && Card.cleanLine(' a \n b ', 20) === 'a b', '입력 다듬기');
+  // 화면 연결
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'), app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  ok(html.indexOf('src="js/card.js"') > 0 && html.indexOf('src="js/card.js"') < html.indexOf('src="js/app.js"') &&/id="v-card"/.test(html) && /id="btn-end-card" class="btn primary"/.test(html), 'index.html: card.js가 app.js 앞, 카드 화면, 엔딩 화면의 으뜸 버튼');
+  ok(!/KEYS\.player\s*,|writeJSON\(S\.KEYS\.(player|result)/.test(app.replace(/S\.saveResult/g, '')), 'app.js가 공통 키(ethicity.player·result)에 카드 내용을 쓰지 않음');
+  ok(/@media print/.test(fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8')) && /size:\s*A4 portrait/.test(fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8')), '인쇄용 모양(A4 세로)');
+});
 
 console.log(`\n통과 ${pass} · 실패 ${fails.length}`);
 process.exitCode = fails.length ? 1 : 0;

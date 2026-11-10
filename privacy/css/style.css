@@ -728,6 +728,73 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .warning-ok { justify-self: center; margin-top: 12px; min-width: 10rem; }
 @keyframes warning-in { from { opacity: 0; } to { opacity: 1; } }
 
+/* ── 성찰 카드(2026-11-10): 엔딩 뒤에 쓰고 PDF로 저장하는 한 장. 얇은 전체 테두리(왼쪽 색 띠 없음), 자동으로 채운 칸은 옅은 바탕 ── */
+.rcard { margin-top: 16px; padding: 20px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-out); }
+.rcard-game { margin: 0; font-size: .85rem; font-weight: 700; color: var(--accent); }
+.rcard h1 { margin: 2px 0 12px; font-size: 1.5rem; }
+.rcard-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.rcard-field, .rcard-fact { display: flex; align-items: center; gap: 10px; margin: 0; min-height: 44px; }
+.rcard-field > span, .rcard-fact > span { flex: none; width: 4.6em; font-size: .85rem; font-weight: 700; color: var(--text-mute); }
+.rcard-field input { flex: 1 1 auto; min-width: 0; min-height: 40px; box-sizing: border-box; font: inherit; padding: 6px 10px; border: 1px solid #7C8B89; border-radius: 8px; background: #fff; color: var(--text); }
+.rcard-fact b { font-weight: 700; }
+.rcard-meta .rcard-fact:last-child { grid-column: 1 / -1; } /* 엔딩 이름은 길어서 한 줄을 다 쓴다 */
+.rcard-topic { padding: 18px 0 6px; }
+.rcard-topic + .rcard-topic { border-top: 1px solid var(--border); margin-top: 12px; }
+.rcard-topic h2 { margin: 0 0 8px; font-size: 1.12rem; }
+.rcard-num { color: var(--accent); }
+.rcard-auto { padding: 10px 14px; background: var(--surface); border-radius: var(--radius-in); }
+.rcard-auto-label { margin: 0 0 4px; font-size: .8rem; font-weight: 700; color: var(--text-mute); }
+.rcard-auto ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: .95rem; }
+.rcard-auto li { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 2px 10px; }
+.rcard-ev { font-size: .85rem; color: var(--text-mute); padding-top: .1em; }
+.rcard-out { grid-column: 2; }
+.rcard-empty { margin: 0; font-size: .95rem; color: var(--text-mute); }
+.rcard-q { display: block; margin: 12px 0 6px; font-weight: 700; }
+.rcard-input { display: block; width: 100%; min-height: 7.8em; box-sizing: border-box; font: inherit; line-height: 1.6; padding: 10px 12px; border: 1px solid #7C8B89; border-radius: var(--radius-in); background: #fff; color: var(--text); resize: vertical; }
+.rcard-count { margin: 4px 0 0; text-align: right; font-size: .8rem; color: var(--text-mute); }
+.print-only { display: none; }
+.card-foot .actions { margin-top: 24px; }
+.card-foot p { margin: 8px 0 0; }
+.card-need { font-weight: 700; }
+@media (max-width: 480px) {
+  .rcard { padding: 16px 14px; }
+  .rcard-meta { grid-template-columns: 1fr; }
+  .rcard-auto li { grid-template-columns: 1fr; gap: 0; }
+  .rcard-out { grid-column: 1; }
+}
+/* 인쇄(= PDF로 저장): A4 세로 한 장, 흰 바탕 검은 글자. 카드만 남기고 버튼·안내·지도·메뉴는 숨긴다.
+   textarea 대신 같은 글을 문단(.rcard-answer)으로 찍는다(비우면 '작성 안 함'). 세 칸을 200자씩 다 채워도 한 장(tests/ai-privacy-browser.mjs c). */
+@media print {
+  @page { size: A4 portrait; margin: 14mm; }
+  html, body { background: #fff !important; color: #000 !important; }
+  body { font-size: 9.5pt; line-height: 1.45; }
+  * { box-shadow: none !important; text-shadow: none !important; }
+  .skip, .notice, .stage, .overlay, .warning, .finale, .no-print, .rcard-input, .rcard-count { display: none !important; }
+  .print-only { display: block; }
+  .app, body[data-view] .app { max-width: none; margin: 0; padding: 0; }
+  .rcard { margin: 0; padding: 0; border: 0; border-radius: 0; }
+  .rcard-game { color: #000; font-size: 9pt; }
+  .rcard h1 { margin: 0 0 5pt; font-size: 15pt; }
+  .rcard-meta { grid-template-columns: 1fr 1.3fr auto; gap: 2pt 12pt; padding-bottom: 6pt; border-bottom: 1px solid #000; }
+  .rcard-fact b { white-space: nowrap; }
+  .rcard-field, .rcard-fact { min-height: 0; gap: 4pt; }
+  .rcard-field > span, .rcard-fact > span { width: auto; font-size: 8.5pt; color: #333; }
+  .rcard-field input { min-height: 0; padding: 0 2pt; border: 0; border-bottom: 1px solid #000; border-radius: 0; font-weight: 700; }
+  .rcard-topic { padding: 7pt 0 2pt; break-inside: avoid; page-break-inside: avoid; }
+  .rcard-topic + .rcard-topic { margin-top: 5pt; border-top: 1px solid #999; }
+  .rcard-topic h2 { margin: 0 0 4pt; font-size: 11pt; }
+  .rcard-num { color: #000; }
+  .rcard-auto { padding: 4pt 7pt; background: none; border: 1px solid #999; border-radius: 4pt; }
+  .rcard-auto-label { margin: 0 0 1pt; font-size: 8pt; color: #333; }
+  .rcard-auto ul { gap: 1pt; font-size: 8.5pt; }
+  .rcard-auto li { grid-template-columns: 9.5em minmax(0, 1fr); gap: 0 6pt; }
+  .rcard-out { grid-column: 2; }
+  .rcard-ev, .rcard-empty { font-size: 8pt; color: #333; }
+  .rcard-q { margin: 6pt 0 3pt; }
+  .rcard-answer { margin: 0; min-height: 3.1em; padding: 4pt 7pt; border: 1px solid #000; border-radius: 4pt; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .rcard-answer.none { color: #555; }
+}
+
 /* ── 웹폰트(2026-11-02) — 예전엔 jsDelivr CSS 2개(나눔스퀘어·갈무리)를 <link>로 받아 첫 화면을 막고(느린 망에서 왕복 2번),
    나눔스퀘어는 font-display가 없어 글자가 최대 3초 안 보였다. 쓰는 굵기만 여기서 직접 선언하고 swap(시스템 글꼴로 먼저 보여 줌). 글꼴 파일은 그대로 jsDelivr. */
 @font-face { font-family: 'NanumSquare'; font-weight: 400; font-display: swap; src: url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareR.woff2') format('woff2'), url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareR.woff') format('woff'); }

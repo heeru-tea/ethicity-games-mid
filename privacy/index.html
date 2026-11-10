@@ -70,6 +70,7 @@
         <p id="player-note" class="small mute" hidden></p>
         <p id="last-result" class="small mute" hidden></p>
         <div class="start-links" id="start-links" hidden>
+          <button id="btn-start-card" class="btn link" type="button" hidden>성찰 카드 쓰기</button>
           <button id="btn-start-path" class="btn link" type="button">지난 선택 경로</button>
           <button id="btn-start-reflect" class="btn link" type="button">성찰 질문</button>
         </div>
@@ -186,7 +187,9 @@
       <!-- 특별 수업(2026-11-10): 우리 반이 정한 AI CCTV 안 — 특별 수업을 하지 않은 옛 진행이면 숨김 -->
       <div id="e-class" hidden></div>
       <div class="actions">
-        <button id="btn-end-path" class="btn primary" type="button">선택 경로 돌아보기</button>
+        <!-- 성찰 카드(2026-11-10): 가장 눈에 띄는 버튼 -->
+        <button id="btn-end-card" class="btn primary" type="button">성찰 카드 쓰기</button>
+        <button id="btn-end-path" class="btn" type="button">선택 경로 돌아보기</button>
         <button id="btn-end-reflect" class="btn" type="button">성찰 질문</button>
         <button id="btn-end-replay" class="btn" type="button">처음부터 다시</button>
       </div>
@@ -220,6 +223,36 @@
         <button id="btn-reflect-home" class="btn" type="button">처음 화면</button>
       </div>
     </section>
+
+    <!-- 7. 성찰 카드(2026-11-10): 엔딩 뒤에 쓰고 PDF로 저장(브라우저 인쇄). 내용은 js/app.js renderCard가 채운다. 인쇄에는 #k-card 한 장만 -->
+    <section id="v-card" class="view" hidden aria-labelledby="k-title">
+      <div class="no-print">
+        <p class="eyebrow" id="k-eyebrow"></p>
+        <p id="k-intro" class="lead-sub"></p>
+      </div>
+      <article id="k-card" class="rcard">
+        <header class="rcard-head">
+          <p class="rcard-game" id="k-game"></p>
+          <h1 id="k-title"></h1>
+          <div class="rcard-meta">
+            <label class="rcard-field"><span>학번</span><input id="k-sid" type="text" inputmode="numeric" maxlength="12" autocomplete="off" spellcheck="false"></label>
+            <label class="rcard-field"><span>이름</span><input id="k-name" type="text" maxlength="20" autocomplete="off" spellcheck="false"></label>
+            <p class="rcard-fact"><span>날짜</span><b id="k-date"></b></p>
+            <p class="rcard-fact"><span>이번 엔딩</span><b id="k-ending"></b></p>
+          </div>
+        </header>
+        <div id="k-topics"></div>
+      </article>
+      <div class="card-foot no-print">
+        <div class="actions">
+          <button id="btn-card-print" class="btn primary" type="button">PDF로 저장하기</button>
+          <button id="btn-card-back" class="btn" type="button">돌아가기</button>
+        </div>
+        <p id="k-need" class="small card-need" role="status"></p>
+        <p id="k-device" class="small mute"></p>
+        <p id="k-pdf" class="small mute"></p>
+      </div>
+    </section>
   </main>
 
   <!-- 메뉴 -->
@@ -242,7 +275,7 @@
         <button id="btn-menu-restart" class="btn" type="button">처음부터 다시 하기</button>
         <button id="btn-menu-wipe" class="btn danger" type="button">이 게임 기록 지우기</button>
       </div>
-      <p class="small mute">기록 지우기는 이 게임의 진행·결과만 지워요. 공통 캐릭터와 다른 게임 기록은 그대로예요.</p>
+      <p class="small mute">기록 지우기는 이 게임의 진행·결과와 성찰 카드에 쓴 글만 지워요. 공통 캐릭터와 다른 게임 기록은 그대로예요.</p>
       <button id="btn-menu-close" class="btn primary" type="button">닫기</button>
     </div>
   </div>
@@ -267,6 +300,7 @@
   <script src="js/world.js"></script>
   <script src="js/idle-lines.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/card.js"></script>
   <script src="js/palette.js"></script>
   <script src="js/odds.js"></script>
   <script src="js/cast-art.js"></script>

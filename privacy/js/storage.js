@@ -7,6 +7,7 @@
  *   ethicity.result.privacy      공통 완료 결과 — 엔딩 도달 시에만 쓴다
  *   ethicity.privacy.progress.v2 이 게임 전용 진행 저장
  *   ethicity.privacy.settings.v1 이 게임 전용 화면 설정
+ *   ethicity.privacy.card.v1     성찰 카드에 쓴 글·이름·학번(이 기기에만, 2026-11-10) — 기록 지우기·새로 시작할 때 함께 지운다
  */
 (function (root) {
   'use strict';
@@ -15,7 +16,8 @@
     player: 'ethicity.player',
     result: 'ethicity.result.privacy',
     progress: 'ethicity.privacy.progress.v2',
-    settings: 'ethicity.privacy.settings.v1'
+    settings: 'ethicity.privacy.settings.v1',
+    card: 'ethicity.privacy.card.v1'
   };
   var memory = {};
   var status = { available: false, writeFailed: false };
