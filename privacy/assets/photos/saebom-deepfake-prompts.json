@@ -1,0 +1,30 @@
+[
+  {
+    "file": "saebom-selfie.png",
+    "tool": "built-in image_gen",
+    "prompt": "Create saebom-selfie, opaque PNG portrait 900x1200 3:4. Bright polished Korean webtoon illustration for fictional middle school privacy education game, NOT real photography, NOT pixel art, NOT chibi. One fictional middle school girl Saebom, chest-up selfie with foreshortened camera-holding arm extending toward viewer, other hand making casual V beside face. She has short chestnut brown bob with soft bangs, warm brown eyes, rounded friendly youthful face, small cream white five-petal flower hairclip on viewer-left side, muted green cardigan over ivory collared shirt. Ordinary modest clothing, no logos. Bright happy open-eyed smile, relaxed and natural. School festival preparation behind her: softly depicted classroom corridor cream walls, a few pastel balloons and small paper streamers, including one small yellow triangular paper decoration. No other faces. Soft daytime lighting from upper left. Beautiful clean fine linework and warm detailed cel shading matching school webtoon event CG. No words, numbers, signs, UI, border, timestamp, watermark or phone itself visible. Frame entire head and V hand with room around edges.",
+    "source": "C:/Users/정벅/.codex/generated_images/01a1c3e4-a387-7780-be51-a3b877d988a0/exec-112c2ea0-2fa9-4695-8bd7-4855565a950d.png",
+    "attempts": []
+  },
+  {
+    "file": "saebom-dance-1.png",
+    "tool": "built-in image_gen",
+    "prompt": "Use selfie as identity reference and transform to fictional AI-generated dance video FRAME 1 for middle school media literacy game. Opaque portrait PNG 900x1200. EXACT same girl's face, open-eyed smile, brown eyes, face tilt and warm selfie facial lighting; keep short chestnut bob and cream flower clip. Face should appear subtly pasted with same expression, not ugly or distorted. Full body entirely visible, centered fixed straight-on camera with margin above raised hands and below shoes. Same green cardigan ivory collared shirt, add modest knee-length rust pleated skirt, opaque cream tights and dark brown sneakers; clothes tidy and loose. Pose: BOTH arms high above head and one knee raised, silly playful nonsexual dance. Background is plain muted lavender studio wall and floor with soft blue/pink side lighting, NO stage props or text. Subtle AI tells only: small yellow paper triangle from selfie background inexplicably stuck beside shoulder, tiny slightly merged fingertips. No dramatic deformities, no mockery, no falling, no humiliation, no exposure. Same bright finely shaded Korean webtoon style, not real photo, no UI/logos/watermarks.",
+    "source": "C:/Users/정벅/.codex/generated_images/01a1c3e4-a387-7780-be51-a3b877d988a0/exec-3e7c925c-3ffc-4023-9be2-15172e4db076.png",
+    "attempts": []
+  },
+  {
+    "file": "saebom-dance-2.png",
+    "tool": "built-in image_gen",
+    "prompt": "Edit dance FRAME1 into FRAME2 of SAME fictional AI dance clip. Opaque PNG 900x1200 portrait. LOCK camera distance, exact purple wall/floor horizon, blue-left pink-right lighting, rendering style, girl's body scale and outfit. Keep EXACT same face tilt, open brown eyes, open smiling mouth, brown bob and flower clip as reference, like reused selfie face. Change ONLY body pose: both hands on waist, elbows out, feet on floor moderately apart and hips shifted comically sideways in innocent goofy school dance, torso leaning opposite. No sexual emphasis. Same long green cardigan, ivory shirt, knee-length rust pleated skirt, opaque cream tights and brown sneakers. Whole body in frame. Keep same stray tiny yellow paper triangle at shoulder. Subtly slightly merged fingers on one hand and small hair tip changes, no monstrous distortions. No UI/text/watermarks/logos, no exposure, no falling or mockery. Same face identity and expression essential, fixed scale and frame.",
+    "source": "C:/Users/정벅/.codex/generated_images/01a1c3e4-a387-7780-be51-a3b877d988a0/exec-d00684f3-cbc6-4b20-95ce-89bffe443319.png",
+    "attempts": []
+  },
+  {
+    "file": "saebom-dance-3.png",
+    "tool": "built-in image_gen",
+    "prompt": "Edit reference into FRAME3 of SAME fictional AI dance clip. Opaque PNG 900x1200 portrait. Preserve EXACT lavender background with floor horizon, camera distance, character scale, style, blue/pink side lighting. Keep EXACT same brown bob/flower clip, face angle, warm facial lighting, brown open eyes and open smiling mouth as this reference. Change ONLY dance body pose: one arm stretches diagonally UP, other diagonally DOWN, legs spread wide, both feet planted; goofy innocent star-like school dance, no sexualization. Same modest loose green cardigan, ivory collar, knee-length rust pleated skirt, opaque cream tights, dark brown sneakers. Entire hands and shoes in frame. Stray tiny yellow paper triangle stays beside shoulder, very subtle slightly merged fingertips and hair tip variation only. No exaggeration or monster defects. No text/UI/logo/watermark, no exposure, no mockery, no falling.",
+    "source": "C:/Users/정벅/.codex/generated_images/01a1c3e4-a387-7780-be51-a3b877d988a0/exec-6a69e5d9-2f1e-4084-a155-9559330cba77.png",
+    "attempts": []
+  }
+]

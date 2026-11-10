@@ -1,0 +1,35 @@
+[
+  {
+    "file": "cctv-collapse.png",
+    "tool": "built-in image_gen",
+    "prompt": "Create one opaque PNG educational game illustration, landscape 1672x941. Bright polished Korean webtoon event CG, fine clean lines, softly shaded cel painting, NOT photographic, NOT pixel art. View from a fixed camera in the REAR ceiling corner looking steeply DOWN across the entire classroom. Classroom architecture: warm wooden floor, cream upper walls with muted sage green lower paneling, large dark green chalkboard on front wall, wooden lectern beneath it, bookcase front left, small computer desk front right, tall windows with cream curtains along sides. Eight wooden student desks arranged in two groups of four left and right leaving a wide central aisle. No text, numbers, UI, detection boxes, timestamp, logos or watermarks anywhere; chalkboard blank and no wall clock. This is cctv-collapse: one anonymous middle school student in neutral gray sweatshirt and dark trousers lies unconscious on their SIDE on central aisle floor, fully visible around center (x .45 y .60), face turned away, no injury. One toppled chair nearby. One student approaches in alarm, another turns to look, one background student; other faces small side/back views. No recognizable named characters, no flower clips or colored fantasy hair. Ordinary brown/black hair. Incident must be a compact unobstructed group. Keep top 12% and bottom right 34% by 22% free of important subjects for later UI. Calm clean daylight colors, no surveillance grain. Convey need for adult help without gore or drama effects. Whole classroom dominates, students relatively small, strong overhead ceiling perspective.",
+    "source": "C:/Users/정벅/.codex/generated_images/01a1c3e4-a387-7780-be51-a3b877d988a0/exec-787c2edf-f4ee-4cd5-b8d8-b29039341c2f.png",
+    "attempts": []
+  },
+  {
+    "file": "cctv-fight.png",
+    "tool": "built-in image_gen",
+    "prompt": "Edit the provided classroom CG into cctv-fight, 1672x941 opaque PNG. Preserve EXACT architecture, desk groups, lighting, crop and high ceiling camera viewpoint of reference. Replace collapsed student and toppled chair incident with two anonymous students in gray school sweatshirts and dark trousers standing in the central aisle, gripping each other's collar and upper arm and pushing, serious tense body language, NO punching, injuries, blood or impact effects. One chair is pushed aside and one nearest desk slightly askew. Three other anonymous students step back or reach out to stop them; small side/back faces. No named characters. Keep all main action within central region x.34-.58 y.40-.73, no furniture blocking bodies. Empty top12% and bottom-right34%x22% of important action. Same bright detailed webtoon style, no text, marks, UI, detection boxes, logos. Do not move camera or redesign room.",
+    "source": "C:/Users/정벅/.codex/generated_images/01a1c3e4-a387-7780-be51-a3b877d988a0/exec-1ac7972b-369f-4479-b0f9-c3fae9514d39.png",
+    "attempts": []
+  },
+  {
+    "file": "cctv-window.png",
+    "tool": "built-in image_gen",
+    "prompt": "Edit this classroom image into cctv-window, 1672x941 opaque PNG, keeping EXACT same architecture, desk positions, bright webtoon rendering, lens and overhead camera framing. Remove collapse incident and restore all chairs. At the LEFT wall middle window, one anonymous gray sweatshirt student sits on the interior sill of an open window, facing INTO classroom, BOTH legs hanging INTO room toward floor; hips on sill, torso only slightly reclined but entire body safely inside room. Small casual smile or wave. Nearby two friends, one casually amused, other visibly worried and gesturing to come down; small faces enough to read concern. One more student seated elsewhere in back view. All are unnamed ordinary brown/black-haired classmates, no named characters. The window student is fully readable without desk occluding half body. Window exterior shows only sky and tree tops, never a drop or ground far below. Not heroic, not falling, no limbs outside. Keep important action away from top12% and bottom right34%x22%. No text, numbers, detection boxes, UI, logo, watermark, grain. Rest of room identical.",
+    "source": "C:/Users/정벅/.codex/generated_images/01a1c3e4-a387-7780-be51-a3b877d988a0/exec-5fb437a8-98cc-4408-96b7-0c35bda2088a.png",
+    "attempts": []
+  },
+  {
+    "file": "cctv-phone.png",
+    "tool": "built-in image_gen",
+    "prompt": "Precise edit only to seated student at lower LEFT inner desk: make their torso turn slightly toward central aisle (right side of image), head lowered to their lap, BOTH hands hold a clearly visible small smartphone with a plain pale blue rectangular screen on knees BELOW tabletop height on the aisle side. Shift knees just right of tabletop silhouette so viewer can clearly see rectangular phone; screen must be roughly 20x30 pixels at full output and visibly recognizable. No text or content on screen. Do not put phone on desk or above desk. Preserve ALL room architecture, camera, crop, all furniture, lighting, other students and teacher EXACTLY. 1672x941 opaque PNG same webtoon style. Calm scene no special glow or attention lines.",
+    "source": "C:/Users/정벅/.codex/generated_images/01a1c3e4-a387-7780-be51-a3b877d988a0/exec-1c0f54a9-ae2f-484d-b5d7-6f20b419ee88.png",
+    "attempts": [
+      {
+        "prompt": "Edit reference into cctv-phone, opaque PNG 1672x941. EXACT same classroom architecture and camera angle and desk locations and bright webtoon style. Remove collapse and all standing pupils, restore chair. Quiet ordinary lesson: four anonymous gray sweatshirt students sit at desks facing chalkboard. Small anonymous teacher back view beside chalkboard, no recognizable face. At inner LEFT rear desk near center-left, one pupil bows head slightly and holds a small smartphone LOW on lap UNDER desk. Make the phone and hands visible from the aisle side, just a pale screen rectangle with no content, no glow effects. The other three pupils listen normally. Nobody distressed or watching the phone student. No danger or commotion. Top12% and bottom right34%x22% no important action. No text, numbers, UI, labels, boxes, watermark, logos or grain. Keep entire room dominant and same overhead ceiling viewpoint.",
+        "reason_rejected": "Phone obscured by desk; revised torso and hands for visibility."
+      }
+    ]
+  }
+]
