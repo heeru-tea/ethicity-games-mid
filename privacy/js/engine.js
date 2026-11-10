@@ -11,7 +11,7 @@
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
   /* ── 계산 플래그: 저장하지 않고 지금까지의 선택으로 그때그때 판정한다(조건 문법 그대로) ──
-   *   hurt.<인물>  내가 그 친구를 해친 적이 있음(사진·번호·캡처·합성·계정) — 피해자가 나를 위로·사과하지 않게 대사를 가른다
+   *   hurt.<인물>  내가 그 친구를 해친 적이 있음(사진·번호·캡처·가짜 영상·계정) — 피해자가 나를 위로·사과하지 않게 대사를 가른다
    *   harmed_others 내가 다른 사람의 정보를 퍼뜨린 적이 있음 — 엔딩 C·D와 에필로그에서 책임을 다룬다 */
   var COMPUTED = {
     'hurt.minjun': 'e2post=story|group || e2fix=no || e7=join|silent || e7b=none',

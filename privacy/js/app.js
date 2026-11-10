@@ -577,13 +577,80 @@
     void box.offsetWidth;
     box.classList.add('det-on');
   }
+  /* 휴대폰 화면 그림(사건 4 가짜 춤 영상, story.clips): 세로 휴대폰 틀 안에 사진 한 장 또는 여러 장을 0.4초마다 넘겨 영상처럼.
+   *   움직임 줄이기면 멈춘 한 장 + '다음 장면' 버튼(직접 넘김). 그림을 하나라도 못 불러오면 틀을 숨기고 글만으로 진행.
+   *   계정 줄·재생 표시는 꾸밈(aria-hidden) — 화면 읽기에는 화면 칸의 aria-label(alt)과 #cg-live.
+   *   ★ 선택지가 뜨기 전에 이야기 줄(cg:null)이 내린다. 혹시 빠져도 renderDock가 한 번 더 내린다(고르는 동안 영상이 돌지 않게) */
+  var CLIP_MS = 400;
+  var clipTimer = null, clipIdx = 0;
+  function clipOf(key) { var c = story.clips; return c && Object.prototype.hasOwnProperty.call(c, key) ? c[key] : null; }
+  function clipStop() { if (clipTimer) clearInterval(clipTimer); clipTimer = null; }
+  function clipFrame(i, say) {
+    var box = $('cg'), ph = box.querySelector('.cg-phone'), frames = ph.querySelectorAll('.cg-frame'), n = frames.length;
+    if (!n) return;
+    clipIdx = ((i % n) + n) % n;
+    Array.prototype.forEach.call(frames, function (f, k) { f.classList.toggle('on', k === clipIdx); });
+    ph.querySelector('.cg-prog i').style.width = ((clipIdx + 1) / n * 100) + '%';
+    ph.querySelector('.cg-count').textContent = n > 1 ? (clipIdx + 1) + ' / ' + n : '';
+    if (say) $('cg-live').textContent = '장면 ' + (clipIdx + 1) + ' / ' + n;
+  }
+  function clipFail() { // png까지 실패: 틀을 숨기고 무대·글로
+    var box = $('cg');
+    clipStop();
+    box.hidden = true; document.body.classList.remove('cg-on');
+    box.querySelector('.cg-phone').setAttribute('data-failed', '');
+  }
+  function clipShow(box, key, clip) {
+    var ph = box.querySelector('.cg-phone'), scr = ph.querySelector('.cg-screen'), step = ph.querySelector('.cg-step'), many = clip.frames.length > 1;
+    clipStop();
+    ph.removeAttribute('data-failed');
+    scr.textContent = '';
+    scr.setAttribute('aria-label', clip.alt || '');
+    clip.frames.forEach(function (file) {
+      var im = document.createElement('img');
+      im.className = 'cg-frame'; im.alt = ''; im.decoding = 'async'; im.draggable = false;
+      // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 틀을 숨긴다(지금 떠 있는 그림일 때만)
+      im.onerror = function () { if (/\.png($|\?)/.test(im.src) && im.parentNode === scr && box.getAttribute('data-cg') === key) clipFail(); };
+      window.PrivacyImg.load(im, file);
+      scr.appendChild(im);
+    });
+    ph.querySelector('.cg-phone-who').textContent = clip.who || '';
+    ph.querySelector('.cg-phone-av').textContent = clip.av || '?';
+    ph.classList.toggle('video', !!clip.video);
+    ph.querySelector('.cg-phone-bar').hidden = !clip.video;
+    step.hidden = !(many && settings.reduceMotion); // 움직임 줄이기: 저절로 넘어가지 않고, 버튼으로 한 장씩
+    ph.hidden = false;
+    clipFrame(0);
+    if (many && !settings.reduceMotion) clipTimer = setInterval(function () { clipFrame(clipIdx + 1); }, CLIP_MS);
+  }
+  // 휴대폰 틀은 대화창 위에 다 보이게: 대화창이 평소보다 높으면('한 번에'로 여러 줄을 쌓았을 때) 그만큼 틀을 줄인다
+  function cgFit() {
+    var box = $('cg'), talk = $('talk');
+    box.style.paddingBottom = '';
+    if (box.hidden || box.getAttribute('data-mode') !== 'phone' || !talk || talk.hidden) return;
+    var need = $('stage').getBoundingClientRect().bottom - talk.getBoundingClientRect().top + 8;
+    if (need > parseFloat(getComputedStyle(box).paddingBottom)) box.style.paddingBottom = Math.round(need) + 'px';
+  }
   function cgShow(key) {
     var box = $('cg'), im = box.querySelector('.cg-img');
+    box.style.paddingBottom = '';
     box.classList.remove('shake', 'dim', 'det-on');
     box.querySelector('.cg-rec').hidden = true;
     box.querySelector('.cg-det').hidden = true;
+    box.querySelector('.cg-phone').hidden = true;
+    clipStop();
     $('cg-live').textContent = '';
     if (!key) { box.hidden = true; box.removeAttribute('data-cg'); box.removeAttribute('data-mode'); document.body.classList.remove('cg-on'); return; }
+    var clip = clipOf(key);
+    if (clip) {
+      box.setAttribute('data-cg', key);
+      box.setAttribute('data-mode', 'phone');
+      box.hidden = false;
+      document.body.classList.add('cg-on');
+      clipShow(box, key, clip);
+      if (!box.hidden) $('cg-live').textContent = clip.alt || '';
+      return;
+    }
     var file = cgFile(key), shot = cctvShot(key);
     box.setAttribute('data-cg', key);
     box.setAttribute('data-mode', shot ? 'cctv' : 'event');
@@ -620,8 +687,11 @@
   function cgSetup() {
     var box = $('cg'), im = box.querySelector('.cg-img');
     // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 숨긴다
-    im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; document.body.classList.remove('cg-on'); } };
+    im.onerror = function () { if (box.getAttribute('data-mode') === 'phone') return; if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; document.body.classList.remove('cg-on'); } };
     im.onload = function () { im.removeAttribute('data-loading'); cctvReveal(); };
+    // 휴대폰 틀 '다음 장면'(움직임 줄이기에서만 보임): 한 장씩 직접 넘긴다. 대화창 넘기기와 섞이지 않게 여기서 멈춘다
+    box.querySelector('.cg-step').addEventListener('click', function (e) { e.stopPropagation(); clipFrame(clipIdx + 1, true); });
+    window.addEventListener('resize', cgFit);
     box.addEventListener('animationend', function () { box.classList.remove('shake'); });
   }
   // 그 자리 대화(장소 장면)는 포켓몬식 대화창으로 한 줄씩
@@ -634,7 +704,7 @@
       return { who: who, name: who === 'me' ? player.nickname + ' (나)' : ch.name, text: fill(l.text), line: l };
     });
     var instant = settings.speed === 'instant';
-    var opts = { instant: instant, onLine: function (it) { cgLine(it.line); stageBubble(Object.assign({ talk: true }, it.line)); } };
+    var opts = { instant: instant, onLine: function (it) { cgLine(it.line); cgFit(); stageBubble(Object.assign({ talk: true }, it.line)); } };
     if (!instant) return window.PrivacyTalk.open(items, opts);
     // '한 번에' 속도: 모든 줄을 한 상자에 쌓으면 그림이 마지막 것만 남는다 → 그림이 바뀌는 줄(cg 칸)마다 상자를 끊어 그림을 한 장씩 본다(2026-11-10)
     var groups = [], cur = [];
@@ -730,6 +800,7 @@
     var dock = $('g-dock');
     dock.textContent = ''; clearNext();
     if (E.needsChoice(story, run)) {
+      if ($('cg').getAttribute('data-mode') === 'phone') cgShow(null); // 휴대폰 틀 영상은 고르는 동안 돌지 않는다(이야기 줄 cg:null이 먼저 내리지만, 빠졌을 때의 안전망)
       var choices = E.visibleChoices(story, scene, run);
       if (scene.prompt) dock.appendChild(el('p', 'prompt', fill(scene.prompt)));
       var list = el('div', 'choices');
@@ -923,7 +994,7 @@
   function sceneDate(id) {
     var sc = story.scenes[id], sys = (sc.lines || []).map(function (l) { return E.normLine(l, story); }).filter(function (l) { return l.who === 'sys'; })[0];
     if (sys) return sys.text.split(' · ')[0];
-    // (2026-11-02: 'D-d' 오타로 'D-1 오후 6:05' 같은 제목에서 날짜를 못 읽어 '합성된 셀카' 날짜 칸이 비었음 → D-\d+)
+    // (2026-11-02: 'D-d' 오타로 'D-1 오후 6:05' 같은 제목에서 날짜를 못 읽어 사건 4(매점 앞) 날짜 칸이 비었음 → D-\d+)
     var m = /^(D-\d+|축제 당일|축제 다음 날)/.exec((sc.view && typeof sc.view.title === 'string' ? sc.view.title : '').replace(/^.* · /, ''));
     return m ? m[1] : '';
   }

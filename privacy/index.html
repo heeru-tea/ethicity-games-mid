@@ -23,7 +23,7 @@
       <div class="warning-inner">
         <p id="warning-title" class="warning-title">WARNING</p>
         <p class="warning-lead">본 게임에 나오는 인물·학교·상황은 모두 가상이며, 실제와 관계없습니다.</p>
-        <p class="warning-text">친구 사진 유포, 신상 공개, 합성 이미지, 몸싸움과 촬영 같은 장면이 나옵니다.</p>
+        <p class="warning-text">친구 사진 유포, 신상 공개, AI로 만든 가짜 영상, 몸싸움과 촬영 같은 장면이 나옵니다.</p>
         <p class="warning-help">비슷한 일로 힘들다면 선생님이나 보호자에게, 또는 청소년상담 <strong>1388</strong> · 학교폭력 <strong>117</strong> · 개인정보 침해 <strong>118</strong>에 도움을 청할 수 있어요.</p>
         <button id="btn-warning-ok" class="btn primary warning-ok" type="button">확인했어요</button>
       </div>
@@ -112,6 +112,13 @@
             <p class="cg-cam"><span class="cg-cam-name"></span><span class="cg-cam-demo"></span></p>
             <div class="cg-box"><span class="cg-tag"></span></div>
             <p class="cg-alert"><span class="cg-alert-head">알림</span><span class="cg-alert-what"></span><span class="cg-alert-send"></span></p>
+          </div>
+          <!-- 휴대폰 화면(사건 4 가짜 춤 영상): 세로 틀 안에 사진·영상 장면. 계정 줄·재생 표시는 꾸밈, 화면 칸의 aria-label이 대체 글 -->
+          <div class="cg-phone" hidden>
+            <div class="cg-screen" role="img" aria-label=""></div>
+            <p class="cg-phone-top" aria-hidden="true"><span class="cg-phone-av">?</span><span class="cg-phone-who"></span></p>
+            <p class="cg-phone-bar" aria-hidden="true" hidden><span class="cg-play">▶</span><span class="cg-prog"><i></i></span><span class="cg-count"></span></p>
+            <button type="button" class="cg-step" hidden>다음 장면</button>
           </div>
         </div>
         <p id="cg-live" class="sr-only" aria-live="polite"></p>

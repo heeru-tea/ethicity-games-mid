@@ -46,6 +46,7 @@ async function open(dev, run, settings = SET_FAST, extra = {}) {
     if (p.run) localStorage.setItem('ethicity.privacy.progress.v2', JSON.stringify({ v: 1, run: p.run, explored: {}, endingsSeen: p.run.ending ? [p.run.ending] : [] })); }, { run, settings, card: extra.card || null });
   await page.goto(base); await page.waitForTimeout(500);
   page.errors = errors; page.ctx = ctx;
+  if (extra.pre) await page.evaluate(extra.pre); // 이어 하기 전에 페이지 안에서 돌릴 것(검사용 손질)
   if (run && run.screen !== 'ending') { await page.click('#btn-continue'); await page.waitForTimeout(700); }
   return page;
 }
@@ -190,7 +191,118 @@ try {
         await close(p);
       }
     }
-    /* @@B@@ */
+    /* ───────── b. 사건 4: 휴대폰 틀 안의 셀카 → AI 가짜 춤 영상 ───────── */
+    if (ONLY.includes('b')) {
+      const CL = story.clips;
+      const phone = (p) => p.evaluate(() => {
+        const box = document.getElementById('cg'), ph = box.querySelector('.cg-phone'), R = (e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, r: r.right, b: r.bottom }; };
+        const fr = [...ph.querySelectorAll('.cg-frame')], step = ph.querySelector('.cg-step'), talk = document.getElementById('talk'), stage = document.getElementById('stage');
+        return { hidden: box.hidden, key: box.getAttribute('data-cg'), mode: box.getAttribute('data-mode'), phHidden: ph.hidden, n: fr.length, on: fr.findIndex((f) => f.classList.contains('on')),
+          onCount: fr.filter((f) => f.classList.contains('on')).length, loaded: fr.length > 0 && fr.every((f) => f.complete && f.naturalWidth > 0), src: fr.map((f) => f.getAttribute('src')),
+          who: ph.querySelector('.cg-phone-who').textContent, barHidden: ph.querySelector('.cg-phone-bar').hidden, count: ph.querySelector('.cg-count').textContent,
+          stepHidden: step.hidden, stepTag: step.tagName, stepH: step.hidden ? 0 : step.getBoundingClientRect().height, stepRect: step.hidden ? null : R(step),
+          label: ph.querySelector('.cg-screen').getAttribute('aria-label'), role: ph.querySelector('.cg-screen').getAttribute('role'), live: document.getElementById('cg-live').textContent,
+          pic: R(box.querySelector('.cg-pic')), stage: R(stage), talkTop: talk && !talk.hidden ? talk.getBoundingClientRect().top : null, cgOn: document.body.classList.contains('cg-on'),
+          hudB: Math.max(0, ...['.hud-left', '.hud .bar-actions'].map((q) => document.querySelector(q)).filter((e) => e && e.getClientRects().length).map((e) => e.getBoundingClientRect().bottom)) };
+      });
+      const framesLoaded = (p) => waitFor(p, () => { const f = [...document.querySelectorAll('#cg .cg-frame')]; return f.length > 0 && f.every((x) => x.complete && x.naturalWidth > 0); });
+      const untilKey = async (p, key, n = 12) => { for (let k = 0; k < n; k++) { const s = await phone(p); if (!s.hidden && s.key === key) return true; await nextLine(p); } return false; };
+      // b1 보통 속도·움직임 허용: 셀카 → 춤 세 장이 0.4초쯤마다 넘어가고, 선택 전에 내린다
+      {
+        const p = await open(dev, runTo({}, atScene('c2_e4_a')), SET_SLOW);
+        const s0 = await phone(p);
+        rec(size, 'b1 장면 첫 화면은 그림 없이 매점 앞 무대', s0.hidden && !s0.cgOn, JSON.stringify({ h: s0.hidden }));
+        const gotSelfie = await untilKey(p, 'saebom-selfie'); await framesLoaded(p);
+        await p.evaluate(() => { if (PrivacyTalk.typing()) PrivacyTalk.next(); }); await p.waitForTimeout(150);
+        const s1 = await phone(p), t1 = await talkText(p);
+        rec(size, 'b1 하늘이 화면을 돌리는 줄에서 휴대폰 틀 + 셀카 한 장', gotSelfie && s1.mode === 'phone' && !s1.phHidden && s1.n === 1 && s1.on === 0 && s1.loaded && /saebom-selfie\.(webp|png)/.test(s1.src[0]) && /화면을 내 쪽으로 돌렸다/.test(t1), JSON.stringify({ n: s1.n, src: s1.src, t: t1.slice(0, 20) }));
+        rec(size, 'b1 틀은 세로(3:4), 위 버튼 아래·대화창 위·무대 안', s1.pic.h > s1.pic.w * 1.25 && s1.pic.y >= s1.hudB - 1 && s1.talkTop != null && s1.pic.b <= s1.talkTop + 1 && s1.pic.x >= s1.stage.x && s1.pic.r <= s1.stage.r && s1.pic.w >= 200, JSON.stringify({ pic: s1.pic, hudB: s1.hudB, talkTop: s1.talkTop }));
+        rec(size, 'b1 셀카: 계정 줄(새봄 공개 계정)·재생 표시 없음·대체 글', s1.who === CL['saebom-selfie'].who && s1.barHidden && s1.stepHidden && s1.role === 'img' && s1.label === CL['saebom-selfie'].alt && s1.live === CL['saebom-selfie'].alt, s1.who);
+        await p.screenshot({ path: shot(`deepfake-selfie-${size}`) });
+        const gotDance = await untilKey(p, 'saebom-dance'); await framesLoaded(p);
+        await p.evaluate(() => { if (PrivacyTalk.typing()) PrivacyTalk.next(); });
+        const s2 = await phone(p);
+        rec(size, 'b1 춤 영상: 장면 세 장·익명 계정 줄·재생 표시, "AI" 딱지 없음', gotDance && s2.n === 3 && s2.loaded && s2.onCount === 1 && s2.who === CL['saebom-dance'].who && !/AI|가짜|딥페이크/.test(s2.who + s2.count) && !s2.barHidden && s2.stepHidden && s2.label === CL['saebom-dance'].alt, JSON.stringify({ n: s2.n, who: s2.who, on: s2.onCount }));
+        // 2.4초 동안 50ms마다: 세 장을 모두 지나고, 바뀌는 간격이 0.4초쯤
+        const samples = await p.evaluate(() => new Promise((res) => { const out = []; const t0 = performance.now(); const id = setInterval(() => {
+          out.push([Math.round(performance.now() - t0), [...document.querySelectorAll('#cg .cg-frame')].findIndex((f) => f.classList.contains('on'))]);
+          if (performance.now() - t0 > 2400) { clearInterval(id); res(out); } }, 50); }));
+        const changes = []; for (let i = 1; i < samples.length; i++) if (samples[i][1] !== samples[i - 1][1]) changes.push(samples[i][0]);
+        const gaps = changes.slice(1).map((t, i) => t - changes[i]), seenIdx = new Set(samples.map((x) => x[1]));
+        rec(size, 'b1 세 장이 번갈아 넘어감(0.4초쯤)', seenIdx.size === 3 && !seenIdx.has(-1) && changes.length >= 4 && changes.length <= 7 && gaps.every((g) => g >= 300 && g <= 560), JSON.stringify({ changes: changes.length, gaps }));
+        await p.screenshot({ path: shot(`deepfake-dance-${size}`) });
+        // 영상이 떠 있는 줄 수, 내리는 줄
+        let upLines = 1, downText = '';
+        for (let k = 0; k < 8; k++) { await nextLine(p); const s = await phone(p); if (s.hidden) { downText = await talkText(p); break; } upLines++; }
+        rec(size, 'b1 영상은 몇 줄 동안만 → "딥페이크" 줄에서 내림', upLines >= 2 && upLines <= 5 && /딥페이크/.test(downText), upLines + '줄 / ' + downText.slice(0, 30));
+        const stopped = await p.evaluate(() => new Promise((res) => { const a = [...document.querySelectorAll('#cg .cg-frame')].findIndex((f) => f.classList.contains('on')); setTimeout(() => res(a === [...document.querySelectorAll('#cg .cg-frame')].findIndex((f) => f.classList.contains('on'))), 900); }));
+        rec(size, 'b1 내린 뒤에는 장면 넘김도 멈춤', stopped);
+        let down = true;
+        for (let k = 0; k < 20 && !(await choices(p)); k++) { await nextLine(p); if (!(await phone(p)).hidden) down = false; }
+        const sc = await phone(p);
+        rec(size, 'b1 선택지가 뜰 때 영상은 내려가 있음(선택지 3개)', down && sc.hidden && !sc.cgOn && (await choices(p)) === 3);
+        await p.screenshot({ path: shot(`deepfake-choice-${size}`) });
+        noErr(size, 'b1', p);
+        await close(p);
+      }
+      // b2 움직임 줄이기: 멈춘 한 장 + '다음 장면' 버튼으로 직접 넘김
+      {
+        const p = await open(dev, runTo({}, atScene('c2_e4_a')), Object.assign({}, SET_SLOW, { reduceMotion: true }));
+        const got = await untilKey(p, 'saebom-dance'); await framesLoaded(p);
+        await p.evaluate(() => { if (PrivacyTalk.typing()) PrivacyTalk.next(); }); await p.waitForTimeout(100);
+        const a = await phone(p); await p.waitForTimeout(1100); const b = await phone(p), tBefore = await talkText(p);
+        rec(size, "b2 움직임 줄이기: 저절로 안 넘어감 + '다음 장면' 버튼(진짜 버튼, 44px 이상, 틀 안·대화창 위)", got && a.on === 0 && b.on === 0 && !b.stepHidden && b.stepTag === 'BUTTON' && b.stepH >= 44 && inside(b.stepRect, b.pic, 2) && b.stepRect.b <= b.talkTop, JSON.stringify({ on: [a.on, b.on], h: b.stepH }));
+        await p.click('#cg .cg-step'); const c1 = await phone(p);
+        await p.click('#cg .cg-step'); const c2 = await phone(p);
+        await p.click('#cg .cg-step'); const c3 = await phone(p);
+        rec(size, 'b2 버튼으로 1 → 2 → 3 → 1, 화면 읽기 알림 "장면 n / 3"', c1.on === 1 && c2.on === 2 && c3.on === 0 && c1.live === '장면 2 / 3' && c2.live === '장면 3 / 3' && c1.count === '2 / 3', JSON.stringify([c1.on, c2.on, c3.on, c1.live]));
+        rec(size, 'b2 버튼을 눌러도 대사는 그대로(넘어가지 않음)', (await talkText(p)) === tBefore);
+        await p.focus('#cg .cg-step'); await p.keyboard.press('Enter'); const c4 = await phone(p);
+        rec(size, 'b2 키보드(Enter)로도 장면만 넘어감', c4.on === 1 && (await talkText(p)) === tBefore, String(c4.on));
+        await p.screenshot({ path: shot(`deepfake-reduced-${size}`) });
+        for (let k = 0; k < 20 && !(await choices(p)); k++) await nextLine(p);
+        rec(size, 'b2 선택지가 뜰 때 영상 내려감', (await phone(p)).hidden && (await choices(p)) === 3);
+        noErr(size, 'b2', p);
+        await close(p);
+      }
+      // b3 '한 번에': 셀카·영상을 따로 보고, 고른 뒤 이전 선택으로 돌아가도 그림 없이 처음 줄부터
+      {
+        const p = await open(dev, runTo({}, atScene('c2_e4_a')), SET_FAST);
+        const seq = []; let overlap = 0;
+        for (let k = 0; k < 20 && !(await choices(p)); k++) {
+          const s = await phone(p), cur = s.hidden ? null : s.key;
+          if (seq[seq.length - 1] !== cur) seq.push(cur);
+          if (cur && s.talkTop != null && s.pic.b > s.talkTop + 1) overlap = Math.max(overlap, Math.round(s.pic.b - s.talkTop));
+          if (cur === 'saebom-dance' && !seq.shot) { seq.shot = true; await framesLoaded(p); await p.screenshot({ path: shot(`deepfake-instant-${size}`) }); }
+          await step(p);
+        }
+        rec(size, "b3 '한 번에': 그림 없음 → 셀카 → 영상 → 내림", seq.join() === [null, 'saebom-selfie', 'saebom-dance', null].join(), seq.join());
+        rec(size, "b3 '한 번에' 쌓인 대화창이 휴대폰 틀을 덮지 않음", overlap === 0, '겹침 ' + overlap + 'px');
+        rec(size, 'b3 선택지 3개·영상 내려감', (await choices(p)) === 3 && (await phone(p)).hidden);
+        await pick(p, 'forward'); await p.waitForTimeout(300);
+        const r = await st(p);
+        await p.click('#btn-undo'); await p.waitForTimeout(300); await p.click('#confirm-yes'); await p.waitForTimeout(700);
+        const u = await st(p), su = await phone(p);
+        rec(size, 'b3 이전 선택 → 고르기 전으로, 처음 줄은 그림 없음', r.reaction === 'forward' && r.flags.e4 === 'forward' && u.scene === 'c2_e4_a' && !u.reaction && !u.flags.e4 && su.hidden, JSON.stringify([r.reaction, u.scene, su.hidden]));
+        noErr(size, 'b3', p);
+        await close(p);
+      }
+      // b4 그림 없음: 틀 없이 글만으로 / b5 이야기 줄에서 내리기가 빠져도 선택 전에는 내려감(안전망)
+      if (key === 'd') {
+        const p = await open(dev, runTo({}, atScene('c2_e4_a')), SET_SLOW, { block: /assets\/photos\/saebom/ });
+        let shown = 0; const texts = [];
+        for (let k = 0; k < 40 && !(await choices(p)); k++) { await nextLine(p); await p.waitForTimeout(250); const s = await phone(p); if (!s.hidden && s.loaded) shown++; texts.push(await talkText(p)); }
+        rec(size, 'b4 그림 없음: 틀은 숨고 대사만으로 선택지까지', shown === 0 && (await phone(p)).hidden && (await choices(p)) === 3 && texts.some((t) => /딥페이크/.test(t)) && texts.some((t) => /춘 적이 없다/.test(t)), '보인 횟수 ' + shown);
+        noErr(size, 'b4', p);
+        await close(p);
+        const q = await open(dev, runTo({}, atScene('c2_e4_a')), SET_FAST, { pre: () => { window.PRIVACY_STORY.scenes.c2_e4_a.lines.forEach((l) => { if (l && typeof l === 'object' && l.cg === null) delete l.cg; }); } });
+        let upAtEnd = false;
+        for (let k = 0; k < 20 && !(await choices(q)); k++) { const s = await phone(q); upAtEnd = !s.hidden; await step(q); }
+        rec(size, 'b5 안전망: 내리는 줄이 없어도 선택지가 뜰 때는 내려감', upAtEnd && (await phone(q)).hidden && (await choices(q)) === 3, '끝까지 떠 있었나 ' + upAtEnd);
+        noErr(size, 'b5', q);
+        await close(q);
+      }
+    }
     /* @@C@@ */
   }
 } finally { await browser.close(); server.close(); }

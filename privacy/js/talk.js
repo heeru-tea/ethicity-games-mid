@@ -93,6 +93,7 @@
     lines = (list || []).filter(function (l) { return l && l.text; });
     opts = o || {};
     opts.stack = !!opts.instant && lines.length > 1;
+    box.classList.toggle('stack', opts.stack); // 여러 줄을 한 상자에 쌓는 중(그림 장면에서는 글자를 덜 키운다 — style.css)
     idx = 0;
     if (!lines.length) return Promise.resolve();
     box.hidden = false;
