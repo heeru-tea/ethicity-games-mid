@@ -218,11 +218,12 @@
   function endingConclusion(reactions,history,end){
     var allSatisfied=reactions.length>0&&reactions.every(function(r){return r.satisfied;});
     var profit=history.reduce(function(total,h){return total+h.metrics.costs.total;},0);
-    var verdict=allSatisfied?'다양한 사람들을 만족시켰다.':'도시 노선을 나름 잘 설계했다. 하지만 이게 최선이었을까?';
+    /* 2026-11-11 플레이테스트 13: 총평만 반말 평서체였다 — 다른 화면처럼 해요체로. 금액 이름은 다른 화면과 같은 ‘누적 잔액’(운영 종료 때는 ‘보유 잔액’ 그대로) */
+    var verdict=allSatisfied?'다양한 사람들을 만족시켰어요.':'도시 노선을 나름 잘 설계했어요. 하지만 이게 최선이었을까요?';
     var happy=reactions.filter(function(r){return r.satisfied;}).length,who=reactions.length?'주요 인물 '+reactions.length+'명 중 '+happy+'명이 만족했지만, ':'';
     if(end&&end.cause==='bankrupt')verdict=who+'학기 말 잔액이 '+won(profit)+'이라 파산했어요. 주민의 이동은 지키면서 운영 비용을 다시 설계해 봐요.';
-    else if(end&&end.cause==='contract')verdict='단계 적자가 누적 세 번 쌓여 운영 계약이 종료됐다. 그동안 주민이 해낸 이동은 기록에 남아 있다. 어디서 돈이 나갔는지부터 다시 보자.';
-    return {name:'솔잎마을의 한 학기',image:'intro-village.webp',allSatisfied:allSatisfied,profit:profit,verdict:verdict,text:verdict+'\n'+(end&&end.cause&&end.cause!=='complete'?'보유 잔액 ':'총 수익 ')+won(profit)+'\n지원금·운임에서 운영 비용을 뺀 '+history.length+'단계 누적 금액'};
+    else if(end&&end.cause==='contract')verdict='단계 적자가 누적 세 번 쌓여 운영 계약이 종료됐어요. 그동안 주민이 해낸 이동은 기록에 남아 있어요. 어디서 돈이 나갔는지부터 다시 봐요.';
+    return {name:'솔잎마을의 한 학기',image:'intro-village.webp',allSatisfied:allSatisfied,profit:profit,verdict:verdict,text:verdict+'\n'+(end&&end.cause&&end.cause!=='complete'?'보유 잔액 ':'누적 잔액 ')+won(profit)+'\n지원금·운임에서 운영 비용을 뺀 '+history.length+'단계 합계'};
   }
   // 결과 카드: 판정(Session.residentVerdict — 출발 경고와 같은 기준)과 구간별 상태
   function residentResult(rd,r,passengers,window){

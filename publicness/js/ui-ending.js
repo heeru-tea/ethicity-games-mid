@@ -191,7 +191,7 @@
       panel.appendChild(who);
     }
     panel.appendChild(el('p', {id:'ending-verdict','class':'outcome-lead'}, conclusion.verdict));
-    panel.appendChild(el('p', {id:'ending-profit'}, (failed?'보유 잔액 ':'총 수익 ')+App.won(conclusion.profit)+' · 지원금 포함 누적 손익'));
+    panel.appendChild(el('p', {id:'ending-profit'}, (failed?'보유 잔액 ':'누적 잔액 ')+App.won(conclusion.profit)+' · 지원금·운임에서 비용을 뺀 '+s.history.length+'단계 합계'));/* 2026-11-11 플레이테스트 13: ‘총 수익 · 누적 손익’ → 다른 화면과 같은 ‘누적 잔액’ */
     if (UI.finalScores) panel.appendChild(UI.finalScores(App, s));
     var reviewActions=el('div',{'class':'review-actions'});
     reviewActions.appendChild(el('button',{type:'button','class':'btn btn-primary',id:'btn-game-review',onclick:function(){openEnding(App,true);}},'돌아보기'));
