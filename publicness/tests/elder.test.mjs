@@ -41,3 +41,16 @@ test('랜덤 8단계: 5단계부터 복지관 K도 대상', () => {
   assert.ok(Demand.base(s.config, 5, s.seed).some(r => r.elder && (r.o === 'K' || r.d === 'K')));
 });
 test('Sim.judgePetition 내보냄', () => { assert.equal(typeof Sim.judgePetition, 'function'); });
+test('해시 독립성: hash(key,1)과 hash(key,2) 상관 약함, 어르신 대상 중 안 타는 비율 약 50%', () => {
+  const q = Demand.base(cfg, 4, 42), n = q.length;
+  const a = q.map(r => Demand.hash(r.key, 1)), b = q.map(r => Demand.hash(r.key, 2));
+  const ma = a.reduce((x, y) => x + y, 0) / n, mb = b.reduce((x, y) => x + y, 0) / n;
+  let sab = 0, saa = 0, sbb = 0;
+  for (let i = 0; i < n; i++) { sab += (a[i] - ma) * (b[i] - mb); saa += (a[i] - ma) ** 2; sbb += (b[i] - mb) ** 2; }
+  assert.ok(Math.abs(sab / Math.sqrt(saa * sbb)) < 0.1, '피어슨 상관 |r| < 0.1');
+  const s7 = Session.create(cfg, { mode: 'fixed', seed: 7 });
+  const el = Demand.base(cfg, 4, 42).concat(Demand.base(s7.config, 6, s7.seed)).filter(r => r.elder);
+  assert.ok(el.length >= 20, '표본 ' + el.length);
+  const stay = el.filter(r => Demand.hash(r.key, 2) < 0.5).length / el.length;
+  assert.ok(Math.abs(stay - 0.5) < 0.2, '어르신 대상 중 hash2<0.5 비율 ' + stay);
+});

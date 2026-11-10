@@ -76,7 +76,9 @@
   function hash(key, salt) {
     var h = 2166136261, s = String(key) + '#' + salt, i;
     for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-    return h / 4294967296;
+    /* 끝 글자만 다른 입력(salt)끼리 상관되지 않게 murmur3 fmix32 눈사태 마무리 */
+    h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b) >>> 0; h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35) >>> 0; h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
   }
   function markElder(config, phase, list) {
     var E = config.elderFree; if (!E) return;
