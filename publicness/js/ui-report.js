@@ -63,7 +63,8 @@
       var ul = el('ul', { 'class': 'report-plan' }); st.plan.forEach(function (t) { ul.appendChild(el('li', null, t)); });
       sec.appendChild(row('내 계획', ul));
       var nums = el('ul', { 'class': 'report-nums' });
-      st.numbers.forEach(function (n) { var li = el('li', n[2] ? { 'class': 'is-' + n[2] } : null); li.appendChild(el('span', null, n[0] + ' ')); li.appendChild(el('b', null, n[1])); nums.appendChild(li); });
+      st.numbers.forEach(function (n) { var li = el('li', n[2] ? { 'class': 'is-' + n[2] } : null); var cut = n[2] ? n[1].indexOf(' (') : -1; /* 긴 줄(평가 대상)은 건수만 굵게, 괄호 속 풀이는 보통 굵기 */
+        li.appendChild(el('span', null, n[0] + ' ')); li.appendChild(el('b', null, cut < 0 ? n[1] : n[1].slice(0, cut))); if (cut >= 0) li.appendChild(el('span', null, n[1].slice(cut))); nums.appendChild(li); });
       sec.appendChild(row('결과', nums));
       sec.appendChild(row('다음 운행 목표', st.goal));
       sec.appendChild(row('내 생각', st.mine));
