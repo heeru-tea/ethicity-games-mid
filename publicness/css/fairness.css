@@ -11,8 +11,15 @@
 .fair-card .note-blank.note-reason { flex: 1 1 auto; width: auto; min-width: 0; }
 .fair-card .note-saved { display: block; min-height: 1.2em; margin: 0; }
 .fair-required { margin: 4px 0; color: #5A6478; font-weight: 600; }
-/* 무임 정책 카드의 ‘게임의 가정’ 한 줄과 접는 규칙 설명(2026-11-10 검토 5번). 색 띠·강조 상자 없음 — 글과 접기만 */
+/* 무임 정책 카드의 ‘게임의 가정’ 한 줄과 접는 규칙 설명(2026-11-10 검토 5번). 색 띠·강조 상자 없음 — 글과 접기만. 가정 한 줄 = 접기 줄(늘 보임) */
 .fair-rule { margin: 0 0 8px; }
+.fair-rule > summary { display: block; min-height: 44px; padding: 2px 0; color: var(--text); font-size: 0.9rem; font-weight: 400; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; list-style: none; }
+.fair-rule > summary::-webkit-details-marker { display: none; }
+.fair-rule-more { color: var(--accent-ink); font-weight: 600; white-space: nowrap; }
+.fair-rule-more::after { content: ' ▾'; }
+.fair-rule[open] .fair-rule-more::after { content: ' ▴'; }
+/* 넓은 화면(오른쪽 고정 칸): 카드가 칸보다 길면 아래 버튼 밑으로 넘치지 않고 카드 안에서 스크롤 */
+body.rail[data-screen="plan"] .fair-card { align-self: start; min-height: 0; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; margin: 0; }
 .fair-rule ul { margin: 0 0 4px; padding-left: 1.2em; font-size: 0.9rem; line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; }
 .fair-rule li { margin: 0 0 4px; }
 @media (max-width: 600px) { .fair-card { padding: 10px; } }
