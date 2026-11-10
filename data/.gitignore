@@ -17,3 +17,5 @@ assets/cards/lost-found/*.png
 art-source/city-lossless/
 # 3 임무 거리 사진 원본(Codex PNG·contact-sheet, 게임은 384² webp만 씀)
 assets/cards/city/*.png
+# 초상 시트 원본(PNG 1024×256) — 게임은 q90 webp만 씀(2026-11-10, 3.1MB → 0.9MB)
+assets/characters/*-portraits.png
