@@ -46,12 +46,18 @@
     c.appendChild(whyLine(App, s, 'petition', hooks));
     return c;
   }
+  var ruleOpen = false; /* 규칙 설명을 펼쳐 둔 채 유지·폐지를 눌러도(카드를 다시 그려도) 그대로 */
   function elderCard(App, s, hooks) {
     hooks = hooks || {};
     if (s.phase !== PB.Choices.KINDS.elder.phase || !(s.config && s.config.elderFree)) return null;
     var c = shell(App, 'elder-card', '어르신 무임승차를 유지할까요?'), h = s.history.filter(function (x) { return x.phase === 3; })[0];
     if (h && h.elder) c.appendChild(App.el('p', { id: 'elder-facts', 'class': 'fair-fact' }, '지난 3단계 무임 승객 ' + h.elder.free + '명 · 받지 않은 운임 ' + App.won(h.elder.unpaid)));
     c.appendChild(App.el('p', { 'class': 'note' }, '이 마을은 어르신 버스 요금이 무료예요(마을 정책).'));
+    /* 2026-11-10 검토 5번: 폐지 효과는 이 게임의 가정 — 고르기 전에 한 줄 + 접는 규칙 설명(수치는 설정값, js/elder.js rule). 어느 쪽이 나은지는 말하지 않는다 */
+    var R = PB.Elder.rule(s.config, s.phase, { name: App.nodeName, won: App.won }), d = App.el('details', { id: 'elder-rule', 'class': 'fair-rule' }), ul = App.el('ul');
+    c.appendChild(App.el('p', { id: 'elder-assume', 'class': 'fair-assume' }, R.assume));
+    d.open = ruleOpen; d.addEventListener('toggle', function () { ruleOpen = d.open; });
+    d.appendChild(App.el('summary', null, '이 게임의 규칙 보기')); R.lines.forEach(function (t) { ul.appendChild(App.el('li', null, t)); }); d.appendChild(ul); c.appendChild(d);
     c.appendChild(options(App, s, 'elder', hooks, '어르신 무임승차 정책'));
     c.appendChild(whyLine(App, s, 'elder', hooks));
     return c;
