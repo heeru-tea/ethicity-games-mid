@@ -248,6 +248,9 @@ dialog .case-card{margin:12px 0}
 .write-q textarea:focus-visible{outline:3px solid #995000;outline-offset:1px}
 .count{font-size:.85rem;color:var(--muted);margin:4px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);margin:2px 0 0}
+/* 서술 칸 상한 안내: 꽉 찼거나 넘는 글이 빠졌을 때만 글이 들어간다 */
+.limit-note{font-size:.88rem;font-weight:600;color:var(--accent-dark);margin:2px 0 0}
+.limit-note:empty{display:none}
 
 /* 보고서 화면: 한 줄로 읽는다(그림 칸 없음) */
 .step-report .screen{display:block;max-width:46rem}

@@ -103,6 +103,7 @@ function createGame(opts={}){
  for(const src of scripts)vm.runInContext(fs.readFileSync(path.join(ROOT,src),'utf8'),sb,{filename:src});
  const KEY=sb.TransparencyGame.storageKey;
 
+ const fields=new Map();
  const fire=(where,type,e)=>{for(const f of listeners[where][type]||[])f(e);};
  const settle=()=>{while(pending.length)pending.shift()();};
  // 지금 화면에서 누를 수 있는 버튼을 찾는다: 열린 창 → 본문(#app) → 머리말·창 머리(index.html)
@@ -131,13 +132,20 @@ function createGame(opts={}){
   // 창 바깥(어두운 곳) 누르기 / 창 안 빈 곳 누르기
   clickBackdrop(inside){const e={target:modal,clientX:inside?300:10,clientY:inside?200:10};e.target.closest=()=>null;fire('modal','click',e);fire('document','click',e);delete modal.closest;settle();},
   // 글 칸에 입력. kind: reflect(q1·q2) · note · reporter(name·number) · other(관계없는 칸) · none(입력칸 아님) · fake(입력칸이 아닌데 data-reflect만 있음)
-  input(kind,key,value){
+  // o: type(기본 input, compositionend·beforeinput도 보낼 수 있다) · composing(입력기 조합 중) · data·inputType(beforeinput)
+  // 돌려주는 값: 화면 코드가 손댄 뒤의 입력칸 글(value)·글자 수(count)·상한 안내(limit)
+  input(kind,key,value,o={}){
    const sel={reflect:`data-reflect="${key}"`,note:'data-note',reporter:`data-reporter="${key}"`}[kind];
    if(sel&&!has(app,sel))throw new Error('화면에 없는 입력칸: '+sel);
-   const count={textContent:''},empty={hidden:null},box=kind==='reflect'||kind==='note'?{querySelector:s=>s==='.count-n'?count:s==='.empty-note'?empty:null}:null;
-   const dataset=kind==='reflect'?{reflect:key}:kind==='note'?{note:''}:kind==='reporter'?{reporter:key}:{};
-   fire('document','input',{target:{matches:()=>kind!=='none'&&kind!=='fake',dataset:kind==='fake'?{reflect:key}:dataset,value,closest:()=>box}});
-   if(box)log(`count=${count.textContent} emptyHidden=${empty.hidden}`);
+   // 같은 화면(다시 그리기 전)의 같은 입력칸은 같은 요소다: 이어지는 이벤트(beforeinput → input)가 같은 target을 받는다.
+   const fid=app.gen+':'+kind+':'+key;let f=fields.get(fid);
+   if(!f){const count={textContent:''},empty={hidden:null},limit={textContent:''},box=kind==='reflect'||kind==='note'?{querySelector:s=>s==='.count-n'?count:s==='.empty-note'?empty:s==='.limit-note'?limit:null}:null;
+    const dataset=kind==='reflect'?{reflect:key}:kind==='note'?{note:''}:kind==='reporter'?{reporter:key}:{};
+    f={count,empty,limit,box,target:{matches:()=>kind!=='none'&&kind!=='fake',dataset:kind==='fake'?{reflect:key}:dataset,closest:()=>box}};fields.set(fid,f);}
+   const {count,empty,limit,box,target}=f,len=String(value??'').length;Object.assign(target,{value,selectionStart:len,selectionEnd:len});
+   fire('document',o.type||'input',{target,isComposing:!!o.composing,data:o.data,inputType:o.inputType});
+   if(box)log(`count=${count.textContent} emptyHidden=${empty.hidden}`+(limit.textContent?' limit='+limit.textContent:''));
+   return {value:target.value,count:count.textContent,limit:limit.textContent,emptyHidden:empty.hidden};
   },
   windowEvent(type){fire('window',type,{});},
   // 그림 불러오기 흉내: ok(src)가 참이면 열림, 아니면 실패. 새로 생긴 시도까지 차례로 끝낸다.

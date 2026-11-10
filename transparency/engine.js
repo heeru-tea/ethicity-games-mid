@@ -19,7 +19,8 @@
  const LAYOUT3=[{step:'intro',k:null}];for(const k of OLD3)for(const step of SIX)LAYOUT3.push({step,k});LAYOUT3.push({step:'end',k:null},{step:'report',k:null});
  // version 4 장면 배치(사건 1~3만). 0 프롤로그, 1~21 사건(지금과 같은 번호), 22 마지막, 23 보고서.
  const LAYOUT4=[{step:'intro',k:null}];for(const k of OLD3)for(const step of SEVEN)LAYOUT4.push({step,k});LAYOUT4.push({step:'end',k:null},{step:'report',k:null});
- const TEXT_MAX=4000; // 서술 칸은 강제 제한이 없다. 저장이 지나치게 커지지 않게만 막는다.
+ // 서술 칸 상한. 단위는 UTF-16 코드 단위 = 입력칸 maxlength·글자 수 표시와 같은 단위(ui/textbox.js). 화면에 남는 글과 저장되는 글이 같아야 한다.
+ const TEXT_MAX=4000;
  const REPORTER=['name','number'];
  const checks={photo:['photo-original','photo-rule'],writing:['writing-guide','writing-history'],face:['face-alert','face-clerk','face-photo'],
   camp:['camp-page','camp-results','camp-criteria'],share:['share-log','share-photo','share-compare']};
@@ -65,7 +66,14 @@
   reflections:each(()=>({q1:'',q2:''})),finalNote:'',reporter:{name:'',number:''},notices:each(()=>({picked:[],posted:null}))};}
  // 처음부터 다시 하기: 진행은 모두 지운다. 이름·학번은 기본으로 함께 지우고(공용 PC), keepReporter일 때만 남긴다.
  function restart(s,{keepReporter=false}={}){const n=initial();if(keepReporter&&s&&s.reporter)for(const f of REPORTER)n.reporter[f]=typeof s.reporter[f]==='string'?s.reporter[f]:'';return n;}
- const text=v=>typeof v==='string'?v.slice(0,TEXT_MAX):'';
+ // 상한에서 자른다. 이모지처럼 두 단위짜리 글자가 상한에 걸려 반쪽만 남게 되면 그 글자는 통째로 뺀다(끝에 남은 앞 반쪽도).
+ function clipText(v){
+  if(typeof v!=='string')return '';
+  let n=Math.min(v.length,TEXT_MAX);
+  if(n===TEXT_MAX){const c=v.charCodeAt(n-1);if(c>=0xD800&&c<=0xDBFF)n--;}
+  return v.slice(0,n);
+ }
+ const text=clipText;
  function checked(s,key){return checks[key].every(id=>s.evidence.includes(id));}
  function judged(s,key){return checked(s,key)&&s.judgments[key].every(Boolean);}
  // 지금 판단할 칸: 비어 있거나 이전 저장에서 넘어와 하지 않은('legacy') 첫 칸.
@@ -226,7 +234,7 @@
    return consistent(s)?s:initial();
   }catch{return initial();}
  }
- const api={initial,restart,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,noticeIds,noticeKind,noticeCheck,noticeDone,outcome,allFaces,cutFaces,
+ const api={initial,restart,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,noticeIds,noticeKind,noticeCheck,noticeDone,outcome,allFaces,cutFaces,clipText,TEXT_MAX,
   CASES,STEPS,LAYOUT,OLD_QUESTIONS,LAYOUT2,LAYOUT3,LAYOUT4,END,REPORT,RESUME,checks,choices,stamps,answers,followAnswers,followMarks,questions,noticeCards,AUTO,ALL,faces,FOLLOW_CROPS,truth};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TransparencyEngine=api;
 })(typeof window==='undefined'?globalThis:window);

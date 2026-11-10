@@ -127,7 +127,7 @@ test('reflect step: two free-text answers per case, empty is allowed, other case
  assert.equal(E.canAdvance(s),true,'empty reflection can move on');
  s=E.reduce(s,{type:'reflect',key:'photo',q:'q1',text:'원본 사진'});s=E.reduce(s,{type:'reflect',key:'writing',q:'q1',text:'x'});s=E.reduce(s,{type:'reflect',key:'photo',q:'q9',text:'x'});
  assert.deepEqual(s.reflections,{...E.initial().reflections,photo:{q1:'원본 사진',q2:''}});
- s=E.reduce(s,{type:'reflect',key:'photo',q:'q2',text:'가'.repeat(5000)});assert.equal(s.reflections.photo.q2.length,4000,'no hard limit in UI, only a storage cap');
+ s=E.reduce(s,{type:'reflect',key:'photo',q:'q2',text:'가'.repeat(5000)});assert.equal(s.reflections.photo.q2.length,4000,'storage cap (the input box has the same limit, see review 6)');
  const t=at(2);assert.deepEqual(E.reduce(t,{type:'reflect',key:'photo',q:'q1',text:'x'}).reflections.photo.q1,'','only on the reflect screen');
 });
 test('ending: final note needs a completed game, then the report opens; reporter fields are cleaned',()=>{
@@ -266,4 +266,34 @@ test('review 5: clash reasons name what stays private and what can still be told
   assert.equal(E.noticeKind(k,m.id),'conflict');assert.deepEqual(Object.keys(m.told).sort(),[...E.noticeCards[k].must].sort(),k+' every must card is covered');
   assert.match(t,m.keep,k+' what stays private');assert.match(t,/알릴 수 있어/,k+' what can still be told');
   for(const [id,re] of Object.entries(m.told))assert.match(t,re,id);}
+});
+// 6. 서술 상한(4000)은 그대로 두되, 저장할 때 자르는 단위가 입력칸 제한(textarea maxlength = UTF-16 단위)과 같아야 한다.
+//    이모지처럼 두 단위짜리 글자가 상한에 걸리면 반쪽을 남기지 않는다. 자른 글은 다시 넣어도, 저장했다 열어도 그대로다.
+const LONE=/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+const LONG={ko3999:'가'.repeat(3999),ko4000:'가'.repeat(4000),ko4001:'가'.repeat(4001),emojiFit:'😀'.repeat(2000),emojiOver:'😀'.repeat(2001),
+ emojiSplit:'가'.repeat(3999)+'😀',emojiMixed:'가'.repeat(3998)+'😀나',emojiTail:'가'.repeat(3990)+'👨‍👩‍👧‍👦'+'나'.repeat(20),lines:('가나다\n').repeat(1001)};
+// 정답대로 걸어가 그 장면에 선 상태(저장했다 열어도 살아남는 진짜 진행)
+function walkTo(goal){let s=E.initial();
+ while(s.scene<goal){const k=E.caseKey(s.scene),st=E.stepOf(s.scene);
+  if(st==='hook'&&k==='camp')s=E.reduce(s,{type:'ask',id:'who'});
+  if(st==='check')s=judgeAll(checkAll(s,k),k);
+  if(st==='choose'){s=E.reduce(s,{type:'choose',id:E.choices[k][0]});continue;}
+  if(st==='follow'){const m=E.followMarks[k];m.ids.forEach((id,i)=>{s=E.reduce(s,{type:'mark',id,value:k==='photo'?E.truth[i]:m.values[0]});});s=E.reduce(s,{type:'follow-judge',stamp:E.followAnswers[k]});}
+  if(st==='notice'){s=E.reduce(s,{type:'notice-pick',id:E.noticeCards[k].must[0]});s=E.reduce(s,{type:'notice-post'});}
+  s=E.reduce(s,{type:'next'});}
+ return s;}
+test('review 6: the text cap cuts at the same unit as the input box and never leaves half an emoji; cut text survives save and reload',()=>{
+ assert.equal(E.TEXT_MAX,4000);
+ const expectLen={ko3999:3999,ko4000:4000,ko4001:4000,emojiFit:4000,emojiOver:4000,emojiSplit:3999,emojiMixed:4000,emojiTail:3999,lines:4000} // emojiTail: 여러 글자를 이은 이모지는 낱글자 사이에서 끊길 수 있다(반쪽 글자만 안 남긴다);
+ assert.deepEqual(Object.keys(LONG),Object.keys(expectLen));
+ const atReflect=walkTo(E.sceneOf('photo','reflect')),atEnd=walkTo(E.END);assert.equal(atEnd.completed,true);
+ for(const [name,v] of Object.entries(LONG)){const c=E.clipText(v);
+  assert.equal(c.length,expectLen[name],name);assert.ok(v.startsWith(c),name+' is a prefix');assert.doesNotMatch(c,LONE,name+' no half emoji');
+  assert.equal(E.clipText(c),c,name+' cutting twice changes nothing');assert.equal(c===v,v.length<=4000,name+' short text untouched');
+  // 생각 정리·마지막 서술에 넣고 → 저장 → 다시 열기
+  let s=E.reduce(atReflect,{type:'reflect',key:'photo',q:'q1',text:v});assert.equal(s.reflections.photo.q1,c,name+' reflect');
+  assert.deepEqual(E.restore(JSON.stringify(s)),s,name+' reload');
+  const e=E.reduce(atEnd,{type:'note',text:v});assert.equal(e.finalNote,c,name+' note');assert.deepEqual(E.restore(JSON.stringify(e)),e,name+' note reload');}
+ assert.equal(E.clipText('가'.repeat(3999)+'\ud83d'),'가'.repeat(3999),'a lone half at the very end is dropped too');
+ assert.equal(E.clipText(3),'');assert.equal(E.clipText(''),'');
 });

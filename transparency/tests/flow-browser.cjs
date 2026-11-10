@@ -139,7 +139,7 @@ async function reflect(p,k,write){
  assert.equal(await p.locator('.empty-note:visible').count(),2);assert.match(await p.locator('.empty-note').first().innerText(),/작성 안 함/);
  for(const [q,t] of Object.entries(write||{})){await p.locator(`textarea[data-reflect="${q}"]`).fill(t);assert.equal((await state(p)).reflections[k][q],t,'autosaved '+q);}
  assert.equal(await p.locator('.empty-note:visible').count(),2-Object.keys(write||{}).length);
- if(write&&write.q1)assert.match(await p.locator('.count-n').first().innerText(),new RegExp('^'+[...write.q1].length+'자'));}
+ if(write&&write.q1)assert.match(await p.locator('.count-n').first().innerText(),new RegExp('^'+write.q1.length+'자'));}
 async function play(p,{tag,viewport,pick,judge,wrongFirst,shots,write={},note:finalNote='',notices={}}){
  const errors=[],external=[];p.on('pageerror',e=>errors.push(String(e)));p.on('request',r=>{if(!r.url().startsWith(url))external.push(r.url());});
  clicks=0;let judgments=0;

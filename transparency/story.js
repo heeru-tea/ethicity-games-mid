@@ -253,6 +253,8 @@ window.TransparencyStory = (()=>{
  const reflect={title:'이 사건에서 알게 된 것을 적어 봐.',lead:'아래 문장을 이어서 써 봐. 비워 두고 넘어가도 돼.',
   q1:'① 나는 ___ 자료를 보고, 이 AI가 ___라고 판단했다.',q2:'② 이 AI에 대해 아직 확인하지 못한 것은 ___이고, 그것을 알려면 ___가 필요하다.',
   summary:'이 사건에서 내가 고른 것',recommend:'200자 안팎이면 좋아요',empty:'비워 두면 보고서에 ‘작성 안 함’으로 들어가요.',
+  // 서술 칸 상한 안내. {max} = engine TEXT_MAX(4000). limit = 늘 보이는 한마디, full = 꽉 찼을 때, over = 넘는 글이 빠졌을 때.
+  limit:'{max}자까지 쓸 수 있어요',full:'{max}자를 다 채웠어요. 더 쓴 글은 들어가지 않아요.',over:'{max}자를 넘는 글은 들어가지 않았어요. 빠진 글이 없는지 확인해 주세요.',
   finalPrompt:'앞으로 AI 서비스를 쓸 때 나는 무엇을 먼저 물어볼까?'};
  const report={title:'나의 조사 보고서',game:'블랙박스를 열어보는 고양이',privacy:'이름과 학번은 이 기기에만 저장돼요. 서버로 보내지 않아요.',
   printHint:'인쇄 창에서 대상을 ‘PDF로 저장’으로 고르세요.',notWritten:'작성 안 함',asked:'물어본 질문',notAsked:'아직 안 물어봄'};
