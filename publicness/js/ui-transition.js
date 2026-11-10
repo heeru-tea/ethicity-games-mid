@@ -218,7 +218,7 @@
   var mapButton=el('button',{type:'button','class':'btn',id:'result-map-toggle',onclick:function(){document.body.classList.toggle('result-map-open');mapButton.setAttribute('aria-expanded',String(document.body.classList.contains('result-map-open')));App.syncStage({});}},'결과 지도 보기');details.insertBefore(mapButton,sm.nextSibling);
   // 다음 단계 버튼은 아래 고정 바(자세히를 펼쳐도 밀려나지 않게)
   var bar=el('div',{id:'result-next-bar','class':'result-next-bar'});bar.appendChild(next);
-  panel.textContent='';[eyebrow,title,head,notice,family,people,evs,aiCard(App,s,h,last),think(App,s,h,last),details,bar].forEach(function(n){if(n)panel.appendChild(n);});
+  panel.textContent='';[eyebrow,title,head,notice,family,people,evs].concat(PB.UI.fairness&&PB.UI.fairness.resultBlocks?PB.UI.fairness.resultBlocks(App,s,h):[],[aiCard(App,s,h,last),think(App,s,h,last),details,bar]).forEach(function(n){if(n)panel.appendChild(n);});
   var cut=PB.UI.nextCut&&!last?PB.UI.nextCut(s):null;if(cut&&PB.Cutscene.preload)PB.Cutscene.preload(cut);
   return result;
  };

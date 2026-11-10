@@ -110,5 +110,40 @@
     sec.appendChild(App.el('p', { 'class': 'note' }, '무임은 요금을 내지 않는 어르신 승객이에요. 정류장은 승객이 처음 버스를 탄 곳으로 셌어요.'));
     return sec;
   }
-  UI.fairness = { profitMap: profitMap, profitToggle: profitToggle, profitLegend: legend, stopTable: stopTable,  petitionCard: petitionCard, elderCard: elderCard, seenLine: seenLine, required: required, kindOf: function (s) { return s.phase === 3 && s.fixedPetition ? 'petition' : s.phase === 4 ? 'elder' : null; } };
+  /* 결과 화면 묶음(2026-11-10): 청원 확인(3단계) · 무임 정책 결과(4단계~) · 'AI가 본 이동' 차이. 평가·칭찬 문장 없이 숫자만. */
+  function histAt(s, phase) { return (s.history || []).filter(function (x) { return x.phase === phase; })[0] || null; }
+  function petitionFollowup(App, s, h) {
+    var fp = s.fixedPetition; if (h.phase !== 3 || !fp) return null;
+    var h2 = histAt(s, 2), z = fp.zone, a = h2 && h2.rideLog && h2.rideLog[z], b = h.rideLog && h.rideLog[z]; if (!a || !b) return null;
+    var name = App.nodeName(z), rep = s.petitionReply || {}, c = shell(App, 'petition-followup', name + ' 청원 그 뒤');
+    if (rep.choice) c.appendChild(App.el('p', { id: 'petition-answer', 'class': 'fair-fact' }, name + ' 주민의 청원을 ' + (rep.choice === 'reflect' ? '반영한다' : '이번엔 못 한다') + '고 답했어요.' + (rep.why ? ' 왜냐하면 ' + rep.why + '.' : '')));
+    c.appendChild(App.el('p', { id: 'petition-fail', 'class': 'fair-fact' }, name + '에서 출발한 이동 중 목적지까지 못 간 이동: 2단계 ' + a.requests + '건 중 ' + (a.requests - a.arrived) + '건 → 3단계 ' + b.requests + '건 중 ' + (b.requests - b.arrived) + '건'));
+    c.appendChild(App.el('p', { id: 'petition-rode', 'class': 'fair-fact' }, name + ' 탑승 기록(다음 AI가 보는 자료): 2단계 ' + a.rode + '명 → 3단계 ' + b.rode + '명'));
+    return c;
+  }
+  function elderResult(App, s, h) {
+    var ch = PB.Session.elderChoice(s), k = (((h.scores || {}).mobility || {}).reasons || {}).stayHome || 0;
+    if (h.phase < 4 || ch !== 'abolish' && ch !== 'keep') return null;
+    var c = shell(App, 'elder-result', '어르신 무임승차 정책 결과'), prev = histAt(s, 3);
+    if (h.phase === 4) {
+      c.appendChild(App.el('p', { id: 'elder-chose', 'class': 'fair-fact' }, '어르신 무임승차를 ' + (ch === 'keep' ? '유지' : '폐지') + '했어요.'));
+      if (ch === 'keep') c.appendChild(App.el('p', { id: 'elder-money', 'class': 'fair-fact' }, '무임 승객 ' + ((h.elder || {}).free || 0) + '명 · 받지 않은 운임 ' + App.won((h.elder || {}).unpaid || 0)));
+      else if (prev) { var d = ((h.metrics.costs || {}).fare || 0) - ((prev.metrics.costs || {}).fare || 0); c.appendChild(App.el('p', { id: 'elder-money', 'class': 'fair-fact' }, '운임 수입 ' + (d >= 0 ? '+' : '−') + App.won(Math.abs(d)) + '(3단계보다)')); }
+    }
+    if (ch === 'abolish') c.appendChild(App.el('p', { id: 'elder-stay', 'class': 'fair-fact' }, '무임 폐지로 버스를 타지 않은 이동 ' + k + '건 — 목적지까지 못 간 이동으로 셌어요.'));
+    return c.querySelector('p') ? c : null;
+  }
+  function seenGap(App, s, h) {
+    var P = PB.RideLog, base = PB.Demand.base(s.config, h.phase, s.seed).filter(function (q) { return q.leg !== 'return'; }), prev = histAt(s, h.phase - 1), prevLog = prev && prev.rideLog || null,
+      seen = P.seenFor(s.config, h.phase, prevLog, base), real = {}, zones;
+    base.forEach(function (q) { real[q.o] = (real[q.o] || 0) + 1; });
+    zones = Object.keys(real); var rs = P.ratios(s.config, h.phase, prevLog, zones), low = null;
+    zones.forEach(function (z) { if (rs[z] < 0.5 && (low === null || rs[z] < rs[low])) low = z; });
+    if (low === null) return null;
+    var c = shell(App, 'ai-seen-gap', 'AI가 본 이동과 실제 이동');
+    c.appendChild(App.el('p', { 'class': 'fair-fact' }, App.nodeName(low) + ': AI가 본 이동 ' + (seen[low] || 0) + '건 · 실제 이동 ' + real[low] + '건'));
+    return c;
+  }
+  function resultBlocks(App, s, h) { return [petitionFollowup(App, s, h), elderResult(App, s, h), seenGap(App, s, h)].filter(Boolean); }
+  UI.fairness = { resultBlocks: resultBlocks, profitMap: profitMap, profitToggle: profitToggle, profitLegend: legend, stopTable: stopTable,  petitionCard: petitionCard, elderCard: elderCard, seenLine: seenLine, required: required, kindOf: function (s) { return s.phase === 3 && s.fixedPetition ? 'petition' : s.phase === 4 ? 'elder' : null; } };
 })(typeof window !== 'undefined' ? window : globalThis);
