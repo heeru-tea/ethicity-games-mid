@@ -95,14 +95,26 @@
     return grid;
   }
 
+  // 가방을 바꾼 것(빼기·되돌리기·이름표 고치기·설명표 붙이기·가리기)은 그 자리에서 지금 화면의 체크포인트로 다시 저장한다 —
+  //   전엔 화면에 들어올 때만 저장해서, 새로고침·탭 되살아남 뒤 정리한 가방이 예전으로 돌아갔다(리뷰 2026-11-10 ②).
+  //   검수 = 'inspect', 보충 준비 = 'prep' 그대로(다시 들어오면 그 화면). 연습은 본편 저장을 덮지 않고, 튜토리얼 검수(ui-exam)는 여기를 쓰지 않는다
+  function saveBag(bag) {
+    var App = DR.App, st = App && App.state, scr = App && App.screen;
+    if (!st || st.practice || st.mission === 'tutorial' || st.bag !== bag) return false;
+    if (scr !== 'inspect' && scr !== 'prep') return false;
+    return DR.Save.checkpoint(scr, st, {});
+  }
+
   // 빼기 + 되돌리기(마지막 1장만, 5초)
   function removeWithUndo(mission, bag, card, rerender) {
     var at = bag.indexOf(card);
     if (at < 0 || card.fixed) return; // 동기와 함께 넣은 카드는 빼지 않는다
     bag.splice(at, 1);
+    saveBag(bag);
     rerender();
     DR.UI.undoToast('뺐어요: ' + cardLabel(mission, card), function () {
       bag.splice(Math.min(at, bag.length), 0, card);
+      saveBag(bag);
       rerender();
     });
   }
@@ -112,7 +124,7 @@
   function inspect(mission, bag, done, opts) {
     opts = opts || {};
     var screen = document.getElementById('screen-inspect');
-    var zoom = zoomer(mission, screen, 'inspect-zoom', function () { render(); });
+    var zoom = zoomer(mission, screen, 'inspect-zoom', function () { saveBag(bag); render(); });
 
     function render() {
       var undecided = bag.filter(function (c) { return c.ambiguousId && c.assigned === undefined; }).length;
@@ -199,10 +211,8 @@
             if (st && st.bag && st.bag.indexOf(card) >= 0) {
               // 한 번 가려 본 카드는 나중에 빼도 "가렸으면 살려 쓸 수 있었어"를 듣지 않는다(가릴 줄 알고 뺀 것)
               if (nowMasked && st.privCaught) { var pi = st.privCaught.indexOf(card.id); if (pi >= 0) st.privCaught.splice(pi, 1); }
-              // 검수 화면에서 가린 것은 바로 저장 — 새로고침·탭 되살아남 뒤에도 가림이 남게(전엔 검수 들어올 때만 저장)
-              if (DR.App.screen === 'inspect' && !st.practice) DR.Save.checkpoint('inspect', st, {});
             }
-            rerender();
+            rerender(); // 가린 것도 바로 저장된다(크게 보기에서 바꾼 것은 모두 — inspect·supplementPrep이 넘긴 rerender가 saveBag)
           }
           else maskNote.textContent = DR.Privacy.text(mission, 'noPrivate');
         });
@@ -304,7 +314,7 @@
     var needByKey = {};
     mission.scenes.forEach(function (s) { s.combos.forEach(function (c) { c.keys.forEach(function (k) { needByKey[k] = Math.max(needByKey[k] || 0, c.need); }); }); });
 
-    var zoom = zoomer(mission, screen, 'prep-zoom', function () { render(); });
+    var zoom = zoomer(mission, screen, 'prep-zoom', function () { saveBag(bag); render(); });
 
     // 종류별 "1장 빼기"는 바로 빼지 않는다 — 그 라벨의 카드 썸네일을 펼쳐 학생이 사진을 보고 직접 고른다
     // (가장 최근 카드를 몰래 빼면 가짜가 남고 진짜가 빠질 수 있다)
