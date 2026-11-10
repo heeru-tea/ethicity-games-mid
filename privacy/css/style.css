@@ -649,6 +649,27 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .cg.shake .cg-img { animation: cg-shake .36s ease-out 1; }
 @keyframes cg-shake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-7px, 2px); } 45% { transform: translate(6px, -2px); } 70% { transform: translate(-3px, 1px); } }
 @media (max-width: 720px) { .cg { padding-bottom: clamp(132px, 30%, 176px); } .cg-rec { inset: 6% 4%; padding: 6px 10px; font-size: .7rem; } }
+/* ── 교실 AI CCTV 감지 표시(특별 수업, 2026-11-10): 그림 위에 게임이 그린다 — 위쪽 카메라 이름 줄 · 빨간 사각형 + 꼬리표 · 오른쪽 아래 알림 카드.
+   네 장면 모두 같은 빨간색·같은 모양(위험 정도로 색을 나누지 않는다). 뜻은 색이 아니라 꼬리표·카드 글자로 전한다. 글자 크기는 그림 너비에 맞춘다(cqw).
+   사각형·꼬리표는 그림이 뜬 뒤 0.45초, 알림 카드는 0.9초 뒤에 잡힌다(.det-on). 움직임 줄이기면 바로(.reduce-motion * { transition: none }) ── */
+.cg-pic { container-type: inline-size; }
+.cg-det { position: absolute; inset: 0; pointer-events: none; color: #fff; font-size: clamp(10px, 1.55cqw, 17px); line-height: 1.35; }
+.cg-det[hidden] { display: none; }
+.cg-cam { position: absolute; top: 0; left: 0; right: 0; margin: 0; padding: .45em 1em; display: flex; justify-content: center; gap: 1.2em;
+  background: rgba(11, 15, 20, .7); font-family: var(--pixel); letter-spacing: .04em; white-space: nowrap; }
+.cg-cam-name::before { content: "●"; color: #ff3b30; margin-right: .5em; }
+.cg-cam-demo { opacity: .8; }
+.cg-box { position: absolute; box-sizing: border-box; border: 3px solid #ff3b30; border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(11, 15, 20, .6), inset 0 0 0 1px rgba(11, 15, 20, .45); opacity: 0; }
+.cg-tag { position: absolute; left: -3px; bottom: 100%; margin-bottom: 1px; padding: .1em .5em; background: #C8261B; color: #fff; font-weight: 700; white-space: nowrap; border-radius: 2px 2px 0 0; }
+.cg-alert { position: absolute; right: 1.6%; bottom: 3%; margin: 0; max-width: 46%; box-sizing: border-box; padding: .5em .8em; display: grid; gap: .1em;
+  background: rgba(11, 15, 20, .9); border: 2px solid #ff3b30; border-radius: 8px; opacity: 0; }
+.cg-alert-head { font-family: var(--pixel); font-size: .85em; color: #FFB4AE; letter-spacing: .08em; }
+.cg-alert-what { font-weight: 700; }
+.cg-alert-send::before { content: "→ "; }
+/* 나타날 때만 천천히(.det-on에만 transition) — 다음 그림으로 넘어갈 때는 앞 표시가 바로 꺼져, 새 자리에 잔상이 남지 않는다 */
+.cg.det-on .cg-box { opacity: 1; transition: opacity .18s ease .45s; }
+.cg.det-on .cg-alert { opacity: 1; transition: opacity .22s ease .9s; }
 .name-field { display: grid; gap: 4px; max-width: 16rem; margin: 4px 0 16px; }
 .name-field[hidden] { display: none; }
 .name-label { font-size: .85rem; font-weight: 700; }

@@ -551,15 +551,43 @@
   var CG_LOOK = { arrival: 1, confrontation: 1, clash: 1, recorded: 1 }; // 주인공 남/여 그림이 따로 있는 키
   var CG_ALT = { arrival: '밤의 학교 정문 앞에 도착한 나', confrontation: '@nightfox와 마주 선 나', clash: '서로 옷을 붙잡고 밀치는 두 사람',
     recorded: '휴대폰을 들어 두 사람을 찍는 구경꾼들', 'classroom-reaction': '영상을 본 반 친구들', 'teacher-support': '이야기를 들어 주는 담임 선생님' };
-  function cgFile(key) { return CG_DIR + (CG_LOOK[key] ? (playerLook() === 'f' ? 'girl-' : 'boy-') : '') + key + '.png'; }
+  /* 교실 AI CCTV 감지 화면(특별 수업, story.cctv): 그림 위 빨간 사각형·꼬리표·알림 카드·카메라 이름 줄은 여기서 그린다(그림에는 글자·상자가 없다).
+   *   네 장면 모두 같은 빨간색·같은 모양. 표시는 그림이 뜬 뒤 짧게 늦게 잡힌다(CSS .det-on, 움직임 줄이기면 바로). 글자는 꾸밈(aria-hidden) — 같은 내용이 그림 alt·#cg-live에 있다 */
+  var CCTV_DIR = 'assets/cctv/';
+  function cctvShot(key) { var c = story.cctv; return c && c.shots && Object.prototype.hasOwnProperty.call(c.shots, key) ? c.shots[key] : null; }
+  function cgFile(key) {
+    if (cctvShot(key)) return CCTV_DIR + key + '.png';
+    return CG_DIR + (CG_LOOK[key] ? (playerLook() === 'f' ? 'girl-' : 'boy-') : '') + key + '.png';
+  }
+  function pct(v) { return (Math.round(v * 100000) / 1000) + '%'; }
+  function cctvPaint(box, shot) {
+    var det = box.querySelector('.cg-det'), c = story.cctv, b = shot.box, r = det.querySelector('.cg-box');
+    det.querySelector('.cg-cam-name').textContent = c.cam;
+    det.querySelector('.cg-cam-demo').textContent = c.demo;
+    r.style.left = pct(b.x); r.style.top = pct(b.y); r.style.width = pct(b.w); r.style.height = pct(b.h);
+    det.querySelector('.cg-tag').textContent = shot.label + ' ' + shot.pct + '%';
+    det.querySelector('.cg-alert-what').textContent = c.room + ' · ' + shot.label;
+    det.querySelector('.cg-alert-send').textContent = c.send;
+    det.hidden = false;
+  }
+  // 표시 켜기: 그림이 다 내려온 뒤(잔상·빈 화면 위에 상자만 뜨지 않게). 한 박자 뒤에 클래스를 붙여 CSS 지연이 돌게 한다
+  function cctvReveal() {
+    var box = $('cg');
+    if (box.getAttribute('data-mode') !== 'cctv' || box.querySelector('.cg-img').hasAttribute('data-loading')) return;
+    void box.offsetWidth;
+    box.classList.add('det-on');
+  }
   function cgShow(key) {
     var box = $('cg'), im = box.querySelector('.cg-img');
-    box.classList.remove('shake', 'dim');
+    box.classList.remove('shake', 'dim', 'det-on');
     box.querySelector('.cg-rec').hidden = true;
-    if (!key) { box.hidden = true; box.removeAttribute('data-cg'); document.body.classList.remove('cg-on'); return; }
-    var file = cgFile(key);
+    box.querySelector('.cg-det').hidden = true;
+    $('cg-live').textContent = '';
+    if (!key) { box.hidden = true; box.removeAttribute('data-cg'); box.removeAttribute('data-mode'); document.body.classList.remove('cg-on'); return; }
+    var file = cgFile(key), shot = cctvShot(key);
     box.setAttribute('data-cg', key);
-    im.alt = CG_ALT[key] || '';
+    box.setAttribute('data-mode', shot ? 'cctv' : 'event');
+    im.alt = shot ? shot.alt : CG_ALT[key] || '';
     if (im.getAttribute('data-file') !== file) {
       im.setAttribute('data-file', file);
       im.removeAttribute('data-failed');
@@ -568,10 +596,17 @@
     }
     box.hidden = im.hasAttribute('data-failed'); // 그림을 못 불러오면 빈 레이어 대신 무대가 보이게
     document.body.classList.toggle('cg-on', !box.hidden); // CG 장면: 대화창 글자를 키운다
+    if (shot) {
+      cctvPaint(box, shot);
+      if (!box.hidden) $('cg-live').textContent = shot.alt; // 화면 읽기: 그림이 바뀔 때 무엇이 보이고 무엇으로 알렸는지 한 번
+      cctvReveal();
+    }
   }
+  // 줄에 cg 칸이 있으면 그림을 바꾼다. cg:null(또는 false·'') = 그림 내리기
+  function hasCg(line) { return !!line && Object.prototype.hasOwnProperty.call(line, 'cg'); }
   function cgLine(line, quiet) {
     if (!line) return;
-    if (line.cg) cgShow(line.cg);
+    if (hasCg(line)) cgShow(line.cg || null);
     var box = $('cg');
     if (box.hidden && !box.hasAttribute('data-cg')) return;
     if (line.rec) box.querySelector('.cg-rec').hidden = false;
@@ -586,7 +621,7 @@
     var box = $('cg'), im = box.querySelector('.cg-img');
     // img-src.js의 webp→png 재시도보다 먼저 등록: png까지 실패했을 때만 숨긴다
     im.onerror = function () { if (/\.png($|\?)/.test(im.src)) { im.removeAttribute('data-loading'); im.setAttribute('data-failed', ''); box.hidden = true; document.body.classList.remove('cg-on'); } };
-    im.onload = function () { im.removeAttribute('data-loading'); };
+    im.onload = function () { im.removeAttribute('data-loading'); cctvReveal(); };
     box.addEventListener('animationend', function () { box.classList.remove('shake'); });
   }
   // 그 자리 대화(장소 장면)는 포켓몬식 대화창으로 한 줄씩
@@ -598,7 +633,16 @@
       var ch = story.characters[who] || { name: who };
       return { who: who, name: who === 'me' ? player.nickname + ' (나)' : ch.name, text: fill(l.text), line: l };
     });
-    return window.PrivacyTalk.open(items, { instant: settings.speed === 'instant', onLine: function (it) { cgLine(it.line); stageBubble(Object.assign({ talk: true }, it.line)); } });
+    var instant = settings.speed === 'instant';
+    var opts = { instant: instant, onLine: function (it) { cgLine(it.line); stageBubble(Object.assign({ talk: true }, it.line)); } };
+    if (!instant) return window.PrivacyTalk.open(items, opts);
+    // '한 번에' 속도: 모든 줄을 한 상자에 쌓으면 그림이 마지막 것만 남는다 → 그림이 바뀌는 줄(cg 칸)마다 상자를 끊어 그림을 한 장씩 본다(2026-11-10)
+    var groups = [], cur = [];
+    items.forEach(function (it) { if (hasCg(it.line) && cur.length) { groups.push(cur); cur = []; } cur.push(it); });
+    if (cur.length) groups.push(cur);
+    var tk = stageToken; // 장면이 바뀌면(이전 선택·메뉴) 남은 묶음은 열지 않는다
+    return groups.slice(1).reduce(function (p, g) { return p.then(function () { return tk === stageToken ? window.PrivacyTalk.open(g, opts) : null; }); },
+      window.PrivacyTalk.open(groups[0] || [], opts));
   }
   function reactionLines(run, scene) {
     var c = (scene.choices || []).filter(function (x) { return x.id === run.reaction; })[0];
@@ -854,8 +898,8 @@
     if (stagedScene !== run.scene) { stagedScene = run.scene; window.PrivacyMap.stage(WD.STAGES[run.scene] || { place: 'classroom', tint: 'day', cast: [] }); }
   }
 
-  /* 특별 수업 「우리 학교에 AI CCTV를 단다면」(2026-11-10): 우리 반이 정한 안 + 선생님이 짚은 질문(앞 2줄). 정답 표시 없음.
-   *   특별 수업 플래그가 없으면(옛 진행) null */
+  /* 특별 수업 「우리 교실에 AI CCTV를 단다면」(2026-11-10): 우리 반이 정한 안(설치 여부·알림 범위·보관 기간·열람·삭제) + 선생님이 짚은 질문(앞 2줄). 정답 표시 없음.
+   *   특별 수업 플래그가 없으면(옛 진행) null. 지금 보기에 없는 옛 값은 그 줄만 '—' */
   function classPlanBlock(run) {
     var rows = E.specialClassRows(story, run);
     if (!rows.length) return null;
@@ -1182,7 +1226,8 @@
       if (!run || !run.history.length) return;
       var last = run.history[run.history.length - 1];
       var c = (story.scenes[last.scene].choices || []).filter(function (x) { return x.id === last.choice; })[0];
-      ask('이전 선택으로 돌아갈까요?', '“' + fill(c.text) + '”를 고르기 직전으로 돌아가요. 그 뒤의 진행은 지워져요.', '돌아가기', function () {
+      // c가 없을 수 있다: 보기 id가 바뀐 옛 저장(특별 수업 알림 범위, 2026-11-10) — 문구만 일반적으로
+      ask('이전 선택으로 돌아갈까요?', (c ? '“' + fill(c.text) + '”를' : '마지막 선택을') + ' 고르기 직전으로 돌아가요. 그 뒤의 진행은 지워져요.', '돌아가기', function () {
         stopReveal();
         sfx('retry');
         setRun(E.undo(progress.run));

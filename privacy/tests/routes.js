@@ -3,11 +3,11 @@
 (function (root) {
   var ROUTES = {
     A: ['pro_1#photo', 'c1_e1_a#propose', 'c1_e1_b#fix', 'c1_e2_a#ask', 'c1_e2_b#keep', 'c1_e3_b#ask',
-        'sc_1#on', 'sc_2#incident', 'sc_3#30d', 'sc_4#self', // 특별 수업(2026-11-10, 엔딩 무관)
+        'sc_1#on', 'sc_2#safety', 'sc_3#30d', 'sc_4#self', // 특별 수업(2026-11-10, 엔딩 무관)
         'c2_e4_a#refuse', 'c2_e4_b#ask', 'c2_e5_a#min', 'c2_e5_b#check', 'c2_e6_a#logout',
         'c3_e7_a#stop', 'c3_e8_a#tell', 'c3_e9_a#ask', 'c3_e9_b#calm'],
     B: ['pro_1#sns', 'c1_e1_a#public', 'c1_e1_b#fixboth', 'c1_e2_a#shoot', 'c1_e2_b#group', 'c1_e2_d#all', 'c1_e3_b#anon',
-        'sc_1#on', 'sc_2#guide', 'sc_3#term', 'sc_4#staff', // 특별 수업(2026-11-10, 엔딩 무관)
+        'sc_1#on', 'sc_2#danger', 'sc_3#term', 'sc_4#staff', // 특별 수업(2026-11-10, 엔딩 무관)
         'c2_e4_a#ignore', 'c2_e4_b#report', 'c2_e5_a#all', 'c2_e5_b#del', 'c2_e6_a#leave',
         'c3_e7_a#warn', 'c3_e7_b#help', 'c3_e8_a#block', 'c3_e9_a#critique', 'c3_e9_b#calm'],
     C: ['pro_1#money', 'c1_e1_a#public', 'c1_e1_b#pass', 'c1_e2_a#shoot', 'c1_e2_b#group', 'c1_e2_d#no',
@@ -17,7 +17,7 @@
         'c3_e7_a#silent', 'c3_e7_b#none', 'c3_e8_a#block', 'c3_e9_a#critique', 'c3_e9_b#step'],
     D: ['pro_1#sns', 'c1_e1_a#dm', 'c1_e1_b#fix', 'c1_e2_a#shoot', 'c1_e2_b#story', 'c1_e2_d#sorry',
         'c1_e3_b#capture', 'c1_e3_cap#part',
-        'sc_1#on', 'sc_2#ai', 'sc_3#open', 'sc_4#open', // 특별 수업(2026-11-10, 엔딩 무관)
+        'sc_1#on', 'sc_2#all', 'sc_3#open', 'sc_4#open', // 특별 수업(2026-11-10, 엔딩 무관)
         'c2_e4_a#forward', 'c2_e4_b#confess', 'c2_e5_a#all', 'c2_e5_b#del', 'c2_e6_a#peek', 'c2_e6_b#stop',
         'c3_e7_a#join', 'c3_e7_b#del', 'c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#fine', 'c3_e9_a#share', 'c3_e9_b#del']
   };

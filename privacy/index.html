@@ -103,7 +103,19 @@
       <p id="m-say" class="m-say" aria-live="polite"></p>
       <p id="cut" class="daycard" hidden></p>
       <!-- 사건 CG: 장소 장면에서 무대를 덮는 전체 그림(글자는 아래 대화창) -->
-      <figure id="cg" class="cg" hidden><div class="cg-pic"><img class="cg-img" alt=""><div class="cg-rec" hidden aria-hidden="true"><span class="cg-rec-dot">●</span> REC</div></div></figure>
+      <figure id="cg" class="cg" hidden>
+        <div class="cg-pic">
+          <img class="cg-img" alt="">
+          <div class="cg-rec" hidden aria-hidden="true"><span class="cg-rec-dot">●</span> REC</div>
+          <!-- 교실 AI CCTV 감지 표시(특별 수업): 그림에는 글자·상자가 없고 게임이 얹는다. 같은 내용은 그림 alt와 #cg-live에 있어 여기는 꾸밈 -->
+          <div class="cg-det" hidden aria-hidden="true">
+            <p class="cg-cam"><span class="cg-cam-name"></span><span class="cg-cam-demo"></span></p>
+            <div class="cg-box"><span class="cg-tag"></span></div>
+            <p class="cg-alert"><span class="cg-alert-head">알림</span><span class="cg-alert-what"></span><span class="cg-alert-send"></span></p>
+          </div>
+        </div>
+        <p id="cg-live" class="sr-only" aria-live="polite"></p>
+      </figure>
 
       <!-- 2-1. 맵 이동 -->
       <section id="v-map" class="view layer" hidden aria-labelledby="m-mission">

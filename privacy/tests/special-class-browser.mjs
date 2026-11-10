@@ -1,4 +1,4 @@
-// 특별 수업(2026-11-10) 브라우저 검사: node privacy/tests/special-class-browser.mjs (PLAYWRIGHT_PATH, SIZE=w,d,m)
+// 특별 수업 「우리 교실에 AI CCTV를 단다면」(2026-11-10) 브라우저 검사: node privacy/tests/special-class-browser.mjs (PLAYWRIGHT_PATH, SIZE=w,d,m)
 //   장 카드 · 마당→교실 문 워프 · 특별실 토론 · 이전 선택 · 선생님 정리 · 2장 카드 요약 · 결과 화면 칸 · 휴대폰 무대.
 //   스크린샷 tests/_shot-sc-*.png(gitignore). 브라우저 잠금(D:/Works/.browser-test.lock)은 실행하는 쪽에서.
 import { createRequire } from 'node:module'; import { startServer } from './serve.mjs';
@@ -23,7 +23,7 @@ function runTo(prefs, stop) {
   }
   throw new Error('못 감');
 }
-const SC_B = { sc_1: 'on', sc_2: 'ai', sc_3: 'open', sc_4: 'open' };
+const SC_B = { sc_1: 'on', sc_2: 'all', sc_3: 'open', sc_4: 'open' };
 
 const server = await startServer(0), base = `http://127.0.0.1:${server.address().port}/privacy/`;
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
@@ -81,7 +81,8 @@ try {
       const p = await open(dev, runTo({}, (s) => s.screen === 'scene' && s.scene === 'sc_1'));
       const d0 = await p.evaluate(() => ({ cast: PrivacyMap.debug.stage().cast, chap: document.getElementById('g-chap').textContent }));
       const r = await until(p, (x) => x.ch > 0);
-      const log = await p.evaluate(() => document.getElementById('talk') ? document.getElementById('talk').textContent : '');
+      const cgDown = await p.evaluate(() => document.getElementById('cg').hidden && !document.body.classList.contains('cg-on'));
+      rec(size, 'debate 선택지가 뜰 때 감지 화면 그림은 내려가 있음', cgDown);
       rec(size, 'debate 특별실 무대 다섯 · HUD 특별 수업 · 선택지 2개', d0.cast.sort().join() === 'haneul,jiho,minjun,saebom,teacher' && /특별 수업 · 정보 시간/.test(d0.chap) && r && r.ch === 2, JSON.stringify(d0));
       if (key === 'm') { // 휴대폰 무대: 이름표·말풍선이 위 버튼 아래, 장면 밖 빈 칸 없음
         const m = await p.evaluate(() => { const cv = document.getElementById('m-canvas').getBoundingClientRect();
@@ -91,12 +92,12 @@ try {
         await p.screenshot({ path: shot(`debate-${size}`) });
       }
       await pick(p, 'on'); await until(p, (x) => x.ch === 3);
-      await pick(p, 'incident'); await until(p, (x) => x.ch === 3);
+      await pick(p, 'safety'); await until(p, (x) => x.ch === 3);
       const s3 = await st(p);
       await p.click('#btn-undo'); await p.waitForTimeout(300); await p.click('#confirm-yes'); await p.waitForTimeout(500); await until(p, (x) => x.ch === 3);
       const su = await st(p);
       rec(size, 'undo sc_3에서 이전 선택 → sc_2, 목적 플래그 되돌림', s3.scene === 'sc_3' && su.scene === 'sc_2' && !su.flags.ccxPurpose && su.flags.ccx === 'on', JSON.stringify([s3.scene, su.scene, su.flags.ccxPurpose]));
-      await pick(p, 'ai'); await until(p, (x) => x.ch === 3);
+      await pick(p, 'all'); await until(p, (x) => x.ch === 3);
       await pick(p, 'open'); await until(p, (x) => x.ch === 3);
       await pick(p, 'open');
       const lines = [];
@@ -108,11 +109,11 @@ try {
         await p.evaluate(() => { if (window.PrivacyTalk && PrivacyTalk.isOpen()) { PrivacyTalk.next(); return; } const b = document.querySelector('#g-next #btn-next, #g-dock #btn-next'); if (b) b.click(); });
         await p.waitForTimeout(150);
       }
-      const want = E.specialClassNotes(story, Object.assign({}, await st(p), { flags: { ccx: 'on', ccxPurpose: 'ai', ccxKeep: 'open', ccxAccess: 'open' } }));
+      const want = E.specialClassNotes(story, Object.assign({}, await st(p), { flags: { ccx: 'on', ccxPurpose: 'all', ccxKeep: 'open', ccxAccess: 'open' } }));
       const all = lines.join('\n');
       rec(size, 'wrap 선생님 반문 3줄 + 마무리', want.length === 3 && want.every((t) => all.includes(t)) && all.includes(story.specialClass.closing), lines.length + '줄');
       const c2 = await p.evaluate(() => ({ eb: document.getElementById('c-eyebrow').textContent, sum: document.getElementById('c-summary').textContent }));
-      rec(size, 'wrap 다음 = 2장 카드, 요약 = 우리 반 안', c2.eb === '2장' && /우리 반이 정한 AI CCTV 안/.test(c2.sum) && /AI 분석까지/.test(c2.sum), JSON.stringify(c2).slice(0, 200));
+      rec(size, 'wrap 다음 = 2장 카드, 요약 = 우리 반 안', c2.eb === '2장' && /우리 반이 정한 AI CCTV 안/.test(c2.sum) && /알림 범위/.test(c2.sum) && /수업 태도까지/.test(c2.sum), JSON.stringify(c2).slice(0, 200));
       await p.screenshot({ path: shot(`ch2card-${size}`) });
       ok2(p);
       await close(p);
@@ -125,7 +126,7 @@ try {
       for (let k = 0; k < 40; k++) {
         const s = await st(p); if (s && s.scene === 'sc_5') seen5 = true;
         const t = await p.evaluate(() => { const e = document.querySelector('#talk .talk-text'); return e ? e.textContent : ''; });
-        if (/증거가 필요한 피해 학생/.test(t)) note = true;
+        if (/아무도 없는 교실에서/.test(t)) note = true;
         if (await p.evaluate(() => document.body.getAttribute('data-view')) === 'v-chapter') break;
         await p.evaluate(() => { if (window.PrivacyTalk && PrivacyTalk.isOpen()) { PrivacyTalk.next(); return; } const b = document.querySelector('#g-next #btn-next, #g-dock #btn-next'); if (b) b.click(); });
         await p.waitForTimeout(150);

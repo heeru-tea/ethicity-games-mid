@@ -279,8 +279,9 @@
     return s.history.every(function (h) { return h && story.scenes[h.scene] && h.snap; });
   }
 
-  /* 특별 수업 「우리 학교에 AI CCTV를 단다면」(2026-11-10): 플래그만 쓰고 엔딩·수치와 무관.
-   *   specialClassNotes = 고른 보기마다 선생님 반문 한 줄(순서: 목적 → 보관 → 열람 → 설치 안 함), specialClassRows = 결과 칸 줄(설정된 것만) */
+  /* 특별 수업 「우리 교실에 AI CCTV를 단다면」(2026-11-10): 플래그만 쓰고 엔딩·수치와 무관.
+   *   specialClassNotes = 고른 보기마다 선생님 반문 한 줄(순서: 알림 범위 → 보관 → 열람 → 설치 안 함), specialClassRows = 결과 칸 줄(설정된 것만)
+   *   지금 보기에 없는 값(예: 배포 전 로컬 저장의 ccxPurpose = incident|guide|ai)은 그 줄만 '—'로 비워 보인다(unknown: true) — 화면이 깨지지 않게 */
   function specialClassNotes(story, state) {
     var sc = story.specialClass;
     return sc ? sc.notes.filter(function (n) { return evalCond(n.if, state); }).map(function (n) { return n.text; }) : [];
@@ -288,8 +289,12 @@
   function specialClassRows(story, state) {
     var sc = story.specialClass;
     if (!sc) return [];
-    return sc.rows.filter(function (r) { return state.flags[r.key] != null && r.values.hasOwnProperty(state.flags[r.key]); })
-      .map(function (r) { return { label: r.label, text: r.values[state.flags[r.key]] }; });
+    var flags = (state && state.flags) || {};
+    return sc.rows.filter(function (r) { return flags[r.key] != null; })
+      .map(function (r) {
+        var known = typeof flags[r.key] === 'string' && Object.prototype.hasOwnProperty.call(r.values, flags[r.key]);
+        return known ? { label: r.label, text: r.values[flags[r.key]] } : { label: r.label, text: '—', unknown: true };
+      });
   }
 
   var api = {
