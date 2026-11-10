@@ -1,6 +1,7 @@
 /* tools/to-webp.mjs가 만든 목록 — 손으로 고치지 말 것. 여기 있는 .png는 .webp를 먼저 쓴다(1 = 같은 자리, 문자열 = 그 사본 경로) */
 window.PRIVACY_WEBP = {
- "../shared/ethicity-elementary-common-v1/backgrounds/classroom.png": "assets/shared-webp/ethicity-elementary-common-v1/backgrounds/classroom.webp",
+ "../shared/ethicity-elementary-common-v1/backgrounds/ai_lab.png": "assets/shared-webp/ethicity-elementary-common-v1/backgrounds/ai_lab.webp",
+"../shared/ethicity-elementary-common-v1/backgrounds/classroom.png": "assets/shared-webp/ethicity-elementary-common-v1/backgrounds/classroom.webp",
  "../shared/ethicity-elementary-common-v1/backgrounds/library.png": "assets/shared-webp/ethicity-elementary-common-v1/backgrounds/library.webp",
  "../shared/ethicity-elementary-common-v1/characters/daon-portraits.png": "assets/shared-webp/ethicity-elementary-common-v1/characters/daon-portraits.webp",
  "../shared/ethicity-elementary-common-v1/characters/daon-walk.png": "assets/shared-webp/ethicity-elementary-common-v1/characters/daon-walk.webp",

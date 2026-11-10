@@ -143,6 +143,7 @@
     run = r;
     targetId = r.mapTarget;
     trig = WD.triggers[targetId];
+    WD.setWarp(trig.warp || null); // 특별 수업 걷기만 마당→교실 문이 특별실로(2026-11-10), 다른 걷기는 되돌림
     cast = trig.cast.slice();
     passGreeted = {}; talked = {}; talkMarks = []; lastLabel = '';
     streak = { who: null, n: 0 }; guideUntil = 0;
@@ -183,6 +184,7 @@
   // 장면 무대: 입력 없이 장소·인물·시간대만 그린다. card가 있으면 잠깐 컷 카드를 띄우고 끝나면 resolve
   function stage(st, opts) {
     opts = opts || {};
+    WD.setWarp(null); // 장면 무대에선 워프 없음
     mode = 'stage'; stageInfo = st; trig = null; targetId = null; focus = opts.focus || null; gen++; camS = null;
     stageTint = st.tint || WD.timeTint(opts.time); // tint가 없는 무대는 장면 첫 시각 줄(아침·오후·저녁·밤)로
     cast = st.cast.slice(); blocked = {}; nudge = null; walkTint = null; arrived = null; stepHold = 0;

@@ -384,9 +384,13 @@ for (const id of TRIGGER_ORDER) {
   // 모든 장면이 서로 오갈 수 있다(교실에서 출발해 각 장면의 아무 칸에, 그리고 돌아오기)
   const C0 = WORLD.SPAWNS.classroom;
   for (const sc of WORLD.SCENES) {
-    const there = WORLD.findPath(C0, (x) => WORLD.sceneAt(x) === sc, {});
+    // 걷기 워프로만 가는 장면(특별실 ai_lab = 특별 수업 걷기에서만, 2026-11-10)은 그 워프를 켠 채로 확인
+    const wt = Object.values(WORLD.triggers).find((t) => t.warp && WORLD.sceneAt(t.warp.to[0]) === sc);
+    WORLD.setWarp(wt ? wt.warp : null);
+    const there = WORLD.findPath(wt ? WORLD.SPAWNS[wt.spawn] : C0, (x) => WORLD.sceneAt(x) === sc, {});
     if (!there) { err('교실에서 갈 수 없는 장면: ' + sc.id); continue; }
   }
+  WORLD.setWarp(null);
   // 장면 경계로 새지 않는다: 이웃한 두 장면의 맞닿은 칸이 둘 다 걸을 수 있으면 문 없이 넘어가 버림
   for (let i = 1; i < WORLD.SCENES.length; i++) {
     const xL = WORLD.SCENES[i].ox - 1, xR = WORLD.SCENES[i].ox;

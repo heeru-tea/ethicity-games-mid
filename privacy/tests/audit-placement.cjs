@@ -36,6 +36,7 @@ const free4 = (x, y, blocked) => [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx,
 const rows = []; let errs = 0;
 for (const id of Object.keys(T)) {
   const trig = T[id], cast = trig.cast, spawn = WD.SPAWNS[trig.spawn];
+  WD.setWarp(trig.warp || null); // 걷기 구간 워프(특별 수업: 마당→교실 문이 특별실로, 2026-11-10)
   const blocked = {}; cast.forEach((c) => { blocked[K(c.x, c.y)] = true; });
   const box = boxOf(trig, cast), goal = WD.adjacentTo({ contains: inBox(box) });
   const d0 = dist(spawn, goal, trig.target.npc ? { [K(box.x, box.y)]: true } : {}), d1 = dist(spawn, goal, blocked);
@@ -104,6 +105,7 @@ console.log(`\n합계 최단 걸음: 인물 없음 ${rows.reduce((s, r) => s + r
 if (SHOW_MAP) {
   for (const id of Object.keys(T)) {
     const trig = T[id], spawn = WD.SPAWNS[trig.spawn];
+    WD.setWarp(trig.warp || null);
     const scenes = [...new Set(trig.cast.map((c) => sceneOf(c.x).id))];
     for (const sid of scenes) {
       const sc = WD.SCENES.find((s) => s.id === sid);

@@ -115,5 +115,49 @@ run('endingsUnchanged', () => {
   ok(diff === 0, `특별 수업 선택만 바꾼 ${N}쌍에서 엔딩이 달라진 수 = ${diff}`);
 });
 
+/* ── Task 2: 특별실 지도 ── */
+run('aiLabScene', () => {
+  const S = WORLD.SCENES;
+  ok(S[S.length - 1].id === 'ai_lab' && /ai_lab\.png$/.test(S[S.length - 1].img), '마지막 장면 = ai_lab ' + S.map((x) => x.id));
+  ok(S.slice(0, 5).map((x) => x.ox).join() === '0,32,64,96,128', '기존 장면 ox 그대로 ' + S.map((x) => x.ox));
+  ok(WORLD.VERSION === 4, '지도 판 VERSION 4 그대로');
+});
+const classDoor = () => { const ox = WORLD.SCENES.find((x) => x.id === 'yard').ox; return WORLD.DOORS[(ox + 7) + ',4']; };
+run('warpOnlyInClass', () => {
+  const d = classDoor(), lab = WORLD.SCENES.find((x) => x.id === 'ai_lab');
+  ok(!!d && WORLD.sceneAt(d.to[0]).id === 'classroom', '평소 마당→교실 문 = 교실');
+  const w = WORLD.doorTarget(d, WORLD.triggers.sc_1);
+  ok(WORLD.sceneAt(w.to[0]).id === 'ai_lab' && w.to[0] >= lab.ox && WORLD.walkable(w.to[0], w.to[1]), '특별 수업 걷기 → 특별실 안 칸 ' + JSON.stringify(w));
+  const o = WORLD.doorTarget(d, WORLD.triggers.c1_e2_a);
+  ok(same(o.to, d.to), '다른 걷기 → 교실 그대로');
+  WORLD.setWarp(WORLD.triggers.sc_1.warp);
+  ok(WORLD.sceneAt(classDoor().to[0]).id === 'ai_lab', 'setWarp 켜면 DOORS도 특별실로');
+  WORLD.setWarp(null);
+  ok(WORLD.sceneAt(classDoor().to[0]).id === 'classroom', 'setWarp(null)이면 교실로 되돌아감');
+});
+run('walkReach', () => {
+  const s = play({}, (x) => x.screen === 'map' && x.mapTarget === 'sc_1');
+  ok(s.chapter === 'sc', '특별 수업 = 걷기로 시작(map sc_1)');
+  const tr = WORLD.triggers.sc_1, start = WORLD.SPAWNS[tr.spawn], t = tr.cast.find((c) => c.who === tr.target.npc);
+  WORLD.setWarp(tr.warp);
+  const blocked = (x, y) => tr.cast.some((c) => c.x === x && c.y === y);
+  const p = WORLD.findPath({ x: start.x, y: start.y }, (x, y) => Math.abs(x - t.x) + Math.abs(y - t.y) === 1, blocked);
+  WORLD.setWarp(null);
+  ok(!!p && p.length <= 25, `마당 → 특별실 선생님 옆 걸음 ${p && p.length} (≤ 25)`);
+});
+run('stagesCast', () => {
+  for (const id of ['sc_1', 'sc_2', 'sc_3', 'sc_4', 'sc_5']) {
+    const st = WORLD.STAGES[id];
+    ok(!!st && st.place === 'ailab', id + ' 무대 = 특별실');
+  }
+  const c = WORLD.STAGES.sc_1.cast;
+  ok(c.map((x) => x.who).sort().join() === 'haneul,jiho,minjun,saebom,teacher', 'cast 다섯 ' + c.map((x) => x.who));
+  const me = WORLD.PLACES.ailab.me, all = c.concat([me]);
+  let far = true;
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) if (Math.abs(all[i].x - all[j].x) + Math.abs(all[i].y - all[j].y) < 2) far = false;
+  ok(far, '서로 2칸 이상');
+  ok(all.every((p) => WORLD.walkable(p.x, p.y)), '모두 걸을 수 있는 칸');
+});
+
 console.log(`\n통과 ${pass} · 실패 ${fails.length}`);
 process.exitCode = fails.length ? 1 : 0;
