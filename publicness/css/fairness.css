@@ -12,3 +12,19 @@
 .fair-card .note-saved { display: block; min-height: 1.2em; margin: 0; }
 .fair-required { margin: 4px 0; color: #5A6478; font-weight: 600; }
 @media (max-width: 600px) { .fair-card { padding: 10px; } }
+/* 정류장 수익성 이름표(2026-11-10): 남색 3단계. 노선 색·위험 빨강·주의 주황 안 씀 */
+#stage .net-label.net-profit-hi { background: #1F2E4D; color: #fff; }
+#stage .net-label.net-profit-mid { background: #C9D3E3; color: #1F2E4D; }
+#stage .net-label.net-profit-lo { background: #fff; color: var(--map-label-ink); }
+.net-label .net-free { color: #5A6478; font-size: 11px; font-weight: 700; }
+.profit-opt { display: flex; align-items: center; gap: 8px; min-height: 44px; margin: 4px 0; }
+.profit-opt input { width: 20px; height: 20px; }
+.profit-legend { margin: 0 0 8px; }
+.profit-chip { display: inline-block; padding: 0 8px; border-radius: 10px; font-weight: 700; font-size: 12px; border: 1px solid #C9D3E3; }
+.profit-chip.hi { background: #1F2E4D; color: #fff; }
+.profit-chip.mid { background: #C9D3E3; color: #1F2E4D; }
+.profit-chip.lo { background: #fff; color: #5A6478; }
+#stop-fares { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+#stop-fares th, #stop-fares td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+#stop-fares th:first-child, #stop-fares td:first-child { text-align: left; white-space: normal; }
+#stage .net-label.net-profit-hi .net-wait { color: #1F2E4D; }

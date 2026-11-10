@@ -67,5 +67,48 @@
     var req = PB.Choices.required(s); if (!req.length) return null;
     return App.el('p', { id: 'choice-required', 'class': 'note fair-required', role: 'status' }, LABELS[req[0]].need);
   }
-  UI.fairness = { petitionCard: petitionCard, elderCard: elderCard, seenLine: seenLine, required: required, kindOf: function (s) { return s.phase === 3 && s.fixedPetition ? 'petition' : s.phase === 4 ? 'elder' : null; } };
+
+  /* 정류장 수익성(2026-11-10): 이름표 남색 3단계 + 범례 + 결과 표. 켜짐 상태는 localStorage ethicity.publicness.profit('1'/'0', 기본 끔) */
+  var PKEY = 'ethicity.publicness.profit', memo = { key: '', map: null };
+  function profitOn() { try { return root.localStorage.getItem(PKEY) === '1'; } catch (e) { return false; } }
+  function setProfitOn(v) { try { root.localStorage.setItem(PKEY, v ? '1' : '0'); } catch (e) {} }
+  /* 지도에 줄 정류장 맵: 결과 화면은 늘, 계획 화면은 토글이 켜졌을 때(예상 운행), 그 밖엔 null */
+  function profitMap(s) {
+    if (s.stage === 'result' && s.current && s.current.result) return PB.Metrics.stopFares(s.current.result);
+    if (s.stage !== 'plan' || !profitOn()) return null;
+    var key = s.phase + JSON.stringify(s.draft.routes) + JSON.stringify(s.draft.buses) + JSON.stringify(s.elderPolicy || null);
+    if (memo.key !== key) { var run = null; try { run = PB.Session.expectedRun(s); } catch (e) {} memo = { key: key, map: run && run.result ? PB.Metrics.stopFares(run.result) : null }; }
+    return memo.map;
+  }
+  function legend(App) {
+    var p = App.el('p', { id: 'profit-legend', 'class': 'note profit-legend' });
+    p.appendChild(document.createTextNode('1명당 운임: '));
+    [['hi', '높음'], ['mid', '중간'], ['lo', '낮음']].forEach(function (x) { p.appendChild(App.el('span', { 'class': 'profit-chip ' + x[0] }, x[1])); p.appendChild(document.createTextNode(' ')); });
+    p.appendChild(document.createTextNode('(그 정류장에서 처음 탄 승객 기준 · 무임은 이름 옆에 적어요)'));
+    return p;
+  }
+  /* 계획 화면 토글 + (켜졌을 때) 범례 */
+  function profitToggle(App, s, hooks) {
+    var on = profitOn(), box = App.el('div', { id: 'profit-opt', 'class': 'profit-opt-box' }),
+      lab = App.el('label', { 'class': 'profit-opt' }), cb = App.el('input', { type: 'checkbox', id: 'opt-profit' });
+    cb.checked = on;
+    cb.addEventListener('change', function () { setProfitOn(cb.checked); if (App.net) App.net.setOptions({ profit: profitMap(s) }); if (hooks && hooks.rerender) hooks.rerender('#opt-profit'); });
+    lab.appendChild(cb); lab.appendChild(document.createTextNode('정류장별 1명당 운임 보기(예상)'));
+    box.appendChild(lab); if (on) box.appendChild(legend(App));
+    return box;
+  }
+  /* 결과 '자세히' 표: 정류장 · 탑승 · 운임 · 무임 */
+  function stopTable(App, s, result) {
+    var sf = PB.Metrics.stopFares(result), ids = Object.keys(sf).filter(function (k) { return sf[k].riders > 0; }).sort(function (a, b) { return sf[b].perRider - sf[a].perRider || sf[b].riders - sf[a].riders; });
+    var sec = App.el('section', { id: 'stop-fares-sec', 'aria-labelledby': 'stop-fares-h' }), tb = App.el('table', { id: 'stop-fares' });
+    sec.appendChild(App.el('h3', { id: 'stop-fares-h' }, '정류장별 처음 탄 승객'));
+    var tr = App.el('tr'); ['정류장', '탑승', '운임', '무임'].forEach(function (h) { tr.appendChild(App.el('th', { scope: 'col' }, h)); });
+    tb.appendChild(App.el('thead')).appendChild(tr); var body = App.el('tbody'); tb.appendChild(body);
+    ids.forEach(function (k) { var r = sf[k], row = App.el('tr', { 'data-node': k, 'data-tier': r.tier || '' });
+      [App.nodeName(k), r.riders + '명', App.won(r.fare), r.free + '명'].forEach(function (c, i) { row.appendChild(App.el(i ? 'td' : 'th', i ? null : { scope: 'row' }, c)); }); body.appendChild(row); });
+    sec.appendChild(tb);
+    sec.appendChild(App.el('p', { 'class': 'note' }, '무임은 요금을 내지 않는 어르신 승객이에요. 정류장은 승객이 처음 버스를 탄 곳으로 셌어요.'));
+    return sec;
+  }
+  UI.fairness = { profitMap: profitMap, profitToggle: profitToggle, profitLegend: legend, stopTable: stopTable,  petitionCard: petitionCard, elderCard: elderCard, seenLine: seenLine, required: required, kindOf: function (s) { return s.phase === 3 && s.fixedPetition ? 'petition' : s.phase === 4 ? 'elder' : null; } };
 })(typeof window !== 'undefined' ? window : globalThis);
