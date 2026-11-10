@@ -600,7 +600,7 @@
       phase: s.phase, plan: c.plan, routeIds: Sim.operatingRoutes(c.plan).map(function (r) { return r.id; }),
       metrics: c.metrics, expected: c.expected, requestsN: c.requestsN, D: D, trustBefore: before, trustAfter: clone(s.trust),
       event: c.event, petition: c.result.petition, residents: residentRecords(s, c.result), goal: s.goal,
-      elder: { free: c.metrics.costs.freeRiders || 0, unpaid: (c.metrics.costs.freeRiders || 0) * s.config.finance.fare, stayed: (c.stayed || []).length }
+      elder: { free: c.metrics.costs.freeRiders || 0, unpaid: (c.metrics.costs.freeRiders || 0) * s.config.finance.fare, stayed: (c.stayed || []).length, paid: c.result.passengers.filter(function (p) { return p.elder && !p.free && p.firstBoardT != null; }).length }
     };
     entry.eventFare = s.config.finance.fare * c.result.passengers.filter(function (p) { return p.kind === 'extra' && p.firstBoardT != null; }).length;
     entry.rideLog = RideLog.fromRun(c.result.passengers);

@@ -60,3 +60,9 @@ test('옛 저장본(elderPolicy·entry.elder 없음)도 열린다', () => {
   const back = S.restore(data, cfg); assert.equal(S.elderChoice(back), 'keep');
   assert.ok(back.history.every((h) => h.scores && h.scores.mobility.reasons.stayHome === 0), '재계산된 점수에도 stayHome 칸이 있다');
 });
+
+test('폐지: 어르신이 낸 운임 paid > 0이고 운임 합 이하, 유지: paid 0', () => {
+  const k = runAndFinish(S.create(cfg), balancedPlan); assert.equal(k.elder.paid, 0);
+  const s = S.create(cfg); runAndFinish(s, balancedPlan); for (let i = 0; i < 3; i++) { S.nextPhase(s); if (i === 2) s.elderPolicy = { phase: 4, choice: 'abolish' }; runAndFinish(s, balancedPlan); }
+  const h = s.history[3]; assert.ok(h.elder.paid > 0); assert.ok(h.elder.paid * cfg.finance.fare <= h.metrics.costs.fare);
+});

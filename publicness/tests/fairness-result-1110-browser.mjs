@@ -45,11 +45,12 @@ try{for(const [w,hh] of [[1280,800],[390,844]]){
  await nextPlan(page);await page.evaluate(()=>PB.Choices.set(PB.App.s,'elder','choice','abolish'));await runPhase(page,BAL);
  const ab=await txt(page,'#elder-result'),k=await page.evaluate(()=>PB.App.s.history.filter(x=>x.phase===4)[0].scores.mobility.reasons.stayHome||0);
  assert.ok(ab.includes('어르신 무임승차를 폐지했어요.')&&ab.includes(`버스를 타지 않은 이동 ${k}건 — 목적지까지 못 간 이동으로 셌어요.`),'폐지: '+ab);
- assert.ok(/운임 수입 [+−]/.test(ab)&&ab.includes('(3단계보다)'),'운임 줄: '+ab);assert.ok(ab.includes('+'),'+ 운임 줄: '+ab);
+ const paid=await page.evaluate(()=>{const s=PB.App.s;return s.history.filter(x=>x.phase===4)[0].elder.paid*s.config.finance.fare;});
+ assert.ok(ab.includes('폐지로 어르신이 낸 운임 '+paid.toLocaleString('ko-KR')+'원')&&paid>0,'어르신이 낸 운임 줄: '+ab);assert.ok(!ab.includes('3단계보다'));
  assert.ok(!BAD.test(ab+(await txt(page,'#ai-seen-gap')||'')),'금지어');assert.deepEqual(await over(page),{doc:false,bad:[]});await shot(page,4,w);
  // 5단계: k 줄만
  await nextPlan(page);await runPhase(page,BAL);
- const ab5=await txt(page,'#elder-result');if(ab5){assert.ok(!ab5.includes('폐지했어요')&&ab5.includes('버스를 타지 않은 이동'),'5단계 k줄만: '+ab5);}
+ const ab5=await txt(page,'#elder-result');assert.ok(ab5,'5단계 블록 있음');assert.ok(!ab5.includes('폐지했어요')&&ab5.includes('버스를 타지 않은 이동'),'5단계 k줄만: '+ab5);
  // (d) 유지
  await fresh(page);await to4(page);await nextPlan(page);await page.evaluate(()=>PB.Choices.set(PB.App.s,'elder','choice','keep'));await runPhase(page,BAL);
  const kp=await txt(page,'#elder-result');assert.ok(kp.includes('어르신 무임승차를 유지했어요.')&&/무임 승객 \d+명 · 받지 않은 운임 /.test(kp),'유지: '+kp);assert.ok(!BAD.test(kp)&&!kp.includes('폐지로'));

@@ -177,7 +177,7 @@
 
     function passenger(r) {
       return { id: r.id, key: r.key, o: r.o, d: r.d, t: r.t, kind: r.kind, journey: null, fail: null, status: 'pending',
-        free: !!r.free, residentId:r.residentId||null,leg:r.leg||null,returnTrip:r.returnTrip||null,
+        free: !!r.free, elder: !!r.elder, residentId:r.residentId||null,leg:r.leg||null,returnTrip:r.returnTrip||null,
         familyId:r.familyId||null,familySize:r.familySize||0,
         firstBoardT: null, arriveT: null, waitTotal: 0, boardings: 0, legIndex: 0, _waitStart: null, _ready: null, _bus: null };
     }

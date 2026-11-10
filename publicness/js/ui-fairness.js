@@ -128,7 +128,7 @@
     if (h.phase === 4) {
       c.appendChild(App.el('p', { id: 'elder-chose', 'class': 'fair-fact' }, '어르신 무임승차를 ' + (ch === 'keep' ? '유지' : '폐지') + '했어요.'));
       if (ch === 'keep') c.appendChild(App.el('p', { id: 'elder-money', 'class': 'fair-fact' }, '무임 승객 ' + ((h.elder || {}).free || 0) + '명 · 받지 않은 운임 ' + App.won((h.elder || {}).unpaid || 0)));
-      else if (prev) { var d = ((h.metrics.costs || {}).fare || 0) - ((prev.metrics.costs || {}).fare || 0); c.appendChild(App.el('p', { id: 'elder-money', 'class': 'fair-fact' }, '운임 수입 ' + (d >= 0 ? '+' : '−') + App.won(Math.abs(d)) + '(3단계보다)')); }
+      else if ((h.elder || {}).paid != null) c.appendChild(App.el('p', { id: 'elder-money', 'class': 'fair-fact' }, '폐지로 어르신이 낸 운임 ' + App.won(h.elder.paid * s.config.finance.fare)));
     }
     if (ch === 'abolish') c.appendChild(App.el('p', { id: 'elder-stay', 'class': 'fair-fact' }, '무임 폐지로 버스를 타지 않은 이동 ' + k + '건 — 목적지까지 못 간 이동으로 셌어요.'));
     return c.querySelector('p') ? c : null;
