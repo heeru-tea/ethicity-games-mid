@@ -44,7 +44,7 @@ try{for(const [w,hh] of [[1280,800],[390,844]]){
  // (c) 4단계 폐지
  await nextPlan(page);await page.evaluate(()=>PB.Choices.set(PB.App.s,'elder','choice','abolish'));await runPhase(page,BAL);
  const ab=await txt(page,'#elder-result'),k=await page.evaluate(()=>PB.App.s.history.filter(x=>x.phase===4)[0].scores.mobility.reasons.stayHome||0);
- assert.ok(ab.includes('어르신 무임승차를 폐지했어요.')&&ab.includes(`버스를 타지 않은 이동 ${k}건 — 목적지까지 못 간 이동으로 셌어요.`),'폐지: '+ab);
+ assert.ok(ab.includes('어르신 무임승차를 폐지했어요.')&&ab.includes(`버스를 타지 않은 이동 ${k}건 — 이동 수요 충족 점수에서 목적지까지 못 간 이동으로 셌어요.`),'폐지: '+ab);
  const paid=await page.evaluate(()=>{const s=PB.App.s;return s.history.filter(x=>x.phase===4)[0].elder.paid*s.config.finance.fare;});
  assert.ok(ab.includes('폐지로 어르신이 낸 운임 '+paid.toLocaleString('ko-KR')+'원')&&paid>0,'어르신이 낸 운임 줄: '+ab);assert.ok(!ab.includes('3단계보다'));
  assert.ok(!BAD.test(ab+(await txt(page,'#ai-seen-gap')||'')),'금지어');assert.deepEqual(await over(page),{doc:false,bad:[]});await shot(page,4,w);

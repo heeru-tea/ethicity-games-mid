@@ -80,7 +80,7 @@ test('fileName 접두어', () => { assert.match(R.fileName('김',new Date(2026,1
 test('choices 줄: 이유 비면 (쓰지 않음), 없으면 null', () => {
   const s=FX.finishedSession({petition:'reflect',elder:'abolish'});
   const c=R.build(s,real()).choices,z=s.fixedPetition.zone;
-  assert.match(c.petition,new RegExp('^2단계 '+z+' 주민 청원 → 반영한다 · 이유: \\(쓰지 않음\\) · 못 간 이동 \\d+건 → \\d+건$'));
+  assert.match(c.petition,new RegExp('^2단계 '+z+' 주민 청원 · 3단계 답 → 반영한다 · 이유: \\(쓰지 않음\\) · 못 간 이동 \\d+건 → \\d+건$'));
   assert.equal(c.elder,'4단계 어르신 무임승차 폐지 · 이유: (쓰지 않음)');
   const w=FX.finishedSession({petition:'not-now',elder:'keep',whyBoth:true});
   assert.match(R.build(w,real()).choices.petition,/이번엔 못 한다 · 이유: 이유 petition · /);

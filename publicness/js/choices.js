@@ -25,7 +25,7 @@
   function required(s) {
     var out = [];
     if (s.phase === KINDS.petition.phase && s.fixedPetition && !(s.petitionReply && s.petitionReply.choice)) out.push('petition');
-    if (s.phase === KINDS.elder.phase && !(s.elderPolicy && s.elderPolicy.choice)) out.push('elder');
+    if (s.phase === KINDS.elder.phase && s.config && s.config.elderFree && !(s.elderPolicy && s.elderPolicy.choice)) out.push('elder');
     return out;
   }
   var api = { KINDS: KINDS, set: set, required: required };

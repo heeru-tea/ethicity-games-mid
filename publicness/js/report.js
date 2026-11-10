@@ -38,7 +38,7 @@
     var out = { petition: null, elder: null }, fp = s.fixedPetition, pr = s.petitionReply, ep = s.elderPolicy;
     if (fp && pr && PET[pr.choice]) {
       var a = logOf(s, 2), b = logOf(s, 3), za = a && a[fp.zone], zb = b && b[fp.zone];
-      out.petition = fp.phase + '단계 ' + f.name(fp.zone) + ' 주민 청원 → ' + PET[pr.choice] + ' · 이유: ' + why(pr) +
+      out.petition = fp.phase + '단계 ' + f.name(fp.zone) + ' 주민 청원 · ' + (fp.phase + 1) + '단계 답 → ' + PET[pr.choice] + ' · 이유: ' + why(pr) +
         (za && zb ? ' · 못 간 이동 ' + (za.requests - za.arrived) + '건 → ' + (zb.requests - zb.arrived) + '건' : '');
     }
     if (ep && ELD[ep.choice]) out.elder = (ep.phase || 4) + '단계 어르신 무임승차 ' + ELD[ep.choice] + ' · 이유: ' + why(ep);

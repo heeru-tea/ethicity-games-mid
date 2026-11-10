@@ -139,7 +139,7 @@
       ids.forEach(function (id) { P[id] = project(st.nodes[id].x, st.nodes[id].y); });
       var a0 = ids.length ? P[ids[0]] : null, a1 = ids.length ? P[ids[ids.length - 1]] : null, scaleSig = a0 ? Math.round(Math.hypot(a1.left - a0.left, a1.top - a0.top) / 3) : 0;
       var panSig = a0 ? Math.round(a0.left / 2) + ',' + Math.round(a0.top / 2) : '';
-      var keepKey = ids.join(',') + '|' + Math.round(box.width) + 'x' + Math.round(box.height) + '|' + scaleSig + '@' + panSig + '|' + (st.showWait ? 'run' : 'plan') + '|' + Object.keys(st.service).join('');
+      var keepKey = ids.join(',') + '|' + Math.round(box.width) + 'x' + Math.round(box.height) + '|' + scaleSig + '@' + panSig + '|' + (st.showWait ? 'run' : 'plan') + '|' + Object.keys(st.service).join('') + '|' + (st.profit ? Object.keys(st.profit).map(function (k) { var q = st.profit[k]; return k + (q.tier === 'lo' && q.free > 0 ? q.free : ''); }).join(',') : '');
       // 잠깐 다른 크기가 됐다 돌아와도(긴급 조정 시트 등) 그 크기에서 처음 잡은 자리로 — 묶음별로 기억(최대 40개)
       if (keep.key !== keepKey) { if (!keeps[keepKey] && Object.keys(keeps).length >= 40) keeps = {}; keep = keeps[keepKey] = keeps[keepKey] || { key: keepKey, lab: {}, face: {}, svc: {} }; }
       // 카메라가 아직 자리 잡기 전(정류장이 틀 밖에 투영됨)의 배치는 기억하지 않는다 — 틀 안으로 끌어온 자리가 고정되면 이름표가 엉뚱한 곳에 남는다

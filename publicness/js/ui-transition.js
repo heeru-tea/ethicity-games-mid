@@ -181,7 +181,7 @@
   if(sp){var settle=el('div',{id:'result-settle'}),sline=function(a,b,c){var n=el('p',c?{'class':c}:null);n.appendChild(el('span',null,a));n.appendChild(el('b',null,b));settle.appendChild(n);},sg=PB.UI.Econ.signed;
    sline('운행 중 (기본 지원 + 운임 − 운영·연료)',sg(sp.running));sline('종료 정산 (보유비 −'+App.won(sp.holding)+(sp.lease?', 임차료 −'+App.won(sp.lease):'')+', 공공서비스 수행분 +'+App.won(sp.service)+')',sg(sp.settle));sline('최종 이번 단계 수지',sg(sp.total),'settle-final');head.appendChild(settle);}
   var trend=PB.UI.Econ.trendLine(s,'이번 단계');if(trend)head.appendChild(el('p',{id:'result-trend','class':'trend-line'+(trend.warn?' warn':'')},trend.text));
-  if(PB.UI.fairness&&PB.UI.fairness.profitLegend&&Object.keys(PB.Metrics.stopFares(res)).some(function(k){return PB.Metrics.stopFares(res)[k].tier;}))head.appendChild(PB.UI.fairness.profitLegend(App));
+  if(PB.UI.fairness&&PB.UI.fairness.profitLegend&&(function(sf){return Object.keys(sf).some(function(k){return sf[k].tier;});})(PB.Metrics.stopFares(res)))head.appendChild(PB.UI.fairness.profitLegend(App));
   // 2. 인물 카드
   var people=el('section',{id:'result-people','class':'result-people','aria-labelledby':'result-people-h'});people.appendChild(el('h3',{id:'result-people-h'},'주민들의 하루'));
   if(cards){people.appendChild(cards);people.appendChild(el('p',{'class':'note'},'카드를 누르면 작은 지도에서 그 구간을 보여 줘요.'));}

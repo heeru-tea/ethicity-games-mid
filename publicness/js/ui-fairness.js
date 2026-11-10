@@ -48,7 +48,7 @@
   }
   function elderCard(App, s, hooks) {
     hooks = hooks || {};
-    if (s.phase !== PB.Choices.KINDS.elder.phase) return null;
+    if (s.phase !== PB.Choices.KINDS.elder.phase || !(s.config && s.config.elderFree)) return null;
     var c = shell(App, 'elder-card', '어르신 무임승차를 유지할까요?'), h = s.history.filter(function (x) { return x.phase === 3; })[0];
     if (h && h.elder) c.appendChild(App.el('p', { id: 'elder-facts', 'class': 'fair-fact' }, '지난 3단계 무임 승객 ' + h.elder.free + '명 · 받지 않은 운임 ' + App.won(h.elder.unpaid)));
     c.appendChild(App.el('p', { 'class': 'note' }, '이 마을은 어르신 버스 요금이 무료예요(마을 정책).'));
@@ -76,7 +76,7 @@
   function profitMap(s) {
     if (s.stage === 'result' && s.current && s.current.result) return PB.Metrics.stopFares(s.current.result);
     if (s.stage !== 'plan' || !profitOn()) return null;
-    var key = s.phase + JSON.stringify(s.draft.routes) + JSON.stringify(s.draft.buses) + JSON.stringify(s.elderPolicy || null);
+    var key = s.mode + ':' + s.seed + ':' + s.phase + JSON.stringify(s.draft.routes) + JSON.stringify(s.draft.buses) + JSON.stringify(s.elderPolicy || null);
     if (memo.key !== key) { var run = null; try { run = PB.Session.expectedRun(s); } catch (e) {} memo = { key: key, map: run && run.result ? PB.Metrics.stopFares(run.result) : null }; }
     return memo.map;
   }
@@ -130,11 +130,11 @@
       if (ch === 'keep') c.appendChild(App.el('p', { id: 'elder-money', 'class': 'fair-fact' }, '무임 승객 ' + ((h.elder || {}).free || 0) + '명 · 받지 않은 운임 ' + App.won((h.elder || {}).unpaid || 0)));
       else if ((h.elder || {}).paid != null) c.appendChild(App.el('p', { id: 'elder-money', 'class': 'fair-fact' }, '폐지로 어르신이 낸 운임 ' + App.won(h.elder.paid * s.config.finance.fare)));
     }
-    if (ch === 'abolish') c.appendChild(App.el('p', { id: 'elder-stay', 'class': 'fair-fact' }, '무임 폐지로 버스를 타지 않은 이동 ' + k + '건 — 목적지까지 못 간 이동으로 셌어요.'));
+    if (ch === 'abolish') c.appendChild(App.el('p', { id: 'elder-stay', 'class': 'fair-fact' }, '무임 폐지로 버스를 타지 않은 이동 ' + k + '건 — 이동 수요 충족 점수에서 목적지까지 못 간 이동으로 셌어요.'));
     return c.querySelector('p') ? c : null;
   }
   function seenGap(App, s, h) {
-    var P = PB.RideLog, base = PB.Demand.base(s.config, h.phase, s.seed).filter(function (q) { return q.leg !== 'return'; }), prev = histAt(s, h.phase - 1), prevLog = prev && prev.rideLog || null,
+    var P = PB.RideLog, base = PB.Session.rideRequests(s, h.phase, null).ride.filter(function (q) { return q.kind === 'base' && q.leg !== 'return'; }), prev = histAt(s, h.phase - 1), prevLog = prev && prev.rideLog || null,
       seen = P.seenFor(s.config, h.phase, prevLog, base), real = {}, zones;
     base.forEach(function (q) { real[q.o] = (real[q.o] || 0) + 1; });
     zones = Object.keys(real); var rs = P.ratios(s.config, h.phase, prevLog, zones), low = null;

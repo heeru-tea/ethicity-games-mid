@@ -82,3 +82,8 @@ test('noRecord: 1단계에서 청원 구역을 안 지나면 기록 비율 0 →
   const b = playTo(S.create(cfg), 2, withoutF);
   assert.equal(b.fixedPetition.noRecord, false);
 });
+test('M2: elderFree 없는 옛 설정이면 4단계에도 무임 정책 선택을 요구하지 않는다', () => {
+  const s = playTo(S.create(cfg), 3, balancedPlan); S.nextPhase(s);
+  s.config = Object.assign({}, s.config); delete s.config.elderFree; s.phase = 4; s.petitionReply = { zone: 'F', choice: 'reflect' };
+  assert.ok(!Choices.required(s).includes('elder'));
+});

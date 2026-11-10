@@ -207,7 +207,8 @@
   /* 소외 지역 연결(2026-11-10): 정차 여부 우선. 대상 = 사람이 정해 둔 지역 + 탑승 기록 비율이 가장 낮은 지역(1단계는 앞부분만) */
   function goalDesc(id){return GOAL_DESC[id];}
   function goalCriterion(rec){var first=st().phase===1||!st().history.length;
-    return rec.goal==='reach'?'이 제안의 ‘소외 지역’은 사람이 정해 둔 지역(외곽 마을·구도심 시장)'+(first?'이에요.':'과 탑승 기록이 가장 적은 지역이에요.')
+    var zs=(rec.targets||[]).map(function(z){return app().nodeName(z);}).join('·');
+    return rec.goal==='reach'?(zs?'이 제안의 ‘소외 지역’은 '+(first?'사람이 정해 둔 지역('+zs+')이에요.':zs+'이에요. 사람이 정해 둔 지역과 탑승 기록이 가장 적은 지역이에요.'):'이 제안의 ‘소외 지역’은 사람이 정해 둔 지역'+(first?'이에요.':'과 탑승 기록이 가장 적은 지역이에요.'))
       :rec.goal==='time'?'이 제안의 ‘빠른 이동’은 모든 이동의 도착 시간 합이에요. 주요 인물을 따로 챙기지는 않아요.'
       :'이 제안의 ‘수익’은 이번 단계 수지예요. 도착 건수는 수지가 같을 때만 따져요.';}
   /* AI 비교(2026-11-05 P1-6): ‘내 노선 | AI 제안’ 두 열 표를 맨 위에. 좋아짐·나빠짐은 색과 글자 둘 다. 값은 모두 같은 예상 함수(Session.expected) */
@@ -402,7 +403,7 @@
     routes(panel);buses(panel);outlook(panel);ai(panel);
     var errors=S.validate(s),box=el('div',{id:'plan-errors'});errors.filter(function(e){return !s.draft.routes.some(function(r){return (!r.nodes.length||blocked.indexOf(r)>=0)&&e.indexOf(r.num+'번 노선:')===0;});}).forEach(function(e){box.appendChild(el('p',{'class':'callout warn'},PB.Names.text(e)));});panel.appendChild(box);
     var missing=unassigned();if(missing.length)panel.appendChild(el('p',{id:'unassigned-warning','class':'callout warn'},missing.map(function(r){return C(r.num);}).join(', ')+' 노선은 버스 미배정으로 운행하지 않아요.'));
-    var depart=btn('이 노선으로 출발','btn-depart',function(){if(S.validate(s).length)return;if(whyNudge(s))return;P.nudge=null;departCheck();},'btn-primary btn-lg');depart.disabled=errors.length>0||P.busy||PB.Choices.required(s).length>0;
+    var depart=btn('이 노선으로 출발','btn-depart',function(){if(S.validate(s).length)return;if(whyNudge(s))return;P.nudge=null;departCheck();},'btn-primary btn-lg');depart.disabled=errors.length>0||P.busy||PB.Choices.required(s).length>0;if(PB.Choices.required(s).length)depart.setAttribute('aria-describedby','choice-required');
     var foot=el('div',{id:'depart-bar','class':'depart-bar'});foot.appendChild(depart);panel.appendChild(foot);
     App.onNodeClick=function(id){if(P.preview){P.message='AI 제안을 적용하거나 내 노선으로 돌아온 뒤 편집하세요.';render();return;}mapInsert(id);};
     App.onLink=function(from,to){if(!P.preview)link(from,to);};App.onRouteDouble=function(num,index){cutSegment(num,index);};App.onRouteClick=function(num,index){if(P.preview)return;P.editing=num;P.anchor=index;P.mapEnd=null;P.mapSegment={num:num,index:index};P.message='이 구간에 추가할 정류장을 누르세요.';render();};
