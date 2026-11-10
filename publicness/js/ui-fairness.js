@@ -140,17 +140,23 @@
     if (ch === 'abolish') c.appendChild(App.el('p', { id: 'elder-stay', 'class': 'fair-fact' }, '무임 폐지로 버스를 타지 않은 이동 ' + k + '건 — 이동 수요 충족 점수에서 목적지까지 못 간 이동으로 셌어요.'));
     return c.querySelector('p') ? c : null;
   }
-  function seenGap(App, s, h) {
+  /* 그 단계에 AI가 본 기본 이동과 실제 기본 이동(출발 구역별) — 'AI가 본 이동과 실제 이동' 카드와 「다음 운행 목표」 연결 문장(Narrative.thinkFocus의 unseen)이 같은 값을 쓴다 */
+  function seenStats(s, h) {
     var P = PB.RideLog, base = PB.Session.rideRequests(s, h.phase, null).ride.filter(function (q) { return q.kind === 'base' && q.leg !== 'return'; }), prev = histAt(s, h.phase - 1), prevLog = prev && prev.rideLog || null,
-      seen = P.seenFor(s.config, h.phase, prevLog, base), real = {}, zones;
+      seen = P.seenFor(s.config, h.phase, prevLog, base), real = {}, zones, out = {};
     base.forEach(function (q) { real[q.o] = (real[q.o] || 0) + 1; });
-    zones = Object.keys(real); var rs = P.ratios(s.config, h.phase, prevLog, zones), low = null;
-    zones.forEach(function (z) { if (rs[z] < 0.5 && (low === null || rs[z] < rs[low])) low = z; });
+    zones = Object.keys(real); var rs = P.ratios(s.config, h.phase, prevLog, zones);
+    zones.forEach(function (z) { out[z] = { seen: seen[z] || 0, real: real[z], ratio: rs[z] }; });
+    return out;
+  }
+  function seenGap(App, s, h) {
+    var st = seenStats(s, h), low = null;
+    Object.keys(st).forEach(function (z) { if (st[z].ratio < 0.5 && (low === null || st[z].ratio < st[low].ratio)) low = z; });
     if (low === null) return null;
     var c = shell(App, 'ai-seen-gap', 'AI가 본 이동과 실제 이동');
-    c.appendChild(App.el('p', { 'class': 'fair-fact' }, App.nodeName(low) + ': AI가 본 이동 ' + (seen[low] || 0) + '건 · 실제 이동 ' + real[low] + '건'));
+    c.appendChild(App.el('p', { 'class': 'fair-fact' }, App.nodeName(low) + ': AI가 본 이동 ' + st[low].seen + '건 · 실제 이동 ' + st[low].real + '건'));
     return c;
   }
   function resultBlocks(App, s, h) { return [petitionFollowup(App, s, h), elderResult(App, s, h), seenGap(App, s, h)].filter(Boolean); }
-  UI.fairness = { resultBlocks: resultBlocks, profitMap: profitMap, profitToggle: profitToggle, profitLegend: legend, stopTable: stopTable,  petitionCard: petitionCard, elderCard: elderCard, seenLine: seenLine, required: required, kindOf: function (s) { return s.phase === 3 && s.fixedPetition ? 'petition' : s.phase === 4 ? 'elder' : null; } };
+  UI.fairness = { resultBlocks: resultBlocks, seenStats: seenStats, profitMap: profitMap, profitToggle: profitToggle, profitLegend: legend, stopTable: stopTable,  petitionCard: petitionCard, elderCard: elderCard, seenLine: seenLine, required: required, kindOf: function (s) { return s.phase === 3 && s.fixedPetition ? 'petition' : s.phase === 4 ? 'elder' : null; } };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -101,7 +101,8 @@
  function think(App,s,h,last){
   var sec=el('section',{id:'result-think','class':'result-think','aria-labelledby':'result-think-h','data-phase':h.phase});
   sec.appendChild(el('h3',{id:'result-think-h'},'다음 운행 목표'));
-  var focus=PB.Narrative.thinkFocus(s.config,h.phase,s.current.result.passengers,h.scores&&h.scores.mobility);if(focus.bridge)sec.appendChild(el('p',{'class':'think-bridge',id:'think-bridge'},focus.bridge));/* P0-4·11-05 P0-3: 이번 결과로 고른 연결 문장(첫 줄 = 자세히의 가장 많이 남은 곳) */
+  var unseen=null;try{unseen=PB.UI.fairness&&PB.UI.fairness.seenStats?PB.UI.fairness.seenStats(s,h):null;}catch(e){unseen=null;}/* AI가 못 본 곳(2026-11-11): ‘AI가 본 이동과 실제 이동’ 카드와 같은 값 */
+  var focus=PB.Narrative.thinkFocus(s.config,h.phase,s.current.result.passengers,h.scores&&h.scores.mobility,{unseen:unseen});if(focus.bridge)sec.appendChild(el('p',{'class':'think-bridge',id:'think-bridge'},focus.bridge));/* P0-4·11-05 P0-3: 이번 결과로 고른 연결 문장(첫 줄 = 자세히의 가장 많이 남은 곳) */
   // 두 가지 선택형 답 — 자유 서술(reflections)과 따로 저장(고르면 글이 지워지던 문제 고침)
   var box=el('fieldset',{id:'think-choice','class':'think-choice'});box.appendChild(el('legend',null,last?'다음 학기라면 누구의 이동을 먼저 살필까요?':'다음에는 누구의 이동을 살필까요?'));
   var row=el('div',{'class':'think-options'});
