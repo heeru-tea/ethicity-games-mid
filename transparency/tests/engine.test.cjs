@@ -250,3 +250,20 @@ test('review 2: photo sentences with range words (만·모두·늘·다) agree w
  // 결과 화면의 상태 글: 자동 사진에는 담이 얼굴이 없다
  assert.equal(P.choose.options[0].status,'게시판: 담이 얼굴이 빠진 사진');assert.ok(E.cutFaces(E.outcome({cases:{photo:{final:'auto'}}},'photo').rect).includes(DAMI));
 });
+// 5. 부딪침(상충) 카드의 이유 문장: '…까지만 알리면 돼'처럼 그것만 알리면 충분하다고 읽히면 안 된다.
+//    '공개하지 않을 정보'와 '그래도 알릴 수 있는 것'을 함께 말하고, 같은 사건의 꼭 필요 카드를 모두 가리킨다. 법적 의무를 단정하지 않는다.
+test('review 5: clash reasons name what stays private and what can still be told, in line with the must cards',()=>{
+ const clash=(k,id)=>D.cases[k].notice.cards.find(c=>c.id===id).clash;
+ for(const k of E.CASES)for(const c of D.cases[k].notice.cards)if(c.clash){
+  assert.doesNotMatch(c.clash,/까지만/,c.id);assert.doesNotMatch(c.clash,/만 (알리면|알 수 있으면) 돼/,c.id+' reads as "this alone is enough"');
+  assert.doesNotMatch(c.clash,/의무|법으로|법에|반드시|해야만/,c.id+' no legal-duty claim');}
+ // 꼭 필요 카드마다 이유 문장이 그 내용을 '알릴 수 있는 것'으로 가리키는지(카드 → 이유 문장에 있어야 할 말)
+ const MUST={
+  writing:{id:'writing-patterns',keep:/패턴은 공개하지 않아도/,told:{'writing-human':/사람이 쓴 글에도 표시가 뜰 수 있다는 것/,'writing-teacher':/선생님이 확인한다는 것/}},
+  face:{id:'face-wall',keep:/사진은 공개하지 않아도/,told:{'face-use':/얼굴 인식을 쓴다는 것/,'face-staff':/직원이 확인한다는 것/,'face-report':/잘못 막혔을 때 알릴 곳/}},
+  camp:{id:'camp-everyone',keep:/이름과 점수는 공개하지 않아도/,told:{'camp-role':/AI를 어디에 썼는지/,'camp-office':/담당 부서/,'camp-appeal':/재검토를 신청하는 방법/}}};
+ for(const [k,m] of Object.entries(MUST)){const t=clash(k,m.id);
+  assert.equal(E.noticeKind(k,m.id),'conflict');assert.deepEqual(Object.keys(m.told).sort(),[...E.noticeCards[k].must].sort(),k+' every must card is covered');
+  assert.match(t,m.keep,k+' what stays private');assert.match(t,/알릴 수 있어/,k+' what can still be told');
+  for(const [id,re] of Object.entries(m.told))assert.match(t,re,id);}
+});
