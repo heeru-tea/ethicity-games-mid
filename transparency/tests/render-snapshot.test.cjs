@@ -6,7 +6,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {createGame}=require('./dom-stub.cjs');
 const HASHES=path.join(__dirname,'render-snapshot.hashes.json'),FULL=path.join(__dirname,'render-snapshot.full.json.br');
 const UPDATE=process.env.UPDATE_SNAPSHOT==='1';
-// 화면 코드가 처리하는 data-act 전부(2026-11-10 app.js 기준 37개). 대본이 하나도 빠짐없이 눌러 봐야 한다.
+// 화면 코드가 처리하는 data-act 전부(2026-11-10 나누기 전 app.js 기준 37개). 대본이 하나도 빠짐없이 눌러 봐야 한다.
 const ALL_ACTS=['close','next','back','source','item','spot','region','record','segment','cell','village','crit','part','skyline','said','change','list','judge','judge-next','notice-pick','notice-post',
  'mark','run','row','follow-judge','choose','rechoose','ask','notebook','print','to-report','revisit','sources','discussion','settings','reset-ask','reset'];
 const FIELDS=['cls','html','modalOpen','modalTitle','modalBody','save','stored','title','state','art','fx'];

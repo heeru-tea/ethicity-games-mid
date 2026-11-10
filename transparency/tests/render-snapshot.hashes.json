@@ -3,7 +3,24 @@
  "scripts": [
   "engine.js",
   "story.js",
-  "app.js"
+  "ui/core.js",
+  "ui/stage.js",
+  "ui/evidence.js",
+  "ui/judge.js",
+  "ui/follow.js",
+  "ui/notice.js",
+  "ui/case-photo.js",
+  "ui/case-writing.js",
+  "ui/case-face.js",
+  "ui/case-camp.js",
+  "ui/case-share.js",
+  "ui/textbox.js",
+  "ui/notebook.js",
+  "ui/report.js",
+  "ui/modal.js",
+  "ui/screens.js",
+  "ui/actions.js",
+  "ui/boot.js"
  ],
  "steps": 1617,
  "scenarios": {

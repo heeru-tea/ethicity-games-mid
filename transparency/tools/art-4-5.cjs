@@ -3,7 +3,7 @@
 // 인코딩은 헤드리스 Edge(Playwright)의 canvas.toDataURL('image/webp') — 다른 게임 tools/to-webp와 같은 방식(설치 필요 없음).
 // 실행(transparency/에서): node tools/art-4-5.cjs [--q 0.86] [--root 다른폴더]
 //   브라우저를 띄우므로 다른 브라우저 검사와 겹치지 않게 D:\Works\.browser-test.lock을 잡고 돌린다(mkdir → 끝나면 rmdir).
-// 원본이 없는 그림은 건너뛴다. 게임은 .webp → .png → 대신 그림 순서로 찾는다(app.js).
+// 원본이 없는 그림은 건너뛴다. 게임은 .webp → .png → 대신 그림 순서로 찾는다(ui/boot.js).
 const PW=process.env.PLAYWRIGHT_PATH||'D:/Works/token_economy/node_modules/playwright';
 const fs=require('node:fs'),path=require('node:path');
 const args=process.argv.slice(2),opt=(n,d)=>{const i=args.indexOf(n);return i>=0?args[i+1]:d;};

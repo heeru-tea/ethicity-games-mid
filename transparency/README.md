@@ -10,6 +10,16 @@
 - `http://127.0.0.1:4178/?preview=s01`은 진행을 저장하지 않는 S01 미리보기입니다.
 - 파일로 실행할 때 브라우저가 저장을 차단하면 현재 창에서 플레이를 계속할 수 있으며, 화면 아래에 저장 제한을 알립니다.
 
+## 파일
+
+- `engine.js`(규칙·저장 옮기기, 화면 없음) → `story.js`(글·자료) → `ui/*.js`(화면) 순서로 `index.html`이 읽는다. 빌드·모듈 없음(`file://`로 열어도 됨). 화면 코드는 `window.TransparencyUI` 하나를 함께 쓴다.
+- `ui/`(2026-11-10 `app.js` 한 파일을 나눔 — 만들어 내는 HTML은 그대로, `tests/render-snapshot.test.cjs`가 지킨다). 읽는 순서대로:
+  - `core.js` 진행 상태(`S`)·저장·행동 보내기(`send`)·버튼 만들기 / `stage.js` 무대·작은 얼굴·축제 사진 canvas
+  - `evidence.js` 자료 고르기와 맞는 곳·틀린 곳 공통 처리 / `judge.js` 판단 카드 / `follow.js` 후속 조사 틀 / `notice.js` 미리 알리기
+  - `case-photo.js`·`case-writing.js`·`case-face.js`·`case-camp.js`·`case-share.js` 사건마다 다른 것(무대, 자료 화면, 후속 조사, 그 사건의 누르기)을 `views[사건]`에 모음 — 사건을 고치거나 더할 때는 이 파일 하나(와 story·engine)
+  - `textbox.js` 서술 칸·자동 저장 / `notebook.js` 수첩·사건 카드 / `report.js` 보고서·인쇄 제목 / `modal.js` 창
+  - `screens.js` 단계별 화면과 `render` / `actions.js` 버튼 누르기(`actions[data-act]` 표) / `boot.js` 새 그림 찾기·`window.TransparencyGame`·첫 화면
+
 ## 구성 (2026-11 개선판)
 
 - 사건마다 일곱 화면: 궁금한 것 → 직접 확인(누르고 찾기 + 판단 셋) → 선택 → 결과 → 후속 조사 → 미리 알리기 → 생각 정리. 장면 0 프롤로그, 1~7 사진, 8~14 글 검사, 15~21 얼굴 인식, 22~28 구청 캠프, 29~35 은하수 그림, 36 마지막, 37 보고서(engine `LAYOUT`에서 계산).
@@ -55,11 +65,12 @@
 - 총 PNG 18개(생성 원본 16, 파생 crop 2).
 - **게임이 쓰는 그림은 모두 .webp**(2026-11-10): 위 PNG 18개를 같은 크기로 변환(sharp, q88 · 축제 원본·미리보기·얼굴 비교는 q92, 알파 100). 합 36.0MB → 4.5MB. 원본 PNG는 `.gitignore`(로컬에만) — 다시 만들 때는 원본 PNG에서 같은 설정으로. 크기·알파 채널·모서리 알파가 원본과 같은지 확인했고, 축제 사진(담이 얼굴)과 모아를 확대해 원본과 나란히 봄.
 - 새 사건 4·5 그림(2026-11-10 지시서 `docs/codex-art-brief-4-5-v2.md`, 사용자가 Codex에 맡김): `assets/s04/bg-newsroom`·`moa-reporter`·`dami-letter`·`clerk-newspaper`, `assets/s05/galaxy-ai`·`hill-real-photo`·`lulu-phone`·`bami-phone`. 2026-11-10 Codex 납품(8장, 크기·RGB/RGBA·인물 모서리 알파 0 확인), `node tools/art-4-5.cjs`로 .webp 사본(107~309KB)을 만들어 게임이 쓴다. 원본 PNG와 Codex 프롬프트 json은 커밋하지 않는다. 파일이 없으면 대신 그림(복도 배경·기존 인물·코드로 그린 하늘)으로 돌아간다. `bg-observatory-hill`·`moa-phone`은 그대로 쓴다.
-- 옛 사건 4·5(2026-11-08 Codex 납품, `docs/codex-art-brief-4-5.md`, 이제 게임에서 안 씀·파일은 남김): `assets/s04/bg-school-library`·`dami-books`, `assets/s05/bg-observatory-hill`·`moa-phone`·`lulu-casual`. 원본 PNG는 `.gitignore`(로컬에만), 게임은 `node tools/art-4-5.cjs`(헤드리스 Edge canvas, 지시서 크기·모서리 알파 확인)가 만든 `.webp` 사본(160~350KB)을 쓴다. app.js가 시작할 때 `.webp` → `.png`를 불러 보고, 없으면 지시서의 대신 그림(복도·수리점 배경, 기존 담이·모아·루루)을 쓴다. 대사 옆 작은 얼굴은 기존 그림에서 자른다(새 포즈는 무대에만). 사서 선생님은 올빼미 선생님 그림. 원본과 함께 온 `asset-manifest.json`·`generation-prompts.json`은 Codex 파일이라 커밋하지 않았다(사용자 결정). 대사·문서·상태 표식·중심점은 코드로 표시합니다.
+- 옛 사건 4·5(2026-11-08 Codex 납품, `docs/codex-art-brief-4-5.md`, 이제 게임에서 안 씀·파일은 남김): `assets/s04/bg-school-library`·`dami-books`, `assets/s05/bg-observatory-hill`·`moa-phone`·`lulu-casual`. 원본 PNG는 `.gitignore`(로컬에만), 게임은 `node tools/art-4-5.cjs`(헤드리스 Edge canvas, 지시서 크기·모서리 알파 확인)가 만든 `.webp` 사본(160~350KB)을 쓴다. `ui/boot.js`가 시작할 때 `.webp` → `.png`를 불러 보고, 없으면 지시서의 대신 그림(복도·수리점 배경, 기존 담이·모아·루루)을 쓴다. 대사 옆 작은 얼굴은 기존 그림에서 자른다(새 포즈는 무대에만). 사서 선생님은 올빼미 선생님 그림. 원본과 함께 온 `asset-manifest.json`·`generation-prompts.json`은 Codex 파일이라 커밋하지 않았다(사용자 결정). 대사·문서·상태 표식·중심점은 코드로 표시합니다.
 - 캐릭터 PNG의 투명 알파를 확인했습니다. 일부 가장자리 반투명 음영과 표정 시트 외곽 여백은 추가 아트 다듬기가 가능합니다.
 
 ## 검증
 
+- `node --test tests/render-snapshot.test.cjs`(2026-11-10): 브라우저 없이 작은 DOM 흉내(`tests/dom-stub.cjs`)로 화면 코드를 돌려, 대본 46개·1617걸음마다 `#app` HTML·창·저장 안내·저장 JSON·초점/스크롤 호출을 저장해 둔 기록(`render-snapshot.hashes.json`, 전체는 `.full.json.br`)과 견준다. data-act 37개를 모두 누른다. 화면을 일부러 바꿨을 때만 `UPDATE_SNAPSHOT=1 node tests/render-snapshot.test.cjs`로 기록을 다시 만든다. 진짜 브라우저의 배치·초점·그림 불러오기는 보지 못한다(아래 브라우저 검사 몫).
 - `node --test tests/engine.test.cjs tests/combinations.test.cjs tests/playtest.test.cjs`: 상태 전이, 판단 셋·후속 조사·미리 알리기(카드 토글·붙이기·판정 세 경우·다 맞음)·생각 정리·마지막 서술, 사건 5 질문(하나 이상·중복 없음)·마지막 장면 완료, 사건 4·5 문장 구조(혼자 규칙: 모아 줄·결과 피드백 없음, 판단 sum 한 줄), story 카드와 engine 종류 일치, 162개 선택 조합(경로마다 판단 20개), 저장 복원·version 1·2·3·4 저장 옮기기(2026-11-08: 31개 통과).
 - `node tests/flow-browser.cjs`: 헤드리스 Edge(Playwright, 기본 경로 D:/Works/token_economy/node_modules/playwright, `PLAYWRIGHT_PATH`로 변경 가능). 1366×768 전체 경로와 390×844 다른 선택·오답 판단 경로(판단 셋·후속 조사 포함), 저장·이어하기(판단 중간·후속 조사 중간 새로고침, version 1 scene 5 저장)·다시 선택·처음부터, 키보드 조작, 이전 판 저장, 손상 저장, 저장 차단. 화면별 글자 수는 `tests/flow-results.json`, 이전 판 기준값은 `tests/readability-before.json`, 캡처는 `tests/screens/`. 생각 정리(일부 채움·모두 비움)와 보고서 내용, version 2 저장 옮기기, 서술 새로고침 유지, 서술 고치기 왕복, 인쇄 제목·afterprint 복원, PDF 쪽수(서술 모두 200자 넘게 채워도 4쪽, 사건 4·5 전에는 3쪽), 세 구역 뒤 scrollY 그대로, 이름표·작은 얼굴·자료 머리말도 본다. 캡처 `desktop1280-reflect/report`, `phone-reflect/report`, `print-preview`. 미리 알리기(2026-11-08): 세 사건 왕복(바로 맞음 / 틀리게 붙인 뒤 고침 / 틀린 채 넘어감), 다시 고르기, 보고서·수첩 반영, 새로고침 유지, version 3 저장 legacy → 수첩 ‘미리 알리기 해 보기’ → 붙이기, 넷째 질문, PDF(가장 긴 안내문 포함) 쪽수, 캡처 `desktop1280-notice`, `phone-notice`. 휴대폰 390 미리 알리기 붙이기 전 높이 ≤ 화면의 1.05배(사건마다)와 글자 16px·누르는 곳 44px, 처음부터 다시 하기의 ‘이름과 학번도 지우기’(체크 = 지움 / 풀면 남김, 새로고침 뒤에도). DOM 클릭 프로브이며 실제 학생 실험이 아니다.
 - 2026-11-10 새 사건 4·5: node 테스트 32개 통과(구청에 묻기 게이트, camp·share 정답·후속 조사, 문장 구조·혼자 규칙·실제 상표 없음, version 5→6 옮기기, 162개 조합). flow-browser PASS paths 2 checks 21(사건 4 빈 칸·솔숲마을·기준표 네 줄, 사건 5 작업 기록·하늘 그림 둘·DM, 세 곳, 신문/게시물 카드, version 4·5 다 마친 저장 → 새 사건 4·5 → 보고서, 그림 대신·.webp 우선), playtest-1106 PASS. 캡처 `desktop-camp-*`, `desktop-share-*`, `phone-camp-*`, `phone-share-*`. DOM 클릭 프로브이며 실제 학생 실험이 아니다.
