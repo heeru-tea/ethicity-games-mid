@@ -45,7 +45,8 @@ footer{max-width:1240px;margin:auto;padding:16px 32px;display:flex;justify-conte
 .task{margin:16px 0 8px}
 .tap-hint{color:var(--muted);font-size:.95rem}
 .hint{color:var(--muted);font-size:.88rem;margin-top:10px}
-.finding{border-left:3px solid var(--accent);padding:2px 0 2px 14px;margin:14px 0}
+/* 왼쪽 굵은 색 띠 대신 얇은 전체 테두리(2026-11-10 — 사용자: 왼쪽 색 띠는 AI티) */
+.finding{border:1px solid #d9b98c;border-radius:10px;padding:10px 14px;margin:14px 0}
 .finding p:last-child,.finding details:last-child{margin-bottom:0}
 .more{margin:6px 0 0;font-size:.95rem}
 .more summary{cursor:pointer;color:var(--muted);padding:4px 0}
@@ -161,13 +162,13 @@ dialog::backdrop{background:#131921b8}
 .judge-src{font-size:.92rem;margin:0 0 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .source-tag{min-height:36px;padding:3px 12px;font-size:.9rem;font-weight:700;border-radius:999px;background:#fff}
 .source-name{font-weight:700}
-.finding.quiet{border-left-color:#c9c2b5;margin:10px 0}
+.finding.quiet{border-color:#c9c2b5;margin:10px 0}
 .finding.quiet .line,.finding.quiet p{font-size:.92rem;color:#5a5449}
 .finding.quiet .who{color:#5a5449}
 .stamp-tag{display:block;font-size:.85rem;font-weight:800}
 button.stamp-right:disabled{color:#14532d;background:#e3f1e7;border:2px solid #1f6b3a;box-shadow:none}
 button.stamp-mine:disabled{color:var(--text);background:#fff;border:2px dashed #6d675c;box-shadow:none}
-.finding.again{border-left:3px dashed #6d675c}
+.finding.again{border:1px dashed #6d675c}
 .again-head{font-weight:800;margin:0 0 2px}
 .judge-card .finding{margin:12px 0 10px}
 .guide-box{margin-top:12px}
