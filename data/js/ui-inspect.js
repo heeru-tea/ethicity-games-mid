@@ -183,7 +183,7 @@
    * rerender()가 화면을 다시 그리면 reopen()으로 같은 카드 창을 다시 연다. keydown 정리 함수는 하나만(다시 그릴 때 쌓이지 않게).
    * 포커스(리뷰 2026-11-10 ⑤): 창이 떠 있는 동안 Tab·Shift+Tab은 창 안에서만 돌고(전엔 Shift+Tab이 배경 '제출'로 빠졌다), 배경(화면의 다른 자식)은 inert —
    *   창은 화면을 다시 그릴 때마다 새로 만들어 화면 안에 붙이는 div라 <dialog>(공용 modal)로 바꾸지 않고, 대화 창(ui-story)처럼 키로 가둔다.
-   *   닫기·Esc·바깥 누르기로 닫으면 열었던 카드 버튼으로 포커스를 돌려준다. 창 안 버튼을 눌러 다시 그릴 때는 같은 버튼으로(닫기로 튀지 않게) — redraw(sel). */
+   *   닫기·Esc·바깥 누르기로 닫으면 열었던 카드 버튼으로 포커스를 돌려준다. 창 안 버튼을 눌러 다시 그릴 때는 같은 버튼으로(닫기로 튀지 않게) — rerender(sel). */
   function zoomer(mission, host, zoomId, rerenderHost) {
     var zoomed = null, zoomCleanup = null, focusSel = null;
     // 창 안 조작으로 화면을 다시 그린다 — sel = 다시 그린 창에서 포커스를 줄 조작
