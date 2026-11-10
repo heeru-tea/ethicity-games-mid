@@ -168,14 +168,21 @@ try {
       const off = (tags) => tags.filter((t) => Math.abs(t.x + t.w / 2 - t.cx) > 1).map((t) => t.label);
       rec(size, 'B1 교실 이름표가 모두 자기 인물 가운데', off(cls.tags).length === 0, off(cls.tags).join(','));
       await p.screenshot({ path: shot(`B-class-${size}`) });
-      // 새봄 바로 아래에서 말 걸기 → 말풍선 꼬리가 새봄을 가리킴 · 두 사람 사이 1칸 이상
-      await p.evaluate(() => PrivacyMap.debug.place(12, 9, 'up')); await p.waitForTimeout(300);
+      // 2026-11-10 사용자 결정: 말 걸 때 밀치지 않는다 — 바로 옆에서 말 걸면 미끄러짐 없이 0.25칸만(즉시), 한 칸 띄운 자리(2칸)에서도 말 걸 수 있고 그땐 아무도 안 움직임
+      await p.evaluate(() => PrivacyMap.debug.place(28, 11, 'right')); await p.waitForTimeout(300); // 민준(29,11) 바로 왼쪽 — 목적지가 아니라 대화만 열린다
+      await p.evaluate(() => document.getElementById('btn-map-act').click()); await p.waitForTimeout(30);
+      const n0 = await p.evaluate(() => PrivacyMap.debug.nudge()); await p.waitForTimeout(400);
+      const n1 = await p.evaluate(() => PrivacyMap.debug.nudge());
+      rec(size, '말 걸기 바로 옆 = 미끄러짐 없이 즉시 조금(0.3칸 이하)', !!n0 && !!n1 && Math.abs(n0.cx - n1.cx) < 0.01 && Math.abs(n1.cx) <= 0.3 && Math.abs(n1.mx) <= 0.3, JSON.stringify([n0, n1]));
+      for (let k = 0; k < 40 && await p.evaluate(() => PrivacyTalk.isOpen()); k++) { await p.evaluate(() => PrivacyTalk.next()); await p.waitForTimeout(80); }
+      // 새봄 두 칸 아래(사이 한 칸 비움)에서 말 걸기 → 대화가 열리고 아무도 안 움직임, 말풍선 꼬리가 새봄을 가리킴
+      await p.evaluate(() => PrivacyMap.debug.place(12, 10, 'up')); await p.waitForTimeout(300);
       await p.evaluate(() => document.getElementById('btn-map-act').click()); await p.waitForTimeout(700);
       const tk = await p.evaluate(() => ({ open: PrivacyTalk.isOpen(), b: PrivacyMap.debug.bubbleRects(), n: PrivacyMap.debug.nudge(), tags: PrivacyMap.debug.tags(), bodies: PrivacyMap.debug.bodies() }));
       // 말풍선마다 꼬리 끝이 말한 사람(몸 가운데 ±3px, 머리 위 — 뒤집히면 발밑)을 가리키는지
       const badTail = tk.b.filter((q) => { const bd = tk.bodies.find((b) => b.who === q.who); if (!bd || !q.tail) return true; const cx = (bd.x0 + bd.x1) / 2; return Math.abs(q.tail.x1 - cx) > 3 || (q.flip ? q.tail.y1 < bd.y1 - 6 : q.tail.y1 > bd.y0 + 14); });
       rec(size, 'B1 말풍선 꼬리 끝 = 말한 사람(머리 위·뒤집히면 발밑)', tk.b.length > 0 && badTail.length === 0, JSON.stringify(tk.b.map((q) => ({ who: q.who, tail: q.tail, flip: q.flip }))) + ' bodies ' + JSON.stringify(tk.bodies.map((b) => [b.who, Math.round((b.x0 + b.x1) / 2), Math.round(b.y0)])));
-      rec(size, 'B1 대화 중 두 사람 가로 1.5칸 이상(위아래로 붙음)', !!tk.n && Math.abs(tk.n.cx - tk.n.mx) >= 1.25, JSON.stringify(tk.n));
+      rec(size, '말 걸기 한 칸 띄운 자리(2칸) = 대화 열림 · 아무도 안 움직임', tk.open && tk.n === null, JSON.stringify(tk.n));
       rec(size, 'B1 대화 중 이름표 모두 자기 인물 가운데', off(tk.tags).length === 0, off(tk.tags).join(','));
       await p.screenshot({ path: shot(`B-talk-${size}`) });
       for (let k = 0; k < 40 && await p.evaluate(() => PrivacyTalk.isOpen()); k++) { await p.evaluate(() => PrivacyTalk.next()); await p.waitForTimeout(80); }

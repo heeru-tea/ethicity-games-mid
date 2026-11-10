@@ -136,7 +136,7 @@
     return { x: ob.x, y: ob.y, w: ob.w, h: ob.h, obj: ob, name: ob.name };
   }
   function boxContains(b) { return function (x, y) { return x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h; }; }
-  function routeToTarget() { return WD.findPath({ x: me.x, y: me.y }, WD.adjacentTo({ contains: boxContains(targetBox()) }), blocked); }
+  function routeToTarget() { var b = targetBox(); return b.who ? talkPath({ x: me.x, y: me.y }, { x: b.x, y: b.y, w: 1, h: 1 }) : WD.findPath({ x: me.x, y: me.y }, WD.adjacentTo({ contains: boxContains(b) }), blocked); }
 
   /* ── 열기·닫기 ─────────────────── */
   function show(r) {
@@ -328,7 +328,22 @@
         if (x >= ob.x && x < ob.x + ob.w && y >= ob.y && y < ob.y + ob.h) list.push({ type: 'obj', ob: ob, dir: dir });
       });
     });
+    // 2026-11-10 사용자 결정(말 걸 때 밀치지 않기): 한 칸 띄운 자리(같은 줄 2칸, 사이 칸이 걸을 수 있고 비어 있음)의 사람에게도 말을 건다 — 바로 옆보다 뒤 순서
+    order.forEach(function (dir) {
+      var d = WD.DIRS[dir], x1 = me.x + d[0], y1 = me.y + d[1], x = me.x + 2 * d[0], y = me.y + 2 * d[1];
+      if (!midFree(x1, y1)) return;
+      cast.forEach(function (c) { if (c.x === x && c.y === y && !list.some(function (n) { return n.c === c; })) list.push({ type: 'npc', c: c, dir: dir, far: true }); });
+    });
     return list;
+  }
+  function midFree(x, y) { return WD.walkable(x, y, blocked) && !WD.DOORS[x + ',' + y] && !cast.some(function (c) { return c.x === x && c.y === y; }); }
+  // 사람에게 걸어갈 때 멈출 자리: 한 칸 띄운 자리(같은 줄 2칸, 사이 비움) 먼저, 그리로 못 가면 바로 옆. 이미 말 걸 수 있는 자리면 그대로(빈 길)
+  function talkPath(from, box) {
+    var touch = WD.adjacentTo({ contains: boxContains(box) });
+    if (box.w !== 1 || box.h !== 1) return WD.findPath(from, touch, blocked); // 사물은 바로 옆
+    var far = function (x, y) { var dx = box.x - x, dy = box.y - y; return ((Math.abs(dx) === 2 && dy === 0) || (dx === 0 && Math.abs(dy) === 2)) && midFree(x + dx / 2, y + dy / 2); };
+    if (touch(from.x, from.y) || far(from.x, from.y)) return [];
+    return WD.findPath(from, far, blocked) || WD.findPath(from, touch, blocked);
   }
   function isTarget(n) { return trig.target.npc ? n.type === 'npc' && n.c.who === trig.target.npc : n.type === 'obj' && n.ob.id === trig.target.obj; }
   function nearTarget() { return neighbors().some(isTarget); }
@@ -395,12 +410,14 @@
   //   엎드린 민준이는 의자에 앉아 있어 밀지 않는다
   //   2026-11-09 지시서 B1: '대화가 시작되면 최소 1칸 떨어져' — 옆으로 붙으면 0.5칸씩(가운데 사이 2칸), 위아래로 붙으면 옆으로 0.75칸씩(가로 1.5칸).
   //   비킬 쪽이 막힌 칸(벽·책상)이면 그 사람은 0.25칸만(그림이 가구 속으로 들어가 보이지 않게)
+  //   2026-11-10 사용자 결정: 미끄러지며 벌어지는 게 밀치는 것처럼 보였다 → 한 칸 띄운 자리에서 말 걸면 아무도 안 움직이고,
+  //   바로 옆일 때만 몸이 겹치지 않을 만큼(옆 0.25칸·위아래 0.3칸, 11-03 값) 미끄러짐 없이 바로
   function setNudge(c) {
-    if (!c || c.pose) return;
-    var dx = c.x - me.x, k = dx ? 0.5 : 0.75, side = dx ? (dx > 0 ? 1 : -1) : (WD.walkable(me.x - 1, me.y) ? 1 : -1);
-    var km = WD.walkable(me.x - side, me.y) ? k : 0.25, kc = WD.walkable(c.x + side, c.y) ? k : 0.25;
-    nudge = { c: c, mx: -side * km, cx: side * kc };
-    nudgeK = 0;
+    nudge = null;
+    if (!c || c.pose || Math.abs(c.x - me.x) + Math.abs(c.y - me.y) !== 1) return;
+    var dx = c.x - me.x, k = dx ? 0.25 : 0.3, side = dx ? (dx > 0 ? 1 : -1) : (WD.walkable(me.x - 1, me.y) ? 1 : -1);
+    nudge = { c: c, mx: -side * k, cx: side * k };
+    nudgeK = 1;
   }
   function nudgeX(c) { return nudge && nudge.c === c ? nudge.cx * nudgeK : 0; }
   function nudgeMe() { return nudge ? nudge.mx * nudgeK : 0; }
@@ -582,7 +599,7 @@
     var p;
     if (npc || ob) {
       var box = npc ? { x: npc.x, y: npc.y, w: 1, h: 1 } : ob;
-      p = WD.findPath(from, WD.adjacentTo({ contains: boxContains(box) }), blocked);
+      p = npc ? talkPath(from, box) : WD.findPath(from, WD.adjacentTo({ contains: boxContains(box) }), blocked);
       actOnArrive = true;
       tapWant = npc ? { npc: npc.who } : { obj: ob.id };
     } else {
