@@ -1,3 +1,6 @@
 # 사건 4·5 새 그림 원본 PNG(Codex 납품)는 로컬에만 둔다. 게임은 tools/art-4-5.cjs가 만든 .webp 사본을 쓴다.
 assets/s04/*.png
 assets/s05/*.png
+# 사건 1~3 그림 원본 PNG(36MB)도 로컬에만 둔다. 게임은 같은 크기의 .webp 사본(q88, 축제 사진·얼굴 비교는 q92 — 합 4.5MB)을 쓴다(2026-11-10).
+assets/s01/*.png
+assets/remaining/*.png

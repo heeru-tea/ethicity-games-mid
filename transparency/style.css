@@ -80,7 +80,7 @@ footer{max-width:1240px;margin:auto;padding:16px 32px;display:flex;justify-conte
 .stage-photo canvas{width:100%;display:block}
 .stage-status{position:absolute;right:10px;top:10px;margin:0;background:#fffef5;padding:4px 10px;border-radius:6px;font-size:.85rem;font-weight:700;z-index:3}
 .stage-boxes{position:absolute;left:48%;top:25%;width:45%;display:flex;z-index:1}
-.prop{display:inline-block;background-image:url('assets/remaining/props-atlas.png');background-size:300% 200%;background-repeat:no-repeat}
+.prop{display:inline-block;background-image:url('assets/remaining/props-atlas.webp');background-size:300% 200%;background-repeat:no-repeat}
 .stage-boxes .prop{width:33.33%;aspect-ratio:2/3}
 .prop.box{background-position:0 0}.prop.window{background-position:50% 0}
 .photo-canvas{width:100%;height:auto;display:block;background:#e8e2d4;border-radius:6px}

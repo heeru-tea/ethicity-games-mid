@@ -404,12 +404,12 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    const settle=async p=>{await p.waitForTimeout(600);await assets(p);};
    // ① 파일이 하나도 없을 때(경로를 404로 막음): 지시서의 대신 그림
    await withPage(WIDE,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));await p.route(/assets\/s0[45]\//,r=>r.fulfill({status:404,body:''}));
-    await seedPage(p,at);await settle(p);let s=await srcs(p);assert.equal(s.bg,'assets/remaining/bg-school-corridor.png');assert.ok(s.actors.includes('assets/s01/dami-hurt.png'));
+    await seedPage(p,at);await settle(p);let s=await srcs(p);assert.equal(s.bg,'assets/remaining/bg-school-corridor.webp');assert.ok(s.actors.includes('assets/s01/dami-hurt.webp'));
     assert.deepEqual(await p.evaluate(()=>TransparencyGame.art()),{});
-    assert.equal(await p.locator('.stage .sky-art').count(),0);at.scene=E.sceneOf('share','hook');await seedPage(p,at);await settle(p);s=await srcs(p);assert.equal(s.bg,'assets/remaining/bg-repair-shop.png');
-    assert.deepEqual(s.actors,['assets/s01/lulu-concerned.png','assets/s01/moa-attentive.png','assets/remaining/bami-concerned.png']);assert.deepEqual(errors,[]);});
-   // ② .webp가 응답하면 .png보다 먼저 쓴다(원본 PNG 바이트로 흉내)
-   at.scene=E.sceneOf('camp','hook');const fake=fs.readFileSync(path.join(root,'assets/remaining/bg-school-corridor.png'));
+    assert.equal(await p.locator('.stage .sky-art').count(),0);at.scene=E.sceneOf('share','hook');await seedPage(p,at);await settle(p);s=await srcs(p);assert.equal(s.bg,'assets/remaining/bg-repair-shop.webp');
+    assert.deepEqual(s.actors,['assets/s01/lulu-concerned.webp','assets/s01/moa-attentive.webp','assets/remaining/bami-concerned.webp']);assert.deepEqual(errors,[]);});
+   // ② .webp가 응답하면 .png보다 먼저 쓴다(기존 그림 바이트로 흉내)
+   at.scene=E.sceneOf('camp','hook');const fake=fs.readFileSync(path.join(root,'assets/remaining/bg-school-corridor.webp'));
    await withPage(WIDE,async p=>{await p.route(/assets\/s0[45]\//,r=>r.fulfill({status:404,body:''}));await p.route(/assets\/s04\/bg-newsroom\.webp$/,r=>r.fulfill({status:200,contentType:'image/webp',body:fake}));
     await seedPage(p,at);await settle(p);assert.equal((await srcs(p)).bg,'assets/s04/bg-newsroom.webp');assert.deepEqual(await p.evaluate(()=>TransparencyGame.art()),{newsroom:'assets/s04/bg-newsroom.webp'});});
    // ③ 지금 디스크에 있는 파일: 있는 것은 모두 쓰인다(.webp가 있으면 .webp)

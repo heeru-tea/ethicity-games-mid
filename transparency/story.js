@@ -1,9 +1,9 @@
 window.TransparencyStory = (()=>{
  const s='assets/s01/', r='assets/remaining/';
- const art={backgrounds:[r+'bg-repair-shop.png',s+'bg-festival-board.png',r+'bg-school-corridor.png',r+'bg-bakery-entrance.png'],moa:s+'moa-attentive.png',lulu:s+'lulu-concerned.png',dami:s+'dami-hurt.png',bami:r+'bami-concerned.png',teacher:r+'teacher-listening.png',clerk:r+'clerk-hesitant.png',clerkOpen:r+'clerk-reconsidering.png',luluPaper:r+'lulu-manuscript.png',photo:s+'festival-group-original.png',faces:r+'face-comparison-fictional.png',expressions:r+'moa-expressions.png',props:r+'props-atlas.png'};
+ const art={backgrounds:[r+'bg-repair-shop.webp',s+'bg-festival-board.webp',r+'bg-school-corridor.webp',r+'bg-bakery-entrance.webp'],moa:s+'moa-attentive.webp',lulu:s+'lulu-concerned.webp',dami:s+'dami-hurt.webp',bami:r+'bami-concerned.webp',teacher:r+'teacher-listening.webp',clerk:r+'clerk-hesitant.webp',clerkOpen:r+'clerk-reconsidering.webp',luluPaper:r+'lulu-manuscript.webp',photo:s+'festival-group-original.webp',faces:r+'face-comparison-fictional.webp',expressions:r+'moa-expressions.webp',props:r+'props-atlas.webp'};
  // 사건 4·5 새 그림(docs/codex-art-brief-4-5-v2.md). 처음에는 지시서의 '대신 쓸 그림'을 쓰고, app.js가 시작할 때 base + '.webp'(게임용 사본) → '.png'(원본)을 불러 보아
  // 열리는 것이 있으면 그것으로 바꾼다. bg = 배경 배열 자리.
- art.backgrounds.push(r+'bg-school-corridor.png',r+'bg-repair-shop.png');
+ art.backgrounds.push(r+'bg-school-corridor.webp',r+'bg-repair-shop.webp');
  // 대신 그림: 신문부실 = 복도, 은하수·실제 사진 = 코드로 그린 하늘(app.js), 새 포즈 = 기존 인물(루루 휴대폰은 먼저 이미 있는 lulu-casual을 써 본다).
  Object.assign(art,{newsroom:art.backgrounds[4],observatory:art.backgrounds[5],moaReporter:art.moa,damiLetter:art.dami,clerkPaper:art.clerk,moaPhone:art.moa,luluPhone:art.lulu,bamiPhone:art.bami,galaxy:null,hillReal:null});
  art.newArt={newsroom:{base:'assets/s04/bg-newsroom',bg:4},moaReporter:{base:'assets/s04/moa-reporter'},damiLetter:{base:'assets/s04/dami-letter'},clerkPaper:{base:'assets/s04/clerk-newspaper'},
