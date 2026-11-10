@@ -56,6 +56,24 @@
  const inside=([x,y,w,h],[fx,fy,fw,fh])=>fx>=x&&fy>=y&&fx+fw<=x+w&&fy+fh<=y+h;
  function cutFaces(rect){return faces.map((f,i)=>inside(rect,f)?null:i).filter(i=>i!==null);}
  const truth=FOLLOW_CROPS.map(r=>cutFaces(r).includes(2)?'cut':'shown');
+ // 사진을 글로 설명할 때 쓰는 기하(문장은 ui/case-photo.js가 만든다). PHOTO = 축제 원본 크기.
+ // faceIn: 얼굴 i가 틀 안에서 온전히 보이면 in, 틀 가장자리에 걸리면 part(edges = 얼굴을 지나는 가장자리), 안 보이면 out.
+ const PHOTO=[1536,1024];
+ function faceIn([x,y,w,h],i){
+  const [fx,fy,fw,fh]=faces[i];
+  if(fx>=x+w||fx+fw<=x||fy>=y+h||fy+fh<=y)return {state:'out',edges:[]};
+  const edges=[];
+  if(fx<x)edges.push('left');
+  if(fx+fw>x+w)edges.push('right');
+  if(fy<y)edges.push('top');
+  if(fy+fh>y+h)edges.push('bottom');
+  return {state:edges.length?'part':'in',edges};
+ }
+ // place: 네모(얼굴·틀)의 가운데가 원본을 3×3으로 나눈 어느 칸에 있는지. [가로 0 왼쪽·1 가운데·2 오른쪽, 세로 0 위·1 가운데·2 아래]
+ function place([x,y,w,h]){
+  const third=(v,total)=>Math.min(2,Math.floor(v/(total/3)));
+  return [third(x+w/2,PHOTO[0]),third(y+h/2,PHOTO[1])];
+ }
  function caseKey(scene){return LAYOUT[scene]?.k||null;}
  function stepOf(scene){return LAYOUT[scene]?.step;}
  function sceneOf(key,step){return LAYOUT.findIndex(x=>x.k===key&&x.step===step);}
@@ -234,7 +252,7 @@
    return consistent(s)?s:initial();
   }catch{return initial();}
  }
- const api={initial,restart,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,noticeIds,noticeKind,noticeCheck,noticeDone,outcome,allFaces,cutFaces,clipText,TEXT_MAX,
+ const api={initial,restart,reduce,canAdvance,restore,caseKey,stepOf,sceneOf,checked,judged,currentJudgment,followReady,followDone,noticeIds,noticeKind,noticeCheck,noticeDone,outcome,allFaces,cutFaces,faceIn,place,PHOTO,clipText,TEXT_MAX,
   CASES,STEPS,LAYOUT,OLD_QUESTIONS,LAYOUT2,LAYOUT3,LAYOUT4,END,REPORT,RESUME,checks,choices,stamps,answers,followAnswers,followMarks,questions,noticeCards,AUTO,ALL,faces,FOLLOW_CROPS,truth};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TransparencyEngine=api;
 })(typeof window==='undefined'?globalThis:window);

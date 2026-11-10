@@ -51,6 +51,11 @@ footer{max-width:1240px;margin:auto;padding:16px 32px;display:flex;justify-conte
 .more{margin:6px 0 0;font-size:.95rem}
 .more summary{cursor:pointer;color:var(--muted);padding:4px 0}
 .more p{margin:6px 0 0}
+/* 사진을 글로 살펴보기(사건 1): 접어 둔 글 설명. 사진 아래에 놓인다. */
+.photo-text{margin-top:10px}
+.photo-text summary{padding:10px 0}
+.photo-text .text-list{margin:6px 0 0;padding-left:1.3em;line-height:1.65}
+.photo-text .text-list li{margin:3px 0}
 .status{font-weight:700;margin-bottom:16px}
 .unknown{border-top:1px solid var(--border);padding-top:14px;margin-top:18px}
 .unknown strong{display:block;font-size:.85rem;color:var(--muted)}

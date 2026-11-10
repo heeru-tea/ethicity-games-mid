@@ -50,7 +50,9 @@
   revealCue:false,
   // opened = 사건 4 기준표에서 연 줄(id), tried = 사건 5(혼자)에서 눌러 봤지만 답이 아닌 곳(글 안내 대신 '아님' 표시만).
   opened:new Set(),
-  tried:new Set()
+  tried:new Set(),
+  // textOpen = 펼쳐 둔 ‘사진을 글로 살펴보기’(original·follow). 화면을 다시 그려도 펼친 채로 둔다.
+  textOpen:new Set()
  };
 
  function saveStatus(){
@@ -85,6 +87,7 @@
   S.regions=new Set();
   S.opened=new Set();
   S.tried=new Set();
+  S.textOpen=new Set();
   S.tapHint='';
   S.justJudged=null;
   S.resumed=false;

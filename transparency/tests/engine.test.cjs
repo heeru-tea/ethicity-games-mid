@@ -297,3 +297,20 @@ test('review 6: the text cap cuts at the same unit as the input box and never le
  assert.equal(E.clipText('가'.repeat(3999)+'\ud83d'),'가'.repeat(3999),'a lone half at the very end is dropped too');
  assert.equal(E.clipText(3),'');assert.equal(E.clipText(''),'');
 });
+// 3. 사진의 글 설명(ui/case-photo.js)이 쓰는 기하: 얼굴이 틀 안에서 온전히 보이는지(in)·가장자리에 걸리는지(part)·안 보이는지(out), 어느 가장자리가 지나는지.
+test('review 3: faceIn agrees with cutFaces; edges and places come from the coordinates',()=>{
+ const FULL=[0,0,...E.PHOTO];assert.deepEqual(E.PHOTO,[1536,1024]);
+ for(const r of [FULL,E.AUTO,E.ALL,...E.FOLLOW_CROPS]){
+  const st=E.faces.map((_,i)=>E.faceIn(r,i));
+  assert.deepEqual(st.map((x,i)=>x.state==='in'?null:i).filter(i=>i!==null),E.cutFaces(r),'잘린 얼굴 = 온전히 보이지 않는 얼굴 '+r);
+  for(const x of st){assert.equal(x.edges.length>0,x.state==='part');assert.ok(['in','part','out'].includes(x.state));}}
+ // 자동으로 자른 사진: 토리·루루·담이는 안 보이고, 모아는 왼쪽 가장자리에 걸리고, 몽이만 온전하다
+ assert.deepEqual(E.faces.map((_,i)=>E.faceIn(E.AUTO,i).state),['out','out','out','part','in']);assert.deepEqual(E.faceIn(E.AUTO,3).edges,['left']);
+ // 후속 사진 3: 루루는 위쪽·오른쪽 가장자리에 걸린다. 사진 5: 담이 얼굴 오른쪽 끝이 틀 왼쪽 끝과 맞닿아 있을 뿐 안 보인다.
+ assert.deepEqual(E.faceIn(E.FOLLOW_CROPS[2],1),{state:'part',edges:['right','top']});assert.equal(E.faceIn(E.FOLLOW_CROPS[4],2).state,'out');
+ // 여섯 장에서 담이는 온전히 보이거나 아예 안 보인다(걸린 사진 없음) — 표시의 정답(truth)과 같다
+ assert.deepEqual(E.FOLLOW_CROPS.map(r=>E.faceIn(r,2).state==='in'?'shown':'cut'),E.truth);
+ // 자리(3×3): [가로 0 왼쪽·1 가운데·2 오른쪽, 세로 0 위·1 가운데·2 아래]
+ assert.deepEqual(E.faces.map(E.place),[[0,0],[1,0],[1,1],[1,0],[2,0]]);assert.deepEqual(E.place(E.AUTO),[2,0]);assert.deepEqual(E.place(FULL),[1,1]);
+ assert.deepEqual(E.place([0,700,300,300]),[0,2]);
+});

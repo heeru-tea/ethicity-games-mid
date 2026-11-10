@@ -85,3 +85,79 @@ test('review 6: the write box limits, counts and saves in one unit; text over th
  assert.equal(boxAttrs(e,'final-note').maxlength,String(MAX));
  r=e.input('note','','가'.repeat(3999)+'😀');assert.equal(r.value,'가'.repeat(3999));assert.equal(e.state().finalNote,r.value);assert.equal(JSON.parse(e.stored()).finalNote,r.value);assert.equal(r.count,'3999자');
 });
+
+// 3. 사진 활동의 글 설명: 사진을 보지 않고도 같은 관찰(누가 어디에 있고, 틀 가장자리가 어느 얼굴을 지나는지)을 할 수 있어야 한다.
+//    설명은 engine 좌표(faces·AUTO·FOLLOW_CROPS)에서 만든다. 답(‘잘렸어/나왔어’, 누가 담이인지)을 버튼 이름으로 읽어 주지는 않는다.
+const NAMES=['토리','루루','담이','모아','몽이'];
+const attrOf=(html,tag,pick)=>parseTags(html,tag).filter(pick);
+const textOf=html=>unesc(html.replace(/<\/?strong>/g,'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim());
+const detailsOf=(g,key)=>{const m=new RegExp(`<details class="more photo-text" data-text="${key}"( open)?>([\\s\\S]*?)</details>`).exec(g.app.innerHTML);assert.ok(m,'‘사진을 글로 살펴보기’ '+key);return {open:!!m[1],html:m[2],text:textOf(m[2])};};
+const toggle=(g,key,isOpen,match=s=>s==='details.photo-text')=>g.documentEvent('toggle',{target:{matches:match,open:isOpen,dataset:{text:key}}});
+test('review 3: the original photo has position names on the face buttons and a text description made from the coordinates',()=>{
+ const g=open('photo','check');g.click('item',{id:'photo-original'});
+ const spots=attrOf(g.app.innerHTML,'button',b=>b['data-act']==='spot').map(b=>b['aria-label']);
+ assert.deepEqual(spots,['얼굴 1: 왼쪽에서 첫째, 사진의 왼쪽 위','얼굴 2: 왼쪽에서 둘째, 사진의 가운데 위','얼굴 3: 왼쪽에서 셋째, 사진의 한가운데','얼굴 4: 왼쪽에서 넷째, 사진의 가운데 위','얼굴 5: 왼쪽에서 다섯째, 사진의 오른쪽 위']);
+ assert.equal(new Set(spots).size,5,'이름이 서로 다르다');for(const s of spots)for(const n of NAMES)assert.ok(!s.includes(n),'버튼 이름이 답을 말하지 않는다: '+s);
+ const img=attrOf(g.app.innerHTML,'img',a=>/원본 사진/.test(a.alt))[0];assert.match(img.alt,/사진을 글로 살펴보기/,'그림 설명이 글 설명이 있는 곳을 알려 준다');
+ const d=detailsOf(g,'original');assert.equal(d.open,false);assert.match(d.html,/<summary>사진을 글로 살펴보기<\/summary>/);
+ for(const line of ['토리: 왼쪽에서 첫째. 사진의 왼쪽 위.','루루: 왼쪽에서 둘째. 사진의 가운데 위.','담이: 왼쪽에서 셋째. 사진의 한가운데. 다섯 얼굴 가운데 가장 아래쪽.','모아: 왼쪽에서 넷째. 사진의 가운데 위.','몽이: 왼쪽에서 다섯째. 사진의 오른쪽 위.',
+  '점선 틀(자동으로 남긴 부분)은 원본의 오른쪽 위 부분이다. 틀 안에 온전히 있는 얼굴: 몽이. 틀 가장자리에 걸린 얼굴: 모아(틀의 왼쪽 가장자리). 틀 밖에 있는 얼굴: 토리, 루루, 담이.'])assert.ok(d.text.includes(line),'없는 줄: '+line+'\n'+d.text);
+ // 글 설명만 읽고 담이를 찾는다: ‘담이: 왼쪽에서 셋째’ → ‘왼쪽에서 셋째’ 버튼
+ const where=/담이: (왼쪽에서 [^.]+)\./.exec(d.text)[1],hit=attrOf(g.app.innerHTML,'button',b=>b['data-act']==='spot'&&b['aria-label'].includes(where));
+ assert.equal(hit.length,1);g.click('spot',{id:hit[0]['data-id']});assert.ok(g.state().evidence.includes('photo-original'),'글 설명과 버튼 이름만으로 담이를 찾았다');
+ assert.match(attrOf(g.app.innerHTML,'button',b=>b['data-act']==='spot'&&b['data-id']==='2')[0]['aria-label'],/담이/,'찾은 뒤에는 찾은 얼굴이 담이라고 이름에 붙는다');
+ // 펼친 채로 다시 그려도 펼쳐져 있다(화면을 다시 그릴 때마다 접히면 읽다가 끊긴다)
+ toggle(g,'original',true);g.click('spot',{id:0});assert.equal(detailsOf(g,'original').open,true);
+ toggle(g,'original',false);g.click('spot',{id:1});assert.equal(detailsOf(g,'original').open,false);
+ toggle(g,'original',true,()=>false);g.click('spot',{id:1});assert.equal(detailsOf(g,'original').open,false,'다른 details는 상관없다');
+ // 세 구역 점수를 모두 열면 잘린 범위·중심을 그림 설명이 말한다(노란 테두리·점은 그림으로만 보였다)
+ g.click('item',{id:'photo-rule'});const ruleAlt=()=>attrOf(g.app.innerHTML,'img',a=>/세 구역/.test(a.alt))[0].alt;
+ assert.doesNotMatch(ruleAlt(),/잘린 범위/,'점수를 다 열기 전에는 말하지 않는다');for(const id of [0,1,2])g.click('region',{id});
+ const rule=ruleAlt();assert.match(rule,/실제로 잘린 범위는 원본의 오른쪽 위 부분이고, 자르기 중심은 오른쪽 구역에 있다\./);
+ // 장면을 옮기면 접힌다
+ g.click('item',{id:'photo-original'});toggle(g,'original',true);g.click('back');g.click('next');g.click('item',{id:'photo-original'});assert.equal(detailsOf(g,'original').open,false,'장면을 옮기면 접힌다');
+ // 좌표를 바꾸면 설명도 바뀐다(손으로 쓴 글이 아니다): 담이 얼굴을 왼쪽 아래 끝으로 옮긴다
+ const g2=open('photo','check');g2.E.faces[2].splice(0,4,40,800,165,150);g2.click('item',{id:'photo-original'});
+ const d2=detailsOf(g2,'original').text;assert.ok(d2.includes('담이: 왼쪽에서 첫째. 사진의 왼쪽 아래. 다섯 얼굴 가운데 가장 아래쪽.'),d2);assert.ok(d2.includes('토리: 왼쪽에서 둘째.'),d2);
+ assert.equal(attrOf(g2.app.innerHTML,'button',b=>b['data-act']==='spot')[2]['aria-label'],'얼굴 3: 왼쪽에서 첫째, 사진의 왼쪽 아래');
+});
+test('review 3: each follow-up photo says in words which faces are whole and which are crossed by the frame edge; nothing reads out the answer',()=>{
+ const g=open('photo','follow');
+ const labels=attrOf(g.app.innerHTML,'canvas',c=>'data-crop' in c&&/^사진 \d/.test(c['aria-label'])).map(c=>c['aria-label']);
+ assert.deepEqual(labels,[
+  '사진 1. 원본의 오른쪽 위 부분. 온전히 보이는 얼굴: 몽이. 가장자리에 걸려 일부만 보이는 얼굴: 모아(사진의 왼쪽 가장자리).',
+  '사진 2. 원본의 가운데 위 부분. 온전히 보이는 얼굴: 토리, 루루, 담이, 모아. 가장자리에 걸려 일부만 보이는 얼굴: 몽이(사진의 오른쪽 가장자리).',
+  '사진 3. 원본의 왼쪽 위 부분. 온전히 보이는 얼굴: 토리. 가장자리에 걸려 일부만 보이는 얼굴: 루루(사진의 오른쪽·위쪽 가장자리).',
+  '사진 4. 원본의 오른쪽 위 부분. 온전히 보이는 얼굴: 담이, 모아, 몽이. 가장자리에 걸려 일부만 보이는 얼굴: 루루(사진의 왼쪽 가장자리).',
+  '사진 5. 원본의 오른쪽 위 부분. 온전히 보이는 얼굴: 몽이. 가장자리에 걸려 일부만 보이는 얼굴: 모아(사진의 왼쪽 가장자리).',
+  '사진 6. 원본의 한가운데 부분. 온전히 보이는 얼굴: 토리, 루루, 담이, 모아, 몽이(다섯 모두).']);
+ assert.equal(new Set(labels).size,6,'사진 이름이 서로 다르다');
+ // 설명이 좌표와 맞는지: ‘온전히 보이는 얼굴’ = 잘리지 않은 얼굴, 이름이 아예 없는 친구 = 틀 밖
+ const wholeOf=t=>(/온전히 보이는 얼굴: ([^.(]+)/.exec(t)||[,''])[1].split(', ').filter(Boolean);
+ labels.forEach((t,i)=>{const r=E.FOLLOW_CROPS[i],cut=E.cutFaces(r);
+  assert.deepEqual(wholeOf(t),NAMES.filter((_,n)=>!cut.includes(n)),'사진 '+(i+1));
+  NAMES.forEach((n,k)=>assert.equal(t.includes(n),E.faceIn(r,k).state!=='out','사진 '+(i+1)+' '+n));
+  assert.doesNotMatch(t,/잘렸|나왔|정답|맞아/,'답을 읽어 주지 않는다');});
+ // 글 설명만 읽고 여섯 장을 표시한다: ‘온전히 보이는 얼굴’에 담이가 있으면 나왔어, 없으면 잘렸어
+ const d=detailsOf(g,'follow');assert.match(d.html,/<summary>사진을 글로 살펴보기<\/summary>/);
+ assert.ok(d.text.includes('이름이 없는 친구는 그 사진에 보이지 않는다.'),d.text);
+ labels.forEach((t,i)=>{const line=t.replace(/^사진 \d\. /,'');assert.ok(d.text.includes('사진 '+(i+1)+': '+line),'글 설명에 같은 줄: '+t);
+  g.click('mark',{id:'p'+(i+1),value:wholeOf(line).includes('담이')?'shown':'cut'});});
+ assert.deepEqual(E.followMarks.photo.ids.map(id=>g.state().follows.photo.marks[id]),E.truth,'글 설명만으로 한 표시가 기록과 같다');
+ // 표시 묶음 이름·버튼은 그대로(나왔어/잘렸어), 사진 번호로 구분된다
+ const groups=attrOf(g.app.innerHTML,'div',a=>a.role==='group'&&/담이가 나왔나/.test(a['aria-label']||'')).map(a=>a['aria-label']);
+ assert.deepEqual(groups,[1,2,3,4,5,6].map(n=>`사진 ${n}에 담이가 나왔나`));
+ // 펼친 채로 표시해도 펼쳐져 있다
+ const g2=open('photo','follow');toggle(g2,'follow',true);g2.click('mark',{id:'p1',value:'cut'});assert.equal(detailsOf(g2,'follow').open,true);
+ // 좌표를 바꾸면 설명도 바뀐다: 사진 2의 틀을 담이 얼굴 가운데(가로 777)에서 끊는다
+ const g3=open('photo','follow');g3.E.FOLLOW_CROPS[1].splice(0,4,0,0,777,518);g3.click('mark',{id:'p6',value:'shown'});
+ const l2=attrOf(g3.app.innerHTML,'canvas',c=>/^사진 2/.test(c['aria-label']||''))[0]['aria-label'];
+ assert.equal(l2,'사진 2. 원본의 왼쪽 위 부분. 온전히 보이는 얼굴: 토리, 루루. 가장자리에 걸려 일부만 보이는 얼굴: 담이(사진의 오른쪽 가장자리).');
+});
+// 사진 사건의 화면 코드에 손으로 적어 둔 사진 설명도 좌표와 맞아야 한다(review 2의 연장).
+test('review 2·3: hand-written photo descriptions in the screen code still agree with the crops',()=>{
+ const g=open('photo','hook'),auto=attrOf(g.app.innerHTML,'canvas',c=>/자동으로 자른 사진\./.test(c['aria-label']||''))[0];
+ assert.equal(auto['aria-label'],'자동으로 자른 사진. 담이 얼굴이 없다.');assert.equal(auto['data-crop'],E.AUTO.join(','));assert.equal(E.faceIn(E.AUTO,2).state,'out');
+ g.click('next');g.click('item',{id:'photo-original'});
+ assert.match(attrOf(g.app.innerHTML,'img',a=>/원본 사진/.test(a.alt))[0].alt,/^다섯 친구가 모두 나온 축제 원본 사진\./);assert.deepEqual(E.cutFaces([0,0,...E.PHOTO]),[]);assert.equal(E.faces.length,5);
+});

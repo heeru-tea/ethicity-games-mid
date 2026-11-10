@@ -148,6 +148,8 @@ function createGame(opts={}){
    return {value:target.value,count:count.textContent,limit:limit.textContent,emptyHidden:empty.hidden};
   },
   windowEvent(type){fire('window',type,{});},
+  // 문서에 이벤트 하나를 보낸다(toggle처럼 누르기·입력이 아닌 것). e.target은 대본이 만든다.
+  documentEvent(type,e){fire('document',type,e);},
   // 그림 불러오기 흉내: ok(src)가 참이면 열림, 아니면 실패. 새로 생긴 시도까지 차례로 끝낸다.
   settleImages(ok){
    for(let i=0;i<images.length;i++){const img=images[i];if(img.settled||!img.src)continue;img.settled=true;
