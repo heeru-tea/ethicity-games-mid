@@ -115,6 +115,8 @@ function createGame(opts={}){
  const game={env,images,scripts,E:sb.TransparencyEngine,D:sb.TransparencyStory,api:sb.TransparencyGame,app,modal,clicked:new Set(),
   storageKey:KEY,stored:()=>store.has(KEY)?store.get(KEY):null,
   state:()=>sb.TransparencyGame.getState(),
+  // 지금 초점이 있는 요소의 data-*(없으면 null). 키보드로 같은 버튼을 다시 누르는 검사에 쓴다.
+  focused:()=>active&&active.isConnected?{tag:active.tagName,...active.dataset}:null,
   has:(act,data)=>{const b=findButton(act,data);return !!b&&!b.disabled;},
   buttons:act=>parseTags(modal.open?modalBody.innerHTML:app.innerHTML,'button').filter(a=>!act||a['data-act']===act),
   // 버튼 누르기. 화면에 없는 버튼이면 대본 잘못이므로 멈춘다(disabled 버튼은 눌러도 아무 일 없어야 한다).

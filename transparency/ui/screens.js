@@ -173,10 +173,11 @@
   return step==='intro'?'프롤로그':step==='report'?'보고서':'마지막';
  }
  // 다시 그린 뒤 같은 버튼에 초점을 돌려주려고, 지금 초점이 있는 버튼을 가리키는 선택자를 만든다.
+ // data-value까지 넣는다: 사진 후속 조사의 ‘나왔어’·‘잘렸어’는 data-act·data-id가 같고 data-value만 다르다.
  function focusSelector(){
   const el=document.activeElement;
   if(!el||!$('#app').contains(el))return null;
-  const parts=['data-act','data-id'].filter(a=>el.hasAttribute(a)).map(a=>`[${a}="${CSS.escape(el.getAttribute(a))}"]`);
+  const parts=['data-act','data-id','data-value'].filter(a=>el.hasAttribute(a)).map(a=>`[${a}="${CSS.escape(el.getAttribute(a))}"]`);
   return parts.length?el.tagName.toLowerCase()+parts.join(''):null;
  }
  // moved = 장면이 바뀌었다(제목에 초점을 주고 맨 위로). 아니면 누르던 버튼에 초점을 돌려준다.
