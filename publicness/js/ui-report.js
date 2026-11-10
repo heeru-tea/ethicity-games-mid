@@ -56,13 +56,14 @@
     cs.appendChild(row('2단계 청원', r.choices.petition || '(해당 없음)'));
     cs.appendChild(row('4단계 무임승차', r.choices.elder || '(해당 없음)'));
     art.appendChild(cs);
+    if (r.scope) art.appendChild(el('p', { id: 'report-scope', 'class': 'report-scope' }, r.scope)); /* 2026-11-10 검토 2번: 두 건수의 범위(실제로 생긴 요청 / 평가 대상) */
     r.stages.forEach(function (st) {
       var sec = el('section', { 'class': 'report-stage', 'data-phase': String(st.phase), 'aria-labelledby': 'report-stage-' + st.phase });
       sec.appendChild(el('h3', { id: 'report-stage-' + st.phase }, st.title));
       var ul = el('ul', { 'class': 'report-plan' }); st.plan.forEach(function (t) { ul.appendChild(el('li', null, t)); });
       sec.appendChild(row('내 계획', ul));
       var nums = el('ul', { 'class': 'report-nums' });
-      st.numbers.forEach(function (n) { var li = el('li'); li.appendChild(el('span', null, n[0] + ' ')); li.appendChild(el('b', null, n[1])); nums.appendChild(li); });
+      st.numbers.forEach(function (n) { var li = el('li', n[2] ? { 'class': 'is-' + n[2] } : null); li.appendChild(el('span', null, n[0] + ' ')); li.appendChild(el('b', null, n[1])); nums.appendChild(li); });
       sec.appendChild(row('결과', nums));
       sec.appendChild(row('다음 운행 목표', st.goal));
       sec.appendChild(row('내 생각', st.mine));
