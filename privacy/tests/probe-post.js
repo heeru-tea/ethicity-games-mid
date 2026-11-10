@@ -125,6 +125,8 @@
 
   // ── 사건 8 확장 「렌즈 안에 갇힌 밤」 CG 프로브 ──
   // R.A 경로에서 사건 8만 바꿔 현장 → 싸움 → 지원 요청으로 간다(사건 8 첫 선택 = 13번째, 0부터 12)
+  // 대표 경로 A에 끼운 특별 수업 단계 수(2026-11-10) — 아래 고정 위치(upto·from)는 모두 그 뒤라 이만큼 민다
+  function scn() { return window.PRIVACY_ROUTES.A.filter(function (x) { return /^sc_/.test(x); }).length; } // routes.js는 나중에 불러오므로 쓸 때 센다
   function nfRoute(R, list) { return R.A.reduce(function (a, x) { return a.concat(x === 'c3_e8_a#tell' ? list : [x]); }, []); }
   var NF_FIGHT = ['c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#support'];
   function cgNow() {
@@ -156,9 +158,9 @@
       ok(/가상/.test(note) && /1388/.test(note) && /117/.test(note) && /118/.test(note), '주의 화면 안내·도움 연락처: ' + note.slice(0, 40));
       var log = nfWatch();
       $('#btn-new').click();
-      await play(route, { upto: 13 });
+      await play(route, { upto: 13 + scn() });
       PrivacyApp.setSpeed('normal');
-      await play(route, { from: 13, upto: 16 });
+      await play(route, { from: 13 + scn(), upto: 16 + scn() });
       var st = PrivacyApp.state();
       ok(st.scene === 'c3_e9_a', '수습 뒤 사건 9로 복귀: ' + st.scene);
       ok(seqHas(log, ['arrival', 'confrontation', 'clash', 'recorded', 'classroom-reaction', 'teacher-support']), 'CG 순서 도착→대치→충돌→촬영→교실→담임: ' + log.filter(function (e) { return 'cg' in e && e.cg; }).map(function (e) { return e.cg; }).join('>'));
@@ -196,7 +198,7 @@
       if (P.phase === 0) {
         $('#btn-new').click();
         PrivacyApp.setSpeed('instant');
-        await play(route, { upto: 14 });
+        await play(route, { upto: 14 + scn() });
         PrivacyApp.setSpeed('normal');
         $$('#g-dock .choice').filter(function (b) { return b.getAttribute('data-choice') === 'fight'; })[0].click();
         await wait(50);
@@ -226,7 +228,7 @@
     }
     else if (s === 'nf-undo') {
       $('#btn-new').click();
-      await play(route, { upto: 14 });
+      await play(route, { upto: 14 + scn() });
       var before = PrivacyApp.state();
       $$('#g-dock .choice').filter(function (b) { return b.getAttribute('data-choice') === 'fight'; })[0].click();
       await wait(50); await passTalk();
@@ -241,7 +243,7 @@
     }
     else if (s === 'nf-noimg') { // 그림을 못 불러오는 환경 — 대사만으로 끝까지
       $('#btn-new').click();
-      await play(route, { upto: 15 });
+      await play(route, { upto: 15 + scn() });
       ok(PrivacyApp.state().scene === 'c3_e8_f' && $$('#g-dock .choice').length === 3, '그림 없이도 교실 반응 선택지');
       await wait(200);
       ok($('#cg').hidden, '그림을 못 불러오면 빈 CG 레이어를 남기지 않음');
@@ -433,7 +435,7 @@
       ok(PrivacyApp.state().scene === 'c1_e2_b' && PrivacyMap.debug.stage().place === 'room' && PrivacyMap.debug.stage().tint === 'night', '그날 밤 내 방');
       $('#btn-undo').click(); await wait(); confirmYes(); await wait(50); await passTalk(); await wait(50);
       ok(PrivacyApp.state().scene === 'c1_e2_a' && PrivacyMap.debug.stage().place === 'classroom', '되돌리면 무대도 교실로');
-      await play(R.A, { from: 3, upto: 8 });
+      await play(R.A, { from: 3, upto: 8 + scn() });
       ok(PrivacyApp.state().scene === 'c2_e5_a' && $('#g-phone').getAttribute('data-device') === 'monitor', 'AI 도우미는 모니터');
       ok(PrivacyMap.debug.stage().place === 'room', '모니터 장면 무대: 내 방');
     }
@@ -1419,7 +1421,7 @@
         $('#btn-new').click(); await wait(300);
         var MW = window.PRIVACY_WORLD, MD = PrivacyMap.debug, sox = function (id) { return MW.SCENES.filter(function (c) { return c.id === id; })[0].ox; };
         if (s === 'shot-marks-sleep') await play(R.A, { upto: 3, stopAtMap: true }); // 사건 2: 엎드려 자는 민준
-        if (s === 'shot-marks-library') await play(R.A, { upto: 10, stopAtMap: true }); // 사건 6: 도서관 공용 PC
+        if (s === 'shot-marks-library') await play(R.A, { upto: 10 + scn(), stopAtMap: true }); // 사건 6: 도서관 공용 PC
         var spot = { 'shot-marks-yard': ['yard', 14, 9, 'left'], 'shot-marks-class': ['classroom', 15, 13, 'up'], 'shot-marks-sleep': ['classroom', 22, 14, 'right'], 'shot-marks-library': ['library', 16, 11, 'up'], 'shot-marks-room': ['room', 8, 9, 'down'] }[s];
         if (spot) MD.place(sox(spot[0]) + spot[1], spot[2], spot[3]);
         await wait(600); return;
