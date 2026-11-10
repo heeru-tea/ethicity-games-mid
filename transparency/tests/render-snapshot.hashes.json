@@ -574,7 +574,7 @@
    "next a093f6d1349e43cd",
    "back e6411ea3828e1f21",
    "next-again a093f6d1349e43cd",
-   "choose:quiet d6b0f061a8c9b460",
+   "choose:quiet 10e350cc32f8c7bb",
    "rechoose 6ead6e48606e1e22",
    "choose:loud b606f730ead31c6a",
    "next f74a2b59d433d803",
@@ -819,9 +819,9 @@
    "notebook 7406538449f69ef9",
    "close-notebook 609659c063f93e2d",
    "next d7ea3f2cf757e1f0",
-   "choose:accurate c6832e6d4cf2c430",
-   "notebook 3df97e3d6457540e",
-   "close-notebook eb9745b12c647842",
+   "choose:accurate c1d3b27d6b89bf87",
+   "notebook d9d90977fcebdfd8",
+   "close-notebook d57a70615499ff4d",
    "next 450760d520440be8",
    "change:appeal 385104e2194940cd",
    "notebook a5d9f5b36c255f86",
@@ -1171,9 +1171,9 @@
    "next 3dbe81c4805b7ee1",
    "choose:loud f534bb99e8ebfd71",
    "rechoose 3dbe81c4805b7ee1",
-   "choose:accurate 1a7ac1aaac1743bf",
+   "choose:accurate 32dec42894788329",
    "rechoose 4245eb0e6205f714",
-   "choose:quiet dfabd088b6788bf6",
+   "choose:quiet 270ae5773e934d95",
    "rechoose bca2d03a22923ddc"
   ],
   "art-mixed reflect:camp": [
@@ -1192,9 +1192,9 @@
    "next 6ed57e7a4c22594f",
    "choose:loud 5aa254dc01109d2d",
    "rechoose 6ed57e7a4c22594f",
-   "choose:accurate caca77969bc9a421",
+   "choose:accurate 2df8afc440fded0d",
    "rechoose 8bdb225147d058db",
-   "choose:quiet 3ba373195dba831d",
+   "choose:quiet f119691010bc705b",
    "rechoose 25d3e746604098d8"
   ],
   "art-none reflect:camp": [
@@ -1213,9 +1213,9 @@
    "next 9e3d1890a7add268",
    "choose:loud ddd1d38a5223f0ec",
    "rechoose 9e3d1890a7add268",
-   "choose:accurate cde483f67fbe05ef",
+   "choose:accurate b8caf78529b8fe19",
    "rechoose c227b617da54e5dd",
-   "choose:quiet eb350f67e2cc69bc",
+   "choose:quiet 87281432bb51e9ac",
    "rechoose 0fe8a55fafbab0cc"
   ],
   "resume reflect:share": [
@@ -1376,9 +1376,9 @@
    "next a451a83078444483",
    "choose:loud 279a5417cc92dcf2",
    "rechoose a451a83078444483",
-   "choose:accurate addbb9f33ac9475a",
+   "choose:accurate d1a73ec060600169",
    "rechoose 342cacb17b295453",
-   "choose:quiet edf773bc03e58f6f",
+   "choose:quiet 7120be66ce031826",
    "rechoose 3ba775ae915a89b6"
   ],
   "art-mixed wrong:camp": [
@@ -1397,9 +1397,9 @@
    "next 67ab868ff42f8792",
    "choose:loud 0a10c1b4f535662d",
    "rechoose 67ab868ff42f8792",
-   "choose:accurate 3d428f4abdfbd737",
+   "choose:accurate 8988e06e8fec0755",
    "rechoose adcfdff8849e7589",
-   "choose:quiet 8638cb79f95e3a75",
+   "choose:quiet 2b217eb9d3fb68fd",
    "rechoose f94f2a586c0b9076"
   ],
   "resume wrong:share": [

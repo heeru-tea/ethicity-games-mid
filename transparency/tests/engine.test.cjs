@@ -185,3 +185,19 @@ test('photo outcomes are real crops: automatic leaves 담이 out, the full choic
 test('revisit cannot jump past the furthest scene',()=>{
  let s=at(3);s=E.reduce(s,{type:'revisit',scene:10});assert.equal(s.scene,3);
 });
+// ── 2026-11-10 외부 검토(review.md) 반영 ──
+// 1. 사건 4 자료는 마을별 집계·항목 비중·버스 횟수뿐이다. 담이 한 사람이 왜 떨어졌는지(참여 횟수·항목별 점수·합격선)는 자료에 없으므로
+//    결과·수첩·서술 틀 어디에서도 '개인 탈락 이유를 알았다'고 말하지 않는다.
+test('review 1: case 4 never claims 담이\'s own reason is known; the record-matching result names a criterion that may be unfavourable and asks for a re-check',()=>{
+ const C=D.cases.camp,all=JSON.stringify(C);
+ assert.doesNotMatch(all,/왜 떨어졌는지[^”"']{0,12}알(겠|았|게 됐)/,'no "now I know why I failed"');
+ const acc=C.choose.options.find(o=>o.id==='accurate'),said=acc.reaction.filter(([w])=>w==='dami').map(l=>l[1]).join(' ');
+ assert.match(said,/불리할 수 있는 기준/);assert.match(said,/내 점수도 다시 확인받고 싶어/);
+ // 자료에는 담이 개인 기록이 없다(있다면 이 검사를 함께 고친다)
+ assert.deepEqual(Object.keys(C.results.rows[0]).sort(),['apply','id','name','pass']);assert.ok(!/담이/.test(JSON.stringify([C.page,C.results,C.criteria])));
+ // 솔숲마을은 12명 가운데 1명이 붙었다: '다 떨어졌다'가 아니라 '거의 다'
+ const pine=C.results.rows.find(r=>r.target);assert.ok(pine.pass>0);
+ for(const [,t] of [...C.hook,...C.choose.options.flatMap(o=>o.reaction)])if(/떨어/.test(t)&&/(^|\s)다 떨어/.test(t))assert.match(t,/거의 다 떨어/,t);
+ // 아직 모르는 것은 그대로 모른다고 말한다
+ assert.match(C.follow.unknown,/아직 몰라/);assert.match(C.reflect.q2,/아직 확인하지 못한 것/);
+});
