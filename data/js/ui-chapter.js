@@ -6,6 +6,8 @@
  * 자리(app.js finishMission): 1~3 임무 = 마지막 대화 뒤·도시 복구 화면 전 / 4 임무 = 재연결 5/5 뒤·의뢰인 대사 전.
  * 저장: DR.App.records[임무].chapter = { req: { first, last }, concept: { first, last }, note } → DR.Save.setRecord('처음부터'에서 지워짐).
  *   같은 임무를 다시 깨면 이전 답을 채운 채 다시 보여 준다(처음 선택은 처음 값 그대로).
+ * 이어하기(리뷰 2026-11-10 ③): opts.step = 시작할 단계(1~3, 앞 단계 답이 없으면 그 단계로 물러남), opts.onStep(n) = 단계가 바뀔 때마다 —
+ *   app.js runEnding이 저장(DR.Save.setEnding)해 두었다가 도중에 나간 뒤 그 단계로 돌아온다.
  * 점수는 매기지 않는다. ⚠️ 문장(여기 TEXT·임무 파일 chapterEnd)은 교사 검수 전 초안.
  */
 (function (root) {
@@ -54,6 +56,7 @@
   }
 
   function chapter(mission, opts, done) {
+    opts = opts || {};
     var ce = mission.chapterEnd, id = mission.id;
     var data = DR.Save.chapterOf(DR.App.records, id);
     var screen = document.getElementById('screen-chapter');
@@ -97,7 +100,8 @@
 
     // 같은 단계에서 다시 고르면 그 자리 그대로(스크롤·포커스 유지 — 좁은 화면에서 위로 튀지 않게)
     function show(step, focusChoice) {
-      var keep = screen.getAttribute('data-step') === String(step) ? screen.scrollTop : 0;
+      var same = screen.getAttribute('data-step') === String(step), keep = same ? screen.scrollTop : 0;
+      if (!same && opts.onStep) opts.onStep(step); // 새 단계에 들어섬 → 이어하기 자리
       screen.innerHTML = '';
       screen.setAttribute('data-step', String(step));
       var parts;
@@ -142,7 +146,11 @@
 
     DR.App.go('chapter');
     screen.removeAttribute('data-step');
-    show(1);
+    // 이어하기: 저장된 단계부터. 앞 단계 답이 남아 있지 않으면(저장 실패 등) 그 단계부터 다시
+    var start = opts.step >= 1 && opts.step <= 3 ? Math.floor(opts.step) : 1;
+    if (start > 1 && !data.req.last) start = 1;
+    if (start > 2 && !data.concept.last) start = 2;
+    show(start);
   }
 
   root.DR.UI.chapter = chapter;

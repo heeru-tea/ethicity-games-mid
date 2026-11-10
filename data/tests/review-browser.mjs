@@ -141,24 +141,6 @@ async function part3() {
     assert.equal(await ch.getAttribute('data-step'), '3', 'back at step 3');
     assert.equal(await page.locator('#ch-note').inputValue(), '골고루 모았는지');
 
-    if (on(6)) {
-      // ⑥ 저장이 막히면: '저장했어'가 아니라 탭에만 남아 있다고 — 글은 그대로, 다시 되면 '저장했어'
-      await page.evaluate(() => { window.__setItem = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); }; });
-      await page.locator('#ch-note').fill('골고루 모았는지 꼭 본다');
-      const fail = await page.locator('#ch-saved').innerText();
-      assert.doesNotMatch(fail, /저장했어/, 'no success text when the save failed');
-      assert.match(fail, /저장하지 못했어.*이 탭에만 남아 있어/);
-      assert.equal(await page.locator('#ch-note').inputValue(), '골고루 모았는지 꼭 본다', 'typing is not blocked');
-      assert.equal(await page.locator('#ch-note').isEditable(), true);
-      assert.equal(await page.evaluate(() => DR.Save.chapterOf(DR.Save.records(), 'm1').note), '골고루 모았는지', 'storage really kept the old text');
-      await page.screenshot({ path: shotPath('review-save-fail-1280') });
-      await page.evaluate(() => { Storage.prototype.setItem = window.__setItem; });
-      await page.locator('#ch-note').fill('골고루 모았는지 꼭 확인');
-      assert.equal(await page.locator('#ch-saved').innerText(), '저장했어');
-      assert.equal(await page.evaluate(() => DR.Save.chapterOf(DR.Save.records(), 'm1').note), '골고루 모았는지 꼭 확인');
-      console.log('ok ⑥ save failure is told');
-    }
-
     // 마치기 → 도시 복구(한 번) → 마무리 대화 → 임무 완료 화면
     await page.locator('#btn-ch-done').click();
     await page.locator('#screen-city').waitFor({ state: 'visible', timeout: 10000 });
@@ -241,6 +223,59 @@ async function part3() {
     assert.deepEqual(g.errors, []);
     console.log('ok ③ chapter end resumes (m4)');
   } finally { await g.browser.close(); }
+}
+
+/* ⑥ 저장이 막히면 '저장했어' 대신 탭에만 남아 있다고 알린다 — 챕터 끝 화면을 바로 연다(2 임무) */
+async function part6() {
+  const { browser, page, errors } = await openGame({ viewport: VP });
+  try {
+    await page.evaluate(() => {
+      DR.App.state = { mission: 'm2' };
+      DR.App.records.m2 = { cleared: true }; DR.Save.setRecord('m2', DR.App.records.m2);
+      DR.UI.chapter(DR.Missions.m2, {}, () => { window.__chDone = true; });
+    });
+    await page.locator('#screen-chapter').waitFor({ state: 'visible', timeout: 30000 });
+    const note = () => page.evaluate(() => DR.Save.chapterOf(DR.Save.records(), 'm2').note);
+    const block = () => page.evaluate(() => { window.__setItem = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); }; });
+    const unblock = () => page.evaluate(() => { Storage.prototype.setItem = window.__setItem; });
+    // 고르기 단계: 저장이 안 되면 그 자리에서 알린다(고른 답·피드백은 그대로 보인다)
+    await block();
+    await page.locator('.ch-choice[data-choice="refuse"]').click();
+    assert.equal(await page.locator('.ch-choice[data-choice="refuse"]').getAttribute('aria-pressed'), 'true');
+    assert.match(await page.locator('#ch-save-fail').innerText(), /저장하지 못했어.*이 탭에만 남아 있어/);
+    assert.equal(await page.locator('#btn-ch-next').isDisabled(), false, 'not blocked');
+    await unblock();
+    await page.locator('.ch-choice[data-choice="refuse"]').click();
+    assert.equal(await page.locator('#ch-save-fail').count(), 0, 'notice goes away once saving works');
+    await page.locator('#btn-ch-next').click();
+    await page.locator('.ch-concept').first().click();
+    await page.locator('#btn-ch-next').click();
+    // 생각 쓰기: 정상 → '저장했어'(저장본과 같음)
+    await page.locator('#ch-note').fill('이름표를 꼭 본다');
+    assert.equal(await page.locator('#ch-saved').innerText(), '저장했어');
+    assert.equal(await note(), '이름표를 꼭 본다');
+    // 저장이 막힘 → 성공 문구 없음, 탭에만 남아 있다고. 글은 그대로, 계속 쓸 수 있다
+    await block();
+    await page.locator('#ch-note').fill('이름표를 꼭 본다. 사진도 본다');
+    const fail = await page.locator('#ch-saved').innerText();
+    assert.doesNotMatch(fail, /저장했어/, 'no success text when the save failed');
+    assert.match(fail, /저장하지 못했어.*이 탭에만 남아 있어/);
+    assert.equal(await page.locator('#ch-note').inputValue(), '이름표를 꼭 본다. 사진도 본다', 'typing is not blocked');
+    assert.equal(await page.locator('#ch-note').isEditable(), true);
+    assert.equal(await note(), '이름표를 꼭 본다', 'storage really kept the old text');
+    await page.screenshot({ path: shotPath('review-save-fail-1280') });
+    // 다시 저장되면 상태도 바뀐다
+    await unblock();
+    await page.locator('#ch-note').fill('이름표를 꼭 본다. 사진도 본다!');
+    assert.equal(await page.locator('#ch-saved').innerText(), '저장했어');
+    assert.equal(await note(), '이름표를 꼭 본다. 사진도 본다!');
+    // 막힌 채로도 마칠 수 있다
+    await block();
+    await page.locator('#btn-ch-done').click();
+    assert.equal(await page.evaluate(() => window.__chDone), true);
+    assert.deepEqual(errors, []);
+    console.log('ok ⑥ save failure is told');
+  } finally { await browser.close(); }
 }
 
 /* ④ 비교표 화면 + ⑤ 크게 보기 포커스 — 4 임무 검수 */
@@ -336,6 +371,7 @@ async function part45() {
 }
 
 if (on(2)) await part2();
-if (on(3) || on(6)) await part3();
+if (on(3)) await part3();
+if (on(6)) await part6();
 if (on(4) || on(5)) await part45();
 console.log('PASS review');
