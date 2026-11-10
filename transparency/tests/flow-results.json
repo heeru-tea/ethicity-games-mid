@@ -190,7 +190,7 @@
    "feedback2": "390px: name tags + alt, portraits, 자료 header, scrollY 145→145 after third region"
   },
   {
-   "newArt": "missing → fallback pictures (corridor, repair shop, old poses); .webp preferred over .png; on disk now: assets/s05/bg-observatory-hill.webp, assets/s05/moa-phone.webp, assets/s05/lulu-casual.webp"
+   "newArt": "missing → fallback pictures (corridor, repair shop, old poses); .webp preferred over .png; on disk now: assets/s04/bg-newsroom.webp, assets/s04/moa-reporter.webp, assets/s04/dami-letter.webp, assets/s04/clerk-newspaper.webp, assets/s05/bg-observatory-hill.webp, assets/s05/moa-phone.webp, assets/s05/lulu-phone.webp, assets/s05/bami-phone.webp, assets/s05/galaxy-ai.webp, assets/s05/hill-real-photo.webp"
   },
   {
    "storageBlocked": "playable in current window with notice"

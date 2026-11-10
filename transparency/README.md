@@ -53,7 +53,7 @@
 - 소품 3×2 atlas: 닫힌 상자, 작은 창 상자, 수첩 / 편지, 원고, 예약표.
 - 축제 원본과 가상 얼굴 비교 2개. 축제 원본에서 파생한 실제 crop PNG 2개.
 - 총 PNG 18개(생성 원본 16, 파생 crop 2).
-- 새 사건 4·5 그림(2026-11-10 지시서 `docs/codex-art-brief-4-5-v2.md`, 사용자가 Codex에 맡김): `assets/s04/bg-newsroom`·`moa-reporter`·`dami-letter`·`clerk-newspaper`, `assets/s05/galaxy-ai`·`hill-real-photo`·`lulu-phone`·`bami-phone`. 아직 없어서 대신 그림(복도 배경·기존 인물·코드로 그린 하늘, 루루는 먼저 `lulu-casual`)을 쓴다. 오면 `node tools/art-4-5.cjs`로 .webp 사본만 만들면 저절로 쓰인다. `bg-observatory-hill`·`moa-phone`은 그대로 쓴다.
+- 새 사건 4·5 그림(2026-11-10 지시서 `docs/codex-art-brief-4-5-v2.md`, 사용자가 Codex에 맡김): `assets/s04/bg-newsroom`·`moa-reporter`·`dami-letter`·`clerk-newspaper`, `assets/s05/galaxy-ai`·`hill-real-photo`·`lulu-phone`·`bami-phone`. 2026-11-10 Codex 납품(8장, 크기·RGB/RGBA·인물 모서리 알파 0 확인), `node tools/art-4-5.cjs`로 .webp 사본(107~309KB)을 만들어 게임이 쓴다. 원본 PNG와 Codex 프롬프트 json은 커밋하지 않는다. 파일이 없으면 대신 그림(복도 배경·기존 인물·코드로 그린 하늘)으로 돌아간다. `bg-observatory-hill`·`moa-phone`은 그대로 쓴다.
 - 옛 사건 4·5(2026-11-08 Codex 납품, `docs/codex-art-brief-4-5.md`, 이제 게임에서 안 씀·파일은 남김): `assets/s04/bg-school-library`·`dami-books`, `assets/s05/bg-observatory-hill`·`moa-phone`·`lulu-casual`. 원본 PNG는 `.gitignore`(로컬에만), 게임은 `node tools/art-4-5.cjs`(헤드리스 Edge canvas, 지시서 크기·모서리 알파 확인)가 만든 `.webp` 사본(160~350KB)을 쓴다. app.js가 시작할 때 `.webp` → `.png`를 불러 보고, 없으면 지시서의 대신 그림(복도·수리점 배경, 기존 담이·모아·루루)을 쓴다. 대사 옆 작은 얼굴은 기존 그림에서 자른다(새 포즈는 무대에만). 사서 선생님은 올빼미 선생님 그림. 원본과 함께 온 `asset-manifest.json`·`generation-prompts.json`은 Codex 파일이라 커밋하지 않았다(사용자 결정). 대사·문서·상태 표식·중심점은 코드로 표시합니다.
 - 캐릭터 PNG의 투명 알파를 확인했습니다. 일부 가장자리 반투명 음영과 표정 시트 외곽 여백은 추가 아트 다듬기가 가능합니다.
 
