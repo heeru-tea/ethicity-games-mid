@@ -105,7 +105,7 @@
    :'';
   // 노란 테두리와 점은 그림으로만 보이므로, 열린 뒤에는 그림 설명에 글로도 적는다.
   const alt='축제 원본 사진. 세 구역으로 나뉘어 있다.'
-   +(all?` 실제로 잘린 범위는 원본의 ${placeName(E.AUTO)} 부분이고, 자르기 중심은 ${names[Math.min(2,Math.floor(cx/(E.PHOTO[0]/3)))]} 구역에 있다.`:'');
+   +(all?` 실제로 잘린 범위는 원본의 ${placeName(E.AUTO)} 부분이고, 자르기 중심은 ${names[E.place(E.AUTO)[0]]} 구역에 있다.`:'');
   const guide=D.cases.photo.checks[1].guide.replace(/^AI 안내:\s*/,'');
   return `<div class="photo-frame"><img src="${A.photo}" alt="${alt}">${cropped}<div class="regions">${regions.join('')}</div></div>`
    +`<div class="document guide-box"><p class="doc-label">AI 안내</p><p>${esc(guide)}</p></div>`

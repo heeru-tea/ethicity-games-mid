@@ -51,7 +51,8 @@
    box.querySelector('.count-n').textContent=t.value.length+'자';
    box.querySelector('.empty-note').hidden=filled(t.value);
    const note=box.querySelector('.limit-note');
-   if(note)note.textContent=limitNote(t.value,overflowed.has(t));
+   // ‘빠졌다’ 표시는 입력칸이 꽉 찼을 때만 믿는다(넘친 글이 있었다면 지금 꽉 차 있다. 끝의 이모지 한 개가 통째로 빠지면 한 자 모자랄 수 있다).
+   if(note)note.textContent=limitNote(t.value,overflowed.has(t)&&t.value.length>=MAX-1);
    if(!composing)overflowed.delete(t);
   }
  }

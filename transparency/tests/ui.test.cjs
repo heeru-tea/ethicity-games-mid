@@ -80,6 +80,9 @@ test('review 6: the write box limits, counts and saves in one unit; text over th
  r=g3.input('reflect','q1','가'.repeat(3990)+'나'.repeat(10));assert.equal(r.limit,g3.D.reflect.over.replace('{max}',MAX),'브라우저가 잘라 넣은 직후에도 안내가 남는다');
  r=g3.input('reflect','q1','가'.repeat(3990)+'나'.repeat(9));assert.equal(r.limit,'','지우면 사라진다');
  r=g3.input('reflect','q1','가'.repeat(100),{type:'beforeinput',inputType:'insertFromPaste',data:'나'.repeat(30)});assert.equal(r.limit,'','안 넘치면 조용히');
+ // 꽉 찬 칸에 더 넣으려다 막힌 뒤(입력 이벤트 없이 끝남), 글을 크게 줄인 다음 입력에는 ‘빠졌다’가 남지 않는다
+ g3.input('reflect','q1','가'.repeat(4000));r=g3.input('reflect','q1','가'.repeat(4000),{type:'beforeinput',inputType:'insertText',data:'나'});assert.equal(r.limit,g3.D.reflect.over.replace('{max}',MAX));
+ r=g3.input('reflect','q1','가'.repeat(200));assert.equal(r.limit,'','줄인 뒤에는 조용히');
  // 마지막 서술 칸도 같다
  const e=open('share','reflect');e.click('next');assert.equal(E.stepOf(e.state().scene),'end');
  assert.equal(boxAttrs(e,'final-note').maxlength,String(MAX));
