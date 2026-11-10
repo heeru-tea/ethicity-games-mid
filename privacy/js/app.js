@@ -247,6 +247,7 @@
   function chapterLabel(n) {
     if (n === 0) return '프롤로그';
     if (n === 4) return '에필로그';
+    if (n === 'sc') return '특별 수업 · 정보 시간'; // 1장과 2장 사이(2026-11-10)
     return n + '장 · ' + story.chapters[n].title;
   }
 
@@ -823,12 +824,14 @@
     var run = progress.run;
     var n = run.nextChapter, ch = story.chapters[n];
     var prev = run.chapter;
-    $('c-eyebrow').textContent = n === 4 ? '마지막' : (n + '장');
+    $('c-eyebrow').textContent = n === 4 ? '마지막' : n === 'sc' ? '특별 수업' : (n + '장');
     $('c-title').textContent = n === 4 ? '에필로그' : ch.title;
     $('c-sub').textContent = ch.sub;
     var sum = $('c-summary');
     sum.textContent = '';
-    if (prev >= 1 && story.chapters[prev]) {
+    var plan = prev === 'sc' ? classPlanBlock(run) : null;
+    if (plan) sum.appendChild(plan); // 특별 수업 뒤 2장 카드: 수치 변화 대신 '우리 반이 정한 AI CCTV 안'
+    else if (prev >= 1 && story.chapters[prev]) {
       sum.appendChild(el('h2', null, chapterLabel(prev) + ' — 지금까지 생긴 변화'));
       story.chapters[prev].events.forEach(function (e) { sum.appendChild(eventBlock(e, run)); });
       var mark = run.chapterMarks[prev] || { stats: {}, trust: {} };
@@ -844,11 +847,26 @@
     } else {
       sum.appendChild(el('p', 'lead-sub', '학급 축제 ‘레트로 사진관’을 준비하는 나흘. 단톡방, SNS, AI 도우미, 공용 컴퓨터에서 여러 번 선택하게 돼요. 지나간 선택은 뒤에서 다시 돌아와요.'));
     }
-    $('btn-chapter-go').textContent = n === 4 ? '에필로그 보기' : n + '장 시작';
+    $('btn-chapter-go').textContent = n === 4 ? '에필로그 보기' : n === 'sc' ? '특별 수업 시작' : n + '장 시작';
     show('v-chapter');
     // 장 카드 뒤로 직전 장면의 무대를 어둡게 깐다
     $('stage').classList.add('dim');
     if (stagedScene !== run.scene) { stagedScene = run.scene; window.PrivacyMap.stage(WD.STAGES[run.scene] || { place: 'classroom', tint: 'day', cast: [] }); }
+  }
+
+  /* 특별 수업 「우리 학교에 AI CCTV를 단다면」(2026-11-10): 우리 반이 정한 안 + 선생님이 짚은 질문(앞 2줄). 정답 표시 없음.
+   *   특별 수업 플래그가 없으면(옛 진행) null */
+  function classPlanBlock(run) {
+    var rows = E.specialClassRows(story, run);
+    if (!rows.length) return null;
+    var box = el('section', 'class-plan');
+    box.appendChild(el('h3', null, '우리 반이 정한 AI CCTV 안'));
+    var dl = el('dl', 'class-rows');
+    rows.forEach(function (r) { var row = el('div', 'class-row'); row.appendChild(el('dt', null, r.label)); row.appendChild(el('dd', null, r.text)); dl.appendChild(row); });
+    box.appendChild(dl);
+    var qs = E.specialClassNotes(story, run).slice(0, 2);
+    if (qs.length) { box.appendChild(el('p', 'class-q-label', '선생님이 짚은 질문')); qs.forEach(function (t) { box.appendChild(el('p', 'class-q', t)); }); }
+    return box;
   }
 
   /* ── 엔딩 ─────────────────────────── */
@@ -987,6 +1005,7 @@
       story.chapters[n].events.forEach(function (e) { sec.appendChild(eventBlock(e, run)); });
       evs.appendChild(sec);
     });
+    var cls = $('e-class'), plan = classPlanBlock(run); cls.textContent = ''; cls.hidden = !plan; if (plan) cls.appendChild(plan);
     var st = $('e-stats'); st.textContent = '';
     var grid = el('div', 'change-grid');
     var a = el('div');

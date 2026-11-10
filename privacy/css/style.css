@@ -526,6 +526,15 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .spr.fallback { border-radius: 50%; color: #fff; font-weight: 800; font-size: 1.2rem; }
 .trust-val { font-weight: 600; }
 .chapter-group { margin-bottom: 24px; }
+/* 특별 수업 '우리 반이 정한 AI CCTV 안'(2026-11-10): 결과 화면 다른 상자와 같은 얇은 전체 테두리, 정답 색·왼쪽 띠 없음 */
+.class-plan { margin-top: 16px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-out); background: var(--card); }
+.class-plan h3 { margin: 0 0 8px; }
+.class-rows { margin: 0; display: grid; gap: 4px; }
+.class-row { display: grid; grid-template-columns: 6.5em 1fr; gap: 8px; }
+.class-row dt { color: var(--text-mute); }
+.class-row dd { margin: 0; font-weight: 600; }
+.class-q-label { margin: 12px 0 2px; font-size: .9rem; color: var(--text-mute); }
+.class-q { margin: 0; }
 .group-label { font-size: .9rem; font-weight: 700; color: var(--text-mute); margin-bottom: 8px; }
 .prose p { font-size: 1.05rem; }
 .callout { background: var(--surface); border-left: 4px solid var(--accent); border-radius: 0 var(--radius-in) var(--radius-in) 0; padding: 12px 16px; margin-top: 24px; }
