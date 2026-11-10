@@ -27,4 +27,14 @@ function playTo(sessionOrConfig, phase, plan) {
   while (s.history.length < phase) { if (s.history.length) { if (!S.nextPhase(s) || s.stage === 'ending') throw new Error('단계 진행 실패'); } runAndFinish(s, plan); }
   return s;
 }
-module.exports = { playTo, runAndFinish, balancedPlan, withF, withoutF };
+/* finishedSession({petition, elder, whyBoth, plan}) — 기본 세팅 5단계를 plan(기본 balancedPlan)으로 끝까지. 3단계 시작에 청원 답, 4단계 시작에 무임 정책을 넣는다(없으면 안 넣음). */
+function finishedSession(o) {
+  o = o || {}; const C = require('../js/choices.js'), plan = o.plan || balancedPlan, s = playTo(cfg, 2, plan);
+  const why = (k) => (o.whyBoth || o['why_' + k]) ? '이유 ' + k : '';
+  S.nextPhase(s); if (o.petition) { C.set(s, 'petition', 'choice', o.petition); if (why('petition')) C.set(s, 'petition', 'why', why('petition')); } runAndFinish(s, plan);
+  S.nextPhase(s); if (o.elder) { C.set(s, 'elder', 'choice', o.elder); if (why('elder')) C.set(s, 'elder', 'why', why('elder')); } runAndFinish(s, plan);
+  while (s.phase < s.config.phases.length) { S.nextPhase(s); runAndFinish(s, plan); }
+  S.nextPhase(s); /* 마지막 단계 뒤 엔딩 — s.end 확정 */
+  return s;
+}
+module.exports = { playTo, runAndFinish, balancedPlan, withF, withoutF, finishedSession };

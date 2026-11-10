@@ -28,3 +28,12 @@
 #stop-fares th, #stop-fares td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
 #stop-fares th:first-child, #stop-fares td:first-child { text-align: left; white-space: normal; }
 #stage .net-label.net-profit-hi .net-wait { color: #1F2E4D; }
+/* 보고서 금배지(2026-11-10): 받음 = 은은한 금색 테두리·별, 아직 = 흐린 테두리. 인쇄에선 글자(받음/아직)로 구분 */
+.badge-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 8px; }
+.badge { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 10px; border: 1px solid #C9CED8; border-radius: 10px; color: #5A6478; background: #fff; }
+.badge-star { font-size: 20px; line-height: 1; flex: none; }
+.badge-label { flex: 1 1 auto; min-width: 0; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.4; }
+.badge-state { flex: none; font-size: 13px; }
+.badge.is-earned { border: 2px solid #B8892B; background: #FFF8E6; color: #3A2E10; }
+.badge.is-earned .badge-star { color: #B8892B; }
+@media print { .report .badge.is-not { border-style: dashed; } .report .badge.is-earned { border: 2px solid #000; background: none; } }
