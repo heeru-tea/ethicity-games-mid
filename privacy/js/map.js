@@ -926,6 +926,20 @@
     if (len <= v1 - v0) return a0 + len / 2 - (v0 + v1) / 2;
     return Math.max(a0 - v0, Math.min(a0 + len - v1, want));
   }
+  // 칠판 분필 글씨(2026-11-10 사용자 요청: 에필로그 칠판에 '프라이버시'): 무대 board가 있고 지금 장면이 교실일 때만. 그림은 그대로 두고 글씨만 얹는다
+  var lastBoard = null;
+  function drawBoard(sc, bx, by) {
+    var b = mode === 'stage' && stageInfo && stageInfo.board;
+    if (!b || sc.id !== 'classroom') { lastBoard = null; return; }
+    var x = bx + b.x * T, y = by + b.y * T, fs = Math.round(b.size * T);
+    ctx.save();
+    ctx.font = '700 ' + fs + 'px Galmuri11, NanumSquare, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillText(b.text, x + 1, y + 1); // 분필 가루 번짐
+    ctx.fillStyle = 'rgba(246,247,238,0.9)'; ctx.fillText(b.text, x, y);
+    var w = ctx.measureText(b.text).width;
+    ctx.restore();
+    lastBoard = { text: b.text, x0: x - w / 2, x1: x + w / 2, y0: y - fs / 2, y1: y + fs / 2 };
+  }
   // 장면 그림 바깥(장면이 화면보다 작을 때 남는 곳): 검정 대신 같은 그림을 아주 작게 줄였다 키운 흐린 배경 + 살짝 어둡게
   var blurImg = {};
   function drawBackdrop(sc, img) {
@@ -1027,6 +1041,7 @@
       ctx.fillStyle = 'rgba(60,70,60,0.35)';
       for (var gy = 0; gy < WD.SH; gy++) for (var gx = 0; gx < WD.SW; gx++) if (WD.grid[gy][sc.ox + gx] === '#') ctx.fillRect(bx + gx * T, by + gy * T, T + 1, T + 1);
     }
+    drawBoard(sc, bx, by);
     if (DEBUG.grid) debugGrid(sc, bx, by);
     // 공용 PC 3번: 그림의 컴퓨터 화면 옆 작은 번호표(목적지이거나 켜진 장면일 때 화면도 밝게)
     var pc = WD.object('pc3');
@@ -1605,6 +1620,7 @@
       tags: function () { return lastTags.slice(); },
       // 2026-11-03 플레이테스트 검사용: 인물 몸(캔버스 좌표)·말풍선 자리·방금 지나온 출입구·문 지난 뒤 멈춤·밀어 그리기
       bodies: function () { return lastBodies.slice(); },
+      board: function () { return lastBoard; }, // 칠판 글씨(캔버스 CSS 좌표) 또는 null
       bubbleRects: function () { return lastBubbles.slice(); },
       arrived: function () { return arrived ? { scene: arrived.scene, steps: arrived.steps } : null; },
       holding: holding,

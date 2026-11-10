@@ -411,7 +411,8 @@
     sc_3: { place: 'ailab', tint: 'day', cast: SC_CAST }, sc_4: { place: 'ailab', tint: 'day', cast: SC_CAST },
     sc_5: { place: 'ailab', tint: 'day', cast: SC_CAST },
     // 에필로그: 반 친구 넷이 담임 선생님 앞에 모두 모인다(확대 무대에서 한 화면에 — 2026-11-02 사용자, 첫 단톡방과 같은 방식)
-    ep_1: { place: 'classroom', tint: 'day', me: P('classroom', 16, 9, 'up'),
+    // board(2026-11-10 사용자 요청): 칠판 분필 글씨 — 그림은 그대로, map.js drawBoard가 교실 칠판 가운데(장면 칸 x·y, 글자 높이 size칸)에 그린다
+    ep_1: { place: 'classroom', tint: 'day', me: P('classroom', 16, 9, 'up'), board: { text: '프라이버시', x: 16, y: 2.15, size: 1.45 },
       cast: [who('teacher', 'classroom', 17, 7, 'down'), who('saebom', 'classroom', 14, 9, 'up'), who('haneul', 'classroom', 18, 9, 'up'),
         who('jiho', 'classroom', 14, 11, 'up'), who('minjun', 'classroom', 18, 11, 'up')] }
   };
