@@ -137,7 +137,7 @@ try {
   }
   // P1: 엔딩 판정 보조값 harmed_others(엔딩 조건은 그대로)
   const st = (flags) => Object.assign(E.createState(story), { flags });
-  ok(E.evalCond('harmed_others', st({ e3: 'capture' })) && E.evalCond('harmed_others', st({ e6b: 'cap' })) && !E.evalCond('harmed_others', st({ e2post: 'group' })), 'harmed_others: 캡처 전달 2건 추가');
+  ok(E.evalCond('harmed_others', st({ e3: 'capture' })) && E.evalCond('harmed_others', st({ e6b: 'cap' })) && E.evalCond('harmed_others', st({ e2post: 'group' })), 'harmed_others: 캡처 전달 2건 추가 + 단톡방에 올린 사진(2026-11-10)');
 } finally {
   await browser.close(); server.close();
 }

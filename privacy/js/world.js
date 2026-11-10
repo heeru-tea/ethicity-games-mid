@@ -367,7 +367,8 @@
     c1_e1_a: { place: 'room', tint: 'night', me: BED_ME, cast: [] }, // 'D-4 · 저녁 8:12' — 8시 이후는 밤(timeTint와 같은 기준, 2026-11-02)
     c1_e1_b: { place: 'room', tint: 'night', me: BED_ME, cast: [] },
     // 2026-11-03 플레이테스트: 주인공이 하늘 바로 아래에 서서 하늘 이름표가 얼굴을 덮고 있었다 → 셋을 서로 2칸 이상 떨어뜨림(둘 다 민준이 책상 건너편, 2026-11-02 '민준이 앞에' 유지)
-    c1_e2_a: { place: 'classroom', tint: 'day', me: P('classroom', 29, 8, 'down'),
+    // keep(2026-11-10 플레이테스트): 엎드린 민준이가 선택 상자 밑에 가렸다 → 카메라가 주인공·민준·하늘 묶음을 보이는 영역 가운데에(map.js 장면 무대)
+    c1_e2_a: { place: 'classroom', tint: 'day', me: P('classroom', 29, 8, 'down'), keep: ['minjun', 'haneul'],
       cast: [who('minjun', 'classroom', 29, 11, 'up', { pose: 'sleep' }), who('haneul', 'classroom', 26, 8, 'right'),
         who('saebom', 'classroom', 12, 8, 'down'), who('jiho', 'classroom', 10, 9, 'down')] },
     c1_e2_b: { place: 'room', tint: 'night', card: '그날 밤 · 내 방', cast: [] },
@@ -404,6 +405,8 @@
     c3_e8_h: { place: 'classroom', tint: 'day', card: '상담실', cast: [] },
     c3_e9_a: { place: 'classroom', tint: 'day', cast: classmates,
       bubbles: [{ on: '다들 퍼 가 주세요', who: 'jiho', text: '…!' }, { on: '당하고만 있으면 안 돼', who: 'saebom', text: '😤' }] },
+    // 2026-11-10 플레이테스트: 캡처 전달을 알게 된 지호와 마주 서는 사과 장면(둘만, 두 칸 떨어져 마주 봄)
+    c3_e9_j: { place: 'classroom', tint: 'day', me: P('classroom', 24, 11, 'right'), cast: [who('jiho', 'classroom', 26, 11, 'left')] },
     c3_e9_b: { place: 'classroom', tint: 'day', card: '점심시간 · 교실', cast: only(classmates, ['saebom', 'jiho']),
       bubbles: [{ on: '그냥 넘어가면 억울한데', who: 'saebom', text: '😣' }] },
     // 특별 수업(2026-11-10): AI 실습실, 선생님은 받침대 AI 앞, 친구 넷은 양쪽에 찬성(왼쪽 새봄·하늘)·반대(오른쪽 지호·민준)

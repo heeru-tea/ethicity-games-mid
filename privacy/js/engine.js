@@ -12,21 +12,30 @@
 
   /* ── 계산 플래그: 저장하지 않고 지금까지의 선택으로 그때그때 판정한다(조건 문법 그대로) ──
    *   hurt.<인물>  내가 그 친구를 해친 적이 있음(사진·번호·캡처·가짜 영상·계정) — 피해자가 나를 위로·사과하지 않게 대사를 가른다
-   *   harmed_others 내가 다른 사람의 정보를 퍼뜨린 적이 있음 — 엔딩 C·D와 에필로그에서 책임을 다룬다 */
+   *   harmed_others 내가 다른 사람의 정보를 퍼뜨린 적이 있음 — 엔딩 C·D와 에필로그에서 책임을 다룬다
+   *   harm_count   내가 해친 친구 수(0~4, hurt.* 가운데 참인 개수) — 엔딩 B 판정에 쓴다(2026-11-10 플레이테스트: 여럿을 해치고 수습만 해서는 B가 아님)
+   *   값이 { count: [조건…] }이면 참인 조건의 개수(숫자), 문자열이면 참/거짓 */
   var COMPUTED = {
     'hurt.minjun': 'e2post=story|group || e2fix=no || e7=join|silent || e7b=none',
     'hurt.saebom': 'e4=forward || e4b=blame',
     'hurt.jiho': 'e3=capture',
     'hurt.haneul': 'e6=post || e6b=deny|cap',
-    harmed_others: 'e4=forward || e6=post || e7=join || e9=share || e2post=story || e3=capture || e6b=cap' // 2026-11-02: 지호 대화 캡처 전달·하늘 DM 캡처 전달 추가(엔딩 판정과 무관, 책임 문단만)
+    // 2026-11-02: 지호 대화 캡처 전달·하늘 DM 캡처 전달 추가 · 2026-11-10: 28명 단톡방에 올린 사진(e2post=group)도 퍼뜨린 것(엔딩 판정과 무관, 책임 문단만)
+    harmed_others: 'e4=forward || e6=post || e7=join || e9=share || e2post=story|group || e3=capture || e6b=cap',
+    harm_count: { count: ['hurt.minjun', 'hurt.saebom', 'hurt.jiho', 'hurt.haneul'] }
   };
+  function computed(key, state) {
+    var c = COMPUTED[key];
+    if (c && c.count) return c.count.filter(function (x) { return evalCond(x, state); }).length;
+    return evalCond(c, state);
+  }
 
   /* ── 조건 ───────────────────────── */
   function getVal(state, key) {
     if (key.indexOf('+') >= 0) {
       return key.split('+').reduce(function (s, k) { return s + Number(getVal(state, k.trim()) || 0); }, 0);
     }
-    if (COMPUTED.hasOwnProperty(key)) return evalCond(COMPUTED[key], state);
+    if (COMPUTED.hasOwnProperty(key)) return computed(key, state);
     if (key.indexOf('trust.') === 0) return state.trust[key.slice(6)] || 0;
     if (STAT_KEYS.indexOf(key) >= 0) return state.stats[key] || 0;
     return state.flags[key];
@@ -121,6 +130,16 @@
       } else {
         state.stats[k] = Math.max(0, (state.stats[k] || 0) + add[k]);
       }
+    });
+    capTrust(state);
+  }
+
+  /* 내가 해친 친구(hurt.<인물>)의 믿음은 0을 넘지 않는다(2026-11-10 플레이테스트) —
+   *   사진을 올리고 지워 준 것처럼, 수습을 했다고 피해를 준 친구의 믿음이 처음보다 올라가지는 않게. 선택할 때마다 다시 맞춘다 */
+  function capTrust(state) {
+    Object.keys(state.trust).forEach(function (who) {
+      var key = 'hurt.' + who;
+      if (state.trust[who] > 0 && COMPUTED.hasOwnProperty(key) && computed(key, state)) state.trust[who] = 0;
     });
   }
 

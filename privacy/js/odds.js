@@ -6,8 +6,9 @@
  */
 (function (root) {
   'use strict';
-  var V1 = { A: 8.9, B: 40.4, C: 17.4, D: 33.3 }; // 2026-11-02 계정 사칭(e6 post) serious+1 후(check-story 10만 회). 이전 A 9.0·B 43.0·C 21.6·D 26.3
-  var V2 = { A: 6.4, B: 39.4, C: 20.9, D: 33.3 }; // 2026-11-09 ENDING_V2: AI 통째 입력 spread+1·minimize−1, 계정 장난 consent−1
+  var V1 = { A: 8.5, B: 25.4, C: 30.8, D: 35.2 }; // 2026-11-10 플레이테스트(엔딩 B 조건·믿음 상한·사과 장면) 뒤 다시 계산. 이전 A 8.9 · B 40.4 · C 17.4 · D 33.3 ← // 2026-11-02 계정 사칭(e6 post) serious+1 후(check-story 10만 회). 이전 A 9.0·B 43.0·C 21.6·D 26.3
+  // 2026-11-10 플레이테스트: 엔딩 B = 확산 4 이하 + 해친 친구 2명 이하, 해친 친구의 믿음 상한, 사과 장면. 이전(2026-11-09 ENDING_V2) A 6.4 · B 39.4 · C 20.9 · D 33.3
+  var V2 = { A: 5.5, B: 26.1, C: 33.2, D: 35.2 };
   var st = root.PRIVACY_STORY;
   var ODDS = st && st.endingV2 === false ? V1 : V2;
   root.PRIVACY_ODDS = ODDS;

@@ -999,8 +999,21 @@
       // 카메라는 지금 장면 하나(ox~ox+SW, 0~SH) 안에서만 움직인다 — 장면 밖(검은 빈 곳)을 비추지 않게.
       // 보이는 영역이 장면보다 크면 장면을 그 영역 가운데에 두고, 남는 곳은 흐린 배경(drawBackdrop)이 채운다.
       var fr = freeRect();
-      cx = fitAxis(px - (fr.x0 + fr.x1) / 2, sx0, sw, fr.x0, fr.x1, viewW, !!sc.bg);
-      cy = fitAxis(py - (fr.y0 + (fr.y1 - fr.y0) * 0.62), 0, sh, fr.y0, fr.y1, viewH); // 몸이 칸 위로 2칸쯤 서므로 조금 아래에
+      // 2026-11-10 플레이테스트: 무대에 keep(함께 보여야 할 인물)이 있으면 주인공 혼자가 아니라 그 묶음(몸 전체)의 가운데를 보이는 영역 가운데에 둔다 —
+      //   "찍을까?"(c1_e2_a)에서 주인공보다 세 칸 아래 엎드린 민준이가 오른쪽 아래 선택 상자 밑에 들어가 있었다
+      var keep = stageInfo && stageInfo.keep ? cast.filter(function (c) { return stageInfo.keep.indexOf(c.who) >= 0; }) : [];
+      var wantX = px - (fr.x0 + fr.x1) / 2, wantY = py - (fr.y0 + (fr.y1 - fr.y0) * 0.62); // 몸이 칸 위로 2칸쯤 서므로 조금 아래에
+      if (keep.length) {
+        var TAG_ROOM = 0.7; // 발밑 이름표 자리(칸) — 몸만 보이고 이름표가 상자 밑에 들어가지 않게
+        var kx0 = me.fx, kx1 = me.fx + 1, ky0 = me.fy + 1 - BODY, ky1 = me.fy + 1;
+        keep.forEach(function (c) { kx0 = Math.min(kx0, c.x); kx1 = Math.max(kx1, c.x + 1); ky0 = Math.min(ky0, c.y + 1 - BODY); ky1 = Math.max(ky1, c.y + 1 + TAG_ROOM); });
+        wantX = (kx0 + kx1) / 2 * T - (fr.x0 + fr.x1) / 2; wantY = (ky0 + ky1) / 2 * T - (fr.y0 + fr.y1) / 2;
+      }
+      cx = fitAxis(wantX, sx0, sw, fr.x0, fr.x1, viewW, !!sc.bg);
+      cy = fitAxis(wantY, 0, sh, fr.y0, fr.y1, viewH);
+      // keep 묶음의 아래쪽이 그래도 보이는 영역 밖이면(장면을 캔버스 전체에 채우느라 못 올림) 그 축만 '보이는 영역만 장면 안'으로
+      if (keep.length && ((ky1 * T - cy > fr.y1) || (ky0 * T - cy < fr.y0))) cy = fitAxis(wantY, 0, sh, fr.y0, fr.y1, Infinity);
+      if (keep.length && ((kx1 * T - cx > fr.x1) || (kx0 * T - cx < fr.x0))) cx = fitAxis(wantX, sx0, sw, fr.x0, fr.x1, Infinity, !!sc.bg);
       // 2026-11-09 C3 후속: 장면으로 캔버스를 다 덮으면(위 fitAxis) 작은 창·높은 선택 상자에서 주인공이 폰·선택 상자 뒤로 들어갔다(run-probes stage-phone, 800×600).
       //   그 축만 예전처럼 '보이는 영역만 장면 안'으로 — 가장자리에 좁은 흐린 띠가 생겨도 주인공이 보이는 쪽을 택한다(빈 칸 없음은 보통 화면 1148×977·1280×800·390×844에서 검사)
       if (py - cy > fr.y1 || py - cy - T * 2 < fr.y0) cy = fitAxis(py - (fr.y0 + (fr.y1 - fr.y0) * 0.62), 0, sh, fr.y0, fr.y1, Infinity);
