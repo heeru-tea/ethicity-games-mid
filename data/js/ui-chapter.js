@@ -27,6 +27,7 @@
     noteTitle: '짧게 남기기',
     noteHelp: '문장 틀을 채워 써 보자. 비워도 괜찮아.',
     saved: '저장했어',
+    saveFail: '저장하지 못했어. 지금 이 탭에만 남아 있어.', // 저장소가 막혔거나 꽉 참(리뷰 2026-11-10 ⑥) — 입력은 막지 않는다
     next: '다음',
     done: '마치기',
     sumReq: '다른 용도 요청: ',
@@ -61,12 +62,17 @@
     var data = DR.Save.chapterOf(DR.App.records, id);
     var screen = document.getElementById('screen-chapter');
 
+    // 저장 결과를 돌려준다 — 실패했는데(저장소 막힘·용량) '저장했어'라고 하지 않게(리뷰 2026-11-10 ⑥). 메모리(DR.App.records)에는 늘 남는다
+    var saveOk = true;
     function save() {
       var rec = DR.App.records[id] || {};
       rec.chapter = { req: { first: data.req.first, last: data.req.last }, concept: { first: data.concept.first, last: data.concept.last }, note: data.note };
       DR.App.records[id] = rec;
-      DR.Save.setRecord(id, rec);
+      saveOk = DR.Save.setRecord(id, rec) === true;
+      return saveOk;
     }
+    // 고르기 단계: 방금 고른 것이 저장되지 않았을 때만 한 줄(다시 저장되면 사라진다)
+    function failNote() { return saveOk ? null : el('p', { id: 'ch-save-fail', class: 'note ch-saved is-fail', role: 'status', text: TEXT.saveFail }); }
     function pick(slot, cid) {
       if (!data[slot].first) data[slot].first = cid;
       data[slot].last = cid;
@@ -117,6 +123,7 @@
           choiceList(ce.choices, 'ch-choice', 'req', function (cid) { show(1, cid); }),
           el('p', { id: 'ch-feedback', class: 'ch-feedback' + (chosen && chosen.best ? ' is-best' : ''), role: 'status', text: chosen ? chosen.feedback : '' }),
           chosen ? el('p', { class: 'note ch-again', text: TEXT.again }) : null,
+          failNote(),
           el('div', { class: 'actions' }, [nextBtn('btn-ch-next', TEXT.next, !!chosen, function () { show(2); })])
         ]);
       } else if (step === 2) {
@@ -125,13 +132,20 @@
           el('p', { class: 'lead ch-question', text: q.question }),
           choiceList(q.choices, 'ch-concept', 'concept', function (cid) { show(2, cid); }),
           el('p', { id: 'ch-concept-feedback', class: 'ch-feedback' + (got && got.correct ? ' is-best' : ''), role: 'status', text: got ? got.feedback : '' }),
+          failNote(),
           el('div', { class: 'actions' }, [nextBtn('btn-ch-next', TEXT.next, !!got, function () { show(3); })])
         ]);
       } else {
         var area = el('textarea', { id: 'ch-note', class: 'ch-note', rows: '4', maxlength: '300', 'aria-describedby': 'ch-frame ch-note-help' });
         area.value = data.note || '';
         var status = el('p', { id: 'ch-saved', class: 'note ch-saved', role: 'status', text: '' });
-        area.addEventListener('input', function () { data.note = area.value; save(); status.textContent = TEXT.saved; });
+        // 저장됐을 때만 '저장했어'. 안 됐으면 탭에만 남아 있다고 알린다 — 글은 그대로 두고 계속 쓸 수 있다(다음 입력에서 다시 저장해 본다)
+        area.addEventListener('input', function () {
+          data.note = area.value;
+          var ok = save();
+          status.textContent = ok ? TEXT.saved : TEXT.saveFail;
+          status.classList.toggle('is-fail', !ok);
+        });
         parts = head(3, TEXT.noteTitle).concat([
           el('label', { for: 'ch-note', id: 'ch-frame', class: 'ch-frame', text: ce.frame }),
           el('p', { id: 'ch-note-help', class: 'note', text: TEXT.noteHelp }),
