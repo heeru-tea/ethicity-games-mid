@@ -452,7 +452,11 @@ body { overflow: hidden; word-break: keep-all; }
 .hero-pick { margin-top: 16px; }
 .hero-chip { transition: transform .15s ease-out, border-color .15s; }
 .hero-chip:hover { transform: translateY(-5px); }
-.title-guide { position: absolute; right: calc(9% + clamp(170px, 19vw, 270px) * .42); bottom: calc(7% + clamp(170px, 19vw, 270px) * 1.18); z-index: 1; display: flex; align-items: flex-end; gap: 4px; flex-direction: column-reverse;
+/* AI 봇 안내: 주인공(.tl-stage — 오른쪽 9%·아래 7%, 폭 W = clamp(170px, 19vw, 270px), 높이 1.25W) **오른쪽 옆**에 봇, 말풍선은 그 위(주인공 머리보다 위).
+   전엔 주인공 캔버스 위쪽에 겹쳐 놓아 봇이 주인공 머리를 가렸고, 자리를 title-layout 아래 끝에서 재서 임무 카드가 화면보다 길면(1280×800) 더 내려가 몸을 가렸다(플레이테스트 2026-11-12).
+   그래서 위에서부터 '첫 화면 높이'(100vh) 기준 상자를 두고 그 아래 끝에 붙인다 — 화면이 길어져도 주인공과 같은 기준 */
+.title-guide { position: absolute; top: 0; right: max(12px, calc(9% - 100px)); height: calc(100vh - 7vh - clamp(170px, 19vw, 270px) * 1.05 + 76px); height: calc(100dvh - 7dvh - clamp(170px, 19vw, 270px) * 1.05 + 76px);
+  z-index: 1; display: flex; align-items: flex-end; justify-content: flex-start; gap: 4px; flex-direction: column-reverse;
   transform: translateY(var(--float, 0)); pointer-events: none; }
 .tl-bot .character-portrait { filter: drop-shadow(0 4px 10px rgba(127,249,255,.35)); }
 .tl-bubble { max-width: 15rem; margin: 0; padding: 8px 12px; border-radius: 14px 14px 4px 14px; background: #f4f1ff; color: #10093a; font-size: 14px; font-weight: 700; line-height: 1.45; word-break: keep-all; }
@@ -464,7 +468,7 @@ body { overflow: hidden; word-break: keep-all; }
   .tl-leaving .tl-stage { transform: translateX(150%); }
   .title-layout { display: block; flex: none; padding: 12px 16px 32px; min-height: 0; }
   .title-layout .title-wrap { padding: 0; background: none; }
-  .title-guide { top: -290px; left: 10px; right: auto; bottom: auto; flex-direction: row; align-items: flex-start; }
+  .title-guide { top: -290px; left: 10px; right: auto; bottom: auto; height: auto; flex-direction: row; align-items: flex-start; }
   .title-guide .character-portrait { width: 64px !important; height: 64px !important; }
   .tl-bubble { margin: 6px 0 0; max-width: 13rem; font-size: 12.5px; border-radius: 14px 14px 14px 4px; }
   .title-missions { grid-template-columns: 1fr; }
@@ -521,7 +525,7 @@ body { overflow: hidden; word-break: keep-all; }
 .outro-questions ol { margin: 0; padding-left: 20px; line-height: 1.7; }
 .bag-peer-fixed { display: block; text-align: center; font-size: 12px; font-weight: 800; color: var(--ok); padding: 6px 4px; }
 
-/* ---------- 도시 복구(설계 §7): 화면 + 타이틀 구석 배지 ---------- */
+/* ---------- 도시 복구(설계 §7): 화면(타이틀 구석 배지는 2026-11-12에 뺌) ---------- */
 .city-dots { display: inline-flex; gap: 6px; align-items: center; }
 .city-dots i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #FFD24A; box-sizing: border-box; transition: background-color .8s ease; }
 .city-dots i.on { background: #FFD24A; }
@@ -560,12 +564,7 @@ body { overflow: hidden; word-break: keep-all; }
 /* 건너뛰기·움직임 줄이기·그림 없음 = 바로 끝 상태 */
 .city-page.city-instant * { transition: none !important; animation: none !important; }
 .city-line { font-size: 19px; font-weight: 800; margin: 6px 0 0; word-break: keep-all; }
-.title-city { position: absolute; top: 16px; left: 16px; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 999px;
-  background: rgba(16, 9, 58, .72); pointer-events: none; }
-.title-city-text { font-size: 13px; font-weight: 800; color: #f4f1ff; }
 @media (prefers-reduced-motion: reduce) { .city-dots i { transition: none; } }
-/* 좁은 화면: 왼쪽 위 "도시 n/5" 배지 아래로 AI 봇 안내를 조금 내린다 */
-@media (max-width: 700px) { .title-guide { top: -256px; } }
 .story-sheet[data-read="hold"] .story-sheet-read { color: var(--yellow); }
 
 /* 노이즈 벽 페널티: 가방 칸 빨갛게 흔들림 + "-1", 잃은 카드, 검수 한 줄 */
