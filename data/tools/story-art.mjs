@@ -75,6 +75,8 @@ async function portraits() {
 const SCENES = [
   // m1: 위로 40줄 올림 — 학생 머리 위 여유(건너뛰기 버튼과 떨어지게) + 천장 CCTV가 통째로 + 아래는 바지 밑단에서 끊김(신발 중간이 아니라)
   { name: 'm1-lostfound', top: 40 },
+  // m1 마무리(해결된 장면, 2026-11-11): 도입 그림과 같은 방·같은 구도 → 같은 자리로 자른다
+  { name: 'm1-lostfound-solved', top: 40 },
   // m2: 위로 24줄 올림 — 왼쪽 선별장 직원 모자(원본 y 85) 위에 여유, 수거봇 머리는 좁은 화면 대화창보다 위
   { name: 'm2-sorting', top: 56 }
 ];
