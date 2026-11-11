@@ -190,6 +190,37 @@
     $('look-pick').classList.toggle('fixed', !!fixed);
     $('look-msg').hidden = true;
   }
+  /* 시작 화면의 '게임 속 한 장면' 미리보기 + 대표 그림(2026-11-11): 무슨 게임인지 첫 화면에서 보이게 —
+   *   대표 그림(assets/landing/title-classroom, 「찍을까?」 직전 교실)과 같은 장면인 사건 2 「잠든 민준이」(c1_e2_a)의
+   *   하늘의 말·질문·선택지를 story.js에서 그대로 가져온다(글이 어긋나지 않게). 하늘의 말은 그림 위 말풍선(넓은 화면)과 미리보기 카드에.
+   *   누를 수 없는 그림 구실이라 안쪽은 화면 읽기에서 숨기고(aria-hidden), 바깥 role=img의 설명 한 줄이 대신한다.
+   *   그림을 못 읽으면 그림 칸을 숨기고(body.no-start-art) 판만 보인다. 장면이 없으면 미리보기 칸을 숨긴다. */
+  function renderPeek() {
+    var box = $('start-peek');
+    if (!box || box.firstChild) return;
+    var art = $('start-art-img');
+    art.addEventListener('error', function () { if (art.dataset.fallback) document.body.classList.add('no-start-art'); art.dataset.fallback = '1'; });
+    window.PrivacyImg.load(art, 'assets/landing/title-classroom.png');
+    var sc = story.scenes.c1_e2_a, fig = box.parentNode;
+    var say = sc ? (sc.lines || []).filter(function (l) { return typeof l === 'string' && /^haneul: /.test(l); })[0] : null;
+    var picks = sc ? (sc.choices || []).filter(function (c) { return !c.if; }) : [];
+    if (!say || picks.length < 2) { fig.hidden = true; $('start-say').hidden = true; return; }
+    var said = plain(say.replace(/^haneul: /, ''));
+    $('start-say').textContent = said;
+    var inner = el('div', 'peek-in'); inner.setAttribute('aria-hidden', 'true');
+    var line = el('p', 'peek-line');
+    line.appendChild(el('span', 'peek-who', story.characters.haneul.name));
+    line.appendChild(el('span', 'peek-said', said));
+    inner.appendChild(line);
+    inner.appendChild(el('p', 'peek-q', sc.prompt));
+    picks.slice(0, 3).forEach(function (c, i) {
+      var row = el('p', 'peek-choice');
+      row.appendChild(el('span', 'peek-num', String(i + 1)));
+      row.appendChild(el('span', '', c.text));
+      inner.appendChild(row);
+    });
+    box.appendChild(inner);
+  }
   function needLook() {
     if (playerLook()) return false;
     $('look-msg').hidden = false;
@@ -219,6 +250,7 @@
     $('name-input').placeholder = heroName() || CFG.defaultNickname; // 비우면 이 이름으로 시작
   }
   function renderStart() {
+    renderPeek();
     renderLookPick();
     renderPlayerChip();
     var nameField = $('name-field');

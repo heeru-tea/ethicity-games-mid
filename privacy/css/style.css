@@ -802,3 +802,128 @@ h2 .event-topic { display: block; margin-top: 2px; }
 @font-face { font-family: 'NanumSquare'; font-weight: 800; font-display: swap; src: url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareEB.woff2') format('woff2'), url('https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/NanumSquareEB.woff') format('woff'); }
 @font-face { font-family: 'Galmuri11'; font-weight: 400; font-display: swap; src: local('Galmuri11 Regular'), url('https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri11.woff2') format('woff2'); }
 @font-face { font-family: 'Galmuri11'; font-weight: 700; font-display: swap; src: local('Galmuri11 Bold'), url('https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri11-Bold.woff2') format('woff2'); }
+
+/* ── 시작 화면 2026-11-11: "무슨 게임인지"가 첫 화면에서 보이게 ─────────────
+ *   대표 그림(assets/landing/title-classroom.png, 1672×941 — 인물은 왼쪽 15~56%, 오른쪽 60%부터와 위 22%는 빈 자리. 자리 = assets/landing/title-safe.json)
+ *   넓은 화면: 그림이 가로 전체, 오른쪽 빈 자리에 밝은 판(제목·한 줄 설명·게임 속 한 장면·주인공·시작), 위 빈 벽에 훅 문장, 하늘 머리 위 말풍선
+ *   휴대폰 세로: 그림(인물 쪽으로 당겨 자름) → 제목 → 한 장면 → 훅 → 주인공, 시작 버튼은 아래에 붙음 · 가로로 누인 휴대폰: 그림·한 장면 숨김(자리가 없다) */
+body[data-view="v-start"] .app { max-width: 80rem; padding: 18px 16px 32px; }
+#v-start.title { position: relative; display: grid; grid-template-columns: 60.5% minmax(0, 1fr); align-items: stretch; }
+#v-start.title[hidden], .start-peek[hidden], .start-say[hidden] { display: none; }
+/* 그림 칸 높이 = 16:9와 판 높이 중 큰 쪽(판이 그림 밖으로 삐져나오지 않게). 더 높아지면 왼쪽(인물 쪽)을 기준으로 잘린다 */
+.start-art { grid-column: 1 / -1; grid-row: 1; position: relative; min-height: calc((min(100vw, 80rem) - 32px) * 0.5628); border-radius: 22px; overflow: hidden; background: #E8D3C4; }
+.start-art img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: 22% 50%; }
+/* 하늘 머리 위 말풍선(그림 좌표: 하늘 머리 꼭대기 ≈ 가로 37% · 세로 35%) */
+.start-say { position: absolute; left: 38%; bottom: 68.5%; max-width: 22%; margin: 0; padding: 6px 12px; background: #FFFFFF; border-radius: 14px; font-size: clamp(.8rem, 1.15vw, .95rem); line-height: 1.45; box-shadow: 0 3px 10px rgba(60, 40, 30, .22); }
+.start-say::after { content: ""; position: absolute; left: 18px; top: 100%; border: 7px solid transparent; border-top-color: #FFFFFF; border-bottom: 0; }
+.start-hook { grid-column: 1; grid-row: 1; z-index: 1; align-self: start; margin: 3.2% 0 0 5%; max-width: 86%; font-size: clamp(.95rem, 1.45vw, 1.18rem); font-weight: 700; line-height: 1.6; color: #43302A; }
+.start-hook strong { color: #0B5F59; }
+.start-main { grid-column: 2; grid-row: 1; z-index: 1; align-self: start; margin: 16px 16px 16px 0; background: var(--bg); border-radius: 18px; padding: 16px 20px 14px; box-shadow: 0 10px 28px rgba(60, 40, 30, .26); }
+#v-start .title-head { margin-bottom: 10px; }
+#v-start .logo { font-size: clamp(2rem, 3.6vw, 2.7rem); margin-bottom: 2px; }
+#v-start .lead { font-size: 1.05rem; line-height: 1.55; }
+.start-facts { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; }
+.start-facts li { font-size: .82rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 0 11px; }
+
+.start-peek { margin: 0 0 12px; }
+.peek-tag { font-size: .78rem; font-weight: 700; color: var(--text-mute); margin-bottom: 4px; }
+.peek-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; }
+.peek-in { display: grid; gap: 5px; }
+/* 하늘의 말: 넓은 화면은 그림 위 말풍선이 있어 카드에서는 숨긴다(휴대폰·그림 없음일 때만 카드에) */
+.peek-line { margin: 0 0 2px; display: none; gap: 8px; align-items: baseline; font-size: .92rem; line-height: 1.45; }
+.peek-who { flex: none; font-weight: 800; }
+.peek-q { margin: 0; font-weight: 800; font-size: .95rem; }
+.peek-choice { margin: 0; display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: var(--radius-in); padding: 4px 9px; font-size: .86rem; line-height: 1.45; }
+.peek-num { flex: none; width: 19px; height: 19px; margin-top: 1px; border-radius: 50%; border: 1.5px solid var(--accent); color: var(--accent); font-size: .72rem; font-weight: 700; display: grid; place-items: center; }
+
+#v-start .hero-legend { font-size: .95rem; }
+#v-start .hero-pick { grid-template-columns: 1fr 1fr; gap: 8px; }
+#v-start .hero-pick.fixed { grid-template-columns: minmax(0, 12rem); }
+#v-start .hero-card { grid-template-columns: auto 1fr; justify-items: start; align-items: center; column-gap: 10px; padding: 5px 10px; }
+#v-start .hero-face { width: 60px; }
+#v-start .hero-card:has(input:checked)::after { top: 50%; right: 8px; transform: translateY(-50%); width: 24px; height: 24px; }
+#v-start .name-field { margin: 8px 0 0; }
+#v-start .name-field input { padding: 6px 12px; }
+#v-start .start-actions { margin-top: 12px; }
+#v-start .start-actions .btn { min-height: 50px; }
+#v-start .title-foot { margin-top: 12px; gap: 4px; }
+/* 그림을 못 읽으면: 그림 칸·말풍선을 숨기고 판만 가운데에 */
+body.no-start-art .start-art { display: none; }
+body.no-start-art .peek-line { display: flex; }
+body.no-start-art #v-start.title { grid-template-columns: minmax(0, 34rem); justify-content: center; }
+body.no-start-art .start-hook, body.no-start-art .start-main { grid-column: 1; grid-row: auto; margin: 0 0 12px; }
+
+/* 판이 좁아지는 화면(태블릿 세로 등): 그림 위에 판을 얹지 않고 그림 아래로 */
+@media (max-width: 1040px) and (min-width: 761px) {
+  #v-start.title { grid-template-columns: minmax(0, 1fr); }
+  .start-art { grid-column: 1; grid-row: 1; min-height: 0; aspect-ratio: 1672 / 941; }
+  .start-hook { grid-column: 1; grid-row: 1; }
+  .start-main { grid-column: 1; grid-row: 2; margin: -28px 16px 0; }
+}
+/* 휴대폰 세로: 한 칸 — 그림 → 제목 → 한 장면 → 훅 → 주인공. 시작 버튼은 아래에 붙어 늘 보인다 */
+@media (max-width: 760px) {
+  body[data-view="v-start"] .app { padding: 10px 10px 0; }
+  #v-start.title { display: flex; flex-direction: column; align-items: stretch; gap: 10px; background: var(--bg); border-radius: 20px; padding: 0 14px; overflow: clip; }
+  #v-start.title[hidden] { display: none; }
+  .start-main { display: contents; }
+  .start-art { order: 1; margin: 0 -14px; min-height: 0; aspect-ratio: 2 / 1; border-radius: 0; }
+  .peek-line { display: flex; }
+  /* 인물 묶음(title-safe.json cast: 가로 15~56% · 세로 34~84%)이 칸 가운데에 오게 170%로 당겨 놓는다 */
+  .start-art img { position: absolute; inset: auto; width: 170%; max-width: none; height: auto; left: -11%; top: -62.3%; object-fit: fill; }
+  .start-say { display: none; }
+  #v-start .title-head { order: 2; margin-bottom: 0; }
+  .start-peek { order: 3; margin: 0; }
+  .start-hook { order: 4; margin: 0; max-width: none; font-size: .86rem; font-weight: 400; line-height: 1.5; color: var(--text-mute); }
+  #v-start .hero-pick { order: 5; }
+  #v-start .name-field { order: 6; margin: 0; max-width: none; }
+  #v-start .start-actions { order: 7; position: sticky; bottom: 0; margin: 0 -14px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--border); z-index: 5; }
+  #v-start .start-actions .btn { flex: 1 1 100%; }
+  #v-start .title-foot { order: 8; margin-top: 4px; padding-bottom: 20px; }
+  #v-start .logo { font-size: 2rem; }
+  #v-start .lead { font-size: 1rem; }
+  #v-start .hero-face { width: 56px; }
+}
+/* 가로로 누인 휴대폰(높이 500 이하): 예전 두 칸 배치 그대로, 그림·한 장면은 숨김 */
+@media (max-height: 500px) {
+  body[data-view="v-start"] .app { padding-top: 8px; }
+  #v-start.title { display: block; background: var(--bg); border-radius: 16px; padding: 6px 14px 8px; }
+  #v-start.title[hidden] { display: none; }
+  .start-art, .start-peek, .start-facts, .start-hook { display: none; }
+  .start-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; align-items: start; background: none; box-shadow: none; padding: 0; margin: 0; }
+  #v-start .hero-pick { grid-template-columns: 1fr 1fr; }
+  #v-start .hero-card { grid-template-columns: none; justify-items: center; padding: 6px 4px 8px; }
+  #v-start .hero-card:has(input:checked)::after { top: 8px; right: 8px; transform: none; }
+  #v-start .hero-face { width: min(100%, clamp(72px, calc(100dvh - 250px), 150px)); }
+  #v-start .name-field { margin: 2px 0 6px; }
+  #v-start .start-actions { position: static; margin: 8px 0 0; padding: 0; border: 0; }
+}
+
+/* 시작 화면 색 맞추기(2026-11-11): 대표 그림이 웜톤이라 차가운 흰 판이 겉돌았다 →
+ *   바탕을 따뜻한 미색으로, 그림 위에 떠 있는 판만 유리처럼(뒤 그림 색이 비침). 강조색(틸)·글자색은 그대로.
+ *   유리는 떠 있는 판 하나에만 쓴다(안쪽 카드는 반투명 흰색). backdrop-filter가 없는 브라우저·휴대폰 배치는 불투명한 미색 판 */
+body[data-view="v-start"] { background: #F3E9E0; }
+.start-main {
+  background: rgba(255, 249, 243, .64);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25); backdrop-filter: blur(22px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, .6);
+  box-shadow: 0 12px 32px rgba(70, 40, 25, .22), inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .start-main { background: #FBF5EE; } }
+.peek-card { background: rgba(255, 255, 255, .58); border-color: rgba(110, 80, 60, .16); }
+.peek-choice { background: rgba(255, 255, 255, .72); border-color: rgba(110, 80, 60, .16); }
+#v-start .hero-card { background: rgba(255, 255, 255, .5); border-color: rgba(110, 80, 60, .18); }
+#v-start .hero-card:hover { border-color: var(--accent); }
+#v-start .hero-card:has(input:checked) { background: rgba(217, 238, 235, .88); border-color: var(--accent); }
+.start-facts li { background: rgba(15, 118, 110, .13); }
+#v-start .player-chip { background: rgba(255, 255, 255, .5); }
+#v-start .facts { background: rgba(255, 255, 255, .6); }
+body.no-start-art .start-main { background: #FBF5EE; }
+@media (max-width: 760px) {
+  #v-start.title { background: #FBF5EE; }
+  #v-start .start-actions { background: #FBF5EE; border-top-color: rgba(110, 80, 60, .16); }
+}
+@media (max-height: 500px) {
+  #v-start.title { background: #FBF5EE; }
+  .start-main { border: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (max-width: 760px) { .start-main { border: 0; -webkit-backdrop-filter: none; backdrop-filter: none; } }

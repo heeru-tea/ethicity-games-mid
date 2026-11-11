@@ -29,12 +29,28 @@
       </div>
     </div>
 
+    <!-- 시작 화면(2026-11-11): 대표 그림(「찍을까?」 직전 교실, 오른쪽 40%가 빈 그림) 위 오른쪽에 판 — 제목·무슨 게임인지 한 줄·게임 속 한 장면(선택지 미리보기)·주인공·시작 -->
     <section id="v-start" class="view title" aria-labelledby="start-title">
+      <div class="start-art">
+        <img id="start-art-img" alt="축제 부스를 꾸미는 방과 후 교실. 민준이가 볼에 반짝이를 붙인 채 책상에 엎드려 자고, 하늘이 휴대폰을 들고 조용히 하라는 손짓을 하며 이쪽을 본다. 뒤에서 지호와 새봄이 돌아본다." width="1672" height="941" decoding="async">
+        <p id="start-say" class="start-say" aria-hidden="true"></p>
+      </div>
+      <p class="start-hook">단톡방 28명, 스토리 조회 312회, 캡처 1장.<br>같은 사진도 <strong>누구에게</strong> 보내느냐에 따라 전혀 다른 일이 된다.</p>
+      <div class="start-main">
       <header class="title-head">
         <p class="eyebrow">프라이버시 선택 게임</p>
         <h1 id="start-title" class="logo">공유한 순간</h1>
-        <p class="lead">단톡방 28명, 스토리 조회 312회, 캡처 1장.<br>같은 사진도 <strong>누구에게</strong> 보내느냐에 따라 전혀 다른 일이 된다.</p>
+        <p class="lead">친구의 사진·번호·캡처를 <strong>어디까지 공유할지</strong>, 내가 고르는 이야기.</p>
+        <ul class="start-facts" aria-label="게임 한눈에">
+          <li>사건 9개</li><li>엔딩 4개</li><li>15~20분</li>
+        </ul>
       </header>
+
+      <!-- 게임 속 한 장면 미리보기: 내용은 app.js renderPeek가 story.js(사건 2 「잠든 민준이」)에서 가져와 그린다. 누를 수 없는 그림 구실 -->
+      <figure class="start-peek">
+        <figcaption class="peek-tag">게임 속 한 장면</figcaption>
+        <div id="start-peek" class="peek-card" role="img" aria-label="게임 속 한 장면. 하늘이 잠든 민준이를 찍자고 하고, 찍을지 말지 세 가지 선택지가 놓여 있다."></div>
+      </figure>
 
       <!-- 메인 비주얼 = 주인공 고르기: 두 주인공을 같은 크기로 나란히 -->
       <fieldset id="look-pick" class="hero-pick">
@@ -84,6 +100,8 @@
           </ul>
         </details>
       </div>
+      </div>
+
     </section>
 
     <!-- 2. 무대: 맵 위에서 걷기·장면·장 전환이 모두 벌어진다 -->
