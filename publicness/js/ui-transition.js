@@ -153,7 +153,7 @@
   Object.keys(NT.VIEWS).forEach(function(k){var b=el('button',{type:'button','class':'btn note-view','data-ai-view':k,'aria-pressed':String(NT.get(s,h.phase).aiView===k)},NT.VIEWS[k]);
    b.addEventListener('click',function(){NT.set(s,h.phase,'aiView',NT.get(s,h.phase).aiView===k?'':k);var now=NT.get(s,h.phase).aiView;pick.querySelectorAll('[data-ai-view]').forEach(function(n){n.setAttribute('aria-pressed',String(n.dataset.aiView===now));});noteSaved(box,PB.App.save());});pick.appendChild(b);});
   box.appendChild(line(['나는 ',pick,'이다.']));
-  box.appendChild(line([el('span',{'class':'note-nowrap'},'왜냐하면 '),blank(s,h,box,'aiWhy','note-ai-why','그렇게 생각한 까닭',null,120)]));/* ‘왜냐하 / 면’으로 끊기지 않게 */
+  box.appendChild(line([el('span',{'class':'note-nowrap'},'왜냐하면'),' ',blank(s,h,box,'aiWhy','note-ai-why','그렇게 생각한 까닭',null,120)]));/* ‘왜냐하 / 면’으로 끊기지 않게 */
   box.appendChild(el('p',{'class':'note note-saved',role:'status'}));return box;
  }
  /* 2026-11-09 교사 플레이테스트 4: 같은 조건으로 다시 한 게임의 같은 단계와 비교 한두 줄(js/run-compare.js — 이미 계산된 숫자만).
