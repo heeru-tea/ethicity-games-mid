@@ -126,6 +126,14 @@
       showNotice('저장 공간에 기록하지 못했어요. 이번 플레이는 계속할 수 있지만, 창을 닫으면 진행이 사라질 수 있어요.');
     }
   }
+  // 지웠는데 기기 저장소에는 남아 있을 때(지우기 실패) — 지워진 것처럼 말하지 않는다(2026-11-12 외부 검토 2번)
+  var warnedRemove = false;
+  function checkRemoveFailure() {
+    if (!S.status.removeFailed) { warnedRemove = false; return; }
+    if (warnedRemove) return;
+    warnedRemove = true;
+    showNotice('이 기기에 저장된 기록을 지우지 못했어요. 이 화면에서는 지워졌지만 기기에는 남아 있을 수 있어요. 여럿이 쓰는 컴퓨터라면 브라우저의 ‘인터넷 사용 기록 삭제’로 지워 주세요.');
+  }
   function showNotice(msg) {
     var n = $('notice');
     n.textContent = '';
@@ -404,6 +412,9 @@
    * 한 줄씩: (친구 메시지면 '입력 중…' 잠깐) → 글자가 주르륵(typer.js) → 다 쳐지면 잠깐 쉬고 다음 줄.
    * 누르기(화면·Space·Enter) 한 번 = 치는 중이면 그 줄을 다 보여 주기, 다 보인 상태면 바로 다음 줄(누른 것을 버리지 않음).
    * '모두 보기 ▸▸'는 남은 줄을 한꺼번에. 화면 읽기 프로그램에는 다 보인 줄만 #g-live로 한 번씩 읽힌다. */
+  // '모두 보기'를 누른 직후에는 '다음'을 잠깐 못 누른다(2026-11-12): '다음'과 '모두 보기'가 같은 자리라 연달아 누르면 읽지 않고 넘어갔다.
+  //   한 줄씩 읽어 온 경우에는 멈춤이 없다. 선택지는 그대로 바로 고를 수 있다(고르려면 어차피 읽어야 한다)
+  var SKIP_HOLD_MS = 800, skipHoldUntil = 0;
   function stopReveal() {
     if (revealTimer) clearTimeout(revealTimer);
     revealTimer = null;
@@ -469,7 +480,7 @@
     $('g-dock').textContent = ''; clearNext();
     var skip = el('button', 'btn ghost skip-btn', '모두 보기'); // 2026-11-09 B3: 글자가 나오는 중 = '모두 보기', 다 나오면 '다음'
     skip.type = 'button';
-    skip.addEventListener('click', flushReveal);
+    skip.addEventListener('click', function () { skipHoldUntil = Date.now() + SKIP_HOLD_MS; flushReveal(); });
     nextBox().appendChild(skip); syncNext();
     revealNext(false);
   }
@@ -881,6 +892,11 @@
       go.id = 'btn-next';
       go.addEventListener('click', onContinue);
       nextBox().appendChild(go); syncNext();
+      var hold = skipHoldUntil - Date.now();
+      if (hold > 0) {
+        go.disabled = true;
+        setTimeout(function () { go.disabled = false; if (go.parentNode && (!document.activeElement || document.activeElement === document.body)) focusFirst(go); }, hold);
+      }
       focusFirst(go);
     }
     scrollLog(true);
@@ -1042,7 +1058,7 @@
 
   /* ── 엔딩 ─────────────────────────── */
   function endingOf(code) { return story.endings.filter(function (e) { return e.code === code; })[0]; }
-  function cardText(end) { return story.title + ' · 엔딩 ' + end.code + ' 「' + end.title + '」 — ' + plain(end.summary); }
+  function cardText(end, run) { return story.title + ' · 엔딩 ' + end.code + ' 「' + end.title + '」 — ' + plain(E.endingSummary(story, end, run)); }
 
   /* ── 엔딩 연출(프로스트펑크식): 검은 화면 → 두 문장 → 9개 사건의 내 선택 → 친구들의 믿음 → 엔딩 이름 ── */
   var finaleTimer = null, finaleState = null;
@@ -1159,13 +1175,13 @@
     var end = endingOf(run.ending);
     if (justArrived) {
       sfx('win');
-      S.saveResult(end.code, cardText(end));
+      S.saveResult(end.code, cardText(end, run));
       if (progress.endingsSeen.indexOf(end.code) < 0) progress.endingsSeen.push(end.code);
       saveProgress();
     }
     $('e-eyebrow').textContent = '엔딩 ' + end.code;
     $('e-title').textContent = end.title;
-    window.PrivacyEmph.render($('e-summary'), end.summary);
+    window.PrivacyEmph.render($('e-summary'), E.endingSummary(story, end, run));
     var body = $('e-body'); body.textContent = '';
     E.endingBody(story, end, run).forEach(function (t) { body.appendChild(rich('p', null, fill(t))); }); // 조건 줄 + ENDING_V2 선택별 한 줄
 
@@ -1279,7 +1295,7 @@
   var CARD_NUM = ['①', '②', '③', '④', '⑤'];
   function cardRaw() { return S.readJSON(S.KEYS.card).value; }
   function cardSave() { if (card) { S.writeJSON(S.KEYS.card, card); checkWriteFailure(); } }
-  function cardWipe() { S.remove(S.KEYS.card); card = null; }
+  function cardWipe() { S.remove(S.KEYS.card); card = null; checkRemoveFailure(); }
   // 새 진행을 시작하기 전: 카드에 쓴 글이 있으면 먼저 묻고, 없으면 바로 next(이름·학번만 있으면 묻지 않는다 — startNew가 함께 지운다)
   function guardCard(next) {
     if (!Card.hasText(cardRaw())) { next(); return; }
@@ -1403,6 +1419,7 @@
     var f = Array.prototype.filter.call($(id).querySelectorAll('button, input'), function (n) { return !n.disabled; });
     if (!f.length) return;
     var first = f[0], last = f[f.length - 1];
+    if (!$(id).contains(document.activeElement)) { e.preventDefault(); first.focus(); return; } // 초점이 창 밖에 있으면 창 안으로 데려온다
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
@@ -1497,10 +1514,13 @@
     });
     $('btn-menu-wipe').addEventListener('click', function () {
       $('menu').hidden = true;
-      ask('이 게임 기록을 모두 지울까요?', '‘공유한 순간’의 진행, 지난 선택 기록, 완료 결과, 성찰 카드에 쓴 글과 이름·학번이 지워져요. 공통 캐릭터와 다른 게임 기록은 지우지 않아요.', '지우기', function () {
+      ask('이 게임 기록을 모두 지울까요?', '‘공유한 순간’의 진행, 지난 선택 기록, 완료 결과, 성찰 카드에 쓴 글과 이름·학번, 시작 화면에서 적은 이름이 지워져요. 공통 캐릭터와 다른 게임 기록은 지우지 않아요.', '지우기', function () {
         cardWipe();
         S.remove(S.KEYS.progress);
         S.remove(S.KEYS.result);
+        checkRemoveFailure();
+        // 2026-11-12 외부 검토 6번: 이 게임에서 적은 이름도 지운다(소리·속도·주인공 모습 같은 설정은 남긴다). 공통 ethicity.player는 건드리지 않는다
+        if (settings.nickname) { settings.nickname = ''; $('name-input').value = ''; refreshName(); saveSettings(); }
         progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };
         renderStart();
       });
@@ -1515,6 +1535,7 @@
         else if ((e.key === 'Enter' || e.key === ' ') && (e.target.tagName || '') !== 'BUTTON') { e.preventDefault(); finaleAll(); }
         return;
       }
+      if (!$('warning').hidden) { trapFocus(e, 'warning'); return; } // 주의 화면(aria-modal): Tab이 뒤 화면으로 나가지 않는다 — 2026-11-12 외부 검토 7번
       if (!$('confirm').hidden) { if (e.key === 'Escape') { confirmCb = null; closeOverlay('confirm'); } trapFocus(e, 'confirm'); return; }
       if (!$('menu').hidden) { if (e.key === 'Escape') closeOverlay('menu'); trapFocus(e, 'menu'); return; }
       if (current !== 'v-game' || e.altKey || e.ctrlKey || e.metaKey) return;

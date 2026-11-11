@@ -70,11 +70,17 @@
   }
 
   /* 토픽 세 개(문구 = story.card.topics): 게임이 채우는 줄(items) + 물음(q)
-   *   events + first  → 사건마다 결과 문장의 첫 줄(엔딩 화면 「사건별 결과」와 같은 문장)
+   *   events + pick   → 사건마다 결과 문장을 pick[사건]줄까지(없으면 1줄). 더 많으면 앞의 것들 + 마지막 한 줄 — 첫 행동과 마지막 대응이 남는다
+   *                     (예: 사진 사건 = 찍기 / 올리기 / 지우기·거절). 문장은 엔딩 화면 「사건별 결과」와 같다. 2026-11-12 외부 검토 3번
+   *   events + first  → 사건마다 결과 문장의 첫 줄(옛 방식)
    *   events          → 그 사건들의 결과 문장 모두
    *   plan            → 「우리 반이 정한 AI CCTV 안」 줄(특별 수업을 하지 않은 옛 진행이면 items 없음 + empty 문구)
    * 선택 문장에는 평가를 붙이지 않는다. 강조 기호 [[ ]]는 뺀다. */
   function plainText(t) { return str(t).replace(/\[\[|\]\]/g, ''); }
+  function pickLines(outs, n) {
+    if (outs.length <= n) return outs;
+    return n <= 1 ? outs.slice(0, 1) : outs.slice(0, n - 1).concat(outs.slice(-1));
+  }
   function topics(story, E, run) {
     var def = (story.card && story.card.topics) || [];
     return def.map(function (t, i) {
@@ -85,7 +91,7 @@
         (t.events || []).forEach(function (e) {
           if (!story.events[e]) return;
           var outs = E.eventOutcomes(story, e, run);
-          (t.first ? outs.slice(0, 1) : outs).forEach(function (text, k) { items.push({ head: k === 0 ? story.events[e].title : '', text: plainText(text) }); });
+          (t.pick ? pickLines(outs, t.pick[e] || 1) : t.first ? outs.slice(0, 1) : outs).forEach(function (text, k) { items.push({ head: k === 0 ? story.events[e].title : '', text: plainText(text) }); });
         });
       }
       return { n: i + 1, id: t.id, title: t.title, label: t.label || story.card.autoLabel, items: items, empty: items.length ? '' : (t.empty || ''), q: t.q };

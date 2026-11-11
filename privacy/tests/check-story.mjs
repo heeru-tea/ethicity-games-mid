@@ -137,9 +137,12 @@ function markLines(s) {
     (c.react || []).forEach((l, i) => { if (E.evalCond(E.normLine(l, story).if, s)) seenLine.add(`${s.scene}#${c.id}|r${i}`); });
   }
 }
-let seed = 20261017;
-const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
-let seedSc = 7; const rndSc = () => (seedSc = (seedSc * 1103515245 + 12345) % 2147483648) / 2147483648; // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
+// 2026-11-12 외부 검토 8번: 예전 식 (seed * 1103515245 + 12345) % 2^31 은 곱이 2^53을 넘어 값이 뭉개지고 10,466번마다 되풀이됐다 → 32비트 연산(mulberry32).
+//   SEED=숫자 로 씨앗을 바꿔 다시 돌려 볼 수 있다(엔딩 비율이 씨앗에 따라 얼마나 흔들리는지 확인용)
+const mulberry32 = (a) => () => { a = (a + 0x6D2B79F5) | 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const SEED = Number(process.env.SEED || 20261017);
+const rnd = mulberry32(SEED);
+const rndSc = mulberry32(7); // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
 const SAMPLES = Number(process.env.SAMPLES || 100000);
 const EM_MAX = 2; // 장면당(장면 대사 + 반응) 강조 최대 개수 — 많으면 강조가 아니게 된다
 const emCount = (lines) => lines.reduce((n, l) => n + EM.parts(l.text).filter((p) => p.strong).length + (l.meta ? EM.parts(l.meta).filter((p) => p.strong).length : 0), 0);
@@ -531,7 +534,7 @@ for (const id of sceneIds) {
     titles.forEach((t) => { if (t && /\[\[|\]\]/.test(t)) err('질문·제목에 강조 표시: ' + id); });
   }
   for (const [eid, ev] of Object.entries(story.events)) { if (/\[\[|\]\]/.test(ev.title + ev.topic)) err('사건 제목에 강조 표시: ' + eid); ev.outcomes.forEach((o, i) => { if (bad(o.text)) err(`강조 표시 짝이 안 맞음: 사건 ${eid} 결과${i}`); }); }
-  story.endings.forEach((e) => { if (/\[\[|\]\]/.test(e.title)) err('엔딩 제목에 강조 표시: ' + e.code); [e.summary, ...e.body.map((p) => (typeof p === 'string' ? p : p.text))].forEach((t) => { if (bad(t)) err('강조 표시 짝이 안 맞음: 엔딩 ' + e.code); }); });
+  story.endings.forEach((e) => { if (/\[\[|\]\]/.test(e.title)) err('엔딩 제목에 강조 표시: ' + e.code); [...(typeof e.summary === 'string' ? [e.summary] : e.summary.map((x) => x.text)), ...e.body.map((p) => (typeof p === 'string' ? p : p.text))].forEach((t) => { if (bad(t)) err('강조 표시 짝이 안 맞음: 엔딩 ' + e.code); }); });
   for (const [k, n] of emOver) err(`한 장면에 강조가 ${n}개(최대 ${EM_MAX}): ${k}`);
   // 표시 도구 자체: 조각·맨 글자·별명 막기
   const ps = EM.parts('가 [[28명 방에]] 나 [[둘]]');

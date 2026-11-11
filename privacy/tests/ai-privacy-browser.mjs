@@ -336,7 +336,7 @@ try {
         const want = Card.topics(story, E, run), d = new Date();
         rec(size, 'c1 카드 화면: 머리(게임 이름·날짜·엔딩 이름)', c.v === 'v-card' && c.h1 === story.card.heading && c.game.includes(story.title) && c.date === `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일` && c.ending === '엔딩 D · ' + story.endings.find((e) => e.code === 'D').title, JSON.stringify([c.v, c.date, c.ending]));
         rec(size, 'c1 토픽 셋·자동으로 채운 선택 = 이번 진행', c.topics.length === 3 && want.every((t, i) => c.topics[i].id === t.id && c.topics[i].h.includes(t.title) && c.topics[i].label === t.label && JSON.stringify(c.topics[i].items) === JSON.stringify(t.items) && c.topics[i].q === t.q), JSON.stringify(c.topics.map((t) => t.items.length)));
-        rec(size, 'c1 ① 일곱 사건 · ② 가짜 춤 영상 전달·AI 도우미 · ③ 우리 반 안 네 줄', c.topics[0].items.length === 7 && c.topics[1].items.some((i) => /가짜 춤 영상을 친구들에게 전달했다/.test(i.text)) && c.topics[1].items.some((i) => i.head === story.events.e5.title) && c.topics[2].items.length === 4 && c.topics[2].items[1].head === '알림 범위', JSON.stringify(c.topics[1].items.map((i) => i.text.slice(0, 14))));
+        rec(size, 'c1 ① 일곱 사건(첫 행동부터 마지막 대응까지 7~17줄) · ② 가짜 춤 영상 전달·AI 도우미 · ③ 우리 반 안 네 줄', c.topics[0].items.length >= 7 && c.topics[0].items.length <= 17 && c.topics[0].items.filter((i) => i.head).length === 7 && c.topics[1].items.some((i) => /가짜 춤 영상을 친구들에게 전달했다/.test(i.text)) && c.topics[1].items.some((i) => i.head === story.events.e5.title) && c.topics[2].items.length === 4 && c.topics[2].items[1].head === '알림 범위', JSON.stringify(c.topics[1].items.map((i) => i.text.slice(0, 14))));
         rec(size, 'c1 쓰는 칸 셋: 물음이 칸의 이름표, 글자 수 표시, 200자', c.topics.every((t, i) => t.forId === t.ta && t.ta === 'k-a' + (i + 1) && t.max === Card.MAX_TEXT && t.count === '0 / ' + Card.MAX_TEXT + '자') && c.labelled && c.btnTags === 'BUTTON,BUTTON', JSON.stringify(c.topics.map((t) => t.count)));
         rec(size, 'c1 안내: 이 기기에만 저장 · PDF는 크롬·엣지 · 학번·이름을 적으라는 안내(막지 않음)', c.notes[0] === story.card.deviceNote && c.notes[1] === story.card.pdfNote && c.notes[2] === story.card.needNote && !c.needHidden);
         rec(size, 'c1 상자에 왼쪽 굵은 색 띠 없음', c.leftBar === 0, String(c.leftBar));
@@ -399,7 +399,7 @@ try {
               [...ul.querySelectorAll('.rcard-out')].forEach((e, j) => { e.textContent = '가나다라마바사아자차'.repeat(10).slice(0, lens[k][j] || 10); n++; }); });
             return n; }, lens);
           const nWorst = await pages(path.join(PDF_DIR, 'privacy-card-worst.pdf'));
-          rec(size, 'c4 PDF 쪽수 = 1 (자동 칸 자리마다 가장 긴 문장을 다 모은 경우 + 세 칸 200자)', worst === lens.flat().length && lens[0].length === 7 && nWorst === 1, worst + '줄(' + lens.map((l) => l.join('/')).join(' · ') + '자) · ' + nWorst + '쪽');
+          rec(size, 'c4 PDF 쪽수 = 1 (자동 칸 자리마다 가장 긴 문장을 다 모은 경우 + 세 칸 200자)', worst === lens.flat().length && lens[0].length >= 7 && lens[0].length <= 17 && nWorst === 1, worst + '줄(' + lens.map((l) => l.join('/')).join(' · ') + '자) · ' + nWorst + '쪽');
           await p.click('#btn-card-back'); await p.waitForTimeout(200); await openCard(p); // 화면을 다시 그려 원래 줄로
           for (const i of [1, 2, 3]) await p.fill('#k-a' + i, '');
           const blankTxt = await p.evaluate(() => [...document.querySelectorAll('.rcard-answer')].map((e) => e.textContent + '|' + e.classList.contains('none')));

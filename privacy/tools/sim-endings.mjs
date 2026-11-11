@@ -14,9 +14,12 @@ const N = Number(process.argv[2] || 5000), LIMIT = Number(process.argv[3] || 200
 const over = process.env.CONDS ? JSON.parse(process.env.CONDS) : {};
 story.endings.forEach((e) => { if (over[e.code] !== undefined) e.if = over[e.code]; });
 
-let seed = 20261031;
-const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
-let seedSc = 7; const rndSc = () => (seedSc = (seedSc * 1103515245 + 12345) % 2147483648) / 2147483648; // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
+// 2026-11-12 외부 검토 8번: 예전 식 (seed * 1103515245 + 12345) % 2^31 은 곱이 2^53을 넘어 값이 뭉개지고 10,466번마다 되풀이됐다 → 32비트 연산(mulberry32).
+//   SEED=숫자 로 씨앗을 바꿔 다시 돌려 볼 수 있다(엔딩 비율이 씨앗에 따라 얼마나 흔들리는지 확인용)
+const mulberry32 = (a) => () => { a = (a + 0x6D2B79F5) | 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const SEED = Number(process.env.SEED || 20261031);
+const rnd = mulberry32(SEED);
+const rndSc = mulberry32(7); // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
 
 function play(pick) {
   let s = E.createState(story);

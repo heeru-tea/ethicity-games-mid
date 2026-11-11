@@ -268,6 +268,15 @@
     return out;
   }
 
+  /* 엔딩 한 줄 요약: 문자열 또는 [{ if, text }](위에서부터 처음 맞는 것, if가 없으면 늘 맞음).
+   *   좋은 엔딩이어도 실제 선택과 어긋난 말을 하지 않게(2026-11-12 외부 검토 1번) */
+  function endingSummary(story, end, state) {
+    var s = end.summary;
+    if (typeof s === 'string') return s;
+    for (var i = 0; i < (s || []).length; i++) if (!s[i].if || evalCond(s[i].if, state)) return s[i].text;
+    return '';
+  }
+
   /* ENDING_V2 결과 지표: serious를 두 줄로 [{ label, value }]. ch를 주면 그 장 사건만 센다. 꺼져 있으면 null */
   function seriousSplit(story, state, ch) {
     if (story.endingV2 !== true || !story.seriousSplit) return null;
@@ -331,6 +340,7 @@
     undo: undo,
     resolveEnding: resolveEnding,
     endingBody: endingBody,
+    endingSummary: endingSummary,
     seriousSplit: seriousSplit,
     specialClassNotes: specialClassNotes,
     specialClassRows: specialClassRows,

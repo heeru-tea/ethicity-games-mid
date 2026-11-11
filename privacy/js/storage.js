@@ -1,6 +1,9 @@
 /*
  * 저장소 래퍼 — localStorage를 쓸 수 없거나(차단·용량·사생활 모드) 값이 손상돼도 게임이 멈추지 않게 한다.
  * 실패하면 메모리에만 보관하고 status로 알려 준다.
+ * 2026-11-12(외부 검토 2번): 쓰기나 지우기가 실패한 키는 저장소의 옛 값이 아니라 이 탭의 최신 상태(메모리 값·지움 표시)를 읽는다.
+ *   status.writeFailed = 저장소에 못 쓴 최신 값이 있다 · status.removeFailed = 지웠지만 저장소에는 남아 있는 값이 있다(둘 다 다시 성공하면 풀린다).
+ *   remove()는 저장소에서 실제로 지워졌는지를 돌려준다 — 지우지 못했는데 "지웠다"고 말하지 않게.
  *
  * 키 규약
  *   ethicity.player              공통 플레이어 정보 — 읽기만 한다(절대 쓰지 않음)
@@ -20,7 +23,13 @@
     card: 'ethicity.privacy.card.v1'
   };
   var memory = {};
-  var status = { available: false, writeFailed: false };
+  var pending = {}; // pending[키] = 'set'(못 쓴 최신 값이 memory에) | 'gone'(지웠는데 저장소에 남음) — 저장소가 이 탭을 따라오지 못한 키
+  var status = { available: false, writeFailed: false, removeFailed: false };
+  function refresh() {
+    var w = false, r = false;
+    for (var k in pending) if (Object.prototype.hasOwnProperty.call(pending, k)) { if (pending[k] === 'set') w = true; else r = true; }
+    status.writeFailed = w; status.removeFailed = r;
+  }
 
   function ls() { return root.localStorage; }
   (function probe() {
@@ -33,6 +42,8 @@
   })();
 
   function get(key) {
+    if (pending[key] === 'gone') return null;
+    if (pending[key] === 'set') return memory[key];
     if (status.available) {
       try { return ls().getItem(key); } catch (e) { /* 메모리로 */ }
     }
@@ -41,11 +52,15 @@
   function set(key, value) {
     memory[key] = value;
     if (!status.available) return false;
-    try { ls().setItem(key, value); return true; } catch (e) { status.writeFailed = true; return false; }
+    try { ls().setItem(key, value); delete pending[key]; refresh(); return true; }
+    catch (e) { pending[key] = 'set'; refresh(); return false; }
   }
+  // 저장소에서 실제로 지워졌으면 true. 저장소를 못 쓰는 브라우저(메모리만)는 지울 것이 메모리뿐이라 true
   function remove(key) {
     delete memory[key];
-    if (status.available) { try { ls().removeItem(key); } catch (e) { /* 무시 */ } }
+    if (!status.available) return true;
+    try { ls().removeItem(key); delete pending[key]; refresh(); return true; }
+    catch (e) { pending[key] = 'gone'; refresh(); return false; }
   }
   function readJSON(key) {
     var raw = get(key);
@@ -53,7 +68,7 @@
     try { return { ok: true, value: JSON.parse(raw) }; } catch (e) { return { ok: false, value: null }; }
   }
   function writeJSON(key, value) {
-    try { return set(key, JSON.stringify(value)); } catch (e) { status.writeFailed = true; return false; }
+    try { return set(key, JSON.stringify(value)); } catch (e) { return false; } // 문자열로 못 바꾸는 값(순환 참조 등) — 저장소 문제가 아니다
   }
 
   /* 공통 플레이어 정보 — 손상·누락 시 기본값. 원본은 건드리지 않는다. */

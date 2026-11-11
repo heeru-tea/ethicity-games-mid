@@ -259,6 +259,8 @@ strong.em { font-weight: 800; color: inherit; }
 .btn.skip-btn:hover { border-color: var(--text-mute); }
 #v-game .next-row .btn.skip-btn { background: #262C3A; border-color: #4B556B; color: #D8DEE8; }
 #v-game .next-row .btn.skip-btn:hover { border-color: #8F9BB3; }
+/* '모두 보기'를 누른 직후 잠깐 못 누르는 '다음': 투명도 대신 흐린 청록(그림이 비치지 않게) */
+#v-game .next-row .btn.primary:disabled, #v-game .dock .btn.primary:disabled { opacity: 1; background: #6F9E99; border-color: #6F9E99; color: #EAF3F2; }
 
 /* ── 무대: 맵이 화면의 주인, 걷기·장면·장 전환이 그 위에 겹쳐 뜬다 ───────────── */
 body[data-view="v-map"] .app, body[data-view="v-game"] .app, body[data-view="v-chapter"] .app { max-width: 960px; padding: 12px; }

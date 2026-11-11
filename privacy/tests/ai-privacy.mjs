@@ -153,8 +153,10 @@ run('cardTopics', () => {
     const t = Card.topics(story, E, s);
     ok(t.length === 3 && same(t.map((x) => x.id), ['share', 'ai', 'cctv']) && same(t.map((x) => x.n), [1, 2, 3]), code + ' 토픽 세 개');
     ok(t.every((x) => x.title && x.q && x.label), code + ' 토픽 이름·물음·자동 칸 이름');
-    // ① 사건 1·2·3·6·7·8·9: 사건마다 결과 문장 첫 줄(엔딩 화면 「사건별 결과」와 같은 문장)
-    ok(same(t[0].items.map((i) => i.head), T1.map((e) => story.events[e].title)) && same(t[0].items.map((i) => i.text), T1.map((e) => EM.plain(E.eventOutcomes(story, e, s)[0]))), code + ' ① 일곱 사건 첫 줄 ' + t[0].items.length);
+    // ① 사건 1·2·3·6·7·8·9: 사건마다 결과 문장을 pick[사건]줄까지 — 더 많으면 앞의 것들 + 마지막 한 줄(2026-11-12 외부 검토 3번: 첫 줄만으로는 올리기·수습·거절이 빠졌다)
+    const PICK = story.card.topics[0].pick, pickOf = (outs, n) => (outs.length <= n ? outs : outs.slice(0, n - 1).concat(outs.slice(-1)));
+    const exp1 = T1.flatMap((e) => pickOf(E.eventOutcomes(story, e, s), PICK[e] || 1).map((x, k) => ({ head: k ? '' : story.events[e].title, text: EM.plain(x) })));
+    ok(same(t[0].items.map((i) => i.head), exp1.map((i) => i.head)) && same(t[0].items.map((i) => i.text), exp1.map((i) => i.text)) && T1.every((e) => t[0].items.some((i) => i.head === story.events[e].title)), code + ' ① 일곱 사건: 첫 행동부터 마지막 대응까지 ' + t[0].items.length + '줄');
     // ② 사건 4·5 결과 문장 모두
     const want2 = ['e4', 'e5'].flatMap((e) => E.eventOutcomes(story, e, s).map((x, k) => ({ head: k === 0 ? story.events[e].title : '', text: EM.plain(x) })));
     ok(same(t[1].items, want2) && want2.length >= 2, code + ' ② 사건 4·5 결과 문장 ' + want2.length + '줄');
@@ -178,10 +180,10 @@ run('cardTopics', () => {
     const r = play({}, null, rnd);
     let tt; try { tt = Card.topics(story, E, r); } catch (e) { bad++; continue; }
     tt.forEach((x, k) => { max[k] = Math.max(max[k], x.items.length); x.items.forEach((it) => { if (/\[\[|\]\]/.test(it.text)) marks++; if (/잘했|훌륭|정답|칭찬|점수|등급/.test(it.text)) praise++; longest = Math.max(longest, it.text.length); }); });
-    if (tt[0].items.length !== 7) bad++;
+    if (tt[0].items.length < 7 || tt[0].items.length > 17) bad++;
   }
   ok(bad === 0, '무작위 600회: 토픽 만들기 실패·① 줄 수 어긋남 0 (' + bad + ')');
-  ok(max[0] === 7 && max[1] <= 5 && max[2] <= 4, '자동 칸 줄 수 최대 ' + max.join('·') + '(① 7 · ② ≤5 · ③ ≤4)');
+  ok(max[0] >= 7 && max[0] <= 17 && max[1] <= 5 && max[2] <= 4, '자동 칸 줄 수 최대 ' + max.join('·') + '(① 7~17 · ② ≤5 · ③ ≤4)');
   ok(marks === 0 && praise === 0, '자동 칸 글자에 강조 기호·평가 낱말 없음');
   ok(longest <= 70, '자동 칸 한 줄 최대 ' + longest + '자(≤ 70 — 인쇄 한 장 계산의 바탕)');
 });
@@ -193,7 +195,7 @@ run('cardText', () => {
   ok(c.pdfNote.startsWith('PDF 저장은 컴퓨터의 크롬·엣지에서 가장 잘 돼요'), 'PDF 안내(설계 11.1)');
   ok(c.fileBase === '공유한순간_성찰카드' && c.none === '작성 안 함', '파일 이름 머리·빈 칸 문구');
   ok(same(c.topics.map((t) => t.title), ['내가 공유한 순간', 'AI가 만든 것, AI에 넘긴 것', 'AI가 지켜보는 교실']), '토픽 이름 셋');
-  ok(same(c.topics[0].events, ['e1', 'e2', 'e3', 'e6', 'e7', 'e8', 'e9']) && c.topics[0].first === true && same(c.topics[1].events, ['e4', 'e5']) && c.topics[2].plan === true, '토픽이 묶는 사건');
+  ok(same(c.topics[0].events, ['e1', 'e2', 'e3', 'e6', 'e7', 'e8', 'e9']) && c.topics[0].pick && c.topics[0].pick.e2 === 3 && !c.topics[0].first && same(c.topics[1].events, ['e4', 'e5']) && c.topics[2].plan === true, '토픽이 묶는 사건');
   ok(c.topics.flatMap((t) => t.events || []).slice().sort().join() === Object.keys(story.events).sort().join(), '아홉 사건이 빠짐없이 한 번씩');
   const all = [c.title, c.heading, c.intro, c.autoLabel, c.none, c.deviceNote, c.pdfNote, c.needNote, c.wipeAsk].concat(c.topics.flatMap((t) => [t.title, t.q, t.empty || '', t.label || '']));
   ok(!all.some((t) => /잘했|훌륭|정답|점수|등급/.test(t)), '카드 문구에 평가 낱말 없음');

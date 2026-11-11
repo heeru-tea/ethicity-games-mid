@@ -87,7 +87,7 @@ run('notesEveryOption', () => {
 run('rows', () => {
   const r = E.specialClassRows(story, play(SC.a, afterClass));
   ok(r.length === 4 && r.map((x) => x.label).join() === '설치 여부,알림 범위,보관 기간,열람·삭제', '설치 → 4줄 ' + JSON.stringify(r));
-  ok(r[1].text === '쓰러짐·싸움처럼 다칠 수 있는 일만' && r[2].text === '30일 뒤 자동 삭제' && /아니라고 말하기/.test(r[3].text), '줄 글자 ' + JSON.stringify(r));
+  ok(r[1].text === '쓰러짐·싸움처럼 다칠 수 있는 일만' && r[2].text === '30일 뒤 자동 삭제(확인 중인 일의 영상은 그 일이 끝날 때까지)' && /아니라고 말하기/.test(r[3].text) && /누가 봤는지 기록/.test(r[3].text), '줄 글자 ' + JSON.stringify(r));
   const rn = E.specialClassRows(story, play(SC.n, afterClass));
   ok(rn.length === 1 && rn[0].text === '설치하지 않음', '설치 안 함 → 1줄');
   ok(E.specialClassRows(story, E.createState(story)).length === 0, '특별 수업 전 → 0줄');
@@ -184,7 +184,7 @@ run('oldPurposeValue', () => {
     let rows = null, notes = null;
     try { rows = E.specialClassRows(story, s); notes = E.specialClassNotes(story, s); } catch (e) { rows = null; }
     ok(!!rows && rows.length === 4 && rows[1].label === '알림 범위' && rows[1].text === '—' && rows[1].unknown === true, '옛 값 ' + old + ' → 그 줄만 — ' + JSON.stringify(rows && rows[1]));
-    ok(!!rows && rows[0].text === '조건을 붙여 설치' && rows[2].text === '30일 뒤 자동 삭제', '다른 줄은 그대로');
+    ok(!!rows && rows[0].text === '조건을 붙여 설치' && rows[2].text === '30일 뒤 자동 삭제(확인 중인 일의 영상은 그 일이 끝날 때까지)', '다른 줄은 그대로');
     ok(!!notes && notes.length === 2, '반문은 남은 두 줄 ' + (notes && notes.length));
     ok(E.isValidState(story, s), '옛 값이 든 저장도 유효');
   }
