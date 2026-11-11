@@ -258,10 +258,20 @@
       screen.innerHTML = '';
       var again = el('button', { id: 'btn-again', class: 'btn' + (opts.next ? '' : ' btn-primary'), type: 'button', text: '타이틀로', onclick: done });
       var next = opts.next ? el('button', { id: 'btn-next-mission', class: 'btn btn-primary', type: 'button', text: '다음 임무로', onclick: function () { root.DR.Sfx.play('ui'); opts.next(); } }) : null;
-      screen.appendChild(el('div', { class: 'page' }, [
+      // 임무 완료 화면 뒤에 그 임무의 장면 그림을 어둡게(opts.bg — app.js runEnding이 마무리 대화와 같은 그림을 준다). 글은 그 위에 그대로 읽힌다.
+      //   못 읽으면 그림만 뺀다(원래 바탕). 화면을 떠나면 go()가 화면을 비우며 같이 사라진다
+      if (opts.bg) {
+        var backdrop = el('img', { class: 'outro-bg', src: opts.bg, alt: '', 'aria-hidden': 'true', draggable: 'false' });
+        backdrop.onerror = function () { backdrop.remove(); };
+        screen.appendChild(backdrop);
+      }
+      screen.appendChild(el('div', { class: 'page outro-page' }, [
         el('p', { class: 'kicker', text: opts.kicker || '임무 완료' }),
         el('h2', { text: opts.headline || '도시 한 구간이 다시 이어졌다' }),
-        opts.summary && opts.summary.length ? el('ul', { id: 'outro-summary', class: 'outro-summary', 'aria-label': '이번 판 요약' }, opts.summary.map(function (t) { return el('li', { text: t }); })) : null,
+        opts.summary && opts.summary.length ? el('ul', { id: 'outro-summary', class: 'outro-summary', 'aria-label': '이번 판 요약' }, opts.summary.map(function (t) {
+          // 줄에 hint가 있으면(챕터 끝 '다른 용도 요청' — 생각해 볼 점) 같은 칸 아래에 작은 글로. 점수·정오 표시는 없다
+          return typeof t === 'string' ? el('li', { text: t }) : el('li', null, [el('span', { text: t.text }), t.hint ? el('span', { class: 'outro-hint', text: t.hint }) : null]);
+        })) : null,
         opts.compare || null, // 4 임무: 같은 답안지 전후 비교(DR.UI.gradeCompare)
         // 4 임무: 최종 토론 질문
         opts.questions && opts.questions.length ? el('section', { id: 'outro-questions', class: 'outro-questions', 'aria-label': '토론 질문' }, [
