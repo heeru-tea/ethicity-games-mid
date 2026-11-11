@@ -192,7 +192,7 @@
   const focus=moved?null:focusSelector();
   const judging=step==='check'&&E.checked(S.state,k)&&judgeIndex(k)>=0;
   $('#app').className='step-'+step+(judging?' judging':'');
-  $('#app').innerHTML=`<div class="screen"><div class="head">${h}</div>${v?`<div class="visual">${v}</div>`:''}<div class="body" id="work" tabindex="-1">${b}</div></div>`;
+  $('#app').innerHTML=`<div class="screen${moved?' arrive':''}"><div class="head">${h}</div>${v?`<div class="visual">${v}</div>`:''}<div class="body" id="work" tabindex="-1">${b}</div></div>`;
   paint();
   if(moved){
    $('h1').focus({preventScroll:true});

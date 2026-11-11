@@ -50,6 +50,8 @@
   autoKey:null,
   keepFinding:null,
   revealCue:false,
+  // fresh = 방금 판단했다(그 한 번의 그리기에만 판단 카드에 .fresh가 붙어 정답 표시·피드백이 한 번 나타난다 — style.css 게임 안 움직임).
+  fresh:false,
   // opened = 사건 4 기준표에서 연 줄(id), tried = 사건 5(혼자)에서 눌러 봤지만 답이 아닌 곳(글 안내 대신 '아님' 표시만).
   opened:new Set(),
   tried:new Set(),
@@ -96,6 +98,7 @@
   S.autoKey=null;
   S.keepFinding=null;
   S.revealCue=false;
+  S.fresh=false;
  }
  function reset(keepReporter){
   S.state=E.restart(S.state,{keepReporter});

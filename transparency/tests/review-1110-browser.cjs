@@ -32,7 +32,7 @@ function stateAt(key,step){
 let browser,url;
 // prep(p) = 열기 전에 할 일(그림 막기 등)
 async function withPage(viewport,state,fn,prep){
- const ctx=await browser.newContext({viewport});
+ const ctx=await browser.newContext({viewport,reducedMotion:'reduce'});
  // 처음 한 번만 저장을 심는다(새로고침 뒤에는 게임이 저장한 것이 남아야 한다)
  if(state)await ctx.addInitScript(([k,v])=>{if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.setItem(k,v);}},[KEY,JSON.stringify(state)]);
  const p=throughTitle(await ctx.newPage()),errors=[];p.setDefaultTimeout(20000);p.on('pageerror',e=>errors.push(String(e)));

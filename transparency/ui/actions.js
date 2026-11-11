@@ -21,6 +21,7 @@
   const b=e.target.closest('button[data-act]');
   if(!b||b.disabled)return;
   S.revealCue=false;
+  S.fresh=false;
   const run=actions[b.dataset.act];
   if(run)run(b,E.caseKey(S.state.scene));
  });

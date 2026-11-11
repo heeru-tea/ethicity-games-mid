@@ -172,7 +172,7 @@
    "printPdf": "all 200+ chars, longest notices: 4 pages (A4, 15mm)"
   },
   {
-   "reportEdit": "desktop1280: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-11 restored on afterprint"
+   "reportEdit": "desktop1280: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-12 restored on afterprint"
   },
   {
    "noticeLayout": "phone: page 1621px / viewport 844px, first card top 388, post button bottom 1130, next bottom 1317 (feedback shown)"
@@ -181,7 +181,7 @@
    "noticeLayoutStart": "phone: before posting page 932px / viewport 844px, post button bottom 761"
   },
   {
-   "reportEdit": "phone: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-11 restored on afterprint"
+   "reportEdit": "phone: reflection autosave+reload, report → 서술 고치기 → 보고서, print title 투명성_보고서_하늘_2026-11-12 restored on afterprint"
   },
   {
    "feedback2": "1366px: name tags + alt, portraits, 자료 header, scrollY 22→22 after third region"
@@ -236,7 +236,7 @@
    "chars": 310,
    "buttons": 10,
    "overflow": false,
-   "pageHeight": 870,
+   "pageHeight": 845,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -247,7 +247,7 @@
    "chars": 343,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 919,
+   "pageHeight": 894,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -291,7 +291,7 @@
    "chars": 378,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1059,
+   "pageHeight": 1058,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -357,7 +357,7 @@
    "chars": 472,
    "buttons": 13,
    "overflow": false,
-   "pageHeight": 911,
+   "pageHeight": 885,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -368,7 +368,7 @@
    "chars": 290,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 896,
+   "pageHeight": 894,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -412,7 +412,7 @@
    "chars": 340,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1035,
+   "pageHeight": 1033,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -478,7 +478,7 @@
    "chars": 255,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 926,
+   "pageHeight": 900,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -489,7 +489,7 @@
    "chars": 255,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 1005,
+   "pageHeight": 979,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -533,7 +533,7 @@
    "chars": 390,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 980,
+   "pageHeight": 954,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -599,7 +599,7 @@
    "chars": 322,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 926,
+   "pageHeight": 900,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -610,7 +610,7 @@
    "chars": 346,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 951,
+   "pageHeight": 949,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -654,7 +654,7 @@
    "chars": 393,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1017,
+   "pageHeight": 1016,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -720,7 +720,7 @@
    "chars": 260,
    "buttons": 11,
    "overflow": false,
-   "pageHeight": 817,
+   "pageHeight": 799,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -731,7 +731,7 @@
    "chars": 256,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 852,
+   "pageHeight": 827,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -775,7 +775,7 @@
    "chars": 396,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 941,
+   "pageHeight": 939,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -819,7 +819,7 @@
    "chars": 208,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 869,
+   "pageHeight": 837,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -830,7 +830,7 @@
    "chars": 188,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 841,
+   "pageHeight": 809,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -885,7 +885,7 @@
    "chars": 310,
    "buttons": 10,
    "overflow": false,
-   "pageHeight": 1451,
+   "pageHeight": 1426,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -896,7 +896,7 @@
    "chars": 358,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1592,
+   "pageHeight": 1566,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -940,7 +940,7 @@
    "chars": 395,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 2093,
+   "pageHeight": 2092,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1006,7 +1006,7 @@
    "chars": 472,
    "buttons": 13,
    "overflow": false,
-   "pageHeight": 1462,
+   "pageHeight": 1436,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1017,7 +1017,7 @@
    "chars": 300,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 1445,
+   "pageHeight": 1443,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1061,7 +1061,7 @@
    "chars": 340,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1470,
+   "pageHeight": 1468,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1127,7 +1127,7 @@
    "chars": 255,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1325,
+   "pageHeight": 1299,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1138,7 +1138,7 @@
    "chars": 278,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 1578,
+   "pageHeight": 1553,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1182,7 +1182,7 @@
    "chars": 412,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 1847,
+   "pageHeight": 1821,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1248,7 +1248,7 @@
    "chars": 322,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 1538,
+   "pageHeight": 1512,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1259,7 +1259,7 @@
    "chars": 346,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 1623,
+   "pageHeight": 1621,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1303,7 +1303,7 @@
    "chars": 406,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1641,
+   "pageHeight": 1639,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1369,7 +1369,7 @@
    "chars": 262,
    "buttons": 11,
    "overflow": false,
-   "pageHeight": 1371,
+   "pageHeight": 1345,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1380,7 +1380,7 @@
    "chars": 273,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1436,
+   "pageHeight": 1410,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1424,7 +1424,7 @@
    "chars": 408,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 1752,
+   "pageHeight": 1750,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1468,7 +1468,7 @@
    "chars": 208,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 1188,
+   "pageHeight": 1210,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1479,7 +1479,7 @@
    "chars": 208,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 1188,
+   "pageHeight": 1210,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1523,7 +1523,7 @@
    "chars": 322,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 926,
+   "pageHeight": 900,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1534,7 +1534,7 @@
    "chars": 346,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 951,
+   "pageHeight": 949,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1578,7 +1578,7 @@
    "chars": 393,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1017,
+   "pageHeight": 1016,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1644,7 +1644,7 @@
    "chars": 260,
    "buttons": 11,
    "overflow": false,
-   "pageHeight": 817,
+   "pageHeight": 800,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1655,7 +1655,7 @@
    "chars": 256,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 852,
+   "pageHeight": 827,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1699,7 +1699,7 @@
    "chars": 396,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 941,
+   "pageHeight": 939,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1765,7 +1765,7 @@
    "chars": 322,
    "buttons": 9,
    "overflow": false,
-   "pageHeight": 926,
+   "pageHeight": 900,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1776,7 +1776,7 @@
    "chars": 346,
    "buttons": 6,
    "overflow": false,
-   "pageHeight": 951,
+   "pageHeight": 949,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1820,7 +1820,7 @@
    "chars": 393,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1017,
+   "pageHeight": 1016,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1886,7 +1886,7 @@
    "chars": 260,
    "buttons": 11,
    "overflow": false,
-   "pageHeight": 817,
+   "pageHeight": 800,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1897,7 +1897,7 @@
    "chars": 256,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 852,
+   "pageHeight": 827,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1941,7 +1941,7 @@
    "chars": 396,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 941,
+   "pageHeight": 939,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []

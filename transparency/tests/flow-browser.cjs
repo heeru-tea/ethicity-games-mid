@@ -236,7 +236,7 @@ async function playCase(p,k,{tag,viewport,pick,judge,wrongFirst,shots,write={},n
 async function noticeReadable(p,k){const r=await p.evaluate(()=>{const vis=e=>e.offsetParent&&e.textContent.trim();
   return {font:Math.min(...[...document.querySelectorAll('.body p,.body button,.body button span')].filter(vis).map(e=>parseFloat(getComputedStyle(e).fontSize))),tap:Math.min(...[...document.querySelectorAll('.body button')].filter(vis).map(b=>b.getBoundingClientRect().height))};});
  assert.ok(r.font>=16,'notice text 16px+ '+k+' '+r.font);assert.ok(r.tap>=44,'notice tap 44px+ '+k+' '+r.tap);}
-async function withPage(viewport,fn,init){const ctx=await browser.newContext({viewport});if(init)await ctx.addInitScript(init);const p=throughTitle(await ctx.newPage());p.setDefaultTimeout(30000);try{return await fn(p);}finally{await ctx.close();}}
+async function withPage(viewport,fn,init){const ctx=await browser.newContext({viewport,reducedMotion:'reduce'});if(init)await ctx.addInitScript(init);const p=throughTitle(await ctx.newPage());p.setDefaultTimeout(30000);try{return await fn(p);}finally{await ctx.close();}}
 async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>localStorage.setItem(KEY,JSON.stringify(obj)),{KEY,obj});await p.reload();}
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));url=`http://127.0.0.1:${server.address().port}/`;

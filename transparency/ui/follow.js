@@ -35,13 +35,16 @@
   const picked=fs.judgment&&fs.judgment!=='legacy'?fs.judgment:null;
   const answer=E.followAnswers[k];
   const src=`<p class="judge-src">볼 자료: <span class="source-name">${esc(f.src)}</span></p>`;
-  b+=`<section class="judge judge-card" aria-label="판단할 말">${judgeCard(j.who,j.text,'',src)}${stampButtons('follow-judge',picked,answer)}`;
+  b+=`<section class="judge judge-card${S.fresh&&picked?' fresh':''}" aria-label="판단할 말">${judgeCard(j.who,j.text,'',src)}${stampButtons('follow-judge',picked,answer)}`;
   if(fs.judgment==='legacy')b+='<p class="hint">이전 저장에서 넘어와 아직 하지 않은 조사야. 지금 해 볼 수 있어.</p>';
   if(picked)b+=`${verdictBox(j,picked,answer)}<p class="unknown"><strong>아직 모르는 점</strong> ${esc(f.unknown)}</p>${more(f.more)}`;
   return b+'</section>';
  }
 
- actions['follow-judge']=b=>send({type:'follow-judge',stamp:b.dataset.id});
+ actions['follow-judge']=b=>{
+  S.fresh=true;
+  send({type:'follow-judge',stamp:b.dataset.id});
+ };
  // 눌러서 여는 줄(점검표 항목·그림을 올린 곳)
  UI.openMark=b=>send({type:'mark',id:b.dataset.id,value:'open'});
 

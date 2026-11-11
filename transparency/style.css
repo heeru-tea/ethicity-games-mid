@@ -64,7 +64,8 @@ footer{max-width:1240px;margin:auto;padding:16px 32px;display:flex;justify-conte
 .seen{color:var(--muted);font-size:.85rem}
 .judge{border-top:1px solid var(--border);margin-top:22px;padding-top:4px}
 .stamps{display:flex;flex-wrap:wrap;gap:8px}
-.stamps button{flex:1 1 9em}
+/* 도장 셋: 글 길이만큼 자리를 받는다 — 가장 긴 ‘자료로는 알 수 없어’가 ‘없/어’로 끊기지 않게(낱말 안에서는 줄을 바꾸지 않는다) */
+.stamps button{flex:1 1 auto;padding-left:12px;padding-right:12px;word-break:keep-all}
 .options{display:grid;gap:10px;margin:8px 0}
 .option{width:100%}
 .photo-options{grid-template-columns:1fr 1fr}
@@ -73,6 +74,10 @@ footer{max-width:1240px;margin:auto;padding:16px 32px;display:flex;justify-conte
 .step-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:26px;flex-wrap:wrap}
 .nav-pair{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 .menu{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+/* 마지막 장면: 으뜸 줄(이전·보고서) 아래에 선을 긋고 더 볼 것 셋을 한 줄로, ‘처음부터 다시 하기’는 오른쪽 끝에 떼어 둔다 */
+.step-end .menu{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.step-end .menu button{font-size:.92rem;padding:8px 14px}
+.step-end .menu [data-act="reset-ask"]{margin-left:auto;color:var(--muted)}
 .ending-quote{font-size:1.3rem;font-weight:700;margin:22px 0 10px}
 
 /* 그림 */
@@ -461,8 +466,8 @@ body:has(#app.at-title)>footer{width:100%}
 .title-panel .peek-say{font-size:1rem;font-weight:500;line-height:1.5;margin:2px 0 8px}
 .peek-who{font-size:.82rem;font-weight:400;color:#5a5449;white-space:nowrap}
 .peek-stamps{display:flex;flex-wrap:wrap;gap:6px}
-/* 세 갈래는 누르는 버튼이 아니라 미리 보는 그림이다: 흰 바탕을 빼고 이름표처럼 */
-.peek-stamps span{flex:1 1 auto;text-align:center;font-size:.82rem;line-height:1.4;padding:3px 8px;border:1px solid #c9b88f;border-radius:6px;color:#4a453c}
+/* 세 갈래는 누르는 버튼이 아니라 미리 보는 그림이다: 테두리와 흰 바탕을 빼고, 옅은 바탕의 둥근 이름표로(게임 안 버튼은 흰 바탕 + 테두리 + 8px 모서리) */
+.peek-stamps span{flex:0 1 auto;text-align:center;font-size:.8rem;line-height:1.4;padding:2px 10px;border-radius:999px;background:rgba(74,69,60,.1);color:#4a453c}
 .peek-card{cursor:default;user-select:none}
 .title-actions{display:grid;gap:8px;justify-items:start}
 .title-actions button{text-align:center}
@@ -470,8 +475,23 @@ body:has(#app.at-title)>footer{width:100%}
 .title-actions .go,.title-actions .from{display:block}
 .title-actions .from{font-size:.85rem;font-weight:500;line-height:1.35}
 .title-keys{font-size:.82rem;line-height:1.5;color:#5a5449}
+/* 게임 안 움직임(2026-11-12) — 세 군데만: ① 장면이 바뀔 때 ② 판단한 직후 ③ 결과 화면에서 그림 위 결과 표시.
+   .arrive·.fresh는 그 한 번의 그리기에만 붙는다(자료를 바꾸는 등 같은 장면을 다시 그릴 때는 되풀이하지 않는다).
+   화면이 움직이지 않게 자리는 옮기지 않는다: 투명도와 scale(제자리 크기)만. 움직임 줄이기 설정에서는 149행 규칙이 모두 끈다. */
+:root{--t-base:.3s;--e-out:cubic-bezier(.22,1,.36,1);--e-back:cubic-bezier(.34,1.56,.64,1)}
+@media(prefers-reduced-motion:no-preference){
+ .screen.arrive>.head,.screen.arrive>.visual,.screen.arrive>.body{animation:scene-in var(--t-base) var(--e-out) both}
+ .screen.arrive>.visual{animation-delay:.04s}
+ .screen.arrive>.body{animation-delay:.08s}
+ .judge-card.fresh .stamp-right{animation:stamp-pop var(--t-base) var(--e-back)}
+ .judge-card.fresh .finding{animation:scene-in var(--t-base) var(--e-out) .12s both}
+ .step-result .screen.arrive .stage-screen,.step-result .screen.arrive .stage-status,.step-result .screen.arrive .stage-photo{animation:mark-in .36s var(--e-back) .3s both}
+ @keyframes scene-in{from{opacity:0}}
+ @keyframes stamp-pop{from{scale:.94}}
+ @keyframes mark-in{from{opacity:0;scale:.9}}
+}
 @media(prefers-reduced-motion:no-preference) and (min-width:521px){
- /* 연출은 이것 하나: 판이 한 번, 짧게 떠오른다 */
+ /* 시작 화면의 연출은 이것 하나: 판이 한 번, 짧게 떠오른다 */
  .title-panel{animation:title-in .36s ease-out both}
  @keyframes title-in{from{opacity:0;transform:translateY(10px)}}
 }

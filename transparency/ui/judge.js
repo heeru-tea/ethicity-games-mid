@@ -64,7 +64,7 @@
   const j=c.judges[idx];
   const picked=js[idx]&&js[idx]!=='legacy'?js[idx]:null;
   const answer=E.answers[k][idx];
-  let h=`<section class="judge judge-card" aria-label="판단할 말 ${idx+1}/3">`
+  let h=`<section class="judge judge-card${S.fresh&&picked?' fresh':''}" aria-label="판단할 말 ${idx+1}/3">`
    +judgeCard(j.who,j.text,(idx+1)+'/3',sourceTags(k,j.src))
    +stampButtons('judge',picked,answer);
   if(js[idx]==='legacy')h+='<p class="hint">이전 저장에서 넘어와 아직 하지 않은 판단이야. 지금 해 볼 수 있어.</p>';
@@ -77,6 +77,7 @@
 
  actions.judge=(b,k)=>{
   S.keepFinding=null;
+  S.fresh=true;
   S.justJudged=E.currentJudgment(S.state,k);
   send({type:'judge',stamp:b.dataset.id});
  };
