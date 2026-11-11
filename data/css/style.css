@@ -91,6 +91,12 @@ body { overflow: hidden; word-break: keep-all; }
 .note { color: var(--ink-2); font-size: 16px; }
 .missing { border-left: 3px solid var(--pink); padding: 4px 0 4px 12px; margin: 12px 0; color: var(--ink); }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+/* 주 버튼 막대(첫 시험 검수 '이 자료로 시험하기' · 결과 '다음 장면' — 플레이테스트 2026-11-12): 내용이 길어도 화면 아래에 붙어 첫 화면에 보인다.
+   바탕 = 화면 바탕과 같은 그라디언트를 화면 기준(fixed)으로 칠해 이음매가 안 보이고, 위쪽은 마스크로 서서히(내용이 막대 밑으로 스며든다).
+   아래 여백(.page padding-bottom 48px)까지 덮도록 음수 여백 — 붙어 있을 때와 끝까지 내렸을 때 버튼 자리가 같다 */
+.actions.actions-sticky { position: sticky; bottom: 0; z-index: 4; margin: 8px -16px -48px; padding: 28px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, #1c1446 0%, var(--bg) 70%) fixed;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 20px); mask-image: linear-gradient(180deg, transparent 0, #000 20px); }
 .btn-ghost { border-color: var(--line); color: var(--ink-2); padding: 10px 18px; font-size: 15px; }
 .portrait { flex: none; }
 .line { display: flex; gap: 12px; align-items: flex-start; margin: 16px 0; }
@@ -136,7 +142,8 @@ body { overflow: hidden; word-break: keep-all; }
 .brief-scene[data-emphasis="low"] { opacity: .72; transform: scale(.88); transform-origin: top left; }
 .brief-scene[data-emphasis="low"] figcaption { font-size: 14px; color: var(--ink-2); }
 
-.result-art { display: block; width: 100%; max-width: 30rem; border-radius: var(--r); }
+/* 결과 장면 그림: 화면 높이의 46%까지만(1280×800에서 480 → 368px) — 그림 아래 결과 문구가 첫 화면에서 주 버튼 막대에 가리지 않게(플레이테스트 2026-11-12). 좁은 화면은 폭 그대로 */
+.result-art { display: block; width: 100%; max-width: min(30rem, 46vh); border-radius: var(--r); }
 
 /* 검수 · 보충 준비 */
 .notice { background: rgba(255,95,176,.14); border: 1px solid var(--pink); border-radius: 12px; padding: 10px 14px; }
@@ -314,7 +321,8 @@ body { overflow: hidden; word-break: keep-all; }
 @keyframes cv-in { from { transform: translateX(-30vw); opacity: .2; } }
 .cv-item.ok { border-color: var(--ok, #5be3a1); }
 .cv-item.bad { border-color: var(--danger, #ff5f6d); box-shadow: 0 0 0 3px rgba(255,95,109,.35); }
-.cv-bins { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 22px; }
+/* 분류함 수(--cv-n, ui-conveyor가 임무의 이름표 수로 건다)만큼 칸을 나눠 벨트 폭에 고르게 — 전엔 늘 7칸이라 1 임무(4칸)는 왼쪽에 몰렸다 */
+.cv-bins { display: grid; grid-template-columns: repeat(var(--cv-n, 7), minmax(0, 1fr)); gap: 8px; margin-top: 22px; }
 .cv-bin { background: var(--bin); border-radius: 8px 8px 14px 14px; padding: 6px 4px 8px; min-height: 132px; display: flex; flex-direction: column; align-items: center; }
 .cv-bin-head { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 13px; font-weight: 800; color: #10093a;
   background: rgba(255,255,255,.88); border-radius: 10px; padding: 3px 6px; text-align: center; word-break: keep-all; line-height: 1.25; width: 100%; }
@@ -335,7 +343,7 @@ body { overflow: hidden; word-break: keep-all; }
 .result-wrong figure { margin: 0; width: 96px; font-size: 12px; color: var(--ink-2); text-align: center; word-break: keep-all; }
 .result-wrong img { width: 96px; height: 96px; border-radius: 8px; border: 3px solid var(--danger, #ff5f6d); display: block; }
 @media (max-width: 640px) {
-  .cv-bins { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .cv-bins { grid-template-columns: repeat(var(--cv-n-narrow, 4), minmax(0, 1fr)); gap: 6px; }
   .cv-bin { min-height: 100px; }
   .cv-bin-head { font-size: 11px; }
   .cv-belt { height: 80px; }
@@ -629,7 +637,7 @@ body { overflow: hidden; word-break: keep-all; }
 .exam-card { position: relative; display: grid; gap: 4px; padding: 6px; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; color: inherit; font: inherit; cursor: pointer; }
 .exam-card img { display: block; width: 100%; border-radius: 6px; }
 .exam-tag { font-weight: 700; }
-.exam-drill { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--line); max-width: 14rem; }
+.exam-drill { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--line); }
 .exam-big { display: block; width: min(100%, 18rem); border-radius: 10px; margin: 0 auto 10px; }
 .exam-say { margin: 12px 0; word-break: keep-all; }
 .exam-say b { color: var(--cyan); }

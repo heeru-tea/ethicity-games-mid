@@ -36,7 +36,8 @@
     screen.innerHTML = '';
     var claw = el('div', { class: 'cv-claw', 'aria-hidden': 'true' }, [el('i'), el('b'), el('b')]);
     var belt = el('div', { class: 'cv-belt' });
-    var bins = el('div', { class: 'cv-bins' });
+    // 칸 수 = 이름표 수(1 임무 4 · 2 임무 7) — 좁은 화면은 한 줄에 4칸까지
+    var bins = el('div', { class: 'cv-bins', style: '--cv-n:' + mission.labels.length + ';--cv-n-narrow:' + Math.min(4, mission.labels.length) });
     mission.labels.forEach(function (l) {
       var bin = el('div', { class: 'cv-bin', 'data-bin': l.id, style: '--bin:' + (colors[l.id] || '#888') }, [
         el('div', { class: 'cv-bin-head' }, [DR.UI.iconStrip(mission, [l.id], 18), el('span', { text: l.text })]),

@@ -78,7 +78,13 @@
       contam: {
         inconvenience: '{what:이} {label} 함으로 갔다. 선별장 직원이 손으로 다시 골라낸다.',
         danger: '{what:이} {label} 함에 섞여 압착기로 들어갔다. 불꽃이 튀자 감독관이 비상 정지 버튼을 눌렀다.'
-      }
+      },
+      // 한 장면에서 잘못 간 물건이 둘 이상일 때(플레이테스트 2026-11-12, DR.ResultLine.leadLine·becauseLine·alsoLine) — {list} = '투명 페트병은 비닐 함으로, …'
+      //   wrongAll = 장면 머리 문구(불편) · wrongRest = 위험 문구 뒤에 건전지 말고 나머지 · because = 오염 원인 줄 뒤 · also = 원인을 하나로 못 짚는 물건. ⚠️ 교사 검수 대기
+      wrongAll: '{list} 갔다. 선별장 직원이 손으로 다시 골라낸다.',
+      wrongRest: '그 밖에 {list} 갔다.',
+      because: '그래서 {list} 갔다.',
+      also: '엉뚱한 사진이 섞이면서 {list} 갔다.'
     },
     outcomeText: { pass: '제대로 분류했다', inconvenience: '엉뚱한 함으로 갔다 · 불편', danger: '압착기에 건전지가 들어갔다 · 위험' },
     counts: {
