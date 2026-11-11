@@ -216,6 +216,8 @@
   }
   function place(p) { me.x = p.x; me.y = p.y; me.dir = p.dir || 'down'; me.fx = p.x; me.fy = p.y; me.moving = false; me.pose = p.pose || null; }
   function nudgeFree() {
+    var rs = WD.rescue(me.x, me.y, blocked); // 출입구 칸·막힌 현관 안쪽에 선 옛 저장(2026-11-11)
+    if (rs) { place({ x: rs.x, y: rs.y, dir: me.dir }); return; }
     if (WD.walkable(me.x, me.y, blocked)) return;
     if (!WD.walkable(me.x, me.y)) { var nw = WD.nearestWalkable(me.x, me.y, blocked); if (nw) { place({ x: nw.x, y: nw.y, dir: me.dir }); return; } }
     var p = WD.findPath({ x: me.x, y: me.y }, function (x, y) { return WD.walkable(x, y, blocked); }, {});

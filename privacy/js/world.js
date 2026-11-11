@@ -55,13 +55,14 @@
     { id: 'yard', name: '학교 마당', img: 'assets/scenes/yard.png', rects: [
       [0, 0, 32, 1], [0, 1, 15, 4], [18, 1, 14, 3], [18, 4, 7, 1], [28, 4, 4, 2], // 건물·덤불(현관·도서관 문 칸은 아래에서 다시 엶)
       [13, 5, 2, 1], [24, 5, 1, 1],
+      [5, 5, 1, 1], [9, 5, 1, 1],                                                 // 현관 계단 양옆 화분(2026-11-11: 옆에서 계단으로 한 걸음에 들어가 교실로 빨려 가던 것)
       [0, 5, 3, 5], [0, 10, 2, 7], [29, 6, 3, 8], [30, 14, 2, 4],                 // 나무
       [2, 11, 1, 2], [3, 13, 2, 1], [27, 13, 1, 1], [28, 12, 1, 1],               // 왼쪽 아래 나무 가장자리·꽃덤불, 오른쪽 꽃덤불
       [6, 10, 8, 4],                                                              // 축제 천막 2개(앞 줄 14는 서는 자리)
       [20, 11, 4, 3],                                                             // 매점(창구는 아래 14줄을 봄)
       [3, 14, 4, 2], [25, 14, 4, 2], [1, 13, 2, 3], [28, 13, 2, 3],               // 벤치·꽃밭
       [0, 15, 14, 3], [18, 15, 14, 3]                                             // 아래 덤불·교문 기둥(가운데 길만 열림)
-    ], open: [[6, 4], [7, 4], [8, 4], [25, 4], [26, 4], [27, 4], [15, 1], [16, 1], [17, 1], [15, 2], [16, 2], [17, 2], [15, 3], [16, 3], [17, 3], [15, 4], [16, 4], [17, 4]] },
+    ], open: [[25, 4], [26, 4], [27, 4], [15, 1], [16, 1], [17, 1], [15, 2], [16, 2], [17, 2], [15, 3], [16, 3], [17, 3], [15, 4], [16, 4], [17, 4]] },
     { id: 'village', name: '마을 길', img: 'assets/scenes/village.png', road: true },
     // 우리 집(2026-11-03 플레이테스트): 그림(내 방)은 bg 사각형 안에만. 방문 = 그림 아래 매트 밑 (9~10,12) 두 칸, 그 아래·오른쪽이 거실, 현관 = 오른쪽 아래 (24~27,17)
     //   tools/room-compose.mjs: room-base.png + 판다 축소 + 공통 팩 코르크보드.
@@ -152,15 +153,16 @@
   var DOORS = {};
   // say: 건너편에 도착했을 때 무대 위에 잠깐 뜨는 한 줄(map.js finishStep, 2026-11-02 — 예전엔 '집 안으로' 말고는 모두 '밖으로 나왔다.')
   function door(cells, scene, to, dir, label, say) { cells.forEach(function (c) { DOORS[(S[c[0]].ox + c[1]) + ',' + c[2]] = { to: [S[scene].ox + to[0], to[1]], dir: dir, label: label, scene: scene, say: say }; }); }
-  door([['classroom', 15, 17], ['classroom', 16, 17]], 'yard', [7, 5], 'down', '마당으로', '마당으로 나왔다.');
-  door([['yard', 6, 4], ['yard', 7, 4], ['yard', 8, 4]], 'classroom', [15, 16], 'up', '교실로', '교실에 들어왔다.');
+  // 2026-11-11 플레이테스트: 마당 현관 출입구 = 문 안쪽(y 4)이 아니라 계단(6~8, 5). 마당 도착 칸은 [7, 7] — [7, 6]이면 머리가 계단 틀을 가리고 느낌표 핀이 머리 위로 올라갔다
+  door([['classroom', 15, 17], ['classroom', 16, 17]], 'yard', [7, 7], 'down', '마당으로', '마당으로 나왔다.');
+  door([['yard', 6, 5], ['yard', 7, 5], ['yard', 8, 5]], 'classroom', [15, 16], 'up', '교실로', '교실에 들어왔다.');
   door([['library', 14, 17], ['library', 15, 17], ['library', 16, 17], ['library', 17, 17]], 'yard', [26, 5], 'down', '마당으로', '마당으로 나왔다.');
   door([['yard', 25, 4], ['yard', 26, 4], ['yard', 27, 4]], 'library', [15, 16], 'up', '도서관으로', '도서관에 들어왔다.');
   door([['yard', 14, 17], ['yard', 15, 17], ['yard', 16, 17], ['yard', 17, 17]], 'village', [1, 6], 'right', '교문 밖으로', '교문 밖으로 나왔다.');
   door([['village', 0, 5], ['village', 0, 6]], 'yard', [15, 16], 'up', '학교로', '학교에 도착했다.'); // 그림의 길이 왼쪽 끝에서 들어오는 자리(그 아래는 나무)
   door([['village', 24, 11], ['village', 25, 11]], 'room', [25, 16], 'up', '집 안으로', '우리 집에 들어왔다.'); // 2026-11-03 플레이테스트: 도착 칸 = 현관 안쪽(거실 쪽)
   door([['room', 24, 17], ['room', 25, 17], ['room', 26, 17], ['room', 27, 17]], 'village', [24, 12], 'down', '밖으로', '밖으로 나왔다.');
-  door([['ai_lab', 14, 17], ['ai_lab', 15, 17], ['ai_lab', 16, 17], ['ai_lab', 17, 17], ['ai_lab', 18, 17]], 'yard', [7, 5], 'down', '마당으로', '마당으로 나왔다.'); // 특별실 → 마당(2026-11-10)
+  door([['ai_lab', 14, 17], ['ai_lab', 15, 17], ['ai_lab', 16, 17], ['ai_lab', 17, 17], ['ai_lab', 18, 17]], 'yard', [7, 7], 'down', '마당으로', '마당으로 나왔다.'); // 특별실 → 마당(2026-11-10)
   /* 걷기 구간 워프(2026-11-10 특별 수업, 사용자 결정): 그 걷기에서만 어떤 장면으로 가는 문을 다른 칸으로 보낸다.
    *   trig.warp = { from: 도착 장면 id, to: [전역 x, y], say } — 예: 마당→교실 문이 특별실로. map.js가 걷기 시작마다 setWarp(trig.warp 또는 null)
    *   doorTarget(door, trig) = 그 걷기에서 실제 도착(검사·길찾기용, 바꾸지 않음) · setWarp = DOORS 항목을 잠시 바꾸고 null이면 되돌린다 */
@@ -264,7 +266,7 @@
     gate: P('yard', 15, 15, 'up'),             // 등교: 교문 안쪽
     home: rp(10, 12, 'down'),                  // 내 방 침대 옆(아침에 일어난 자리)
     road: P('village', 12, 10, 'right'),       // 마을 길 가운데
-    hall: P('yard', 7, 6, 'down'),             // 현관 앞
+    hall: P('yard', 7, 7, 'down'),             // 현관 앞(계단 두 칸 아래 — 2026-11-11)
     yard: P('yard', 14, 13, 'right')           // 마당 축제 부스 옆
   };
 
@@ -504,6 +506,20 @@
       return false;
     };
   }
+  /* 저장된 자리 구하기(2026-11-11): 출입구 칸 위나 이제 막힌 현관 문 안쪽에 서 있던 저장은 그대로 두면 갇히거나 한 걸음에 다른 장면으로 간다.
+   *   마당 현관(6~8, 4~5 — 옛 문 안쪽·옛 도착 칸 [7,5]·지금 계단)이면 현관 앞 [7,7]로, 그 밖의 출입구 칸이면 가장 가까운 '출입구가 아닌 걸을 수 있는 칸'으로. 옮길 필요 없으면 null */
+  function rescue(xx, yy, blocked) {
+    var y0 = S.yard.ox;
+    if (xx >= y0 + 6 && xx <= y0 + 8 && (yy === 4 || yy === 5)) return { x: y0 + 7, y: 7 };
+    if (!DOORS[xx + ',' + yy]) return null;
+    for (var r = 1; r <= Math.max(W, H); r++) {
+      for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+        if (Math.abs(dx) + Math.abs(dy) !== r) continue;
+        if (walkable(xx + dx, yy + dy, blocked) && !DOORS[(xx + dx) + ',' + (yy + dy)]) return { x: xx + dx, y: yy + dy };
+      }
+    }
+    return null;
+  }
   function nearestWalkable(xx, yy, blocked) {
     for (var r = 0; r <= Math.max(W, H); r++) {
       for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
@@ -535,7 +551,7 @@
     TILES: TILES, DOORS: DOORS, OBJECTS: OBJECTS, SPAWNS: SPAWNS, BED_ME: BED_ME, scaleRect: scaleRect,
     triggers: TRIGGERS, idle: IDLE, DIRS: DIRS, PLACES: PLACES, STAGES: STAGES,
     tile: tile, objectAt: objectAt, walkable: walkable, stepFrom: stepFrom,
-    findPath: findPath, adjacentTo: adjacentTo, doorTarget: doorTarget, setWarp: setWarp, areaName: areaName, nearestWalkable: nearestWalkable, NEIGHBORS: NEIGHBORS,
+    findPath: findPath, adjacentTo: adjacentTo, doorTarget: doorTarget, setWarp: setWarp, areaName: areaName, nearestWalkable: nearestWalkable, rescue: rescue, NEIGHBORS: NEIGHBORS,
     object: function (id) { return OBJECTS.filter(function (o) { return o.id === id; })[0]; }
   };
   root.PRIVACY_WORLD = WORLD;

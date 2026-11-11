@@ -199,7 +199,7 @@ run('aiLabScene', () => {
   ok(S.slice(0, 5).map((x) => x.ox).join() === '0,32,64,96,128', '기존 장면 ox 그대로 ' + S.map((x) => x.ox));
   ok(WORLD.VERSION === 4, '지도 판 VERSION 4 그대로');
 });
-const classDoor = () => { const ox = WORLD.SCENES.find((x) => x.id === 'yard').ox; return WORLD.DOORS[(ox + 7) + ',4']; };
+const classDoor = () => { const ox = WORLD.SCENES.find((x) => x.id === 'yard').ox; return WORLD.DOORS[(ox + 7) + ',5']; }; // 현관 계단(2026-11-11: 출입구를 문 안쪽 y 4에서 계단 y 5로)
 run('warpOnlyInClass', () => {
   const d = classDoor(), lab = WORLD.SCENES.find((x) => x.id === 'ai_lab');
   ok(!!d && WORLD.sceneAt(d.to[0]).id === 'classroom', '평소 마당→교실 문 = 교실');

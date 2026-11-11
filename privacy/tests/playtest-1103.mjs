@@ -134,8 +134,8 @@ try {
       await close(p);
       // 다른 문들: 매트 탭으로 지나 도착 칸에 멈춘다
       const cases = [
-        ['교실 → 마당', 'pro_1', CLASS + 15, 16, CLASS + 15, 17, YARD + 7, 5],
-        ['마당 → 교실', 'pro_1', YARD + 7, 5, YARD + 7, 4, CLASS + 15, 16],
+        ['교실 → 마당', 'pro_1', CLASS + 15, 16, CLASS + 15, 17, YARD + 7, 7], // 2026-11-11: 마당 도착 칸 [7,7], 현관 출입구 = 계단(y 5)
+        ['마당 → 교실', 'pro_1', YARD + 7, 6, YARD + 7, 5, CLASS + 15, 16],
         ['도서관 → 마당', 'pro_1', LIB + 15, 16, LIB + 15, 17, YARD + 26, 5],
         ['마당 → 도서관', 'pro_1', YARD + 26, 5, YARD + 26, 4, LIB + 15, 16],
         ['교문 → 마을 길', 'pro_1', YARD + 15, 16, YARD + 15, 17, VIL + 1, 6],
@@ -160,7 +160,7 @@ try {
         while (Date.now() - start < 3000) {
           const m = await me(k);
           if (!t0 && m.x >= YARD) t0 = Date.now();
-          if (t0 && (m.moving || m.y !== 5)) { moved = Date.now() - t0; break; }
+          if (t0 && (m.moving || m.y !== 7)) { moved = Date.now() - t0; break; } // 마당 도착 칸 [7,7](2026-11-11)
           await k.waitForTimeout(10);
         }
         await k.keyboard.up('ArrowDown');
@@ -173,7 +173,7 @@ try {
     /* c. 도착 직후 버튼 */
     if (ONLY.includes('c')) {
       const q = await open(makeRun('pro_1', { map: true }), dev);
-      for (const [n, x0, y0, dx, dy, ax] of [['마당', CLASS + 15, 16, CLASS + 15, 17, YARD + 7], ['교실', YARD + 7, 5, YARD + 7, 4, CLASS + 15], ['마을 길', YARD + 15, 16, YARD + 15, 17, VIL + 1], ['집(현관)', VIL + 24, 12, VIL + 24, 11, ROOM + 25]]) {
+      for (const [n, x0, y0, dx, dy, ax] of [['마당', CLASS + 15, 16, CLASS + 15, 17, YARD + 7], ['교실', YARD + 7, 6, YARD + 7, 5, CLASS + 15], ['마을 길', YARD + 15, 16, YARD + 15, 17, VIL + 1], ['집(현관)', VIL + 24, 12, VIL + 24, 11, ROOM + 25]]) {
         await place(q, x0, y0, 'down');
         await tapTile(q, dx, dy); await settle(q); await q.waitForTimeout(350);
         const b = await btn(q), m = await me(q);
@@ -181,13 +181,13 @@ try {
       }
       // 2칸 걷고 돌아오면 다시 문 버튼
       if (!dev.hasTouch) {
-        await place(q, YARD + 7, 5, 'up'); await tapTile(q, YARD + 7, 4); await settle(q); await q.waitForTimeout(350);
+        await place(q, YARD + 7, 6, 'up'); await tapTile(q, YARD + 7, 5); await settle(q); await q.waitForTimeout(350);
         await press(q, 'ArrowLeft'); await press(q, 'ArrowLeft'); await press(q, 'ArrowRight'); await press(q, 'ArrowRight');
         const b = await btn(q), a = await q.evaluate(() => PrivacyMap.debug.arrived());
         ok(a === null && /마당으로 가기/.test(b.t), '2칸 걸은 뒤에는 문 버튼이 돌아옴 ' + JSON.stringify({ a, b }));
         // 매트를 다시 밟는 것은 된다
         await q.waitForTimeout(100);
-        await place(q, YARD + 7, 5, 'up'); await tapTile(q, YARD + 7, 4); await settle(q); await q.waitForTimeout(350);
+        await place(q, YARD + 7, 6, 'up'); await tapTile(q, YARD + 7, 5); await settle(q); await q.waitForTimeout(350);
         await press(q, 'ArrowDown');
         ok((await me(q)).x === YARD + 7, '도착 직후에도 걸어서 매트를 밟으면 돌아간다 ' + JSON.stringify(await me(q)));
       }
