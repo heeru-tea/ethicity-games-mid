@@ -63,6 +63,8 @@ h1:focus { outline: none; }
 .btn.link { border: 0; background: none; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; min-height: 44px; padding: 8px 4px; }
 .btn.danger { color: var(--danger); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
+/* 그림 위에 뜨는 버튼(위 줄의 '이전 선택')은 못 누를 때도 그림이 비치지 않게: 투명도 대신 불투명한 흐린 바탕(2026-11-12) */
+.hud .bar-actions .btn:disabled { opacity: 1; background: #E3E8E7; border-color: #9AA6A3; color: #56605E; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 48px; }
 
 /* ── 알림 ───────────── */
@@ -251,7 +253,12 @@ strong.em { font-weight: 800; color: inherit; }
   border: 1px solid var(--accent); color: var(--accent);
 }
 .continue { width: 100%; }
-.skip-btn { width: 100%; color: var(--text-mute); }
+/* '모두 보기'(2026-11-12): 비치는 버튼은 덜 만든 것처럼 보였다 → 자리·너비는 그대로 두고 불투명하게. 으뜸 버튼 '다음'(청록)보다 조용하게:
+   대화창 안에서는 옅은 회색 바탕, 폰·PC 창 아래(#g-next)에서는 기기 테두리와 같은 짙은 남회색 바탕 + 밝은 글자 */
+.btn.skip-btn { width: 100%; background: var(--surface); border-color: #C9D6D4; color: var(--text-mute); }
+.btn.skip-btn:hover { border-color: var(--text-mute); }
+#v-game .next-row .btn.skip-btn { background: #262C3A; border-color: #4B556B; color: #D8DEE8; }
+#v-game .next-row .btn.skip-btn:hover { border-color: #8F9BB3; }
 
 /* ── 무대: 맵이 화면의 주인, 걷기·장면·장 전환이 그 위에 겹쳐 뜬다 ───────────── */
 body[data-view="v-map"] .app, body[data-view="v-game"] .app, body[data-view="v-chapter"] .app { max-width: 960px; padding: 12px; }
@@ -320,7 +327,7 @@ body[data-view="v-chapter"] .hud { display: none; }
 /* 조작 안내 줄이 원래 안 보이는 화면(휴대폰 세로 ≤480px·가로 낮은 화면 ≤500px)에서는 메뉴의 '조작 안내 다시 보기'도 숨김 — 가로 화면 메뉴가 길어져 닫기 버튼이 스크롤 밑으로 갔다 */
 @media (max-width: 480px), (max-height: 500px) { #btn-menu-help { display: none; } }
 /* 근처에 말 걸거나 조사할 대상이 없으면 흐리게(눌러도 '가까이 가서 눌러 보세요' 안내만 나옴) */
-#v-map .map-controls #btn-map-act[aria-disabled="true"] { opacity: .5; cursor: default; }
+#v-map .map-controls #btn-map-act[aria-disabled="true"] { opacity: 1; background: #E3E8E7; border-color: #9AA6A3; color: #56605E; cursor: default; } /* 2026-11-12: 반투명 → 불투명한 흐린 바탕 */
 /* 가상 조이스틱(터치 기기, 2026-11-02): 말 걸기 버튼 위 왼쪽. 영역(#joy)은 보이지 않고, 누른 자리에 받침이 뜬다.
    bottom·height는 map.js joyLayout()이 버튼 줄·HUD에 맞춰 정한다. 평소 40% · 누르는 중 80% */
 #v-map .joy {
@@ -538,7 +545,7 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .class-q { margin: 0; }
 .group-label { font-size: .9rem; font-weight: 700; color: var(--text-mute); margin-bottom: 8px; }
 .prose p { font-size: 1.05rem; }
-.callout { background: var(--surface); border-left: 4px solid var(--accent); border-radius: 0 var(--radius-in) var(--radius-in) 0; padding: 12px 16px; margin-top: 24px; }
+.callout { background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius-in); padding: 12px 16px; margin-top: 24px; } /* 2026-11-12: 왼쪽 굵은 색 띠 → 얇은 전체 테두리 */
 
 /* ── 선택 경로 ───────────── */
 .endings-seen h2 { margin-top: 32px; }
@@ -560,7 +567,7 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .path-missed { font-size: .92rem; color: var(--text-mute); display: grid; }
 
 /* ── 성찰 ───────────── */
-.core-q { font-size: 1.2rem; font-weight: 700; background: var(--surface); border-left: 4px solid var(--accent); border-radius: 0 var(--radius-in) var(--radius-in) 0; padding: 14px 16px; }
+.core-q { font-size: 1.2rem; font-weight: 700; background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius-in); padding: 14px 16px; }
 .q-list { padding-left: 22px; }
 .q-list li + li { margin-top: 10px; }
 .tag { font-size: .8rem; font-weight: 600; color: var(--text-mute); margin-left: 6px; }
