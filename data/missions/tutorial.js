@@ -24,7 +24,8 @@
     ],
     counts: { dog: 7, cat: 7 },
     scenes: [
-      { id: 'T1', title: '보호소 입양 안내', art: { place: 'shelter', time: 'day' },
+      // art.img = 브리핑 장면 카드에 쓰는 그림 파일(2026-11-12, 512² — tools/story-art.mjs --cards-only). 못 읽으면 예전 Canvas 그림(개 + 고양이)
+      { id: 'T1', title: '보호소 입양 안내', art: { place: 'shelter', time: 'day', img: 'assets/story/practice-shelter.webp' },
         combos: [
           { id: 'T1_dog', keys: ['dog'], need: 5, danger: false, what: '개 사진' },
           { id: 'T1_cat', keys: ['cat'], need: 5, danger: false, what: '고양이 사진' }

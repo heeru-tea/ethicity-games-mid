@@ -119,8 +119,12 @@
       stop.innerHTML = '';
       var resume = el('button', { id: 'btn-cv-resume', class: 'btn btn-primary', type: 'button', text: '계속 돌리기' });
       resume.addEventListener('click', function () { DR.Sfx.play('ui'); stop.hidden = true; stopped = false; next(); });
+      // 정지 창 그림: 임무 데이터에 그림 파일(story.emergencyArt)이 있으면 그것, 못 읽으면·없으면 그 장면의 Canvas 위험 컷
+      var stopArt = el('img', { class: 'cv-stop-art', src: mission.story.emergencyArt || A.scene(mission, it.scene, 'danger', 320).toDataURL(),
+        alt: (mission.story.emergencyArt && mission.story.emergencyAlt) || '압착기 불꽃, 비상 정지' });
+      if (mission.story.emergencyArt) stopArt.onerror = function () { stopArt.onerror = null; stopArt.alt = '압착기 불꽃, 비상 정지'; stopArt.src = A.scene(mission, it.scene, 'danger', 320).toDataURL(); };
       stop.appendChild(el('div', { class: 'cv-stop-panel' }, [
-        el('img', { class: 'cv-stop-art', src: A.scene(mission, it.scene, 'danger', 320).toDataURL(), alt: '압착기 불꽃, 비상 정지' }),
+        stopArt,
         el('div', { class: 'cv-stop-body' }, [
           DR.UI.line(emergencyLine(mission, it)),
           DR.UI.line({ who: 'supervisor', text: mission.story.responsibility, face: 'worried' })

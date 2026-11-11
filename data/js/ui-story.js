@@ -191,8 +191,11 @@
     screen.innerHTML = '';
     var scenes = el('div', { class: 'brief-scenes' });
     sceneOrder(mission).forEach(function (s) {
-      var c = A.scene(mission, s.id, 'neutral', 360);
-      var img = el('img', { src: c.toDataURL(), alt: s.title });
+      // 장면 카드 그림: 임무 데이터에 그림 파일(art.img)이 있으면 그것(연습 '보호소 입양 안내'), 못 읽으면·없으면 Canvas 장면 그림.
+      //   파일은 <img>로 바로 보여 준다(캔버스에 그리지 않음 → 더블클릭 file://에서도 그대로)
+      var file = s.art && s.art.img, canvasUrl = function () { return A.scene(mission, s.id, 'neutral', 360).toDataURL(); };
+      var img = el('img', { src: file || canvasUrl(), alt: s.title });
+      if (file) img.onerror = function () { img.onerror = null; img.src = canvasUrl(); };
       scenes.appendChild(el('figure', { class: 'brief-scene', 'data-scene': s.id, 'data-emphasis': s.emphasis || 'normal' }, [img, el('figcaption', { text: s.title })]));
     });
     var run = el('button', { id: 'btn-run', class: 'btn btn-primary', type: 'button', text: '달리기 시작' });

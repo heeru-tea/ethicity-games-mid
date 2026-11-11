@@ -208,6 +208,9 @@
       supervisorQuestion: '카드마다 붙은 이름표, 그림이랑 맞는지 다 봤어?',
       conveyorIntro: { who: 'supervisor', text: '그럼, 실제로 돌려 보자.', face: 'explain' },
       emergency: { who: 'supervisor', text: '비상 정지! {bin} 함에 건전지가 들어갔어.', face: 'worried' }, // {bin} = 건전지가 들어간 함
+      // 비상 정지 창 그림(2026-11-12, 512² — tools/story-art.mjs --cards-only): 압착기 불꽃 + 감독관이 비상 정지 버튼을 누름. 못 읽으면 예전 Canvas 컷
+      emergencyArt: 'assets/story/m2-emergency-stop.webp',
+      emergencyAlt: '압착기에서 불꽃이 튀고, 감독관이 비상 정지 버튼을 누른다',
       responsibility: '승인한 건 나니까, 나도 같이 책임질게.',
       clientPass: [{ who: 'sorter', text: '오늘은 손으로 다시 고를 게 거의 없겠어요. 고마워요.', face: 'basic' }],
       clientFail: [{ who: 'sorter', text: '아직 몇 개는 제가 다시 골라야겠네요. 한 번 더 부탁해요.', face: 'worried' }],

@@ -1,6 +1,7 @@
 // 대화 그림 가공(2026-11-11) — ChatGPT 원본(assets/_incoming/, gitignore)을 게임용 webp로.
 //   node tools/story-art.mjs            (data 폴더에서) 학생 초상 시트 + 1·2 임무 장면 그림을 다시 만든다
 //   node tools/story-art.mjs --compare  + 기준 칸과 나란히 놓은 비교 그림 tests/_shot-student-compare.png(gitignore)
+//   node tools/story-art.mjs --cards-only  정사각형 카드 그림 2장만(③)
 // 게임은 결과 webp만 읽는다. sharp는 게임 의존성이 아니라 이 PC의 다른 프로젝트 것을 빌려 쓴다(SHARP_MODULE로 바꿀 수 있음).
 //
 // ① 학생 초상 시트 assets/characters/student-portraits.webp (1024×256, 256칸 4개: 기본 · 걱정 · 기본 · 기본)
@@ -117,6 +118,29 @@ async function compare(p) {
   console.log('[비교] ' + path.relative(DATA, out) + ' — 왼쪽부터 courier 1칸 · student 1칸 · student 2칸 · grader 1칸 · sorter 1칸 (분홍 선 = 기준 칸의 머리 꼭대기·아래 잘림)');
 }
 
-const p = await portraits();
-await scenes();
-if (process.argv.includes('--compare')) await compare(p);
+// ③ 정사각형 카드 그림(2026-11-12): 연습 브리핑 '보호소 입양 안내' 장면 카드 · 2 임무 컨베이어 비상 정지 창 그림 — 둘 다 화면에서 정사각형(전엔 Canvas 그림 360·320칸).
+//    원본 1024×1024 → 512×512 webp q85(자를 것 없음 — 원본이 이미 카드 비율). 원본 파일 이름이 결과와 다르다(받은 이름 그대로 둠).
+const CARDS = [
+  { src: 'practice-adoption.png', out: 'practice-shelter.webp' },
+  { src: 'm2-emergency-stop.png', out: 'm2-emergency-stop.webp' }
+];
+async function cards() {
+  for (const c of CARDS) {
+    const src = path.join(IN, c.src), out = path.join(STORY, c.out);
+    if (!fs.existsSync(src)) { console.log('[카드] ' + c.src + ' 없음 — 건너뜀'); continue; }
+    const m = await sharp(src).metadata();
+    if (m.width !== m.height) throw new Error(c.src + ': 정사각형이 아니다(' + m.width + '×' + m.height + ') — 카드 비율로 자를 자리를 정해야 한다');
+    await sharp(src).resize(512, 512, { kernel: 'lanczos3' }).webp({ quality: 85, effort: 6, smartSubsample: true }).toFile(out);
+    const o = await sharp(out).metadata();
+    console.log('[카드] ' + path.relative(DATA, out) + ' ' + o.width + '×' + o.height + ' · q85 · ' + kb(out));
+  }
+}
+
+// node tools/story-art.mjs --cards-only = ③만(초상·장면 그림은 다시 만들지 않는다)
+if (process.argv.includes('--cards-only')) await cards();
+else {
+  const p = await portraits();
+  await scenes();
+  await cards();
+  if (process.argv.includes('--compare')) await compare(p);
+}

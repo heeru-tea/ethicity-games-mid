@@ -92,3 +92,18 @@ test('받은 원본(assets/_incoming/)은 게임이 읽지 않고 저장소에�
   for (const d of Object.keys(dirs)) for (const f of fs.readdirSync(file(d))) if (dirs[d].test(f)) files.push(d + '/' + f);
   for (const f of files) assert.ok(!text(f).includes('_incoming'), f);
 });
+
+test('정사각형 카드 그림(2026-11-12): 연습 브리핑 장면 카드 · 2 임무 비상 정지 창 — 512×512 webp, 임무 데이터 연결, Canvas 대체', () => {
+  assert.equal(tut.scenes[0].art.img, 'assets/story/practice-shelter.webp');
+  assert.equal(m2.story.emergencyArt, 'assets/story/m2-emergency-stop.webp');
+  assert.ok(m2.story.emergencyAlt && m2.story.emergencyAlt.length > 5);
+  for (const p of [tut.scenes[0].art.img, m2.story.emergencyArt]) {
+    const w = webpInfo(p);
+    assert.deepEqual([w.width, w.height], [512, 512], p);
+    assert.ok(w.bytes <= 120 * 1024 && w.bytes > 10000, p + ' ' + w.bytes + ' bytes');
+  }
+  // 그림 파일은 <img>로 바로(캔버스에 안 그림), 못 읽으면 Canvas 그림으로
+  assert.match(text('js/ui-story.js'), /var file = s\.art && s\.art\.img/);
+  assert.match(text('js/ui-story.js'), /img\.onerror = function \(\) \{ img\.onerror = null; img\.src = canvasUrl\(\); \}/);
+  assert.match(text('js/ui-conveyor.js'), /mission\.story\.emergencyArt \|\| A\.scene\(mission, it\.scene, 'danger', 320\)\.toDataURL\(\)/);
+});
