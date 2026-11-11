@@ -623,7 +623,7 @@
       ok(!!$('#m-say .ico-quest') && $('#m-say').textContent.indexOf('❗') < 0, '대상 아닌 곳에서 누를 때 안내에도 그림');
       $('#btn-map-skip').click(); await wait(30);
       ok(!!$('#btn-map-act .ico-quest') && !$('#btn-map-act .ico-talk') && $('#btn-map-act').textContent.indexOf('❗') < 0 && /새봄에게 말 걸기/.test($('#btn-map-act').textContent), '목적지 버튼(인물): 느낌표 핀 그림 + 새봄에게 말 걸기(2026-11-09 B2 — 예전엔 ?)');
-      ok($$('.ico-quest').every(function (im) { return /markers\/dest\.png/.test(getComputedStyle(im).backgroundImage) && im.getAttribute('role') === 'img' && !!im.getAttribute('aria-label'); }) && $$('.ico-talk').every(function (im) { return /markers\/talk\.png/.test(getComputedStyle(im).backgroundImage) && im.getAttribute('role') === 'img' && !!im.getAttribute('aria-label'); }), '표시 그림(dest·talk.png) 사용·대체 글자 있음');
+      ok($$('.ico-quest').every(function (im) { return /markers\/dest-guide\.svg/.test(getComputedStyle(im).backgroundImage) && im.getAttribute('role') === 'img' && !!im.getAttribute('aria-label'); }) && $$('.ico-talk').every(function (im) { return /markers\/talk-guide\.svg/.test(getComputedStyle(im).backgroundImage) && im.getAttribute('role') === 'img' && !!im.getAttribute('aria-label'); }), '표시 그림(dest-guide·talk-guide.svg) 사용·대체 글자 있음');
     }
 
     else if (s === 'webp' || s === 'webp-fallback') {

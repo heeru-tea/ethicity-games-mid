@@ -285,13 +285,14 @@ body[data-view="v-map"] #g-chap { display: none; }
 body[data-view="v-game"] #m-time, body[data-view="v-game"] #m-area, body[data-view="v-game"] .mission { display: none; }
 body[data-view="v-chapter"] .hud { display: none; }
 
-/* 글 속 지도 표시 그림: 목적지 핀(13×16칸)·물음표 말풍선(15×16칸) — map.js와 같은 그림, 픽셀 그대로 */
+/* 안내·말풍선 속 표시: map.js drawMark와 같은 도형의 SVG. 화면 배율과 관계없이 선명하게. */
 .ico-quest, .ico-talk {
-  display: inline-block; height: 1.5em; vertical-align: -0.4em; margin: 0 1px;
-  background: no-repeat center / contain; image-rendering: pixelated;
+  display: inline-block; width: 1.75em; height: 1.75em; min-width: 24px; min-height: 24px;
+  vertical-align: -0.5em; margin: 0 2px;
+  background: no-repeat center / contain;
 }
-.ico-quest { width: calc(1.5em * 13 / 16); background-image: url("../assets/markers/dest.png"); }
-.ico-talk { width: calc(1.5em * 15 / 16); background-image: url("../assets/markers/talk.png"); }
+.ico-quest { background-image: url("../assets/markers/dest-guide.svg"); }
+.ico-talk { background-image: url("../assets/markers/talk-guide.svg"); }
 /* 짧은 안내 한 줄(문 드나들기·길 안내) */
 .m-say {
   position: absolute; z-index: 4; top: 84px; left: 50%; transform: translateX(-50%); margin: 0;

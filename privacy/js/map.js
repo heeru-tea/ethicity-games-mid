@@ -44,7 +44,7 @@
    *  둘 다 모양·글자(!·?)로 구분되고(색만으로 구분하지 않음), 버튼 글자와 지도 설명(aria-label)에도 같은 내용이 글로 나온다.
    *  위아래로 살짝 흔들림(움직임 줄이기면 멈춤).
    */
-  // 지도 위 표시는 그림 파일 대신 도형으로 그린다(drawMark, 2026-11-09). assets/markers/*.png는 버튼·안내 글의 작은 아이콘(.ico-quest·.ico-talk)이 계속 쓴다.
+  // 지도 위 표시는 도형으로 그린다(drawMark). 안내 글(.ico-quest·.ico-talk)은 같은 도형의 assets/markers/*-guide.svg를 쓴다.
   var ROW = { down: 0, left: 1, right: 2, up: 3 };
   var KEY_DIR = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
   var CHAR_COLOR = window.PrivacySprite.COLOR; // 관계 보고 얼굴 대체색과 같은 색

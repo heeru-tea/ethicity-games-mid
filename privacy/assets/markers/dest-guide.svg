@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 36 36">
+  <!-- map.js drawMark('dest'), size 32: same pin, colours and punctuation. -->
+  <path d="M10.934 26.874 A13.76 13.76 0 1 1 21.066 26.874 L16 31.68 Z" fill="#F3CF72" stroke="#294B40" stroke-width="2.286" stroke-linejoin="round"/>
+  <path d="M16 5.76 V15.36" fill="none" stroke="#294B40" stroke-width="4.48" stroke-linecap="round"/>
+  <circle cx="16" cy="21.12" r="2.778" fill="#294B40"/>
+</svg>
