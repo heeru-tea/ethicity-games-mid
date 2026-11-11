@@ -44,7 +44,8 @@ test('1 임무 학생 표정: 첫 줄은 걱정, 마지막 "이제 우산 칸에
 test('1·2 임무 도입·마무리 배경: story.introBg·outroBg = 1600×900 webp, 400KB 이하', () => {
   for (const [m, path] of [[m1, 'assets/story/m1-lostfound.webp'], [m2, 'assets/story/m2-sorting.webp']]) {
     assert.equal(m.story.introBg, path, m.id + ' introBg');
-    assert.equal(m.story.outroBg, path, m.id + ' outroBg');
+    // 1 임무 마무리에는 배경 없음(걱정하는 장면이라 해결된 뒤 대사와 반대 — 2026-11-11), 2 임무는 같은 그림
+    assert.equal(m.story.outroBg, m.id === 'm1' ? undefined : path, m.id + ' outroBg');
     assert.ok(fs.existsSync(file(path)), path);
     const w = webpInfo(path);
     assert.deepEqual([w.width, w.height], [1600, 900], path + ' = reveal-senior.webp와 같은 규격');

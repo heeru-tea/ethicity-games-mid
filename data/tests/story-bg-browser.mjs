@@ -16,10 +16,11 @@ const KEYS = {
 };
 const BG = { m1: /assets\/story\/m1-lostfound\.webp$/, m2: /assets\/story\/m2-sorting\.webp$/ };
 // 넓은 화면(대화창이 왼쪽): 핵심 요소 모두 화면 안 + 안 가림. 좁은 화면(390, 그림의 오른쪽 26%만 보임): 오른쪽 인물만 — 나머지는 화면 밖(재서 적어 둠)
-const MUST = { wide: { m1: ['face', 'umbrella', 'monitor'], m2: ['battery', 'robotHead'] }, narrow: { m1: ['face'], m2: ['robotHead'] } };
+//   2026-11-11: 좁은 세로 화면은 그림을 위쪽에 통째로 보여 준다 → 좁은 화면에서도 핵심 요소가 모두 화면 안
+const MUST = { wide: { m1: ['face', 'umbrella', 'monitor'], m2: ['battery', 'robotHead'] }, narrow: { m1: ['face', 'umbrella', 'monitor'], m2: ['battery', 'robotHead'] } };
 // 넓은 화면의 수거봇 전체: 1148×977(가로가 좁은 편)에서는 건전지(그림 31%)와 수거봇 등 바구니 끝(98%)이 한 화면에 다 안 들어간다
 //   → 건전지·수거봇 머리는 온전히, 바구니 오른쪽 끝만 조금 화면 밖(전체의 90% 이상 보임). 가리는 것은 없어야 한다
-const MOSTLY = { wide: { m2: { robot: 0.9 } }, narrow: {} };
+const MOSTLY = { wide: { m2: { robot: 0.9 } }, narrow: { m2: { robot: 0.99 } } };
 const VIEWPORTS = [{ width: 1148, height: 977 }, { width: 1280, height: 800 }, { width: 390, height: 844 }];
 const only = process.argv[2];
 
@@ -142,9 +143,25 @@ for (const viewport of VIEWPORTS) {
         DR.App.records[id] = { cleared: true, passed: true, firstTry: true, supplements: 0, firstFails: [], fixedLabels: 0 };
         DR.App.resumeEnding({ mission: id, step: 4, city: null, peer: 'none', compare: null });
       }, id);
-      const outro = await walk(page, id, story.outro.length, { at: 0, name: `story-bg-${id}-outro-${w}` });
-      assert.deepEqual(outro.map((r) => r.text), story.outro.map((l) => l.text));
-      const ow = checkKeys(id, w, outro, `${id} outro ${w}`);
+      let outro, ow;
+      if (story.outroBg) {
+        outro = await walk(page, id, story.outro.length, { at: 0, name: `story-bg-${id}-outro-${w}` });
+        assert.deepEqual(outro.map((r) => r.text), story.outro.map((l) => l.text));
+        ow = checkKeys(id, w, outro, `${id} outro ${w}`);
+      } else {
+        // 마무리 배경이 없는 임무(1 임무): 줄마다 그림 없이 나온다
+        outro = [];
+        await page.locator('#screen-story .dialog').waitFor({ state: 'visible', timeout: 15000 });
+        for (let i = 0; i < story.outro.length; i++) {
+          const m = await measure(page, {});
+          assert.equal(m.hasBg, false, id + ' outro line ' + (i + 1) + ' has no backdrop');
+          outro.push(m);
+          if (i === 0) await page.screenshot({ path: shotPath(`story-bg-${id}-outro-${w}`) });
+          if (i < story.outro.length - 1) await page.locator('#screen-story .dialog').click();
+        }
+        assert.deepEqual(outro.map((r) => r.text), story.outro.map((l) => l.text));
+        ow = Object.fromEntries(Object.keys(iw).map((k) => [k, { seen: '-', dialog: '-', skip: '-' }]));
+      }
       await page.locator('#screen-story .dialog').click();
       await page.locator('#screen-outro').waitFor({ state: 'visible', timeout: 10000 });
       assert.equal(await page.locator('#screen-story.has-bg').count(), 0);
