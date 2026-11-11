@@ -114,6 +114,8 @@ body { overflow: hidden; word-break: keep-all; }
 #screen-story.has-bg .skip { background: rgba(16, 9, 58, .78); }
 @media (min-width: 900px) { #screen-story.has-bg { justify-content: flex-start; } #screen-story.has-bg .dialog { max-width: min(44rem, 42vw); margin-left: 2vw; } }
 @media (prefers-reduced-motion: reduce) { .story-bg { transition: none; } }
+/* 2 임무 선별장 그림: 수거봇이 그림 오른쪽 끝(73~98%)이라 좁은 화면에서 90% 기준이면 머리 오른쪽이 잘린다 → 좁은 화면만 더 오른쪽 기준 */
+@media (max-width: 899px) { .story-bg[src$="m2-sorting.webp"] { object-position: 98% 50%; } }
 
 /* 브리핑 장면 */
 .brief-scenes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 16px; align-items: start; }
