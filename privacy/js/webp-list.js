@@ -32,6 +32,8 @@ window.PRIVACY_WEBP = {
  "assets/icons/talk.png": 1,
  "assets/landing/hero-boy.png": 1,
  "assets/landing/hero-girl.png": 1,
+ "assets/landing/title-classroom-bg.png": 1,
+ "assets/landing/title-classroom.png": 1,
  "assets/neighborhood/fence-front.png": 1,
  "assets/neighborhood/fence-side.png": 1,
  "assets/neighborhood/gate-parts.png": 1,
