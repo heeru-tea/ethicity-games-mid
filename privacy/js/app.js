@@ -157,9 +157,31 @@
     VIEWS.forEach(function (v) { $(v).hidden = v !== id; });
     current = id;
     document.body.setAttribute('data-view', id);
-    window.scrollTo(0, 0);
+    scrollTop(id);
     var f = focusEl || $(id).querySelector('h1');
     if (f) { if (!f.hasAttribute('tabindex') && f.tagName === 'H1') f.setAttribute('tabindex', '-1'); f.focus({ preventScroll: true }); }
+    // 내용이 늦게 채워져 높이가 바뀌어도 맨 위에서 시작하게 한 번 더(그사이 다른 화면으로 넘어갔으면 건드리지 않는다)
+    requestAnimationFrame(function () { if (current === id) scrollTop(id); });
+  }
+  /* 화면을 열 때 늘 맨 위부터(2026-11-11 플레이테스트: 장 카드를 아래로 내린 채 넘기면 다음 장 카드가 중간부터 보였다 —
+   *   창 스크롤만 0으로 하고 카드 안 스크롤 상자는 그대로였다. 같은 상자를 장마다 다시 쓴다).
+   *   창 + 그 화면 안에서 스크롤돼 있는 모든 상자(overflow auto·scroll)를 0으로. scroll-behavior: smooth여도 미끄러지지 않고 바로.
+   *   채팅 창(#g-phone)은 뺀다 — 새 메시지 쪽(맨 아래)을 따라가는 것은 scrollLog가 맡는다. */
+  function scrollTop(id) {
+    function jump(n, isWin) {
+      var st = (isWin ? document.documentElement : n).style, was = st.scrollBehavior;
+      st.scrollBehavior = 'auto';
+      if (isWin) window.scrollTo(0, 0); else { n.scrollTop = 0; n.scrollLeft = 0; }
+      st.scrollBehavior = was;
+    }
+    jump(null, true);
+    var root = $(id), phone = $('g-phone');
+    [root].concat(Array.prototype.slice.call(root.querySelectorAll('*'))).forEach(function (n) {
+      if (!n.scrollTop && !n.scrollLeft) return;
+      if (phone && (n === phone || phone.contains(n))) return;
+      var oy = getComputedStyle(n).overflowY, ox = getComputedStyle(n).overflowX;
+      if (/auto|scroll/.test(oy) || /auto|scroll/.test(ox)) jump(n, false);
+    });
   }
 
   function applySettings() {
