@@ -111,7 +111,8 @@
   function dayKept(r) { return r.satisfied != null ? !!r.satisfied : r.dayStatus === 'complete'; }
   function dayLine(config, who, days, complete, kept) {
     var word = who.itineraries ? '일정' : '왕복', sv = config.service, rule = sv && sv.maxWait != null ? '기준(' + Demand.duration(config, sv.maxWait) + ' 이내)' : '기준';
-    return (days === complete ? word + ' ' + complete + '일 중 ' : days + '일 중 ' + word + ' ' + complete + '일, 그중 ') + rule + '을 지킨 날 ' + kept + '일이에요.';
+    /* 2026-11-11 플레이테스트 4: 단위를 인물 카드(‘누적 0/1회’)와 같은 ‘회’로 — 전에는 엔딩만 ‘2일 중 일정 0일’이었다 */
+    return (days === complete ? word + ' ' + complete + '회 중 ' : days + '회 중 ' + word + ' ' + complete + '회, 그중 ') + rule + '을 지킨 것은 ' + kept + '회예요.';
   }
   function residentStory(records, residentId, config) {
     if(config.day){
@@ -211,7 +212,7 @@
       var seen={},completed=0,days=0,finished=0;history.forEach(function(h){if(seen[h.phase]||h.phase<r.fromPhase||h.phase>config.phases.length)return;seen[h.phase]=true;var rec=h.residents&&h.residents[r.id];if(rec)days++;if(rec&&rec.dayStatus==='complete')finished++;if(rec&&(rec.satisfied!=null?rec.satisfied:rec.dayStatus==='complete'))completed++;});
       var satisfied=completed>=thresholds[r.id];
       var line=lines[r.id][satisfied?0:1];if(config.challengeApplied&&r.itineraries&&satisfied)line='운동장에서의 일정 뒤에도 다음 목적지까지 갈 수 있었어요. 돌아가는 길까지 함께 챙겨 줘서 고마워요!';
-      return {id:r.id,name:r.name+' · '+(satisfied?'만족':'불만족'),satisfied:satisfied,completed:completed,threshold:thresholds[r.id],image:images[r.id],text:line+'\n'+dayLine(config,r,days,finished,completed)+' 만족 기준은 '+thresholds[r.id]+'일 이상이에요.'};
+      return {id:r.id,name:r.name+' · '+(satisfied?'만족':'불만족'),satisfied:satisfied,completed:completed,threshold:thresholds[r.id],image:images[r.id],text:line+'\n'+dayLine(config,r,days,finished,completed)+' 만족 기준은 '+thresholds[r.id]+'회 이상이에요(누적 '+completed+'/'+thresholds[r.id]+'회).'};
     });
   }
   function won(n){var r=Math.round(n);return (n<0?'−':'')+(r===0&&n<0?'1':Math.abs(r).toLocaleString('ko-KR'))+'원'+(r===0&&n<0?' 미만':'');}
