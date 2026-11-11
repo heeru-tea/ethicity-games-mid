@@ -10,7 +10,9 @@
   function allStop(nodes) { return { nodes: nodes, stops: nodes.map(function () { return T; }) }; }
 
   var config = {
-    SCENARIO_VERSION: 'pb-3.0.0',
+    // pb-3.1.0(2026-11-11): 교사 플레이테스트 13건 반영 — 수요·재정 수치는 그대로(화면·문장·AI 후보 범위·노선 이름만). 화면에서 새 빌드인지 알 수 있게 올림.
+    // 이 값은 자동 저장(ethicity.publicness.save)의 버전이자 ‘지난 운행 비교’ 키(모드|seed|버전)라, 올리면 예전 저장본은 이어하기에 안 뜨고 예전 운행은 비교에 안 나온다
+    SCENARIO_VERSION: 'pb-3.1.0',
     day: { start: 300, end: 1380 },
     progression: { routes: [2, 3, 4, 4, 4], buses: [2, 3, 4, 5, 6] },
     challenge: {

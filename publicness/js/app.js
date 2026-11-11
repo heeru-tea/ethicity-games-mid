@@ -614,6 +614,8 @@
     $('#opt-motion').addEventListener('change', function (e) { App.motion = e.target.checked; App.view.setReducedMotion(App.reducedMotion()); });
     App.sound = PB.Storage.readSound(); $('#opt-sound').checked = App.sound;
     App.speed = PB.Storage.readSpeed();
+    /* 시나리오 버전을 첫 화면 구석과 설정 창에 작게(2026-11-11) — 새 빌드인지 화면에서 알 수 있게. 엔딩 #end-seed에도 있다 */
+    ['#title-version', '#settings-version'].forEach(function (q) { var n = $(q); if (n) n.textContent = '버전 ' + cfg.SCENARIO_VERSION; });
     $('#opt-sound').addEventListener('change', function (e) { App.setSound(e.target.checked); if (App.sound) App.chime(); });
     // 캐릭터 소개 → 맵 화면 위 Stage 1 카드 → 교육 모달 → 단계 안내 순서. 세팅 라디오는 소개 전에 읽어 둔다
     // 소개 컷 → 지도 계획 위에 Stage 1 카드(2026-11-01 사용자: Stage 카드가 안 뜬다)

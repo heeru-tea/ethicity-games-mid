@@ -40,6 +40,7 @@
     <button type="button" class="btn btn-primary btn-lg" id="btn-start">첫 운행 계획하기</button>
     <p class="note" id="save-note">진행은 이 브라우저에 자동으로 저장돼요. 새로고침하거나 창을 닫았다가 열어도 ‘이어하기’로 계속할 수 있어요.</p>
     <button type="button" class="btn" id="title-text-toggle" aria-pressed="false">설명 보기</button>
+    <p class="app-version" id="title-version"></p>
   </div>
   <figure class="title-art" aria-hidden="true">
     <img id="title-img" src="assets/art/title-two-stops.webp" alt="" onerror="this.parentNode.classList.add('placeholder'); this.remove();">
@@ -144,6 +145,7 @@
   <label class="check"><input type="checkbox" id="opt-bgm" checked> 배경음악(이어폰을 쓸 때 추천)</label>
   <label class="check"><input type="checkbox" id="opt-motion"> 움직임 줄이기</label>
   <label class="check"><input type="checkbox" id="opt-route-numbers"> 노선 번호 표시(지도·노선 버튼에 번호를 함께 보여요. 노선은 색과 선 모양 — 실선·이중선·점선·동글 점선 — 으로도 구분해요)</label>
+  <p class="app-version" id="settings-version"></p>
   <form method="dialog"><button class="btn btn-primary" type="submit">닫기</button></form>
 </dialog>
 
