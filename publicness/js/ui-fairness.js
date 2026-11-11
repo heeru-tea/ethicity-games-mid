@@ -26,10 +26,14 @@
       PB.Choices.set(s, kind, 'why', inp.value); status.textContent = App.savedText(App.save());
       var n = document.getElementById('why-nudge'); if (n) n.remove();
     });
-    p.appendChild(document.createTextNode('왜냐하면 ')); p.appendChild(inp); p.appendChild(document.createTextNode('.'));
+    /* 2026-11-11 플레이테스트 12: ‘왜냐하면’은 줄바꿈 없이 한 덩어리, 입력 칸 뒤 마침표는 뺀다(좁은 칸에서 ‘왜냐하 / 면’, 마침표만 따로 떨어지던 것) */
+    p.appendChild(App.el('span', { 'class': 'fair-why-label' }, '왜냐하면')); p.appendChild(inp);
     var wrap = document.createDocumentFragment(); wrap.appendChild(p);
     if (hooks.nudge === kind) wrap.appendChild(App.el('p', { id: 'why-nudge', 'class': 'note', role: 'status' }, '이유를 한 줄 적어 볼까요? 비워 두고 다시 누르면 그대로 출발해요.'));
-    wrap.appendChild(status);
+    /* 2026-11-11 플레이테스트 3: ‘…골라야 출발할 수 있어요’ 줄은 카드 맨 아래 한 줄(저장 상태와 같은 줄) 안에 둔다 — 따로 떨어진 줄이 넓은 화면 격자에 새 줄을 만들어
+     * 노선 탭을 지도 밑으로 밀던 것. 이 줄은 늘 한 줄 높이를 차지하므로(css .fair-foot) 고르기 전후로 카드 높이가 바뀌지 않는다 */
+    var foot = App.el('div', { 'class': 'fair-foot' }), req = required(App, s);
+    if (req) foot.appendChild(req); foot.appendChild(status); wrap.appendChild(foot);
     return wrap;
   }
   function shell(App, id, title) {
@@ -69,7 +73,7 @@
       head = s.phase === 1 ? '예전 노선의 탑승 기록' : '지난 운행 탑승 기록 ' + v.records + '건';
     return App.el('p', { id: 'rec-seen', 'class': 'note' }, 'AI가 본 자료: ' + head + (hid ? ' · ' + hid : ''));
   }
-  /* 출발 전에 골라야 할 것이 남았을 때 한 줄(없으면 null) */
+  /* 출발 전에 골라야 할 것이 남았을 때 한 줄(없으면 null). 카드가 있으면 카드 안 맨 아래 줄에 들어간다(whyLine) — 카드 없이 이 줄만 따로 쓰는 것은 예외 상황뿐 */
   function required(App, s) {
     var req = PB.Choices.required(s); if (!req.length) return null;
     return App.el('p', { id: 'choice-required', 'class': 'note fair-required', role: 'status' }, LABELS[req[0]].need);
@@ -119,12 +123,21 @@
   }
   /* 결과 화면 묶음(2026-11-10): 청원 확인(3단계) · 무임 정책 결과(4단계~) · 'AI가 본 이동' 차이. 평가·칭찬 문장 없이 숫자만. */
   function histAt(s, phase) { return (s.history || []).filter(function (x) { return x.phase === phase; })[0] || null; }
+  /* 출발한 계획의 모양(노선 정류장 순서·정차 + 그 노선 버스 수) — 두 단계의 노선이 같은지 비교용 */
+  function planKey(h) { return ((h.plan && h.plan.buses) || []).map(function (b) { return b.route ? b.route.nodes.join('-') + '#' + b.route.stops.join('') : ''; }).filter(Boolean).sort().join('|'); }
   function petitionFollowup(App, s, h) {
     var fp = s.fixedPetition; if (h.phase !== 3 || !fp) return null;
     var h2 = histAt(s, 2), z = fp.zone, a = h2 && h2.rideLog && h2.rideLog[z], b = h.rideLog && h.rideLog[z]; if (!a || !b) return null;
     var name = App.nodeName(z), rep = s.petitionReply || {}, c = shell(App, 'petition-followup', name + ' 청원 그 뒤');
     if (rep.choice) c.appendChild(App.el('p', { id: 'petition-answer', 'class': 'fair-fact' }, name + ' 주민의 청원을 ' + (rep.choice === 'reflect' ? '반영한다' : '이번엔 못 한다') + '고 답했어요.' + (rep.why ? ' 왜냐하면 ' + rep.why + '.' : '')));
-    c.appendChild(App.el('p', { id: 'petition-fail', 'class': 'fair-fact' }, name + '에서 출발한 이동 중 목적지까지 못 간 이동: 2단계 ' + a.requests + '건 중 ' + (a.requests - a.arrived) + '건 → 3단계 ' + b.requests + '건 중 ' + (b.requests - b.arrived) + '건'));
+    /* 2026-11-11 플레이테스트 8: ① ‘반영한다’고 했는데 2단계와 같은 노선·버스 수로 출발했고 운행 중에도 안 고쳤으면 사실 한 줄.
+     * ② 청원이 말한 이동과 같은 기준(그 시각까지 그 구역에서 생긴 요청 중 그때까지 도착하지 못한 이동)으로 2단계와 3단계를 나란히 — 전에는 하루가 끝났을 때 기준만 보여서 청원 숫자(3건 중 3건)와 결과 숫자(0건 → 0건)가 어긋나 보였다.
+     * ③ 하루가 끝났을 때 기준은 그 아래 줄로 남긴다(보고서·금배지가 쓰는 값) */
+    var mids = (s.midChanges || []).some(function (m) { return m.phase === h.phase; });
+    if (rep.choice === 'reflect' && h2 && planKey(h2) === planKey(h) && !mids) c.appendChild(App.el('p', { id: 'petition-same', 'class': 'fair-fact' }, '노선은 바뀌지 않았어요(2단계와 같은 노선·버스 수로 출발했어요).'));
+    var now = h.petitionCheck || (s.current && s.current.result && s.phase === h.phase ? PB.Session.petitionZoneAt(s.current.result.passengers, fp.t, fp.zone) : null);
+    if (now) c.appendChild(App.el('p', { id: 'petition-then', 'class': 'fair-fact' }, '청원이 말한 이동(' + App.clock(fp.t) + '까지 ' + name + '에서 출발한 요청 가운데 그때까지 도착하지 못한 이동): 2단계 ' + fp.total + '건 중 ' + fp.count + '건 → 3단계 ' + now.total + '건 중 ' + now.count + '건'));
+    c.appendChild(App.el('p', { id: 'petition-fail', 'class': 'fair-fact' }, '하루가 끝났을 때 ' + name + '에서 출발한 이동 중 목적지까지 못 간 이동: 2단계 ' + a.requests + '건 중 ' + (a.requests - a.arrived) + '건 → 3단계 ' + b.requests + '건 중 ' + (b.requests - b.arrived) + '건'));
     c.appendChild(App.el('p', { id: 'petition-rode', 'class': 'fair-fact' }, name + ' 탑승 기록(다음 AI가 보는 자료): 2단계 ' + a.rode + '명 → 3단계 ' + b.rode + '명'));
     return c;
   }
