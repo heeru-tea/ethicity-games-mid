@@ -250,7 +250,7 @@
   // 튜토리얼 결과 한 장: 통과면 [다음], 실패면 귀여운 실패 + [다시 달리기]
 
   // 마무리 안내(기획서 §4.7) — 대화 뒤 안내 카드
-  // opts: { kicker: '○○ 완료', next: 다음 임무로 가는 함수(있으면 [다음 임무로]), summary: ['이번 판 요약 줄', …] }
+  // opts: { kicker: '○○ 완료', next: 다음 임무로 가는 함수(있으면 [다음 임무로]), summary: ['이번 판 요약 줄' 또는 { text, hint }, …], bg: 화면 뒤에 어둡게 깔 장면 그림 }
   function outro(lines, done, opts) {
     opts = opts || {};
     dialogue(lines, function () {

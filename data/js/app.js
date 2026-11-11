@@ -126,7 +126,9 @@
     DR.Save.setRecord('tutorial', App.records.tutorial);
     var step = DR.Save.cityStep('tutorial', before, cityCount());
     var r = App.lastJudge, lines = m.story.outro.map(function (l) { return Object.assign({}, l, { text: l.text.replace('{dog}', r.have.dog).replace('{cat}', r.have.cat) }); });
-    DR.UI.dialogue(lines, function () {
+    // 합격 대화 뒤 그림(story.outroBg — {hero} = 고른 주인공의 시험장 장면)
+    var tbg = m.story.outroBg ? m.story.outroBg.replace('{hero}', DR.Save.hero()) : null;
+    DR.UI.dialogue(withBg(lines, tbg), function () {
       cityScreen(m, step, function () {
         if (!App.state.practice) { startMission('m1'); return; }
         // 연습 끝: 예전 튜토리얼 체크포인트만 남아 있으면 비우고(이어하기가 끝낸 튜토리얼로 돌아가지 않게) 타이틀로
@@ -371,12 +373,13 @@
       '보충 달리기: ' + (rec.supplements || 0) + '번'
     ];
     if (m.labels && m.relabel !== false) summary.push('고친 이름표: ' + (rec.fixedLabels || 0) + '장');
-    var outroOpts = { kicker: m.title + ' 완료', next: m.next && DR.Missions[m.next] ? leave(function () { startMission(m.next); }) : null };
+    // 마무리 배경: 끝내 통과하지 못하고 끝난 판(rec.passed === false)은 story.outroFailBg가 있으면 그 그림 — 1 임무의 '해결된 장면'이 실패한 판에 깔리지 않게.
+    //   마지막 대화(선배)·마무리 대화·임무 완료 화면(어둡게)이 같은 그림을 쓴다(플레이테스트 2026-11-12 — 선배 대사가 어두운 바탕에 대화창만 떴다)
+    var obg = rec.passed === false && m.story.outroFailBg ? m.story.outroFailBg : m.story.outroBg;
+    var outroOpts = { kicker: m.title + ' 완료', bg: obg || null, next: m.next && DR.Missions[m.next] ? leave(function () { startMission(m.next); }) : null };
     function toOutro() {
       outroOpts.summary = summary.concat(DR.UI.chapterSummary(m, DR.Save.chapterOf(App.records, m.id)));
       outroOpts.compare = DR.UI.gradeCompare(m, e.compare);
-      // 마무리 배경: 끝내 통과하지 못하고 끝난 판(rec.passed === false)은 story.outroFailBg가 있으면 그 그림 — 1 임무의 '해결된 장면'이 실패한 판에 깔리지 않게
-      var obg = rec.passed === false && m.story.outroFailBg ? m.story.outroFailBg : m.story.outroBg;
       DR.UI.outro(withBg(m.story.outro, obg), leave(function () { DR.Sfx.play('ui'); go('title'); }), outroOpts);
     }
     // 챕터 끝: 다른 용도 요청 → 개념 질문 → 짧은 생각(js/ui-chapter.js). 데이터가 없는 임무(옛 침수)·이미 마친 경우는 건너뜀
@@ -392,10 +395,11 @@
     }
     if (m.story.after) {
       // 4 임무: 도시 재연결(늘 5/5) → 챕터 끝 → 의뢰인 한 줄 → (동기가 합류한 적 없으면) 동기의 상자 → 해커의 이후(bg) → 마무리(최종 토론 질문)
+      var af = m.story.after;
       var lines = (rec.passed ? m.story.reconnect.pass : m.story.reconnect.partial).slice();
       if (e.peer === 'none') lines.push(m.story.showdown.peerBox);
-      var af = m.story.after;
-      lines = lines.concat(af.lines.map(function (l) { return Object.assign({ bg: af.bg }, l); }));
+      // 의뢰인·동기 줄에도 같은 장면 그림(af.bg)을 깐다 — 전엔 이 줄들만 어두운 바탕이다가 '해커의 이후'에서 그림이 떴다
+      lines = withBg(lines.concat(af.lines), af.bg);
       outroOpts.headline = '도시가 다시 이어졌다';
       outroOpts.questions = m.story.questions;
       // 챕터 끝 = 재연결 5/5 뒤·의뢰인 대사 전
@@ -403,7 +407,7 @@
       return;
     }
     // 1~3 임무: 마지막 대화(선배·정체 공개) → 챕터 끝 → 도시 복구(칸이 늘었을 때만) → 임무 완료
-    function lastTalk(then) { if (e.step === 0) DR.UI.dialogue(revealLines(m).concat(m.story.senior), then); else then(); }
+    function lastTalk(then) { if (e.step === 0) DR.UI.dialogue(revealLines(m).concat(withBg(m.story.senior, obg)), then); else then(); }
     lastTalk(function () { chapterPart(function () { cityPart(toOutro); }); });
   }
 

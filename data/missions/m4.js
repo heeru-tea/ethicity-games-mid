@@ -308,6 +308,9 @@
         '우리 학교가 채점 AI를 쓴다면, 꼭 사람이 다시 봐야 하는 답안은 어떤 걸까?'
       ],
       senior: [],
+      // 마무리 대화·임무 완료 화면 뒤 그림 = '해커의 이후' 장면 그대로(새 그림 없이 — 플레이테스트 2026-11-12). 재연결 뒤 의뢰인·동기 줄에도 app.js가 after.bg를 깐다.
+      //   도입 대화에는 안 쓴다(결판·이후 장면을 임무 전에 보여 주게 된다) → introBg 없음
+      outroBg: 'assets/story/senior-after.webp',
       outro: [
         { who: 'supervisor', text: '오늘 채점도 실제 AI가 아니라, 단순화한 규칙으로 만든 시뮬레이션이야.', face: 'explain' },
         { who: 'supervisor', text: '실제 채점 AI는 훨씬 복잡하지만, 무엇을 배우게 할지는 여전히 사람이 정해.', face: 'explain' },
