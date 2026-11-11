@@ -67,7 +67,7 @@
  function settings(){
   open('설정',
    '<p>진행은 이 브라우저에 자동 저장돼요. 다시 열면 하던 곳부터 이어져요. 계정 가입이나 교사용 수집은 없어요.</p>'
-   +`<div class="menu">${btn('참고한 실제 사례','sources')}${btn('처음부터 다시 하기','reset-ask')}</div>`
+   +`<div class="menu">${btn('참고한 실제 사례','sources')}${btn(esc(D.title.back),'title')}${btn('처음부터 다시 하기','reset-ask')}</div>`
    +'<p class="hint">플레이 시간과 교육 효과는 아직 실제 학생을 대상으로 검증하지 않았어요.</p>');
  }
  function resetAsk(){

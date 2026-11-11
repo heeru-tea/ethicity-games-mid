@@ -1,4 +1,4 @@
-// 시작: 사건 4·5 새 그림 찾기, 바깥에서 쓰는 window.TransparencyGame, 첫 저장 안내와 첫 화면.
+// 시작: 사건 4·5 새 그림 찾기, 바깥에서 쓰는 window.TransparencyGame, 첫 저장 안내와 첫 화면(시작 화면 — ui/title.js. 미리보기는 바로 게임 화면).
 (function(){
  'use strict';
  const UI=window.TransparencyUI;
@@ -11,8 +11,8 @@
   A[key]=src;
   if(bg!==undefined)A.backgrounds[bg]=src;
   artFound[key]=src;
-  // 새 그림이 나오는 사건 4·5 화면을 보고 있을 때만 다시 그린다.
-  if(['camp','share'].includes(E.caseKey(S.state.scene)))render(false);
+  // 새 그림이 나오는 사건 4·5 화면을 보고 있을 때만 다시 그린다(시작 화면에는 이 그림이 없다).
+  if(!S.title&&['camp','share'].includes(E.caseKey(S.state.scene)))render(false);
  }
  function tryNext(key,bg,list){
   if(!list.length)return;

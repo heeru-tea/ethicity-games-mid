@@ -18,7 +18,9 @@ function stateAt(key,step){
   s=E.reduce(s,{type:'next'});}
  assert.equal(s.scene,goal);return s;
 }
-const open=(key,step)=>{const g=createGame({storage:{[KEY]:JSON.stringify(stateAt(key,step))}});g.snap();return g;};
+// 시작 화면(2026-11-11)이 먼저 나오므로 ‘이어하기’를 눌러 그 화면으로 들어간다.
+const enter=g=>{if(g.has('start'))g.click('start');g.snap();return g;};
+const open=(key,step)=>enter(createGame({storage:{[KEY]:JSON.stringify(stateAt(key,step))}}));
 
 // 4. 사진 후속 조사: ‘나왔어’·‘잘렸어’는 data-act·data-id가 같고 data-value만 다르다. 다시 그린 뒤 초점은 누른 그 버튼으로 돌아가야 한다.
 test('review 4: after marking 잘렸어 the focus stays on 잘렸어; pressing it again does not flip the answer',()=>{
@@ -60,7 +62,7 @@ test('review 6: the write box limits, counts and saves in one unit; text over th
   assert.equal(r.count,want.length+'자',name+': 글자 수 표시는 저장 단위와 같다');
   assert.equal(r.limit,want!==v?fill(R.over):want.length>=MAX?fill(R.full):'',name+': 상한 안내');
   // 다시 열기(재방문): 저장된 것으로 새로 열면 입력칸 글·글자 수가 같다
-  const g2=createGame({storage:{[KEY]:g.stored()}});
+  const g2=enter(createGame({storage:{[KEY]:g.stored()}}));
   assert.equal(boxText(g2,'reflect-q1'),want,name+': 다시 열었을 때');
   assert.ok(g2.app.innerHTML.includes(`<span class="count-n">${want.length}자</span>`),name+': 다시 열었을 때 글자 수');
   assert.equal(g2.app.innerHTML.includes('>'+fill(R.full)+'<'),want.length>=MAX,name+': 다시 열었을 때 꽉 찼다는 안내');
@@ -163,4 +165,77 @@ test('review 2·3: hand-written photo descriptions in the screen code still agre
  assert.equal(auto['aria-label'],'자동으로 자른 사진. 담이 얼굴이 없다.');assert.equal(auto['data-crop'],E.AUTO.join(','));assert.equal(E.faceIn(E.AUTO,2).state,'out');
  g.click('next');g.click('item',{id:'photo-original'});
  assert.match(attrOf(g.app.innerHTML,'img',a=>/원본 사진/.test(a.alt))[0].alt,/^다섯 친구가 모두 나온 축제 원본 사진\./);assert.deepEqual(E.cutFaces([0,0,...E.PHOTO]),[]);assert.equal(E.faces.length,5);
+});
+
+// 시작 화면(2026-11-11, ui/title.js): 열면 먼저 나오고, 저장 형식은 건드리지 않는다. 배치·초점·그림은 tests/title-browser.cjs(진짜 Edge) 몫.
+const T=require('./dom-stub.cjs').createGame({}).D.title;
+// 화면 코드는 다른 실행 환경(vm)에서 돌므로 상태는 JSON으로 옮겨 견준다.
+const plain=g=>JSON.parse(JSON.stringify(g.state()));
+const titleParts=g=>{const html=g.app.innerHTML,buttons=parseTags(html,'button');
+ return {html,text:textOf(html),buttons,acts:buttons.map(b=>b['data-act']),h1:[...html.matchAll(/<h1[^>]*>([^<]*)<\/h1>/g)].map(m=>unesc(m[1])),imgs:parseTags(html,'img'),
+  main:textOf((/<button class="primary" data-act="start" >([\s\S]*?)<\/button>/.exec(html)||[,''])[1])};};
+test('title: opening the game shows the start screen first; 게임 시작하기 enters the prologue and the save is untouched',()=>{
+ const g=createGame({}),boot=g.snap(),t=titleParts(g),D=g.D;
+ assert.equal(boot.cls,'at-title');assert.equal(boot.fx,'','처음 열 때는 초점·스크롤을 건드리지 않는다');
+ assert.deepEqual(t.h1,[D.report.game],'제목은 h1 하나');
+ assert.deepEqual(t.acts,['start'],'저장이 없으면 버튼은 게임 시작하기 하나');assert.equal(t.main,T.start);assert.equal(t.buttons[0].class,'primary');
+ for(const s of [T.kind,T.hook,T.lead,...T.facts,T.peek.tag,T.keys])assert.ok(t.text.includes(s),'시작 화면에 없는 글: '+s);
+ assert.equal(t.html.includes('id="work"'),true,'‘본문으로 건너뛰기’가 닿을 곳');
+ // 그림: SVG 묶음(맞춤이 다른 두 벌 — 화면에는 CSS가 하나만 보인다)마다 설명 글 하나, 안에 든 그림은 기존 그림 세 장뿐
+ const scenes=parseTags(t.html,'svg').filter(s=>/title-scene/.test(s.class||''));
+ assert.deepEqual(scenes.map(s=>[s.class,s.role,s['aria-label'],s.preserveAspectRatio]),[['title-scene fit-tall','img',T.art,'xMaxYMax slice'],['title-scene fit-wide','img',T.art,'xMaxYMid slice']]);
+ assert.deepEqual([...new Set(parseTags(t.html,'image').map(i=>i.href))].sort(),[D.art.backgrounds[0],D.art.moa,D.art.props].sort(),'기존 그림만 쓴다');assert.equal(t.imgs.length,0);
+ // 게임 속 한 장면: 사진 사건의 판단 문장과 세 갈래를 그대로(새 문장 아님), 누를 수 없는 그림
+ const j=D.cases[T.peek.case].judges[T.peek.judge];
+ assert.ok(t.text.includes('“'+j.text+'”'));for(const s of Object.values(D.stamps))assert.ok(t.html.includes('<span>'+s+'</span>'));
+ const card=parseTags(t.html,'div').find(d=>d.class==='peek-card');assert.equal(card.role,'img');assert.ok(card['aria-label'].includes(j.text));
+ assert.doesNotMatch(card['aria-label']+t.text,/정답|맞아, /,'한 장면은 답을 말하지 않는다');
+ // 분량: README에 적힌 값(사건 5개, 판단 20개)과 engine이 같다
+ assert.equal(T.facts[0],'사건 '+g.E.CASES.length+'개');assert.equal(T.facts[1],'판단 '+(g.E.CASES.length*4)+'개');
+ // 저장 형식 그대로: 시작 화면을 봤는지는 저장하지 않는다
+ const stored=g.stored(),state=plain(g);
+ assert.deepEqual(Object.keys(JSON.parse(stored)).sort(),Object.keys(E.initial()).sort());assert.deepEqual(JSON.parse(stored),E.initial());
+ g.click('start');const after=g.snap();
+ assert.equal(after.cls,'step-intro');assert.ok(after.html.includes(D.intro.title),'지금의 첫 화면(프롤로그)');assert.equal(after.html.includes('class="resume"'),false);
+ assert.equal(after.fx,'focus h1\nscrollTo 0,0','들어가면 그 화면 제목에 초점');
+ assert.equal(g.stored(),stored);assert.deepEqual(plain(g),state);
+});
+test('title: with a saved game the main button is 이어하기 with where it resumes; 처음부터 하기 goes through the existing confirmation',()=>{
+ const end=E.reduce(stateAt('share','reflect'),{type:'next'}),report=E.reduce(end,{type:'next'}),backToIntro=E.reduce(stateAt('photo','check'),{type:'revisit',scene:0});
+ assert.equal(end.scene,E.END);assert.equal(report.scene,E.REPORT);assert.deepEqual([backToIntro.scene,backToIntro.furthest>0],[0,true]);
+ const cases=[[stateAt('photo','hook'),'사건 1 · 사진 · 궁금한 것부터'],[stateAt('writing','check'),'사건 2 · 글 검사 · 직접 확인부터'],[stateAt('face','notice'),'사건 3 · 얼굴 인식 · 미리 알리기부터'],
+  [stateAt('camp','reflect'),'사건 4 · 구청 캠프 · 생각 정리부터'],[stateAt('share','follow'),'사건 5 · 은하수 그림 · 후속 조사부터'],[end,'마지막 장면부터'],[report,'나의 조사 보고서부터'],[backToIntro,'프롤로그부터']];
+ for(const [s,from] of cases){
+  const g=createGame({storage:{[KEY]:JSON.stringify(s)}});g.snap();let t=titleParts(g);
+  assert.equal(g.app.className,'at-title',from);
+  assert.deepEqual(t.acts,['start','reset-ask'],from+': 이어하기가 먼저(으뜸), 처음부터 하기는 다음');
+  assert.equal(t.main,T.resume+' '+from);assert.equal(textOf(t.html).includes(T.restart),true);
+  // 처음부터 하기 → 기존 확인 창 → 취소: 그대로
+  g.click('reset-ask');let r=g.snap();assert.deepEqual([r.modalOpen,r.modalTitle],[true,'처음부터 다시 하기']);assert.match(r.modalBody,/이름과 학번도 지우기/);
+  g.click('close');r=g.snap();assert.deepEqual([r.modalOpen,r.cls],[false,'at-title']);assert.deepEqual(plain(g),s,from+': 취소하면 진행 그대로');
+  // 이어하기 → 저장된 화면, 기존 이어하기 안내도 그대로
+  g.click('start');r=g.snap();assert.equal(r.cls.split(' ')[0],'step-'+E.stepOf(s.scene));assert.deepEqual(plain(g),s);
+  assert.equal(r.html.includes('저장된 곳부터 이어서 해요.'),s.scene>0,from+': 기존 안내');
+ }
+ // 시작 화면에서 처음부터 하기 → 지우고 처음부터: 프롤로그로 들어가고 저장도 처음 상태
+ const g=createGame({storage:{[KEY]:JSON.stringify(cases[1][0])}});g.click('reset-ask');g.click('reset');const r=g.snap();
+ assert.equal(r.cls,'step-intro');assert.deepEqual(JSON.parse(g.stored()),E.initial());assert.match(r.fx,/focus h1/);
+ // 지운 뒤 다시 열면 게임 시작하기
+ assert.deepEqual(titleParts(createGame({storage:{[KEY]:g.stored()}})).acts,['start']);
+});
+test('title: 설정 → 시작 화면으로 comes back with the progress kept; every open starts at the start screen; the preview skips it',()=>{
+ const g=createGame({});g.click('start');g.click('next');g.click('next');g.click('item',{id:'photo-original'});const s=plain(g),saved=g.stored();g.snap();
+ g.click('settings');const menu=parseTags(g.snap().modalBody,'button').map(b=>b['data-act']);assert.deepEqual(menu,['sources','title','reset-ask'],'설정 창에 시작 화면으로');
+ assert.ok(g.modal.open);g.click('title');const r=g.snap();
+ assert.deepEqual([r.cls,r.modalOpen],['at-title',false]);assert.match(r.fx,/focus h1\nscrollTo 0,0/);assert.doesNotMatch(r.fx,/focus button\[settings\]/,'초점은 시작 화면 제목에 남는다');
+ assert.equal(titleParts(g).main,T.resume+' 사건 1 · 사진 · 직접 확인부터');assert.deepEqual(plain(g),s);assert.equal(g.stored(),saved,'시작 화면으로 가도 저장은 그대로');
+ // 이어하기: 보던 자료까지 그대로
+ g.click('start');assert.ok(parseTags(g.app.innerHTML,'button').some(b=>b['data-act']==='item'&&b['data-id']==='photo-original'&&b['aria-pressed']==='true'),'보던 자료가 펼쳐진 채');
+ // 다시 열면 또 시작 화면부터
+ assert.equal(createGame({storage:{[KEY]:saved}}).app.className,'at-title');
+ // 미리보기(?preview=s01)는 시작 화면 없이 사건 1
+ const p=createGame({search:'?preview=s01'});assert.equal(p.app.className,'step-hook');assert.equal(p.has('start'),false);
+ // 시작 화면을 보는 동안 사건 4·5 새 그림이 열려도 다시 그리지 않고(초점·연출 유지), 들어가면 새 그림을 쓴다
+ const c=createGame({storage:{[KEY]:JSON.stringify(stateAt('camp','hook'))}}),gen=c.app.gen;c.settleImages(src=>src.endsWith('.webp'));
+ assert.equal(c.app.gen,gen,'시작 화면은 다시 그리지 않는다');c.click('start');assert.ok(c.app.innerHTML.includes('assets/s04/bg-newsroom.webp'));
 });

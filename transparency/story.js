@@ -258,5 +258,18 @@ window.TransparencyStory = (()=>{
   finalPrompt:'앞으로 AI 서비스를 쓸 때 나는 무엇을 먼저 물어볼까?'};
  const report={title:'나의 조사 보고서',game:'블랙박스를 열어보는 고양이',privacy:'이름과 학번은 이 기기에만 저장돼요. 서버로 보내지 않아요.',
   printHint:'인쇄 창에서 대상을 ‘PDF로 저장’으로 고르세요.',notWritten:'작성 안 함',asked:'물어본 질문',notAsked:'아직 안 물어봄'};
- return {art,names,bgNames,stamps,intro,drafts,history,alertText,cases,notice,ending,reflect,report};
+ // 시작 화면(2026-11-11, ui/title.js, 교사 검수 대기). 게임 이름은 report.game을 쓴다.
+ // peek = '게임 속 한 장면'으로 보여 줄 판단 문장(사건·몇째). 문장·화자·세 갈래는 그 사건 것을 그대로 가져온다(새 문장 아님).
+ // from = 이어하기 버튼 아래 '어디부터'(사건 번호 · 사건 이름 · 단계 + from), places = 사건 밖 장면 이름.
+ const title={kind:'AI 투명성 조사 게임',
+  hook:'사진에서 친구 얼굴이 잘려도, 친구가 쓴 글이 의심받아도 이유를 물으면 이런 말이 돌아온다. “시스템이 그렇게 정했대.”',
+  lead:'고양이 모아와 함께 자료를 직접 살펴보고, AI가 왜 그렇게 판단했는지 조사해 보자.',
+  facts:['사건 5개','판단 20개','마지막에 나의 조사 보고서'],factsLabel:'게임 한눈에',
+  peek:{tag:'게임 속 한 장면',case:'photo',judge:1,ask:'이 말은 맞을까?'},
+  start:'게임 시작하기',resume:'이어하기',from:'부터',restart:'처음부터 하기',
+  places:{intro:'프롤로그',end:'마지막 장면',report:'나의 조사 보고서'},
+  keys:'버튼을 눌러서 진행해요. 키보드로는 Tab으로 옮기고 Enter로 눌러요.',
+  art:'저녁 골목의 수리점 앞. 노란 목도리를 두른 회색 고양이 모아가 수첩을 들고, 작업대에 놓인 검은 상자 세 개를 바라본다.',
+  back:'시작 화면으로'};
+ return {art,names,bgNames,stamps,intro,drafts,history,alertText,cases,notice,ending,reflect,report,title};
 })();

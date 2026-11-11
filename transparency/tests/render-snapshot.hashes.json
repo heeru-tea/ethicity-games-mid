@@ -19,13 +19,15 @@
   "ui/report.js",
   "ui/modal.js",
   "ui/screens.js",
+  "ui/title.js",
   "ui/actions.js",
   "ui/boot.js"
  ],
- "steps": 1617,
+ "steps": 1681,
  "scenarios": {
   "walk-correct": [
-   "boot 468089cd00df3e33",
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
    "next 53c9a81bb218cfb2",
    "next 8aca9a0de9a6e258",
    "item:photo-original 325419584942e15e",
@@ -268,17 +270,17 @@
    "close-sources 105056066f73d1b8",
    "discussion 0f5ee03e7d81cd99",
    "close-discussion f789a7e468082501",
-   "settings b0afc4c4b0058586",
-   "close-settings 30b3828e46b27cd4",
-   "next 7d94890d413184bd",
-   "input-name b0ac526de8d5a8c7",
-   "input-number 6c41f9f0bc861cd0",
-   "input-other 6c41f9f0bc861cd0",
-   "input-none 6c41f9f0bc861cd0",
-   "beforeprint 0cb7d47536f6ff5f",
-   "afterprint 6c41f9f0bc861cd0",
-   "print b0bb335cfb850294",
-   "print-done 6c41f9f0bc861cd0",
+   "settings 7928bf9e4ee5e549",
+   "close-settings d6a286fbbdf1f51c",
+   "next 21724a80125f1a1d",
+   "input-name 6e3f9188d67f697d",
+   "input-number c12e2b1452616a47",
+   "input-other c12e2b1452616a47",
+   "input-none c12e2b1452616a47",
+   "beforeprint 1377196340e5afb2",
+   "afterprint c12e2b1452616a47",
+   "print dc111af26df1429e",
+   "print-done c12e2b1452616a47",
    "notebook c822da50e1233c7c",
    "close-notebook 492157a05bc1225d",
    "revisit:14 c71b9fa9fd4e97b9",
@@ -295,13 +297,14 @@
    "revisit:17 c716b4dfd9372c56",
    "choose:crowd c15ad80d4ccf593e",
    "rechoose 65505300c25fd16f",
-   "settings 93b21c6b5132437b",
+   "settings 37699ecdffcf61a4",
    "reset-ask ff9cd218d92ba637",
    "reset 678cdfee05b1296b",
    "next 063d64a39f24c2eb"
   ],
   "walk-wrong": [
-   "boot 468089cd00df3e33",
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
    "next 53c9a81bb218cfb2",
    "next 8aca9a0de9a6e258",
    "back 62856a10064d886b",
@@ -697,7 +700,8 @@
    "reset f3a36089d19a49c3"
   ],
   "walk-mixed": [
-   "boot 468089cd00df3e33",
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
    "next 53c9a81bb218cfb2",
    "next 8aca9a0de9a6e258",
    "item:photo-rule 57eb0f73c56af43b",
@@ -915,29 +919,52 @@
    "close-notebook 84ba8e7760cc2e15"
   ],
   "modals": [
-   "boot 468089cd00df3e33",
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
    "click-nothing 468089cd00df3e33",
    "notebook 02e6f9c99977596a",
    "backdrop-inside 1ab34088e28a5079",
    "backdrop-outside f8dea78509e67e00",
-   "settings b1b5c3f779ad4dde",
+   "settings 629b681dad2eb5e4",
    "sources 5ae30fdafab5a5aa",
    "close b760c1c36777c500",
-   "settings b1b5c3f779ad4dde",
+   "settings 629b681dad2eb5e4",
    "reset-ask d109a42825cdaac2",
    "cancel 4c82c03c40dc3014",
-   "settings b1b5c3f779ad4dde",
+   "settings 629b681dad2eb5e4",
    "reset-ask d109a42825cdaac2",
    "reset f3a36089d19a49c3",
    "next 65cca43b85e17c8b",
-   "settings 17ac24e02663f05c",
+   "settings 73a63552f1a982c7",
    "reset-ask dcea6f4c3ea07b0d",
    "reset f3a36089d19a49c3",
    "beforeprint-not-report 862fb60502cff443",
    "afterprint 862fb60502cff443"
   ],
+  "title": [
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
+   "settings 629b681dad2eb5e4",
+   "title adaab7eaf753094f",
+   "start f5e75b698fd95ebe",
+   "next 54c39d514bfdaed8",
+   "next fbc12b5db4ff3263",
+   "item:photo-original 9328a4848f58c657",
+   "settings 124c1a5ae7547f97",
+   "title ddffa5e0841555ca",
+   "reset-ask 3fca21745f1bb376",
+   "cancel ec5ea749cdbb513d",
+   "start 7f4c9c42c69054a4",
+   "settings 124c1a5ae7547f97",
+   "title ddffa5e0841555ca",
+   "reset-ask 3fca21745f1bb376",
+   "reset f3a36089d19a49c3",
+   "settings 629b681dad2eb5e4",
+   "title adaab7eaf753094f"
+  ],
   "view-state": [
-   "boot 468089cd00df3e33",
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
    "next 53c9a81bb218cfb2",
    "next 8aca9a0de9a6e258",
    "item:photo-rule 57eb0f73c56af43b",
@@ -1097,18 +1124,20 @@
    "next f66b339755b5c3cd"
   ],
   "resume check:photo": [
-   "boot c6e4422343f1a897",
+   "boot 1fa37a29c76f2cb1",
+   "start 4aa7ee8a0b91590c",
    "reset-ask-banner f5bac4ff57071464",
    "cancel 68eee2f38c3d15aa",
    "notebook 5839ce1facbf290f",
    "close-notebook 5794aeb4339c0b8d",
    "back 5fd8fdcdd76bee0c",
-   "settings 78ecb31665e5848d",
+   "settings 2042fed017c1bd1b",
    "reset-ask f705b3d1fa12f30e",
    "reset f3a36089d19a49c3"
   ],
   "art-webp check:photo": [
-   "boot c6e4422343f1a897",
+   "boot 1fa37a29c76f2cb1",
+   "start 4aa7ee8a0b91590c",
    "images-settled de7fac96bbe49628",
    "notebook 4b671831a8471fef",
    "close-notebook a6f20cf1df3e7cfd",
@@ -1118,7 +1147,8 @@
    "region:1 e241a54106470427"
   ],
   "art-mixed check:photo": [
-   "boot c6e4422343f1a897",
+   "boot 1fa37a29c76f2cb1",
+   "start 4aa7ee8a0b91590c",
    "images-settled 8595d095bb2302a1",
    "notebook 54b4af13a0a00cd3",
    "close-notebook 9b32712ddc7a08fc",
@@ -1128,35 +1158,40 @@
    "region:1 e01a152c62c41e7a"
   ],
   "resume reflect:photo": [
-   "boot 0d5ea8d1c5fdfa13",
+   "boot 46f92fb9bff8ed82",
+   "start eb9f612d9c595323",
    "notebook d72d9dc77a8a9abc",
    "close-notebook 70c24d45372606e8",
    "next dc2d9916e62e4a61",
    "back f0ba55cb36436056"
   ],
   "resume reflect:writing": [
-   "boot 8113eadf2fca98a3",
+   "boot 647f9d8ae60e72f4",
+   "start b6839e424a18db80",
    "notebook 46aaa5268704d818",
    "close-notebook 7de3129414f37d91",
    "next 8248698499f4149d",
    "back 911ffd1275699600"
   ],
   "resume reflect:face": [
-   "boot 0c54907fab4590c5",
+   "boot d2178fb605910b1b",
+   "start fe2283f71dde4194",
    "notebook d1c34de33c72a662",
    "close-notebook 44743d1a8a39c62e",
    "next 0bcf46fa485c3d59",
    "back 4636592b3131eea5"
   ],
   "resume reflect:camp": [
-   "boot fd5fb5362a9a510e",
+   "boot 849e118968d3d143",
+   "start 0af19c59c822d1a8",
    "notebook 2a06bf770176b0a2",
    "close-notebook 18ddc9d41d67e5c1",
    "next 280a4d2d1ea18661",
    "back 8560f5d56a976f6d"
   ],
   "art-webp reflect:camp": [
-   "boot fd5fb5362a9a510e",
+   "boot 849e118968d3d143",
+   "start 0af19c59c822d1a8",
    "images-settled 19a1b6d60bcfd7f2",
    "notebook 266779bddc14c2af",
    "close-notebook 4d116b60f9d9896d",
@@ -1177,7 +1212,8 @@
    "rechoose bca2d03a22923ddc"
   ],
   "art-mixed reflect:camp": [
-   "boot fd5fb5362a9a510e",
+   "boot 849e118968d3d143",
+   "start 0af19c59c822d1a8",
    "images-settled dffb3ca50b4aec5f",
    "notebook 911a4b7e26ed88d5",
    "close-notebook a542ae5653233919",
@@ -1198,7 +1234,8 @@
    "rechoose 25d3e746604098d8"
   ],
   "art-none reflect:camp": [
-   "boot fd5fb5362a9a510e",
+   "boot 849e118968d3d143",
+   "start 0af19c59c822d1a8",
    "images-settled 1456665afce366aa",
    "notebook 2a06bf770176b0a2",
    "close-notebook 18ddc9d41d67e5c1",
@@ -1219,19 +1256,21 @@
    "rechoose 0fe8a55fafbab0cc"
   ],
   "resume reflect:share": [
-   "boot a853e6f6cdbebde8",
+   "boot 97c6c75c4e44cfa4",
+   "start a62286de4343b539",
    "reset-ask-banner 0f9ac2597dee953c",
    "cancel c3b91918fa5fc7bf",
    "notebook 2111eb9aeb98969e",
    "close-notebook 90ab101708a17cdf",
    "next 5313abcda31df4db",
    "back e357d5a4f126b6c4",
-   "settings 9d39f5abd261a66f",
+   "settings bb6769192feb37c3",
    "reset-ask 85667f425b928431",
    "reset f3a36089d19a49c3"
   ],
   "art-webp reflect:share": [
-   "boot a853e6f6cdbebde8",
+   "boot 97c6c75c4e44cfa4",
+   "start a62286de4343b539",
    "images-settled 06b042a21fd6d507",
    "notebook 2eacc477bd5ab0e5",
    "close-notebook b144b5057aa86b08",
@@ -1252,7 +1291,8 @@
    "rechoose eb84bcc2c3edaac0"
   ],
   "art-mixed reflect:share": [
-   "boot a853e6f6cdbebde8",
+   "boot 97c6c75c4e44cfa4",
+   "start a62286de4343b539",
    "images-settled ae36f1c33d52b3a0",
    "notebook 9d4258aebbedf8fa",
    "close-notebook 0a843f4fca409fe4",
@@ -1273,25 +1313,28 @@
    "rechoose c03ac1a39d0eba99"
   ],
   "resume end": [
-   "boot ab807ab82d2487fb",
+   "boot 8cba0873896818e8",
+   "start 90a6da9656ded067",
    "notebook 9a312d1403a533c3",
    "close-notebook bdc55d8c2b8e90cb",
    "next 919f1a9b1f4233a1",
    "back 947d4ed1a079d991"
   ],
   "resume report": [
-   "boot 056e1597e8dc6f0c",
+   "boot bd760aa6610830ac",
+   "start 41094903a0da25ca",
    "reset-ask-banner 6849ce7e792173d8",
    "cancel c5c0ea8ebb6f0d69",
    "notebook fbf265a021ec67b0",
    "close-notebook 794724d20a6f447e",
    "back 947d4ed1a079d991",
-   "settings c64c6a3cb774e153",
+   "settings 7fc3089df70b94a0",
    "reset-ask ff2a19cc6a09a2ba",
    "reset f3a36089d19a49c3"
   ],
   "art-webp report": [
-   "boot 056e1597e8dc6f0c",
+   "boot bd760aa6610830ac",
+   "start 41094903a0da25ca",
    "images-settled ddba78d2e4d11939",
    "notebook 27f44a29646030e2",
    "close-notebook 3082e65ea83ec7f7",
@@ -1312,7 +1355,8 @@
    "rechoose b8db40bc7c834a9f"
   ],
   "art-mixed report": [
-   "boot 056e1597e8dc6f0c",
+   "boot bd760aa6610830ac",
+   "start 41094903a0da25ca",
    "images-settled 9b9662009b12c740",
    "notebook 0716759b6c24560c",
    "close-notebook 59bb4456cac1d269",
@@ -1333,35 +1377,40 @@
    "rechoose fd6552c8ec94fbb9"
   ],
   "resume wrong:photo": [
-   "boot 13f794796c1ca2f7",
+   "boot 3944ef21bc2c893c",
+   "start d846bc1db69266c4",
    "notebook ada4d4bb1d304a40",
    "close-notebook a2c28ce9f9cca7b9",
    "next 8e7946b7ddb9dad6",
    "back 97a2530cbb426db2"
   ],
   "resume wrong:writing": [
-   "boot 73f2a162891794e3",
+   "boot 4c78ab23c3f425e3",
+   "start b26e5a54146cda46",
    "notebook 8125ad7c203db59f",
    "close-notebook 3a804fd4fc4ce865",
    "next 8608070054b81653",
    "back 611a1e9685fca833"
   ],
   "resume wrong:face": [
-   "boot 8ed6e33e99168744",
+   "boot 00d7fdcd6a90f9ac",
+   "start d976a4fc8434547d",
    "notebook 60a6671680744e65",
    "close-notebook b6e4d5b39bcd8dc3",
    "next c3aaeebd20e177ea",
    "back e0b57f69f87c288a"
   ],
   "resume wrong:camp": [
-   "boot b512b3a797a4e79e",
+   "boot 8560698c068b4dfd",
+   "start 3e562a6c16cc15ce",
    "notebook 2643e6c89d293516",
    "close-notebook 7e54e49f6f01d2b7",
    "next fa350a061fad06e5",
    "back c059393bf2bfdbc6"
   ],
   "art-webp wrong:camp": [
-   "boot b512b3a797a4e79e",
+   "boot 8560698c068b4dfd",
+   "start 3e562a6c16cc15ce",
    "images-settled a13df6fc96a7221f",
    "notebook 4be9cf5db3c09afa",
    "close-notebook 3842a01cd7f2de7f",
@@ -1382,7 +1431,8 @@
    "rechoose 3ba775ae915a89b6"
   ],
   "art-mixed wrong:camp": [
-   "boot b512b3a797a4e79e",
+   "boot 8560698c068b4dfd",
+   "start 3e562a6c16cc15ce",
    "images-settled 3ceccac2793063fc",
    "notebook cc97b751d7265406",
    "close-notebook 61c9848cac4ca228",
@@ -1403,14 +1453,16 @@
    "rechoose f94f2a586c0b9076"
   ],
   "resume wrong:share": [
-   "boot 286a96d2a9ea7aca",
+   "boot bd0afee967d05098",
+   "start 2cf5dde565dda42d",
    "notebook ad74829258f5cdff",
    "close-notebook 7c7e7190a1505e99",
    "next 1321f66d7ffdb9de",
    "back 062ee530cf3b54c7"
   ],
   "art-webp wrong:share": [
-   "boot 286a96d2a9ea7aca",
+   "boot bd0afee967d05098",
+   "start 2cf5dde565dda42d",
    "images-settled 24b28222fa65cebc",
    "notebook ca3e322483a88ce0",
    "close-notebook 52248a2dcc9d952b",
@@ -1431,7 +1483,8 @@
    "rechoose 72451954f346d493"
   ],
   "art-mixed wrong:share": [
-   "boot 286a96d2a9ea7aca",
+   "boot bd0afee967d05098",
+   "start 2cf5dde565dda42d",
    "images-settled 90e0f014c78ba505",
    "notebook cf7abf006eb2cef9",
    "close-notebook 10bab793002ec226",
@@ -1452,7 +1505,8 @@
    "rechoose 38067fc05a49f318"
   ],
   "art-photo-walk": [
-   "boot 468089cd00df3e33",
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
    "images-settled a8ccf2f544d0af8c",
    "next 2e07d83a87aa9561",
    "next eb3d2f3625d5f28c",
@@ -1498,23 +1552,26 @@
    "next c96b62fa9e196e40",
    "notebook b5a9f13a790dc101",
    "close 6cac27f8054d7860",
-   "settings 24b372ee2fe190fe",
+   "settings e186b4cb38890e60",
    "reset-ask 56677c98bbda0170",
    "reset 551b0db0501c9ccb"
   ],
   "no-preview-param": [
-   "boot c6e4422343f1a897",
+   "boot 1fa37a29c76f2cb1",
+   "start 4aa7ee8a0b91590c",
    "next c6e4422343f1a897"
   ],
   "storage-blocked": [
-   "boot f72d732805687bb4",
+   "boot 31bf0d8bf0c8f1ed",
+   "start 74ad0fa9948af1c6",
    "next 0b380967f5add519",
    "next bc300a9be7a183bb",
    "notebook 5ec8f767c3aebefa",
    "close d5d58875bbdaecb6"
   ],
   "storage-write-fails": [
-   "boot 468089cd00df3e33",
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
    "next 53c9a81bb218cfb2",
    "next ae4eb4c4e084db2e",
    "item:photo-original a4a1fd0c6bc6e90a",
@@ -1522,31 +1579,38 @@
    "spot:2 2e93b9d487ef78fe"
   ],
   "player ok": [
-   "boot 61b34701e7843698",
+   "boot 18f191910b7625be",
+   "start 6ceba7e3da781719",
    "next 61b34701e7843698"
   ],
   "player long": [
-   "boot 24ad9ce07150bd8c",
+   "boot 42429c18ca0e37a0",
+   "start d8cf4580d4cfe77e",
    "next 24ad9ce07150bd8c"
   ],
   "player blank": [
-   "boot c6e4422343f1a897",
+   "boot 1fa37a29c76f2cb1",
+   "start 4aa7ee8a0b91590c",
    "next c6e4422343f1a897"
   ],
   "player notString": [
-   "boot c6e4422343f1a897",
+   "boot 1fa37a29c76f2cb1",
+   "start 4aa7ee8a0b91590c",
    "next c6e4422343f1a897"
   ],
   "player nullValue": [
-   "boot c6e4422343f1a897",
+   "boot 1fa37a29c76f2cb1",
+   "start 4aa7ee8a0b91590c",
    "next c6e4422343f1a897"
   ],
   "player broken": [
-   "boot c6e4422343f1a897",
+   "boot 1fa37a29c76f2cb1",
+   "start 4aa7ee8a0b91590c",
    "next c6e4422343f1a897"
   ],
   "legacy v1r4": [
-   "boot ecc422de1ad7623d",
+   "boot b08fff2172618985",
+   "start 1f80e8ad8d75ea46",
    "notebook b2c84fb8e28fd65c",
    "close-notebook c69235c36b24670a",
    "notebook b2c84fb8e28fd65c",
@@ -1620,7 +1684,8 @@
    "legacy-done 89566ac5abf8253b"
   ],
   "legacy v1 old": [
-   "boot ad2452e2903e6cb7",
+   "boot 586fb86cece6bfdd",
+   "start 338ec93a7adf0404",
    "notebook d6fafe5fed46802f",
    "close-notebook a357d0ccd205bd4b",
    "notebook d6fafe5fed46802f",
@@ -1700,7 +1765,8 @@
    "legacy-done 76fbf59f1188698e"
   ],
   "legacy v2": [
-   "boot eca23dc05752cba5",
+   "boot 9609112c5808bdb5",
+   "start 6146ebc02108a217",
    "notebook 30ca6b11e8e82bdb",
    "close-notebook 9d323998525be0cd",
    "notebook 30ca6b11e8e82bdb",
@@ -1730,7 +1796,8 @@
    "legacy-done c94d764075748ed3"
   ],
   "broken-save": [
-   "boot 468089cd00df3e33",
+   "boot cc7e6ce683fbceef",
+   "start 05b0d734affdfe93",
    "notebook 02e6f9c99977596a"
   ]
  }

@@ -6,9 +6,9 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {createGame}=require('./dom-stub.cjs');
 const HASHES=path.join(__dirname,'render-snapshot.hashes.json'),FULL=path.join(__dirname,'render-snapshot.full.json.br');
 const UPDATE=process.env.UPDATE_SNAPSHOT==='1';
-// 화면 코드가 처리하는 data-act 전부(2026-11-10 나누기 전 app.js 기준 37개). 대본이 하나도 빠짐없이 눌러 봐야 한다.
+// 화면 코드가 처리하는 data-act 전부(2026-11-10 나누기 전 app.js 기준 37개 + 2026-11-11 시작 화면의 start·title). 대본이 하나도 빠짐없이 눌러 봐야 한다.
 const ALL_ACTS=['close','next','back','source','item','spot','region','record','segment','cell','village','crit','part','skyline','said','change','list','judge','judge-next','notice-pick','notice-post',
- 'mark','run','row','follow-judge','choose','rechoose','ask','notebook','print','to-report','revisit','sources','discussion','settings','reset-ask','reset'];
+ 'mark','run','row','follow-judge','choose','rechoose','ask','notebook','print','to-report','revisit','sources','discussion','settings','reset-ask','reset','start','title'];
 const FIELDS=['cls','html','modalOpen','modalTitle','modalBody','save','stored','title','state','art','fx'];
 const sha=s=>crypto.createHash('sha256').update(s).digest('hex').slice(0,16);
 const hashOf=rec=>sha(FIELDS.map(f=>f+'\u0000'+String(rec[f])).join('\u0001'));
@@ -99,6 +99,8 @@ function play(opts,script){
   act('next');
  }
  rec('boot');
+ // 시작 화면(2026-11-11)이 먼저 나온다: 으뜸 버튼(게임 시작하기·이어하기)을 눌러 예전 첫 화면으로 들어간 뒤 대본을 돈다. 미리보기에는 시작 화면이 없다.
+ if(g.has('start'))act('start');
  script({g,E,D,rec,act,at,peek,wobble,check,follow,notice,oneCase,rest});
  for(const a of g.clicked)clicked.add(a);
  return steps;
@@ -152,6 +154,13 @@ const SCENARIOS={
   g.windowEvent('beforeprint');rec('beforeprint-not-report');g.windowEvent('afterprint');rec('afterprint');
  }
 };
+// 시작 화면: 설정 → 시작 화면으로(프롤로그라 ‘게임 시작하기’) → 사건 1 직접 확인까지 → 시작 화면으로(‘이어하기’ + 어디부터) → 처음부터 하기 취소 → 이어하기 → 다시 시작 화면 → 지우고 처음부터 → 프롤로그
+SCENARIOS['title']=t=>{const {act}=t;
+ act('settings');act('title');act('start');
+ act('next');act('next');act('item',{id:'photo-original'});act('settings');act('title');
+ act('reset-ask');act('close',undefined,'cancel');act('start');
+ act('settings');act('title');act('reset-ask');act('reset');
+ act('settings');act('title');};
 // 화면에만 쓰는 상태가 장면을 옮길 때 지워지는지: 눌러 본 구역·연 줄·'아님' 표시·잘못 누른 안내
 SCENARIOS['view-state']=t=>{const {act,E,D}=t,m={judge:()=>true,choice:0,followRight:true,notice:'ok',asks:'all'};
  act('next');act('next');act('item',{id:'photo-rule'});act('region',{id:0});act('back');act('next');act('item',{id:'photo-rule'});act('back');

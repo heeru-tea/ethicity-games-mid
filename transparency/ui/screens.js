@@ -182,6 +182,8 @@
  }
  // moved = 장면이 바뀌었다(제목에 초점을 주고 맨 위로). 아니면 누르던 버튼에 초점을 돌려준다.
  function render(moved){
+  // 시작 화면을 보는 동안에는 게임 화면 대신 시작 화면을 그린다(ui/title.js).
+  if(S.title)return UI.drawTitle(moved);
   const n=S.state.scene;
   const step=E.stepOf(n);
   const k=E.caseKey(n);
@@ -202,4 +204,5 @@
  }
 
  UI.render=render;
+ UI.STEP_LABELS=STEP_LABELS;
 })();

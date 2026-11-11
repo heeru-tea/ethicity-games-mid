@@ -41,6 +41,8 @@
   tapHint:'',
   justJudged:null,
   resumed:!preview&&state.scene>0,
+  // title = 시작 화면을 보고 있다(ui/title.js). 저장하지 않는다 — 열 때마다 시작 화면부터(미리보기 ?preview=s01은 건너뛴다).
+  title:!preview,
   lastFocus:null,
   skipFocusReturn:false,
   // autoKey = 근거 자료를 자동으로 맞춘 판단 문장(한 문장에 한 번만 — 그 뒤 직접 고른 자료는 건드리지 않는다), keepFinding = 마지막 자료를 찾은 직후 자료가 바뀌어도 방금 찾은 내용을 남긴다.
@@ -98,6 +100,8 @@
  function reset(keepReporter){
   S.state=E.restart(S.state,{keepReporter});
   arrive();
+  // 시작 화면에서 ‘처음부터 하기’를 골랐을 때도 지운 뒤 프롤로그로 들어간다.
+  S.title=false;
   S.skipFocusReturn=true;
   save();
   UI.render(true);
@@ -107,7 +111,7 @@
  }
 
  const UI=window.TransparencyUI={
-  E,D,KEY,preview,S,$,esc,btn,save,send,arrive,reset,
+  E,D,KEY,preview,S,$,esc,btn,save,saveStatus,send,arrive,reset,
   // views[사건] = 그 사건만의 그림·자료·후속 조사 화면(ui/case-*.js가 채운다).
   views:{},
   // actions[data-act] = 버튼을 눌렀을 때 할 일(각 파일이 자기 몫을 채우고, ui/actions.js가 불러 준다).

@@ -4,6 +4,7 @@
 'use strict';
 const PW=process.env.PLAYWRIGHT_PATH||'D:/Works/token_economy/node_modules/playwright';
 const {chromium}=require(PW);
+const throughTitle=require('./through-title.cjs'); // 시작 화면에서 시작 버튼을 누른 뒤부터 본다
 const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs'),http=require('node:http'),E=require('../engine.js');
 const D=(()=>{global.window={};require('../story.js');return global.window.TransparencyStory;})();
 const root=path.resolve(__dirname,'..'),KEY='ethicity.transparency.progress.v1',shotDir=path.join(__dirname,'screens');
@@ -34,7 +35,7 @@ async function withPage(viewport,state,fn,prep){
  const ctx=await browser.newContext({viewport});
  // 처음 한 번만 저장을 심는다(새로고침 뒤에는 게임이 저장한 것이 남아야 한다)
  if(state)await ctx.addInitScript(([k,v])=>{if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.setItem(k,v);}},[KEY,JSON.stringify(state)]);
- const p=await ctx.newPage(),errors=[];p.setDefaultTimeout(20000);p.on('pageerror',e=>errors.push(String(e)));
+ const p=throughTitle(await ctx.newPage()),errors=[];p.setDefaultTimeout(20000);p.on('pageerror',e=>errors.push(String(e)));
  try{if(prep)await prep(p);await p.goto(url,{waitUntil:'domcontentloaded'});await p.waitForSelector('#app h1');const r=await fn(p);assert.deepEqual(errors,[],'page errors');return r;}
  finally{await ctx.close();}
 }
