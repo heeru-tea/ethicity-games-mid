@@ -1,7 +1,10 @@
 // 우리 집 바깥(거실·식탁·복도·현관) 그림 = SCENES.room.bgOuter. 내 방 그림(room.png)은 게임이 그 위 ROOM_BG 자리에 덧그린다.
 //   node privacy/tools/house-art.mjs guide        → assets/scenes/house-guide.png (배치 밑그림: 벽·가구 색 블록 + 내 방 그림)
 //   node privacy/tools/house-art.mjs gen [n]      → fal nano-banana/edit 시안 n장(기본 2) assets/scenes/house-cand-<k>.png (원본 .raw.png)
-//   node privacy/tools/house-art.mjs pick <k>     → house-cand-<k>.png 를 assets/scenes/house.png 로(그다음 to-webp)
+//   node privacy/tools/house-art.mjs pick <k>     → house-cand-<k>.png 를 assets/scenes/house-base.png 로
+//   node privacy/tools/house-art.mjs fix [k]      → 고른 시안의 작은 흠을 손봐 assets/scenes/house-base.png 로(지금 쓰는 것 = fix nbpro-1)
+//   ※ 2026-11-11: 게임이 쓰는 house.png·house.webp(+ 2026-11-12 밤 벽 덧그림 house-walls-night.png)는 house-base.png(벽이 단색 갈색 띠인 원본)에 tools/house-walls.mjs가 벽을 다듬어 만든다.
+//     여기서 원본을 바꿨으면 이어서 node privacy/tools/house-walls.mjs 를 돌릴 것(room.png ← room-base.png + room-compose.mjs와 같은 방식).
 // 밑그림의 칸(32×18)은 world.js SCENES room의 rects와 같은 자리여야 한다 — 가구를 옮기면 HOUSE 표와 world.js를 같이 고칠 것.
 // 키·호출은 publicness 도구(fal.mjs, 키 = publicness/.env — 커밋 금지). 생성 기록 = assets/scenes/generation-log.jsonl
 import fs from 'node:fs';
@@ -108,7 +111,7 @@ async function gen(n, model) {
   }
 }
 
-// fix <후보> → house.png: 고른 시안(nbpro-1)의 작은 흠만 손본다(픽셀 좌표 = 1672×941 기준).
+// fix <후보> → house-base.png: 고른 시안(nbpro-1)의 작은 흠만 손본다(픽셀 좌표 = 1672×941 기준).
 //   ① 복도 아래 없던 벽 토막(972~1045, 812~894) → 150px 왼쪽 마룻바닥을 복사해 메움(판자가 가로라 줄이 이어진다)
 //   ② 내 방 문 구멍 445~575(2.5칸) → 왼쪽 445~470을 벽으로 → 470~575 = 칸 9~10(world.js 방문 두 칸)
 async function fix(name) {
@@ -119,13 +122,13 @@ async function fix(name) {
   copy(968, 806, 1049, 894, -150);
   const wall = at(300, 656); // 같은 벽 띠의 색
   for (let y = 629; y < 683; y++) for (let x = 443; x < Math.round(9 * CW); x++) for (let c = 0; c < ch; c++) data[at(x, y) + c] = data[wall + c];
-  await sharp(data, { raw: { width: w, height: info.height, channels: ch } }).png().toFile(path.join(OUT, 'house.png'));
-  console.log('✓ house.png ← house-cand-' + name + ' (벽 토막 지움 · 방문 두 칸)');
+  await sharp(data, { raw: { width: w, height: info.height, channels: ch } }).png().toFile(path.join(OUT, 'house-base.png'));
+  console.log('✓ house-base.png ← house-cand-' + name + ' (벽 토막 지움 · 방문 두 칸) — 이어서 node privacy/tools/house-walls.mjs');
 }
 
 const [cmd, arg] = process.argv.slice(2);
 if (cmd === 'fix') await fix(arg || 'nbpro-1');
 else if (cmd === 'guide') await guide();
 else if (cmd === 'gen') await gen(Number(arg) || 2, process.argv[4]);
-else if (cmd === 'pick') { fs.copyFileSync(path.join(OUT, `house-cand-${arg}.png`), path.join(OUT, 'house.png')); console.log('✓ house.png ← house-cand-' + arg); }
-else console.log('사용법: guide | gen [n] [nb|nbpro|kontext] | pick <후보 이름 뒤쪽, 예: nbpro-1>');
+else if (cmd === 'pick') { fs.copyFileSync(path.join(OUT, `house-cand-${arg}.png`), path.join(OUT, 'house-base.png')); console.log('✓ house-base.png ← house-cand-' + arg + ' — 이어서 node privacy/tools/house-walls.mjs'); }
+else console.log('사용법: guide | gen [n] [nb|nbpro|kontext] | pick <후보 이름 뒤쪽, 예: nbpro-1> | fix [후보] — 그다음 house-walls.mjs');

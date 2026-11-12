@@ -850,9 +850,19 @@
   //   막힌 칸 중 벽은 벽 색(거실 위쪽 벽은 내 방 그림처럼 크림 벽 + 초록 징두리), 조사 지점 box(식탁·소파)는 색을 채운 칸
   var OUTER = { floor: '#D8B98C', line: 'rgba(120,80,40,0.14)', wall: '#F3E6CB', trim: '#7C9270', edge: '#6E5A45', ink: '#294B40',
     table: ['#B98A5A', '#D2A777'], sofa: ['#6F8C7A', '#8CA998'] };
-  function drawOuter(sc, bx, by) {
+  // 밤·저녁의 벽(2026-11-12): bgOuter 그림의 밝은 벽이 밤 화면(sceneLight 남색 곱하기)에서 어두운 방보다 먼저 눈에 들어왔다.
+  //   → 벽만 밤 색으로 칠한 투명 그림(SCENES[].bgOuterNight)을 그 위에 한 번 더 그린다. 밤 = 그대로, 저녁 = 옅게, 낮 = 안 그림(낮 화면 불변).
+  //   그림은 낮에도 미리 불러 둔다(13KB) — 밤이 되는 순간 벽이 밝았다가 어두워지는 깜빡임이 없게. 못 불러오면 덧그림 없이 예전 그대로.
+  var WALL_NIGHT = { night: 1, evening: 0.3 }, lastWallNight = 0;
+  function drawOuter(sc, bx, by, tint) {
     var oi = sceneImage(sc, 'bgOuter');
-    if (oi) { ctx.drawImage(oi, bx, by, Math.round(WD.SW * T), Math.round(WD.SH * T)); return; }
+    if (oi) {
+      var ow = Math.round(WD.SW * T), oh = Math.round(WD.SH * T);
+      ctx.drawImage(oi, bx, by, ow, oh);
+      var ni = sceneImage(sc, 'bgOuterNight'), na = WALL_NIGHT[tint] || 0;
+      if (ni && na) { ctx.globalAlpha = na; ctx.drawImage(ni, bx, by, ow, oh); ctx.globalAlpha = 1; lastWallNight = na; }
+      return;
+    }
     var c = Math.ceil(T), gx, gy;
     ctx.fillStyle = OUTER.floor; ctx.fillRect(bx, by, Math.round(WD.SW * T), Math.round(WD.SH * T));
     ctx.fillStyle = OUTER.line;
@@ -1043,11 +1053,13 @@
     camT = T;
     cam.x = Math.round(camS.x); cam.y = Math.round(camS.y); // 정수 픽셀: 그림이 반 픽셀씩 떨리지 않게
     var img = sceneImage(sc), bx = Math.round(sx0 - cam.x), by = Math.round(-cam.y);
+    var tint = mode === 'stage' ? stageTint : walkTint || trig.tint || WD.timeTint(trig.time); // 시간대(밤 벽 덧그림 drawOuter · sceneLight · TINT가 함께 쓴다)
+    lastWallNight = 0;
     drawBackdrop(sc, img);
     if (img) {
       ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
       if (sc.bg) { // 줄여 그리는 장면: 바깥부터 깔고 그림은 bg 사각형에만(bg가 없는 장면은 옛 그대로)
-        drawOuter(sc, bx, by);
+        drawOuter(sc, bx, by, tint);
         ctx.drawImage(img, Math.round(bx + sc.bg.x * T), Math.round(by + sc.bg.y * T), Math.round(sc.bg.w * T), Math.round(sc.bg.h * T));
       } else ctx.drawImage(img, bx, by, Math.round(sw), Math.round(sh));
       ctx.restore();
@@ -1068,7 +1080,6 @@
       ctx.fillStyle = '#16201F'; ctx.font = 'bold ' + Math.round(T * 0.32) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(pc.label || '3', lx + T * 0.36, ly + T * 0.27);
     }
-    var tint = mode === 'stage' ? stageTint : walkTint || trig.tint || WD.timeTint(trig.time);
     sceneLight(sc, tint, bx, by);
     if (mode === 'walk') drawExitGlow(t); // 목적지 쪽 출구 칸 반짝임(인물 아래 바닥에)
     // 말 거는 동안 밀어 그리기(setNudge): 대화창이 닫히면 원래대로
@@ -1642,6 +1653,7 @@
       nudge: function () { return nudge ? { who: nudge.c.who, mx: nudge.mx * nudgeK, cx: nudge.cx * nudgeK } : null; },
       pose: function () { return me.pose || null; },
       tint: function () { return mode === 'stage' ? stageTint : walkTint || (trig && trig.tint); },
+      wallNight: function () { return lastWallNight; }, // 마지막 화면에 밤 벽 덧그림을 그린 세기(0 = 안 그림, 저녁 0.3, 밤 1)
       drawRect: function () { return { x: me.fx, y: me.fy }; },
       joy: function () { return { shown: joyShown() && !$('joy').hidden, on: joy.on, mag: joy.mag, dx: joy.dx, dy: joy.dy, rest: joy.rest, fast: !!(me.moving && me.fast), slow: !!(me.moving && me.slow), live: joy.live, walking: joy.walking, sector: joy.sector }; },
       JOY: JOY,

@@ -68,7 +68,8 @@
     //   tools/room-compose.mjs: room-base.png + 판다 축소 + 공통 팩 코르크보드.
     //   바깥(거실·식탁·복도·현관) = bgOuter house.png(2026-11-09, tools/house-art.mjs — 배치 밑그림을 fal nano-banana-pro로 칠함). 아래 거실 칸은 그 그림에 맞춘 것.
     //   house.png를 못 불러오면 map.js drawOuter가 단색 + box 칸(식탁·소파)으로 대신 그린다.
-    { id: 'room', name: '내 방', img: 'assets/scenes/room.png', bg: ROOM_BG, bgOuter: 'assets/scenes/house.png',
+    //   bgOuterNight(2026-11-12) = 벽만 밤 색으로 칠한 투명 그림(tools/house-walls.mjs가 house.png와 함께 만든다). 밤·저녁에만 house.png 위에 덧그린다(map.js drawOuter) — 밝은 벽이 밤 화면에서 튀지 않게.
+    { id: 'room', name: '내 방', img: 'assets/scenes/room.png', bg: ROOM_BG, bgOuter: 'assets/scenes/house.png', bgOuterNight: 'assets/scenes/house-walls-night.png',
       lamp: { x: ROOM_BG.x + 25.5 * 0.55, y: ROOM_BG.y + 5.8 * 0.55, r: 9 * 0.55 }, // lamp: 밤에 켜 둔 책상 불빛(map.js sceneLight, 장면 안 칸 좌표)
       rects: [
       rr([0, 0, 32, 7]), rr([0, 7, 3, 5]), rr([0, 12, 2, 3]), rr([0, 15, 1, 3]), // 그림 속 벽(왼쪽은 원근으로 기울어 칸마다 다름)
