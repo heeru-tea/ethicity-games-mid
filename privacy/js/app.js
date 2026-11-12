@@ -127,12 +127,20 @@
     }
   }
   // 지웠는데 기기 저장소에는 남아 있을 때(지우기 실패) — 지워진 것처럼 말하지 않는다(2026-11-12 외부 검토 2번)
-  var warnedRemove = false;
-  function checkRemoveFailure() {
-    if (!S.status.removeFailed) { warnedRemove = false; return; }
-    if (warnedRemove) return;
-    warnedRemove = true;
-    showNotice('이 기기에 저장된 기록을 지우지 못했어요. 이 화면에서는 지워졌지만 기기에는 남아 있을 수 있어요. 여럿이 쓰는 컴퓨터라면 브라우저의 ‘인터넷 사용 기록 삭제’로 지워 주세요.');
+  //   byUser = 「이 게임 기록 지우기」를 직접 누른 경우: 저장소 접근이 통째로 막혀 기기에 남은 것이 있는지조차 알 수 없으면 그렇게 말한다(2026-11-12 추가 검토)
+  var warnedRemove = false, warnedUnread = false;
+  function checkRemoveFailure(byUser) {
+    if (S.status.removeFailed) {
+      if (warnedRemove) return;
+      warnedRemove = true;
+      showNotice('이 기기에 저장된 기록을 지우지 못했어요. 이 화면에서는 지워졌지만 기기에는 남아 있을 수 있어요. 여럿이 쓰는 컴퓨터라면 브라우저의 ‘인터넷 사용 기록 삭제’로 지워 주세요.');
+      return;
+    }
+    warnedRemove = false;
+    if (byUser && !S.status.readable && !warnedUnread) {
+      warnedUnread = true;
+      showNotice('이 브라우저가 저장 공간을 막고 있어서, 이 기기에 남은 기록이 있는지 확인하지 못했어요. 이 화면의 기록은 지웠어요.');
+    }
   }
   function showNotice(msg) {
     var n = $('notice');
@@ -1398,7 +1406,7 @@
   function openOverlay(id) {
     lastFocus = document.activeElement;
     $(id).hidden = false;
-    var f = $(id).querySelector('input:checked, button, input');
+    var f = tabStops(id)[0]; // Tab으로 처음 닿는 곳 — 메뉴는 지금 고른 속도(라디오 묶음은 고른 것 하나만 Tab에 걸린다)
     if (f) f.focus();
   }
   function closeOverlay(id) {
@@ -1414,14 +1422,28 @@
     openOverlay('confirm');
     $('confirm-no').focus();
   }
+  /* 창 안에서 Tab이 실제로 멈추는 곳(2026-11-12 추가 검토: 메뉴에서 '빠르게'·'한 번에'를 고르고 Shift+Tab을 누르면 초점이 뒤 화면으로 빠졌다).
+   *   못 누르는 것·화면에 없는 것(휴대폰에서 숨기는 설정 줄 등)은 빼고, 라디오 묶음은 고른 것 하나만(고른 것이 없으면 첫째) — 브라우저의 Tab 순서와 같게 */
+  function tabStops(id) {
+    var all = Array.prototype.filter.call($(id).querySelectorAll('button, input'), function (n) { return !n.disabled && n.tabIndex >= 0 && n.getClientRects().length > 0; });
+    return all.filter(function (n) {
+      if (n.type !== 'radio' || !n.name) return true;
+      if (n.checked) return true;
+      var group = all.filter(function (m) { return m.type === 'radio' && m.name === n.name; });
+      return !group.some(function (m) { return m.checked; }) && group[0] === n;
+    });
+  }
   function trapFocus(e, id) {
     if (e.key !== 'Tab') return;
-    var f = Array.prototype.filter.call($(id).querySelectorAll('button, input'), function (n) { return !n.disabled; });
+    var f = tabStops(id);
     if (!f.length) return;
-    var first = f[0], last = f[f.length - 1];
-    if (!$(id).contains(document.activeElement)) { e.preventDefault(); first.focus(); return; } // 초점이 창 밖에 있으면 창 안으로 데려온다
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    var first = f[0], last = f[f.length - 1], cur = document.activeElement;
+    if (!$(id).contains(cur)) { e.preventDefault(); first.focus(); return; } // 초점이 창 밖에 있으면 창 안으로 데려온다
+    // 지금 초점이 라디오인데 고른 것이 아니면(묶음 안의 다른 라디오) 그 묶음의 Tab 자리로 본다
+    var at = f.indexOf(cur);
+    if (at < 0 && cur.type === 'radio') at = f.findIndex(function (n) { return n.type === 'radio' && n.name === cur.name; });
+    if (e.shiftKey && at === 0) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && at === f.length - 1) { e.preventDefault(); first.focus(); }
   }
 
   function syncMenu() {
@@ -1518,9 +1540,12 @@
         cardWipe();
         S.remove(S.KEYS.progress);
         S.remove(S.KEYS.result);
-        checkRemoveFailure();
         // 2026-11-12 외부 검토 6번: 이 게임에서 적은 이름도 지운다(소리·속도·주인공 모습 같은 설정은 남긴다). 공통 ethicity.player는 건드리지 않는다
-        if (settings.nickname) { settings.nickname = ''; $('name-input').value = ''; refreshName(); saveSettings(); }
+        //   추가 검토: 설정을 못 쓰면(용량 초과 등) 저장소의 옛 설정을 지운다 — 옛 이름이 기기에 남지 않게(S.scrub). 저장소에 적힌 이름이 있는지는 화면 값이 아니라 저장소도 보고 정한다
+        var storedSet = S.readJSON(S.KEYS.settings).value;
+        var hadName = !!settings.nickname || !!(storedSet && typeof storedSet === 'object' && storedSet.nickname);
+        if (hadName) { settings.nickname = ''; $('name-input').value = ''; refreshName(); S.scrub(S.KEYS.settings, settings); }
+        checkRemoveFailure(true);
         progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };
         renderStart();
       });

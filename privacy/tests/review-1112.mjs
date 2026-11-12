@@ -112,7 +112,8 @@ function storage() {
   const ctx = { window: { get localStorage() { throw new Error('blocked'); } } };
   vm.runInNewContext(fs.readFileSync(new URL('../js/storage.js', import.meta.url), 'utf8'), ctx);
   const S = ctx.window.PrivacyStorage;
-  ok('저장소 차단: 메모리로 쓰고 읽고 지움', S.status.available === false && S.writeJSON(S.KEYS.card, { a: 1 }) === false && S.readJSON(S.KEYS.card).value.a === 1 && S.remove(S.KEYS.card) === true && S.readJSON(S.KEYS.card).value === null);
+  // 2026-11-12 추가 검토: 지워졌는지 확인할 수 없으면 remove()는 false(예전엔 true). 대신 removeFailed로 세지 않고 readable=false로 알린다 — 자세한 것은 tests/storage-1112.mjs
+  ok('저장소 차단: 메모리로 쓰고 읽고 지움', S.status.available === false && S.writeJSON(S.KEYS.card, { a: 1 }) === false && S.readJSON(S.KEYS.card).value.a === 1 && S.remove(S.KEYS.card) === false && S.readJSON(S.KEYS.card).value === null && S.status.removeFailed === false && S.status.readable === false);
 }
 
 /* ── 8. 난수 ── */
