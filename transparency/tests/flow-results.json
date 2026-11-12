@@ -596,7 +596,7 @@
   {
    "viewport": "1366x768",
    "screen": "camp-check-records",
-   "chars": 310,
+   "chars": 318,
    "buttons": 10,
    "overflow": false,
    "pageHeight": 854,
@@ -607,7 +607,7 @@
   {
    "viewport": "1366x768",
    "screen": "camp-check-done",
-   "chars": 384,
+   "chars": 392,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 1039,
@@ -1245,7 +1245,7 @@
   {
    "viewport": "390x844",
    "screen": "camp-check-records",
-   "chars": 310,
+   "chars": 318,
    "buttons": 10,
    "overflow": false,
    "pageHeight": 1519,
@@ -1256,7 +1256,7 @@
   {
    "viewport": "390x844",
    "screen": "camp-check-done",
-   "chars": 384,
+   "chars": 392,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 1703,
@@ -1520,7 +1520,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-check-records",
-   "chars": 310,
+   "chars": 318,
    "buttons": 10,
    "overflow": false,
    "pageHeight": 854,
@@ -1531,7 +1531,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-check-done",
-   "chars": 384,
+   "chars": 392,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 1039,
@@ -1762,7 +1762,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-check-records",
-   "chars": 310,
+   "chars": 318,
    "buttons": 10,
    "overflow": false,
    "pageHeight": 854,
@@ -1773,7 +1773,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-check-done",
-   "chars": 384,
+   "chars": 392,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 1039,
@@ -1983,7 +1983,7 @@
  "summary": {
   "after1366": {
    "screens": 59,
-   "avgChars": 304,
+   "avgChars": 305,
    "maxChars": 2630,
    "maxButtons": 13
   },
@@ -1998,7 +1998,7 @@
   "desktopPath": {
    "judgments": 20,
    "clicks": 138,
-   "readChars": 16233
+   "readChars": 16249
   }
  }
 }
