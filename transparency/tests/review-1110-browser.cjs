@@ -25,7 +25,7 @@ function stateAt(key,step){
   if(st==='check'){for(const id of E.checks[k])s=E.reduce(s,{type:'check',id});for(const a of E.answers[k])s=E.reduce(s,{type:'judge',stamp:a});}
   if(st==='choose'){s=E.reduce(s,{type:'choose',id:E.choices[k][0]});continue;}
   if(st==='follow'){const m=E.followMarks[k];m.ids.forEach((id,i)=>{s=E.reduce(s,{type:'mark',id,value:k==='photo'?E.truth[i]:m.values[0]});});s=E.reduce(s,{type:'follow-judge',stamp:E.followAnswers[k]});}
-  if(st==='notice'){for(const id of E.noticeCards[k].must)s=E.reduce(s,{type:'notice-pick',id});s=E.reduce(s,{type:'notice-post'});}
+  if(st==='notice'){if(E.noticeFix(s,k))for(const x of E.noticeSlots[k])s=E.reduce(s,{type:'notice-slot',slot:x.id,opt:x.ok[0]});else for(const id of E.noticeIds(k))if(E.noticeCards[k].must.includes(id)!==s.notices[k].picked.includes(id))s=E.reduce(s,{type:'notice-pick',id});s=E.reduce(s,{type:'notice-post'});}
   s=E.reduce(s,{type:'next'});}
  return s;
 }

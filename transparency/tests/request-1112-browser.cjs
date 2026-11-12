@@ -25,9 +25,10 @@ const BUILD = `([key, step, v6]) => {
     if (st === 'check') { for (const id of E.checks[k]) s = E.reduce(s, { type: 'check', id }); for (const a of E.answers[k]) s = E.reduce(s, { type: 'judge', stamp: a }); }
     if (st === 'choose') { s = E.reduce(s, { type: 'choose', id: E.choices[k][1] }); continue; }
     if (st === 'follow') { const m = E.followMarks[k]; m.ids.forEach((id, i) => { s = E.reduce(s, { type: 'mark', id, value: k === 'photo' ? E.truth[i] : m.values[0] }); }); s = E.reduce(s, { type: 'follow-judge', stamp: E.followAnswers[k] }); }
-    if (st === 'notice') { for (const id of E.noticeCards[k].must) s = E.reduce(s, { type: 'notice-pick', id }); s = E.reduce(s, { type: 'notice-post' }); }
+    if (st === 'notice') { if (E.noticeFix(s, k)) for (const x of E.noticeSlots[k]) s = E.reduce(s, { type: 'notice-slot', slot: x.id, opt: x.ok[0] }); else for (const id of E.noticeIds(k)) if (E.noticeCards[k].must.includes(id) !== s.notices[k].picked.includes(id)) s = E.reduce(s, { type: 'notice-pick', id }); s = E.reduce(s, { type: 'notice-post' }); }
     s = E.reduce(s, { type: 'next' }); }
-  if (v6) { s = JSON.parse(JSON.stringify(s)); s.version = 6; s.evidence = s.evidence.filter(id => id !== 'camp-bus'); s.judgments.camp[2] = 'confirmed'; s.follows.share.judgment = 'different'; s.reflections.camp = { q1: '기준표를 보고', q2: '' }; s.reporter = { name: '하늘', number: '10203' }; }
+  if (v6) { s = JSON.parse(JSON.stringify(s)); s.version = 6; s.evidence = s.evidence.filter(id => id !== 'camp-bus'); s.judgments.camp[2] = 'confirmed'; s.follows.share.judgment = 'different'; s.reflections.camp = { q1: '기준표를 보고', q2: '' }; s.reporter = { name: '하늘', number: '10203' };
+    /* version 6에는 사건 4·5 고치기(fix)가 없었다: 카드 고르기로 꼭 필요 카드만 붙인 모양으로(2026-11-12 요청 10) */ for (const k of ['camp', 'share']) { const n = s.notices[k]; if (n.mode === 'fix') { const done = !!n.posted; s.notices[k] = { picked: done ? E.noticeCards[k].must.slice() : [], posted: done ? E.noticeCards[k].must.slice() : null }; } } }
   localStorage.setItem('${KEY}', JSON.stringify(s)); return s.scene;
 }`;
 // 공개 페이지 칸: 너비·높이·값 글자가 몇 줄인지
@@ -118,12 +119,12 @@ const CELLS = `() => [...document.querySelectorAll('[data-act="cell"]')].map(b =
       {
         const { ctx, p, errs } = await open(vp, ['report']);
         const camp = await p.locator('#report-camp').innerText(), share = await p.locator('#report-share').innerText(), face = await p.locator('#report-face').innerText();
-        ok(`${tag} 보고서: 사건 4 판단 3 새 문장 + 정답`, /3\. “참여 횟수 기준은 버스가 적은 솔숲마을에 불리하게 작용했을 수 있어\.”\s*내 판단: 자료로 확인돼 · 정답/.test(camp), camp.slice(0, 600));
+        ok(`${tag} 보고서: 사건 4 판단 3 새 문장 + 정답`, /3\. “솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어, 이 항목에서 받은 점수도 낮았어\.”\s*내 판단: 자료로 확인돼 · 정답/.test(camp), camp.slice(0, 600));
         ok(`${tag} 보고서: 사건 5 후속 조사 새 문장 + 정답, 옛 문장 없음`, /“게시물과 게시판을 본 사람은 DM을 보지 못했어\.”\s*내 판단: 자료로 확인돼 · 정답/.test(share) && !/따로 안 알려도 돼/.test(share) && !/참여 횟수가 가장 크게 들어가\.”/.test(camp));
         ok(`${tag} 보고서: 확인한 자료에 버스 쪽지, 조치는 새 선택지 글`, /버스 쪽지/.test(camp) && /기준 공개와 재검토 요청하기/.test(camp) && /게시물 끝에 ‘#AI그림’/.test(share), camp.slice(0, 300));
         await p.locator('header [data-act="notebook"]').click();
         const nb = await p.locator('#modal-body').innerText();
-        ok(`${tag} 수첩: 새 판단 문장과 버스 쪽지 사실 문장`, /참여 횟수 기준은 버스가 적은 솔숲마을에/.test(nb) && /버스는 하루 네 번이고/.test(nb) && /DM을 보지 못했어/.test(nb));
+        ok(`${tag} 수첩: 새 판단 문장(후속 요청 1)과 버스 쪽지 사실 문장`, /솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어/.test(nb) && /버스는 하루 네 번이고/.test(nb) && /DM을 보지 못했어/.test(nb));
         if (tag === '1280') await shot(p, 'notebook-' + tag);
         ok(`${tag} 보고서 오류 없음`, errs.length === 0, errs); void face;
         await ctx.close();
@@ -132,10 +133,10 @@ const CELLS = `() => [...document.querySelectorAll('[data-act="cell"]')].map(b =
       {
         const { ctx, p, errs } = await open(vp, ['report', null, true]);
         const s = await state(p), raw = JSON.parse(await p.evaluate(k => localStorage.getItem(k), KEY));
-        ok(`${tag} 옛 저장(version 6, 다 마침): 보고서부터 이어짐, 서술·이름 그대로`, s.version === 7 && s.completed && s.scene === 37 && s.reflections.camp.q1 === '기준표를 보고' && s.reporter.name === '하늘' && (await p.locator('[data-reporter="name"]').inputValue()) === '하늘', { scene: s.scene, v: s.version, stored: raw.version });
+        ok(`${tag} 옛 저장(version 6, 다 마침): 보고서부터 이어짐, 서술·이름 그대로`, s.version === 8 && s.completed && s.scene === 37 && s.reflections.camp.q1 === '기준표를 보고' && s.reporter.name === '하늘' && (await p.locator('[data-reporter="name"]').inputValue()) === '하늘', { scene: s.scene, v: s.version, stored: raw.version });
         ok(`${tag} 옛 저장: 문장이 바뀐 두 판단만 ‘아직 안 함’, 나머지 판단 그대로`, s.judgments.camp.join() === 'unknown,different,legacy' && s.follows.share.judgment === 'legacy' && s.judgments.share.join() === 'different,confirmed,unknown' && s.evidence.includes('camp-bus'), { camp: s.judgments.camp, share: s.follows.share });
         const camp = await p.locator('#report-camp').innerText();
-        ok(`${tag} 옛 저장: 보고서에 새 문장 + ‘이전 저장에서 넘어와 아직 안 함’`, /3\. “참여 횟수 기준은[^”]*”\s*이전 저장에서 넘어와 아직 안 함/.test(camp), camp.slice(0, 700));
+        ok(`${tag} 옛 저장: 보고서에 새 문장 + ‘이전 저장에서 넘어와 아직 안 함’`, /3\. “솔숲마을 신청자들은[^”]*”\s*이전 저장에서 넘어와 아직 안 함/.test(camp), camp.slice(0, 700));
         await p.locator('header [data-act="notebook"]').click();
         await p.locator('#note-camp [data-act="revisit"]', { hasText: '남은 판단 해 보기' }).click();
         const head = await p.locator('.judge-head').innerText();
@@ -143,7 +144,7 @@ const CELLS = `() => [...document.querySelectorAll('[data-act="cell"]')].map(b =
         const s2 = await state(p);
         ok(`${tag} 옛 저장: 수첩 → 남은 판단 해 보기 → 3/3 새 문장 판단`, /3\/3/.test(head) && s2.judgments.camp.join() === 'unknown,different,confirmed', { head, j: s2.judgments.camp });
         await p.reload(); const s3 = await state(p);
-        ok(`${tag} 옛 저장: 새로 고쳐도 그대로(version 7로 저장)`, s3.version === 7 && s3.judgments.camp[2] === 'confirmed' && s3.follows.share.judgment === 'legacy');
+        ok(`${tag} 옛 저장: 새로 고쳐도 그대로(version 8로 저장)`, s3.version === 8 && s3.judgments.camp[2] === 'confirmed' && s3.follows.share.judgment === 'legacy');
         ok(`${tag} 옛 저장 오류 없음`, errs.length === 0, errs);
         await ctx.close();
       }
@@ -153,7 +154,7 @@ const CELLS = `() => [...document.querySelectorAll('[data-act="cell"]')].map(b =
       const { ctx, p, errs } = await open({ width: 1280, height: 800 }, ['camp', 'check']);
       await p.evaluate(k => { const s = JSON.parse(localStorage.getItem(k)); s.version = 6; s.evidence.push('camp-page', 'camp-results', 'camp-criteria'); s.judgments.camp = ['unknown', null, null]; localStorage.setItem(k, JSON.stringify(s)); }, KEY);
       await p.reload(); const s = await state(p);
-      ok('옛 저장(version 6, 사건 4 판단 도중): 같은 화면에서 2/3부터', s.version === 7 && s.judgments.camp.join() === 'unknown,,' && /2\/3/.test(await p.locator('.judge-head').innerText()) && s.evidence.includes('camp-bus'), { j: s.judgments.camp, ev: s.evidence.slice(-4) });
+      ok('옛 저장(version 6, 사건 4 판단 도중): 같은 화면에서 2/3부터', s.version === 8 && s.judgments.camp.join() === 'unknown,,' && /2\/3/.test(await p.locator('.judge-head').innerText()) && s.evidence.includes('camp-bus'), { j: s.judgments.camp, ev: s.evidence.slice(-4) });
       ok('옛 저장 도중 오류 없음', errs.length === 0, errs);
       await ctx.close();
     }

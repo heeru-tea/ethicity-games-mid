@@ -31,7 +31,7 @@ const BUILD = `(where) => {
     else if (step === 'choose') s = E.reduce(s, { type: 'choose', id: E.choices[k][1] });
     else if (step === 'follow' && !E.followReady(s, k)) { const m = E.followMarks[k]; for (const id of m.ids) s = E.reduce(s, { type: 'mark', id, value: m.values[0] }); }
     else if (step === 'follow' && !E.followDone(s, k)) s = E.reduce(s, { type: 'follow-judge', stamp: E.followAnswers[k] });
-    else if (step === 'notice' && !E.noticeDone(s, k)) { s = E.reduce(s, { type: 'notice-pick', id: E.noticeIds(k)[0] }); s = E.reduce(s, { type: 'notice-post' }); }
+    else if (step === 'notice' && !E.noticeDone(s, k)) { if (E.noticeFix(s, k)) for (const x of E.noticeSlots[k]) s = E.reduce(s, { type: 'notice-slot', slot: x.id, opt: x.options[0] }); else s = E.reduce(s, { type: 'notice-pick', id: E.noticeIds(k)[0] }); s = E.reduce(s, { type: 'notice-post' }); }
     else s = E.reduce(s, { type: 'next' });
     if (JSON.stringify(s) === before) throw new Error('stuck at scene ' + s.scene + ' ' + step);
   }

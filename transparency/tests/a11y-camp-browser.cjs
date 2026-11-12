@@ -20,7 +20,7 @@ const BUILD = `() => { const E = window.TransparencyEngine; let s = E.initial();
     if (st === 'check') { for (const id of E.checks[k]) s = E.reduce(s, { type: 'check', id }); for (const a of E.answers[k]) s = E.reduce(s, { type: 'judge', stamp: a }); }
     if (st === 'choose') { s = E.reduce(s, { type: 'choose', id: E.choices[k][0] }); continue; }
     if (st === 'follow') { const m = E.followMarks[k]; m.ids.forEach((id, i) => { s = E.reduce(s, { type: 'mark', id, value: k === 'photo' ? E.truth[i] : m.values[0] }); }); s = E.reduce(s, { type: 'follow-judge', stamp: E.followAnswers[k] }); }
-    if (st === 'notice') { for (const id of E.noticeCards[k].must) s = E.reduce(s, { type: 'notice-pick', id }); s = E.reduce(s, { type: 'notice-post' }); }
+    if (st === 'notice') { if (E.noticeFix(s, k)) for (const x of E.noticeSlots[k]) s = E.reduce(s, { type: 'notice-slot', slot: x.id, opt: x.ok[0] }); else for (const id of E.noticeIds(k)) if (E.noticeCards[k].must.includes(id) !== s.notices[k].picked.includes(id)) s = E.reduce(s, { type: 'notice-pick', id }); s = E.reduce(s, { type: 'notice-post' }); }
     s = E.reduce(s, { type: 'next' }); }
   localStorage.setItem('ethicity.transparency.progress.v1', JSON.stringify(s)); }`;
 
@@ -35,14 +35,14 @@ const BUILD = `() => { const E = window.TransparencyEngine; let s = E.initial();
       await p.goto(url); await p.evaluate(`(${BUILD})()`); await p.reload();
       const D = await p.evaluate(() => window.TransparencyStory.cases.camp);
       await p.locator('[data-act="item"][data-id="camp-results"]').click();
-      const want = D.results.rows.map(r => `${r.name}, 신청 ${r.apply}명, 합격 ${r.pass}명`);
+      const want = D.results.rows.map(r => `${r.name}, 신청 ${r.apply}명, 합격 ${r.pass}명, 평균 참여 ${r.joins}번, 참여 점수 ${r.score}점`); // 2026-11-12 후속 요청 1: 두 칸 더
       // 접근성 트리에서 읽은 이름(브라우저가 계산한 것)
       const snap = await p.locator('.camp-table').ariaSnapshot();
       out.push(`INFO ${tag} 마을별 결과 접근성 트리:\n` + snap);
       const names = [...snap.matchAll(/- button "([^"]*)"/g)].map(m => m[1]);
       ok(`${tag} 마을 버튼 넷의 접근성 이름에 신청·합격 구분`, JSON.stringify(names) === JSON.stringify(want), names);
       for (const n of want) ok(`${tag} role=button 이름 ‘${n}’로 하나 찾음`, (await p.getByRole('button', { name: n, exact: true }).count()) === 1);
-      ok(`${tag} 표 머리는 접근성 트리에 없음(두 번 읽히지 않음)`, !/마을\s*신청\s*합격/.test(snap.replace(/"[^"]*"/g, '')) && (snap.match(/신청/g) || []).length === 4 && (snap.match(/합격/g) || []).length === 4, snap);
+      ok(`${tag} 표 머리는 접근성 트리에 없음(두 번 읽히지 않음)`, !/마을\s*신청\s*합격/.test(snap.replace(/"[^"]*"/g, '')) && (snap.match(/신청 \d+명/g) || []).length === 4 && (snap.match(/합격 \d+명/g) || []).length === 4 /* 2026-11-12: 표 아래 점수 규칙 줄에도 ‘신청자’가 있다 */, snap);
       const attrs = await p.locator('[data-act="village"]').evaluateAll(a => a.map(b => ({ label: b.getAttribute('aria-label'), mark: !!b.querySelector('mark'), cls: b.className, h: Math.round(b.getBoundingClientRect().height), nums: [...b.querySelectorAll('.num')].map(n => Math.round(n.getBoundingClientRect().right)), srW: [...b.querySelectorAll('.sr')].map(s => Math.round(s.getBoundingClientRect().width)) })));
       ok(`${tag} 정답 노출 없음: 네 버튼의 class·표시가 같고 이름은 모두 같은 형식`, attrs.every((a, i) => a.label === want[i] && !a.mark && a.cls === attrs[0].cls), attrs);
       ok(`${tag} 보이는 모양 그대로: 숫자 칸 오른쪽 맞춤, 버튼 안에 숨은 글자 없음, 줄 높이 44~60px`, attrs.every(a => a.nums.join() === attrs[0].nums.join() && a.srW.length === 0 && a.h >= 44 && a.h <= 60), attrs);

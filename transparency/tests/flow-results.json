@@ -4,7 +4,7 @@
    "tag": "desktop",
    "viewport": "1366x768",
    "judgments": 20,
-   "clicks": 138,
+   "clicks": 139,
    "reportRight": 20,
    "reportAgain": 0,
    "reportNotWritten": 6,
@@ -69,7 +69,7 @@
    "tag": "phone",
    "viewport": "390x844",
    "judgments": 20,
-   "clicks": 168,
+   "clicks": 170,
    "reportRight": 7,
    "reportAgain": 13,
    "reportNotWritten": 11,
@@ -133,7 +133,7 @@
  ],
  "checks": [
   {
-   "phoneNotice": "before posting / after: photo 844/1301px, writing 844/1386px, face 875/1564px, camp 844/1484px, share 844/1279px (viewport 844)"
+   "phoneNotice": "before posting / after: photo 844/1301px, writing 844/1386px, face 875/1564px, camp 1267/1776px, share 1129/1513px (viewport 844)"
   },
   {
    "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 7)"
@@ -475,7 +475,7 @@
   {
    "viewport": "1366x768",
    "screen": "face-check-records",
-   "chars": 243,
+   "chars": 217,
    "buttons": 8,
    "overflow": false,
    "pageHeight": 900,
@@ -596,10 +596,10 @@
   {
    "viewport": "1366x768",
    "screen": "camp-check-records",
-   "chars": 318,
+   "chars": 299,
    "buttons": 10,
    "overflow": false,
-   "pageHeight": 854,
+   "pageHeight": 881,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -607,10 +607,10 @@
   {
    "viewport": "1366x768",
    "screen": "camp-check-done",
-   "chars": 392,
-   "buttons": 8,
+   "chars": 491,
+   "buttons": 12,
    "overflow": false,
-   "pageHeight": 1039,
+   "pageHeight": 965,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -640,7 +640,7 @@
   {
    "viewport": "1366x768",
    "screen": "camp-follow-start",
-   "chars": 229,
+   "chars": 226,
    "buttons": 5,
    "overflow": false,
    "pageHeight": 768,
@@ -662,10 +662,10 @@
   {
    "viewport": "1366x768",
    "screen": "camp-notice-start",
-   "chars": 306,
-   "buttons": 7,
+   "chars": 450,
+   "buttons": 12,
    "overflow": false,
-   "pageHeight": 824,
+   "pageHeight": 1221,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -673,10 +673,10 @@
   {
    "viewport": "1366x768",
    "screen": "camp-notice-done",
-   "chars": 641,
-   "buttons": 9,
+   "chars": 604,
+   "buttons": 14,
    "overflow": false,
-   "pageHeight": 1147,
+   "pageHeight": 1440,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -684,7 +684,7 @@
   {
    "viewport": "1366x768",
    "screen": "camp-reflect",
-   "chars": 402,
+   "chars": 410,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 888,
@@ -717,10 +717,10 @@
   {
    "viewport": "1366x768",
    "screen": "share-check-records",
-   "chars": 260,
-   "buttons": 11,
+   "chars": 248,
+   "buttons": 10,
    "overflow": false,
-   "pageHeight": 799,
+   "pageHeight": 791,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -783,10 +783,10 @@
   {
    "viewport": "1366x768",
    "screen": "share-notice-start",
-   "chars": 301,
-   "buttons": 7,
+   "chars": 432,
+   "buttons": 11,
    "overflow": false,
-   "pageHeight": 768,
+   "pageHeight": 1098,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -794,10 +794,10 @@
   {
    "viewport": "1366x768",
    "screen": "share-notice-done",
-   "chars": 437,
-   "buttons": 9,
+   "chars": 445,
+   "buttons": 13,
    "overflow": false,
-   "pageHeight": 1027,
+   "pageHeight": 1256,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -838,10 +838,10 @@
   {
    "viewport": "1366x768",
    "screen": "report",
-   "chars": 2630,
+   "chars": 2670,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 6502,
+   "pageHeight": 6599,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1124,10 +1124,10 @@
   {
    "viewport": "390x844",
    "screen": "face-check-records",
-   "chars": 243,
+   "chars": 217,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 1272,
+   "pageHeight": 1355,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1245,10 +1245,10 @@
   {
    "viewport": "390x844",
    "screen": "camp-check-records",
-   "chars": 318,
+   "chars": 299,
    "buttons": 10,
    "overflow": false,
-   "pageHeight": 1519,
+   "pageHeight": 1360,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1256,10 +1256,10 @@
   {
    "viewport": "390x844",
    "screen": "camp-check-done",
-   "chars": 392,
-   "buttons": 8,
+   "chars": 491,
+   "buttons": 12,
    "overflow": false,
-   "pageHeight": 1703,
+   "pageHeight": 1694,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1289,7 +1289,7 @@
   {
    "viewport": "390x844",
    "screen": "camp-follow-start",
-   "chars": 229,
+   "chars": 226,
    "buttons": 5,
    "overflow": false,
    "pageHeight": 929,
@@ -1311,10 +1311,10 @@
   {
    "viewport": "390x844",
    "screen": "camp-notice-start",
-   "chars": 252,
-   "buttons": 7,
+   "chars": 345,
+   "buttons": 12,
    "overflow": false,
-   "pageHeight": 844,
+   "pageHeight": 1267,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1322,10 +1322,10 @@
   {
    "viewport": "390x844",
    "screen": "camp-notice-done",
-   "chars": 605,
-   "buttons": 9,
+   "chars": 568,
+   "buttons": 14,
    "overflow": false,
-   "pageHeight": 1484,
+   "pageHeight": 1776,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1333,7 +1333,7 @@
   {
    "viewport": "390x844",
    "screen": "camp-reflect",
-   "chars": 452,
+   "chars": 460,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1484,
@@ -1366,8 +1366,8 @@
   {
    "viewport": "390x844",
    "screen": "share-check-records",
-   "chars": 262,
-   "buttons": 11,
+   "chars": 250,
+   "buttons": 10,
    "overflow": false,
    "pageHeight": 1345,
    "questionInView": true,
@@ -1432,10 +1432,10 @@
   {
    "viewport": "390x844",
    "screen": "share-notice-start",
-   "chars": 236,
-   "buttons": 7,
+   "chars": 309,
+   "buttons": 11,
    "overflow": false,
-   "pageHeight": 844,
+   "pageHeight": 1129,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1443,10 +1443,10 @@
   {
    "viewport": "390x844",
    "screen": "share-notice-done",
-   "chars": 390,
-   "buttons": 9,
+   "chars": 398,
+   "buttons": 13,
    "overflow": false,
-   "pageHeight": 1279,
+   "pageHeight": 1513,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1487,10 +1487,10 @@
   {
    "viewport": "390x844",
    "screen": "report",
-   "chars": 2703,
+   "chars": 2743,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 8448,
+   "pageHeight": 8575,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1520,10 +1520,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-check-records",
-   "chars": 318,
+   "chars": 299,
    "buttons": 10,
    "overflow": false,
-   "pageHeight": 854,
+   "pageHeight": 881,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1531,10 +1531,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-check-done",
-   "chars": 392,
-   "buttons": 8,
+   "chars": 491,
+   "buttons": 12,
    "overflow": false,
-   "pageHeight": 1039,
+   "pageHeight": 965,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1564,7 +1564,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-follow-start",
-   "chars": 229,
+   "chars": 226,
    "buttons": 5,
    "overflow": false,
    "pageHeight": 800,
@@ -1586,10 +1586,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-notice-start",
-   "chars": 295,
-   "buttons": 7,
+   "chars": 439,
+   "buttons": 12,
    "overflow": false,
-   "pageHeight": 824,
+   "pageHeight": 1221,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1597,10 +1597,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-notice-done",
-   "chars": 630,
-   "buttons": 9,
+   "chars": 593,
+   "buttons": 14,
    "overflow": false,
-   "pageHeight": 1147,
+   "pageHeight": 1440,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1608,7 +1608,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-reflect",
-   "chars": 424,
+   "chars": 432,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 915,
@@ -1641,8 +1641,8 @@
   {
    "viewport": "1280x800",
    "screen": "share-check-records",
-   "chars": 260,
-   "buttons": 11,
+   "chars": 248,
+   "buttons": 10,
    "overflow": false,
    "pageHeight": 800,
    "questionInView": true,
@@ -1707,10 +1707,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-notice-start",
-   "chars": 291,
-   "buttons": 7,
+   "chars": 422,
+   "buttons": 11,
    "overflow": false,
-   "pageHeight": 800,
+   "pageHeight": 1098,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1718,10 +1718,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-notice-done",
-   "chars": 427,
-   "buttons": 9,
+   "chars": 435,
+   "buttons": 13,
    "overflow": false,
-   "pageHeight": 1027,
+   "pageHeight": 1256,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1762,10 +1762,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-check-records",
-   "chars": 318,
+   "chars": 299,
    "buttons": 10,
    "overflow": false,
-   "pageHeight": 854,
+   "pageHeight": 881,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1773,10 +1773,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-check-done",
-   "chars": 392,
-   "buttons": 8,
+   "chars": 491,
+   "buttons": 12,
    "overflow": false,
-   "pageHeight": 1039,
+   "pageHeight": 965,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1806,7 +1806,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-follow-start",
-   "chars": 229,
+   "chars": 226,
    "buttons": 5,
    "overflow": false,
    "pageHeight": 800,
@@ -1828,10 +1828,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-notice-start",
-   "chars": 295,
-   "buttons": 7,
+   "chars": 439,
+   "buttons": 12,
    "overflow": false,
-   "pageHeight": 824,
+   "pageHeight": 1221,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1839,10 +1839,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-notice-done",
-   "chars": 630,
-   "buttons": 9,
+   "chars": 593,
+   "buttons": 14,
    "overflow": false,
-   "pageHeight": 1147,
+   "pageHeight": 1440,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1850,7 +1850,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-reflect",
-   "chars": 424,
+   "chars": 432,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 915,
@@ -1883,8 +1883,8 @@
   {
    "viewport": "1280x800",
    "screen": "share-check-records",
-   "chars": 260,
-   "buttons": 11,
+   "chars": 248,
+   "buttons": 10,
    "overflow": false,
    "pageHeight": 800,
    "questionInView": true,
@@ -1949,10 +1949,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-notice-start",
-   "chars": 291,
-   "buttons": 7,
+   "chars": 422,
+   "buttons": 11,
    "overflow": false,
-   "pageHeight": 800,
+   "pageHeight": 1098,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1960,10 +1960,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-notice-done",
-   "chars": 427,
-   "buttons": 9,
+   "chars": 435,
+   "buttons": 13,
    "overflow": false,
-   "pageHeight": 1027,
+   "pageHeight": 1256,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1983,9 +1983,9 @@
  "summary": {
   "after1366": {
    "screens": 59,
-   "avgChars": 305,
-   "maxChars": 2630,
-   "maxButtons": 13
+   "avgChars": 310,
+   "maxChars": 2670,
+   "maxButtons": 14
   },
   "originalBefore1366": {
    "screens": 14,
@@ -1994,11 +1994,11 @@
    "maxButtons": 32
   },
   "desktopQuestionAndFirstActionInView": "52/59",
-  "phoneMaxPageHeight": 8448,
+  "phoneMaxPageHeight": 8575,
   "desktopPath": {
    "judgments": 20,
-   "clicks": 138,
-   "readChars": 16249
+   "clicks": 139,
+   "readChars": 16585
   }
  }
 }

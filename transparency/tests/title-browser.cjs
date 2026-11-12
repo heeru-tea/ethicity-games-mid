@@ -29,7 +29,7 @@ function stateAt(key,step){
   if(st==='check'){for(const id of E.checks[k])s=E.reduce(s,{type:'check',id});for(const a of E.answers[k])s=E.reduce(s,{type:'judge',stamp:a});}
   if(st==='choose'){s=E.reduce(s,{type:'choose',id:E.choices[k][0]});continue;}
   if(st==='follow'){const m=E.followMarks[k];m.ids.forEach((id,i)=>{s=E.reduce(s,{type:'mark',id,value:k==='photo'?E.truth[i]:m.values[0]});});s=E.reduce(s,{type:'follow-judge',stamp:E.followAnswers[k]});}
-  if(st==='notice'){for(const id of E.noticeCards[k].must)s=E.reduce(s,{type:'notice-pick',id});s=E.reduce(s,{type:'notice-post'});}
+  if(st==='notice'){if(E.noticeFix(s,k))for(const x of E.noticeSlots[k])s=E.reduce(s,{type:'notice-slot',slot:x.id,opt:x.ok[0]});else for(const id of E.noticeIds(k))if(E.noticeCards[k].must.includes(id)!==s.notices[k].picked.includes(id))s=E.reduce(s,{type:'notice-pick',id});s=E.reduce(s,{type:'notice-post'});}
   s=E.reduce(s,{type:'next'});}
  return s;
 }
@@ -118,7 +118,7 @@ async function flow(){
  await withPage({width:1280,height:800},null,async p=>{
   await settle(p);
   const fresh=JSON.parse(await stored(p));
-  assert.deepEqual(Object.keys(fresh).sort(),Object.keys(E.initial()).sort(),'저장 형식은 그대로(시작 화면을 봤는지는 저장하지 않는다)');assert.equal(fresh.version,7);
+  assert.deepEqual(Object.keys(fresh).sort(),Object.keys(E.initial()).sort(),'저장 형식은 그대로(시작 화면을 봤는지는 저장하지 않는다)');assert.equal(fresh.version,8);
   // Tab으로 버튼까지 가서 Enter
   let tabs=0,a;do{await p.keyboard.press('Tab');tabs++;a=await active(p);}while(!(a&&a.act==='start')&&tabs<6);
   assert.equal(a.act,'start','Tab으로 시작 버튼에 닿는다');assert.ok(tabs<=2,'Tab '+tabs+'번');
