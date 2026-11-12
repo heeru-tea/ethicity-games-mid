@@ -39,10 +39,9 @@
   // 마지막 자료를 막 찾아 판단할 말이 처음 나올 때는 방금 누른 곳의 안내(점원의 말 문장별 피드백 등)를 남긴다. 다음 말로 넘어갈 때 지운다.
   if(!first)S.tapHint='';
   const src=D.cases[k].judges[idx].src;
-  if(!src.includes(S.view)){
-   if(first&&S.view)S.keepFinding=S.view;
-   S.view=src[0];
-  }
+  // 2026-11-12 후속 요청 3: 마지막 자료를 막 찾아 첫 판단이 나올 때(first)는 학생이 보던 자료를 덮어쓰지 않는다. 보던 자료가 없을 때(이어하기 등)만 근거 자료로.
+  if(first&&S.view)return;
+  if(!src.includes(S.view))S.view=src[0];
  }
  function sourceTags(k,src){
   const c=D.cases[k];

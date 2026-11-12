@@ -62,12 +62,15 @@ test('cases 4 and 5: records, choices, judgments (each stamp once), follow-up ma
  assert.deepEqual(E.choices.camp,['loud','accurate','quiet']);assert.deepEqual(E.choices.share,['keep','tag','explain']);
  assert.deepEqual(E.answers.camp,['unknown','different','confirmed']);assert.deepEqual(E.answers.share,['different','confirmed','unknown']);
  assert.equal(E.followAnswers.camp,'different');assert.equal(E.followAnswers.share,'confirmed');
- assert.deepEqual(E.followMarks.camp,{ids:['changed'],values:['found']});assert.deepEqual(E.followMarks.share,{ids:['dm','post','board'],values:['open']});
+ assert.deepEqual(E.followMarks.camp,{ids:['office','appeal'],values:['found']});assert.deepEqual(E.followMarks.share,{ids:['dm','post','board'],values:['open']});
  // 사건 4 한 바퀴: 질문 → 자료 셋 → 판단 셋 → 선택 → 후속 조사 → 미리 알리기 → 생각 정리 → 사건 5
  let s=at(E.sceneOf('camp','check'),s=>{for(const c of E.CASES.slice(0,3))s.cases[c]={first:E.choices[c][0],final:E.choices[c][0]};s.asked=['who'];return s;});
  s=judgeAll(checkAll(s,'camp'),'camp');assert.equal(E.canAdvance(s),true);s=E.reduce(s,{type:'next'});
  s=E.reduce(s,{type:'choose',id:'accurate'});assert.equal(E.stepOf(s.scene),'result');s=E.reduce(s,{type:'next'});
- assert.equal(E.canAdvance(s),false);s=E.reduce(s,{type:'mark',id:'changed',value:'found'});s=E.reduce(s,{type:'follow-judge',stamp:'different'});s=E.reduce(s,{type:'next'});
+ assert.equal(E.canAdvance(s),false);s=E.reduce(s,{type:'mark',id:'changed',value:'found'});assert.deepEqual(s.follows.camp.marks,{},'old mark name ignored');
+ // 2026-11-12 후속 요청 4: 달라진 두 줄을 모두 찾아야 판단이 열린다
+ s=E.reduce(s,{type:'mark',id:'office',value:'found'});assert.equal(E.followReady(s,'camp'),false,'one line is not enough');s=E.reduce(s,{type:'follow-judge',stamp:'different'});assert.equal(s.follows.camp.judgment,null);
+ s=E.reduce(s,{type:'mark',id:'appeal',value:'found'});assert.equal(E.followReady(s,'camp'),true);s=E.reduce(s,{type:'follow-judge',stamp:'different'});s=E.reduce(s,{type:'next'});
  assert.equal(E.stepOf(s.scene),'notice');for(const x of E.noticeSlots.camp)s=E.reduce(s,{type:'notice-slot',slot:x.id,opt:x.options[0]});s=E.reduce(s,{type:'notice-post'});s=E.reduce(s,{type:'next'});
  assert.equal(E.stepOf(s.scene),'reflect');s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.sceneOf('share','hook'));
  // 사건 5 후속 조사: 세 곳을 모두 열어야 판단
@@ -194,7 +197,7 @@ test('review 1: case 4 never claims 담이\'s own reason is known; the record-ma
  const acc=C.choose.options.find(o=>o.id==='accurate'),said=acc.reaction.filter(([w])=>w==='dami').map(l=>l[1]).join(' ');
  assert.match(said,/불리할 수 있는 기준/);assert.match(said,/내 점수도 다시 확인받고 싶어/);
  // 자료에는 담이 개인 기록이 없다(있다면 이 검사를 함께 고친다)
- assert.deepEqual(Object.keys(C.results.rows[0]).sort(),['apply','id','name','pass']);assert.ok(!/담이/.test(JSON.stringify([C.page,C.results,C.criteria])));
+ assert.deepEqual(Object.keys(C.results.rows[0]).sort(),['apply','id','joins','name','pass','score']);assert.ok(!/담이/.test(JSON.stringify([C.page,C.results,C.criteria])));
  // 솔숲마을은 12명 가운데 1명이 붙었다: '다 떨어졌다'가 아니라 '거의 다'
  const pine=C.results.rows.find(r=>r.target);assert.ok(pine.pass>0);
  for(const [,t] of [...C.hook,...C.choose.options.flatMap(o=>o.reaction)])if(/떨어/.test(t)&&/(^|\s)다 떨어/.test(t))assert.match(t,/거의 다 떨어/,t);

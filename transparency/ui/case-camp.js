@@ -31,11 +31,12 @@
  function results(done){
   const T=C.results;
   const row=r=>{
-   const label=`<span class="score-book">${done&&r.target?`<mark>${esc(r.name)}</mark>`:esc(r.name)}</span><span class="num">${r.apply}명</span><span class="num">${r.pass}명</span>`;
-   const name=`${r.name}, ${T.head[1]} ${r.apply}명, ${T.head[2]} ${r.pass}명`;
+   // 2026-11-12 후속 요청 1: 평균 참여(번)·참여 점수(점) 칸을 더했다. 이름도 같은 형식으로 ‘…, 평균 참여 0.5번, 참여 점수 10점’.
+   const label=`<span class="score-book">${done&&r.target?`<mark>${esc(r.name)}</mark>`:esc(r.name)}</span><span class="num">${r.apply}명</span><span class="num">${r.pass}명</span><span class="num">${r.joins}번</span><span class="num">${r.score}점</span>`;
+   const name=`${r.name}, ${T.head[1]} ${r.apply}명, ${T.head[2]} ${r.pass}명, ${T.head[3]} ${r.joins}번, ${T.head[4]} ${r.score}점`;
    return btn(label,'village',`data-id="${r.id}" aria-label="${esc(name)}"`,'score-row open');
   };
-  return `<div class="document score-table camp-table">${tableHead(T)}${T.rows.map(row).join('')}</div>`;
+  return `<div class="document score-table camp-table">${tableHead(T)}${T.rows.map(row).join('')}<p class="score-rule">${esc(T.rule)}</p></div>`;
  }
  function criteria(done){
   const T=C.criteria;
@@ -65,10 +66,13 @@
 
  // 사건 4: 예전 공개 페이지 · 새 공개 페이지(달라진 말 누르기)
  function followView({f,fs}){
-  const done=fs.marks.changed==='found';
+  // 2026-11-12 후속 요청 4: 달라진 두 줄(담당 부서·이의 신청)을 따로 저장(marks.office·appeal). 찾은 줄은 표시와 ‘찾음’ 글자, 둘 다 찾으면 버튼이 아닌 글.
+  const ids=C.follow.segments.filter(x=>x.changed).map(x=>x.id);
+  const done=ids.every(id=>fs.marks[id]==='found');
   const seg=x=>{
    if(done)return x.changed?`<mark>${esc(x.text)}</mark>`:esc(x.text);
-   return btn(esc(x.text),'change',`data-id="${x.id}"`,'segment');
+   const hit=x.changed&&fs.marks[x.id]==='found';
+   return btn(hit?`<mark>${esc(x.text)}</mark> <span class="cell-tag">${esc(f.foundTag)}</span>`:esc(x.text),'change',`data-id="${x.id}"`,'segment');
   };
   return `<div class="document compact"><p class="doc-label">${esc(f.oldLabel)}</p><p>${C.page.rows.map(r=>esc(r.k+': '+r.text)).join(' · ')}</p></div>`
    +`<div class="document"><p class="doc-label">${esc(f.newLabel)}</p><p class="segments">${f.segments.map(seg).join(' ')}</p></div>`;
@@ -114,7 +118,9 @@
    miss(x.hint);
    return;
   }
-  S.tapHint='';
-  send({type:'mark',id:'changed',value:'found'});
+  // 하나만 찾았으면 ‘하나를 찾았어. 달라진 줄이 하나 더 있어.’ 둘 다 찾으면 안내를 지운다(판단이 나온다).
+  const marks=S.state.follows.camp.marks,left=C.follow.segments.filter(s=>s.changed&&s.id!==x.id&&marks[s.id]!=='found');
+  S.tapHint=left.length?C.follow.one:'';
+  send({type:'mark',id:x.id,value:'found'});
  };
 })();

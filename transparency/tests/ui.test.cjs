@@ -265,10 +265,12 @@ test('request 1·8: public-page cells never carry the .blank class; one blank ce
  assert.equal((old.app.innerHTML.match(/class="cell-tag"/g)||[]).length,2);
 });
 // 2·6. 사건 4: 버스 쪽지는 따로 여는 자료 카드, 판단 3은 기준표+쪽지를 보는 문장, 화자 정리
-test('request 2·6: the bus note is its own record card; judgment 3 links the criteria table and the note; rumour speaker and name tags',()=>{
+test('request 2·6 (and follow-up 1): the bus note is its own record card; judgment 3 is now a fact from the village results; rumour speaker and name tags',()=>{
  const C=D.cases.camp,j=C.judges[2];
- assert.equal(j.text,'참여 횟수 기준은 버스가 적은 솔숲마을에 불리하게 작용했을 수 있어.');assert.deepEqual(j.src,['camp-criteria','camp-bus']);assert.equal(E.answers.camp[2],'confirmed');
- assert.match(j.text,/했을 수 있어/,'hedge kept');assert.match(j.right,/0\.5/);assert.match(j.right,/하루 네 번/);
+ // 후속 요청 1(2026-11-12): 판단 3은 마을별 결과의 새 칸(평균 참여·참여 점수)으로 직접 확인되는 문장. 버스와 불참의 관계는 판단이 아니라 모아의 물음.
+ assert.equal(j.text,'솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어, 이 항목에서 받은 점수도 낮았어.');assert.deepEqual(j.src,['camp-results','camp-criteria']);assert.equal(E.answers.camp[2],'confirmed');
+ assert.doesNotMatch(j.text+j.right,/버스/,'no bus causation in the judged sentence or its feedback');assert.match(j.right,/0\.5번/);assert.match(j.right,/10점/);
+ assert.equal(C.checks.find(x=>x.id==='camp-bus').finding[0][1],'버스가 적어서 참여하기 어려웠을까? 더 확인하려면 어떤 자료가 필요할까?');
  assert.equal(C.criteria.rows.find(r=>r.top).w,0.5);assert.ok(C.note.lines.some(t=>/하루 네 번/.test(t)));
  assert.equal(C.criteria.bus,undefined,'no small caption under the criteria table any more');assert.doesNotMatch(C.checks[2].more,/버스/);
  // 화자: 소문은 반 친구, 판단 2는 구청 발표, 선생님은 장면 그림에도
@@ -375,9 +377,9 @@ test('old saves: a version 6 save from before this change resumes on screen — 
  v6.version=6;v6.evidence=v6.evidence.filter(id=>id!=='camp-bus');v6.follows.share.judgment='different';v6.reflections.camp={q1:'기준표를 보고',q2:''};v6.reporter={name:'하늘',number:'10203'};
  const g=createGame({storage:{[KEY]:JSON.stringify(v6)}});assert.match(text(g.app.innerHTML),/이어하기/);assert.match(text(g.app.innerHTML),/나의 조사 보고서부터/);
  g.click('start');const s=st(g);
- assert.equal(s.version,7);assert.equal(E.stepOf(s.scene),'report');assert.equal(s.completed,true);assert.deepEqual(s.judgments.camp,['unknown','different','legacy']);assert.equal(s.follows.share.judgment,'legacy');
+ assert.equal(s.version,8);assert.equal(E.stepOf(s.scene),'report');assert.equal(s.completed,true);assert.deepEqual(s.judgments.camp,['unknown','different','legacy']);assert.equal(s.follows.share.judgment,'legacy');
  assert.ok(s.evidence.includes('camp-bus'));assert.deepEqual(s.reflections.camp,{q1:'기준표를 보고',q2:''});assert.deepEqual(s.reporter,{name:'하늘',number:'10203'});
- assert.match(g.app.innerHTML,/3\. “참여 횟수 기준은 버스가 적은 솔숲마을에 불리하게 작용했을 수 있어\.”<\/p><p class="v-pick"><span class="v-none">이전 저장에서 넘어와 아직 안 함/);
+ assert.match(g.app.innerHTML,/3\. “솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어, 이 항목에서 받은 점수도 낮았어\.”<\/p><p class="v-pick"><span class="v-none">이전 저장에서 넘어와 아직 안 함/);
  g.click('notebook');const nb=g.snap().modalBody;assert.match(nb,/남은 판단 해 보기/);assert.match(nb,/후속 조사 해 보기/);
  g.click('revisit',{scene:E.sceneOf('camp','check')});assert.match(g.app.innerHTML,/이 말은 맞을까\? 3\/3/);assert.match(g.app.innerHTML,/이전 저장에서 넘어와 아직 하지 않은 판단이야/);
  g.click('judge',{id:'confirmed'});assert.deepEqual(st(g).judgments.camp,['unknown','different','confirmed']);
@@ -396,8 +398,8 @@ test('a11y: every village button is named “마을, 신청 N명, 합격 N명”
  const C=D.cases.camp,g=open('camp','check');g.click('item',{id:'camp-results'});
  const check=()=>{const rows=inner(g.app.innerHTML,'village');assert.equal(rows.length,4);
   rows.forEach((b,i)=>{const r=C.results.rows[i];
-   assert.equal(label(b),r.name+', 신청 '+r.apply+'명, 합격 '+r.pass+'명');
-   assert.equal(visible(b.html),r.name+' '+r.apply+'명 '+r.pass+'명','what is seen is unchanged');
+   assert.equal(label(b),r.name+', 신청 '+r.apply+'명, 합격 '+r.pass+'명, 평균 참여 '+r.joins+'번, 참여 점수 '+r.score+'점');
+   assert.equal(visible(b.html),r.name+' '+r.apply+'명 '+r.pass+'명 '+r.joins+'번 '+r.score+'점','what is seen is what is named');
    assert.doesNotMatch(b.html,/class="sr"/,'the label is the name; no extra hidden text inside (nothing is read twice)');
    for(const part of [r.name,r.apply+'명',r.pass+'명'])assert.ok(label(b).includes(part),'the name contains what is seen: '+part);});
   return rows;};
@@ -503,4 +505,68 @@ test('request 6 and old saves: a case 4/5 notice posted by card picking before t
  const mid=JSON.parse(JSON.stringify(stateAt('camp','notice')));mid.version=7;mid.notices.camp={picked:['camp-office'],posted:null};
  const g3=createGame({storage:{[KEY]:JSON.stringify(mid)}});g3.click('start');h=g3.app.innerHTML;
  assert.ok(h.includes(D.cases.camp.notice.title));assert.equal(h.includes('fix-slot'),false);assert.equal(parseTags(h,'button').find(b=>b['data-id']==='camp-office')['aria-pressed'],'true');
+});
+
+// ── 2026-11-12 후속 요청 1~5 ──
+test('follow-up 1: case 4 village results carry the average participation and its score; the numbers, the rule, judgment 3 and its feedback agree; the bus stays a question',()=>{
+ const C=D.cases.camp,T=C.results,j=C.judges[2];
+ assert.deepEqual(T.head,['마을','신청','합격','평균 참여','참여 점수']);
+ assert.equal(T.rows.reduce((n,r)=>n+r.apply,0),60);assert.equal(T.rows.reduce((n,r)=>n+r.pass,0),40,'40 places kept');
+ for(const r of T.rows){assert.ok(r.joins<5,'below the cap');assert.equal(r.score,Math.min(100,r.joins*20),r.name+' score = 20 per time (cap 100)');}
+ const pine=T.rows.find(r=>r.target);for(const k of ['joins','score','pass'])assert.equal(Math.min(...T.rows.map(r=>r[k])),pine[k],'솔숲마을 lowest '+k);
+ assert.match(T.rule,/1번 참여할 때마다 20점/);assert.match(T.rule,/5번 이상은 100점/);assert.match(T.rule,/평균/);
+ assert.equal(E.answers.camp[2],'confirmed');assert.ok(j.right.includes(pine.joins+'번')&&j.right.includes(pine.score+'점'),'feedback uses the record numbers');
+ assert.doesNotMatch(j.text+j.right+j.wrong,/버스/);assert.match(C.after,/버스 때문에 못 갔는지, 일부러 차별했는지는 기록만으로는 몰라/,'not confirmed from the records');
+ assert.match(C.checks.find(x=>x.id==='camp-results').fact,/0\.5번/);
+ // 화면: 표에 다섯 칸과 규칙, 판단 3의 볼 자료에서 바로 보인다
+ const g=open('camp','check');g.click('item',{id:'camp-results'});let h=g.app.innerHTML;
+ assert.ok(h.includes('<span class="num">0.5번</span><span class="num">10점</span>'));assert.ok(h.includes(`<p class="score-rule">${T.rule}</p>`));
+ g.click('village',{id:'pine'});g.click('item',{id:'camp-bus'});assert.ok(g.app.innerHTML.includes('버스가 적어서 참여하기 어려웠을까? 더 확인하려면 어떤 자료가 필요할까?'));
+ // 수첩·보고서의 사실 문장
+ g.click('notebook');assert.ok(g.snap().modalBody.includes(C.checks.find(x=>x.id==='camp-results').fact));
+});
+test('follow-up 2: no 모아 speech box without a line — records with only extra detail show a neutral ‘자료 설명’; checked over every record of cases 1~5',()=>{
+ for(const k of E.CASES){const c=D.cases[k],g=open(k,'choose');g.click('back');
+  for(const x of c.checks){g.click('item',{id:x.id});const h=g.app.innerHTML;
+   for(const m of h.matchAll(/<div class="finding[^"]*" role="status">([\s\S]*?)<\/div>/g))if(/<details/.test(m[1])||!/class="line|<p/.test(m[1]))assert.match(m[1],/class="line/,k+' '+x.id+': a speech box needs a line');
+   if(!c.solo&&!(x.finding&&x.finding.length)&&x.more){assert.ok(h.includes(`<details class="more record-note"><summary>자료 설명</summary><p>${x.more}</p></details>`),k+' '+x.id+' extra detail as a neutral note');}}}
+ // 재현 경로 두 곳: 사건 3 점원의 말을 다시 열기, 사건 4 기준표를 모두 연 순간
+ const f=open('face','choose');f.click('back');f.click('item',{id:'face-clerk'});assert.doesNotMatch(f.app.innerHTML,/<div class="finding[^"]*" role="status"><details/);
+ const s=open('camp','check');s.click('item',{id:'camp-criteria'});for(const r of D.cases.camp.criteria.rows)s.click('crit',{id:r.id});assert.doesNotMatch(s.app.innerHTML,/<div class="finding[^"]*" role="status"><details/);
+});
+test('follow-up 3: the record found last stays on screen when the first judgment appears; 볼 자료 moves to the judged record; 다음 말 보기 still switches',()=>{
+ const g=open('face','check');
+ g.click('item',{id:'face-alert'});g.click('item',{id:'face-clerk'});g.click('segment',{id:D.cases.face.clerkSegments.find(x=>x.found).id});
+ g.click('item',{id:'face-photo'});let h=g.app.innerHTML;
+ assert.equal(E.checked(g.state(),'face'),true);
+ const pressedItem=()=>parseTags(g.app.innerHTML,'button').find(b=>b['data-act']==='item'&&b['aria-pressed']==='true')?.['data-id'];
+ assert.equal(pressedItem(),'face-photo','the photo the student just opened stays');assert.match(h,/<p class="evidence-head"><span>자료<\/span> · 얼굴 비교 사진<\/p>/);
+ assert.match(h,/이 말은 맞을까\? 1\/3/);
+ g.click('source',{id:'face-alert'});assert.equal(pressedItem(),'face-alert','볼 자료 moves to the record');
+ g.click('item',{id:'face-photo'});g.click('judge',{id:'different'});assert.equal(pressedItem(),'face-photo','judging does not move it');
+ g.click('judge-next');g.click('judge',{id:'confirmed'});g.click('judge-next');assert.equal(pressedItem(),'face-photo','third judgment uses the photo');
+ // 사건 5도 같다(마지막 자료 DM과 게시물)
+ const s=open('share','check');for(const x of D.cases.share.checks)s.click('item',{id:x.id});
+ s.click('item',{id:'share-log'});s.click('part',{id:'pic'});s.click('item',{id:'share-photo'});s.click('skyline',{id:'sky'});s.click('item',{id:'share-compare'});s.click('said',{id:'dm'});
+ assert.equal(parseTags(s.app.innerHTML,'button').find(b=>b['data-act']==='item'&&b['aria-pressed']==='true')['data-id'],'share-compare');
+ // 이어하기(보던 자료가 없음)는 첫 판단의 근거 자료로
+ const r=open('face','check');const st0=JSON.parse(JSON.stringify(r.state()));
+ const t=createGame({storage:{[KEY]:JSON.stringify(Object.assign(st0,{evidence:[...st0.evidence,...E.checks.face]}))}});t.click('start');
+ assert.equal(parseTags(t.app.innerHTML,'button').find(b=>b['data-act']==='item'&&b['aria-pressed']==='true')['data-id'],'face-alert');
+});
+test('follow-up 4: case 4 follow-up needs both changed lines; one line says one more; both are saved separately and survive a reload',()=>{
+ const F=D.cases.camp.follow,g=open('camp','follow');let h=g.app.innerHTML;
+ assert.ok(h.includes(F.task));assert.equal(F.task,'예전과 달라진 두 줄을 모두 찾아 눌러 봐.');
+ g.click('change',{id:'use'});assert.ok(g.app.innerHTML.includes(F.segments.find(x=>x.id==='use').hint),'unchanged line: neutral feedback kept');
+ g.click('change',{id:'office'});h=g.app.innerHTML;assert.ok(h.includes('<p class="tap-hint" role="status">하나를 찾았어. 달라진 줄이 하나 더 있어.</p>'));
+ assert.deepEqual(st(g).follows.camp,{marks:{office:'found'},judgment:null});assert.equal(parseTags(h,'button').some(b=>b['data-act']==='follow-judge'),false,'no judgment yet');
+ assert.ok(h.includes('<mark>담당 부서: 구청 청소년과.</mark> <span class="cell-tag">찾음</span>'));
+ const re=createGame({storage:{[KEY]:g.stored()}});re.click('start');assert.ok(re.app.innerHTML.includes('<span class="cell-tag">찾음</span>'),'reload keeps the found line');
+ re.click('change',{id:'appeal'});h=re.app.innerHTML;assert.deepEqual(st(re).follows.camp.marks,{office:'found',appeal:'found'});
+ assert.ok(parseTags(h,'button').some(b=>b['data-act']==='follow-judge'),'both lines: the judgment appears');assert.equal(h.includes('하나를 찾았어'),false);
+});
+test('follow-up 5: the privacy law note says it covers fully automated decisions, excludes automatic administrative dispositions, and is not applied as such to the game’s 구청',()=>{
+ const g=open('photo','hook');g.click('settings');g.click('sources');const t=textOf(g.snap().modalBody);
+ assert.match(t,/완전히 자동으로 내린 결정/);assert.match(t,/행정기본법 제20조/);assert.match(t,/담당자가 명단을 최종 확인하므로, 이 조항이 그대로 적용된다고 볼 수는 없어요/);
+ assert.match(t,/문제의 짜임만 참고했어요/);assert.match(t,/사업자의 의무예요\. 이용자 한 사람 한 사람의 의무를 정한 조항은 아니에요/,'case 5 distinction kept');
 });

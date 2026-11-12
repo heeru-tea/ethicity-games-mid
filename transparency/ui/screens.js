@@ -61,9 +61,11 @@
   // 누른 곳에 대한 짧은 안내. 사건 5(혼자)도 답이 아닌 곳을 누르면 중립 안내 한 줄을 보인다(2026-11-12 — 아무 반응이 없으면 고장처럼 보인다).
   if(S.tapHint)b+=`<p class="tap-hint" role="status">${esc(S.tapHint)}</p>`;
   const said=S.keepFinding?c.checks.find(x=>x.id===S.keepFinding):item;
-  // 찾은 뒤 한마디(모아)와 자세히 보기. 사건 3부터는 한마디가 없는 자료가 있다 — 둘 다 없으면 상자를 그리지 않는다.
-  if(!c.solo&&S.state.evidence.includes(said.id)&&(said.finding||said.more)){
-   b+=`<div class="finding${judging?' quiet':''}" role="status">${lines(said.finding||[])}${more(said.more)}</div>`;
+  // 찾은 뒤 한마디(모아)와 자세히 보기. 사건 3부터는 한마디가 없는 자료가 있다.
+  // 2026-11-12 후속 요청 2: 대사가 없으면 말 상자를 그리지 않는다. 보충 설명(more)만 있으면 화자 없는 펼침 ‘자료 설명’으로.
+  if(!c.solo&&S.state.evidence.includes(said.id)){
+   if(said.finding&&said.finding.length)b+=`<div class="finding${judging?' quiet':''}" role="status">${lines(said.finding)}${more(said.more)}</div>`;
+   else if(said.more)b+=`<details class="more record-note"><summary>자료 설명</summary><p>${esc(said.more)}</p></details>`;
   }
   return b;
  }

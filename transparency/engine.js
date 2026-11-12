@@ -1,6 +1,6 @@
 (function(root){
  'use strict';
- // 저장 version 7(2026-11-12 수정 요청: 사건 4 자료 넷(버스 쪽지)·판단 3 교체, 사건 5 후속 조사 판단 교체 — version 6 저장은 restore가 옮긴다). 사건 다섯 개, 사건마다 일곱 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사)
+ // 저장 version 8(2026-11-12 후속 요청: 사건 4 판단 3 다시 교체·마을별 결과에 참여 점수, 후속 조사 두 줄 — version 6·7 저장은 restore가 옮긴다). version 7(2026-11-12 수정 요청: 사건 4 자료 넷(버스 쪽지)·판단 3 교체, 사건 5 후속 조사 판단 교체 — version 6 저장은 restore가 옮긴다). 사건 다섯 개, 사건마다 일곱 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사)
  // → notice(만든 사람이라면: 미리 알리기) → reflect(생각 정리).
  // 마지막은 end(마무리 + 마지막 서술) → report(나의 조사 보고서). 질문 고르기(구청에 묻기)는 사건 4(camp)의 궁금한 것 화면에서 한다.
  // 장면 번호는 LAYOUT에서 계산한다: 0 프롤로그, 1~7 사진, 8~14 글, 15~21 얼굴, 22~28 구청 캠프, 29~35 은하수 그림, 36 마지막, 37 보고서.
@@ -31,9 +31,9 @@
  // 사건마다 판단 셋. 세 칸이 사건마다 한 번씩 정답이 된다.
  const answers={photo:['confirmed','different','unknown'],writing:['unknown','confirmed','different'],face:['different','confirmed','unknown'],camp:['unknown','different','confirmed'],share:['different','confirmed','unknown']};
  const followAnswers={photo:'different',writing:'confirmed',face:'unknown',camp:'different',share:'confirmed'};
- // 후속 조사 표시: 구청 캠프는 새 공개 페이지에서 달라진 말 하나를 찾으면 끝, 은하수 그림은 세 곳(DM·냥스타·게시판)을 모두 연다.
+ // 후속 조사 표시: 구청 캠프는 새 공개 페이지에서 달라진 두 줄(담당 부서·이의 신청)을 모두 찾는다(2026-11-12 후속 요청 4 — 그전에는 하나만, 칸 이름 changed), 은하수 그림은 세 곳(DM·냥스타·게시판)을 모두 연다.
  const followMarks={photo:{ids:['p1','p2','p3','p4','p5','p6'],values:['shown','cut']},writing:{ids:['run'],values:['done']},face:{ids:['r1','r2','r3','r4'],values:['open']},
-  camp:{ids:['changed'],values:['found']},share:{ids:['dm','post','board'],values:['open']}};
+  camp:{ids:['office','appeal'],values:['found']},share:{ids:['dm','post','board'],values:['open']}};
  // 사건 4 구청에 묻기. 옛 저장(version 1~5)의 질문(옛 사건 5 앱에 묻기)은 OLD_QUESTIONS로 검사만 하고 버린다.
  const questions=['purpose','criteria','who','appeal'],OLD_QUESTIONS=['input','criteria','unknown','notice'];
  // 미리 알리기 카드 종류: must(꼭 필요) · nice(있으면 좋음) · conflict(넣으면 다른 원칙과 부딪침) · promise(지킬 수 없는 약속). 문장과 화면 순서는 story.js.
@@ -106,7 +106,7 @@
  const clone=v=>JSON.parse(JSON.stringify(v));
  const each=f=>Object.fromEntries(CASES.map(k=>[k,f(k)])),eachOld=f=>Object.fromEntries(OLD3.map(k=>[k,f(k)]));
  // asked = 사건 4 궁금한 것에서 물어본 질문(누른 순서). completed = 마지막 장면에 들어갔음.
- function initial(){return {version:7,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),asked:[],completed:false,
+ function initial(){return {version:8,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),asked:[],completed:false,
   reflections:each(()=>({q1:'',q2:''})),finalNote:'',reporter:{name:'',number:''},notices:each(()=>({picked:[],posted:null}))};}
  // 처음부터 다시 하기: 진행은 모두 지운다. 이름·학번은 기본으로 함께 지우고(공용 PC), keepReporter일 때만 남긴다.
  function restart(s,{keepReporter=false}={}){const n=initial();if(keepReporter&&s&&s.reporter)for(const f of REPORTER)n.reporter[f]=typeof s.reporter[f]==='string'?s.reporter[f]:'';return n;}
@@ -254,12 +254,25 @@
   const f=w.follows&&w.follows.share;if(f&&typeof f==='object'&&stamps.includes(f.judgment))f.judgment='legacy';
   return w;
  }
+ // version 7(2026-11-12 오전~저녁) → 8. 장면 번호·칸은 그대로이고 바뀐 두 곳만 손본다.
+ //  · 사건 4 판단 3이 또 다른 문장(버스 → 참여 횟수와 그 항목 점수, 근거는 마을별 결과의 새 칸)이 됐다. 옛 답은 'legacy'(이어하기는 막지 않고, 수첩에서 다시 해 볼 수 있다).
+ //  · 사건 4 후속 조사는 달라진 줄 하나(marks.changed) → 두 줄(marks.office·appeal). 판단까지 끝난(또는 legacy) 저장은 두 줄 모두 찾은 것으로 두어 진행을 되돌리지 않는다.
+ //    줄만 찾고 판단은 안 한 저장은 어느 줄을 찾았는지 알 수 없어 표시를 비운다(두 줄을 다시 찾으면 판단이 나온다).
+ //  · 사건 4·5 미리 알리기: 카드로 붙였거나 고르던 안내문은 그대로(‘이전 방식으로 작성한 안내문’). 칸 모양이 같아 손대지 않는다.
+ function from7(v){
+  const w=clone(v);w.version=8;
+  const j=w.judgments&&w.judgments.camp;if(Array.isArray(j)&&stamps.includes(j[2]))j[2]='legacy';
+  const f=w.follows&&w.follows.camp;
+  if(f&&f.marks&&typeof f.marks==='object'&&'changed' in f.marks){const had=f.marks.changed==='found';delete f.marks.changed;if(had&&f.judgment!==null&&f.judgment!==undefined){f.marks.office='found';f.marks.appeal='found';}}
+  return w;
+ }
  function restore(raw){
   try{let v=typeof raw==='string'?JSON.parse(raw):raw;
    if(!v||typeof v!=='object')return initial();
    if(v.version===6)v=from6(v);
+   if(v.version===7)v=from7(v);
    if(v.version===1){const r=v.revision===4?restore4(v):migrate3(v);return r?upgrade(r):initial();}
-   if(![2,3,4,5,7].includes(v.version))return initial();
+   if(![2,3,4,5,8].includes(v.version))return initial();
    // version 2·3·4 → 5: 장면 번호를 새 배치로 옮긴다(옛 마지막·보고서는 사건 4 첫 화면, 완료 아님). version 2는 서술을, 2·3은 안내문을 빈 값(지난 사건은 legacy)으로 둔다.
    // version 5(옛 사건 4·5 = 도서관·밤하늘) → 6: 사건 1~3은 그대로, 장면 22 이상(옛 사건 4·5·마지막·보고서)은 새 사건 4 첫 화면(완료 아님). 옛 사건 4·5 칸·자료는 버린다.
    // 옛 저장의 질문(question·asked)은 지금 사건에 없는 질문이라 검사만 하고 버린다. 새 사건 4·5 칸은 빈 값.

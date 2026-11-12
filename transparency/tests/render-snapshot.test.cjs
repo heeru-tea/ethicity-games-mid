@@ -58,7 +58,7 @@ function play(opts,script){
     act('mark',{id,value:m.followRight||i%2?(m.followRight?t:other):t});});}
   else if(k==='writing')act('run');
   else if(k==='face')for(const id of m.reverse?ids.slice().reverse():ids)act('row',{id});
-  else if(k==='camp'){if(m.wrongTaps)for(const s of f.segments.filter(x=>!x.changed))act('change',{id:s.id},'wrong-change:'+s.id);act('change',{id:pickOne(f.segments.filter(x=>x.changed).map(x=>x.id),m.v)[0]});}
+  else if(k==='camp'){if(m.wrongTaps)for(const s of f.segments.filter(x=>!x.changed))act('change',{id:s.id},'wrong-change:'+s.id);const ch=f.segments.filter(x=>x.changed).map(x=>x.id);for(const id of m.v?ch.slice().reverse():ch)act('change',{id});}
   else for(const id of m.reverse?ids.slice().reverse():ids)act('list',{id});
   if(m.peek)peek();
   const ans=E.followAnswers[k];act('follow-judge',{id:m.followRight?ans:E.stamps[(E.stamps.indexOf(ans)+1+(m.v||0))%3]});
