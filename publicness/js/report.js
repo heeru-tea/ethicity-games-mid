@@ -92,16 +92,25 @@
   function logOf(s, phase) { var h = (s.history || []).filter(function (x) { return x.phase === phase; })[0]; return h && h.rideLog ? h.rideLog : null; }
   function why(o) { return o && typeof o.why === 'string' && o.why.trim() ? o.why.trim() : EMPTY; }
   var PET = { reflect: '반영한다', 'not-now': '이번엔 못 한다' }, ELD = { keep: '유지', abolish: '폐지' };
+  /* 청원(2026-11-12 랜덤 검토 4번): 고정 청원 + 사건 청원 모두, 그 뒤 화면·금배지와 같은 하루 끝 숫자(Choices.outcome). petition = 예전 자리(고정 청원) 그대로 */
+  function petitionLine(s, f, p) {
+    var C = lib('Choices', './choices.js'), last = ((s.config && s.config.phases) || []).length, o = C.outcome(s, p), r = p.reply;
+    var head = p.phase + '단계 ' + f.name(p.zone) + ' 주민 청원 · ';
+    if (p.answer > last) return head + '마지막 단계라 답할 다음 단계가 없었어요';
+    var body = r && PET[r.choice] ? p.answer + '단계 답 → ' + PET[r.choice] + ' · 이유: ' + why(r) : p.answer + '단계 답 → (답하지 않음)';
+    return head + body + (o ? ' · 못 간 이동 ' + o.before.failed + '건 → ' + o.after.failed + '건' : '');
+  }
   function choices(s, f) {
-    var out = { petition: null, elder: null }, fp = s.fixedPetition, pr = s.petitionReply, ep = s.elderPolicy;
-    if (fp && pr && PET[pr.choice]) {
-      var a = logOf(s, 2), b = logOf(s, 3), za = a && a[fp.zone], zb = b && b[fp.zone];
-      out.petition = fp.phase + '단계 ' + f.name(fp.zone) + ' 주민 청원 · ' + (fp.phase + 1) + '단계 답 → ' + PET[pr.choice] + ' · 이유: ' + why(pr) +
-        (za && zb ? ' · 못 간 이동 ' + (za.requests - za.arrived) + '건 → ' + (zb.requests - zb.arrived) + '건' : '');
-    }
+    var out = { petition: null, elder: null, petitions: [] }, ep = s.elderPolicy, C = lib('Choices', './choices.js');
+    C.list(s).forEach(function (p) {
+      if (p.kind === 'fixed' && !(p.reply && PET[p.reply.choice])) return; /* 고정 청원은 예전처럼 답했을 때만 */
+      var line = { phase: p.phase, kind: p.kind, text: petitionLine(s, f, p) };
+      out.petitions.push(line); if (p.kind === 'fixed') out.petition = line.text;
+    });
     if (ep && ELD[ep.choice]) out.elder = (ep.phase || 4) + '단계 어르신 무임승차 ' + ELD[ep.choice] + ' · 이유: ' + why(ep);
     return out;
   }
+  var PETITION_RULE = '청원한 동네에서 출발해 목적지까지 못 간 이동(하루 끝 기준)이 다음 단계에 줄었거나 0건을 지켰으면 받아요. 청원이 여러 번이면 모두.';
   /* 금배지 5개(고정 순서). 정책 내용(유지·폐지, 반영·못 함)은 조건에 쓰지 않는다 */
   function badges(s) {
     var cfg = s.config || {}, hist = s.history || [], RL = lib('RideLog', './ride-log.js'), NR = lib('Narrative', './narrative.js'), rx = [];
@@ -111,13 +120,13 @@
       var zones = Object.keys(h.rideLog), r = RL.ratios(cfg, h.phase, logOf(s, h.phase - 1), zones);
       return zones.some(function (z) { return r[z] === 0 && h.rideLog[z].rode > 0; });
     });
-    var petition = false, fp = s.fixedPetition;
-    if (fp) { var a = logOf(s, 2), b = logOf(s, 3), za = a && a[fp.zone], zb = b && b[fp.zone]; petition = !!(za && zb && za.requests > 0 && zb.requests > 0 && (zb.requests - zb.arrived) / zb.requests < (za.requests - za.arrived) / za.requests); }
+    /* 2026-11-12 랜덤 검토 4번: 하루 끝 못 간 이동(그 뒤 화면·보고서와 같은 값)이 다음 단계에 줄었거나 0건을 지켰으면 받음, 늘었거나 같은 건수(0 아님)면 아직. 여러 번이면 모두 */
+    var fp = s.fixedPetition, petition = lib('Choices', './choices.js').badge(s);
     var typed = function (o) { return !!(o && typeof o.why === 'string' && o.why.trim()); };
     var reasons = typed(s.elderPolicy) && (!fp || typed(s.petitionReply));
     return [
       { id: 'residents', label: '주요 인물 모두 만족', earned: rx.length > 0 && rx.every(function (r) { return r.satisfied; }) },
-      { id: 'petition', label: '청원한 동네의 못 간 이동을 줄였어요', earned: petition },
+      { id: 'petition', label: '청원한 동네의 못 간 이동을 줄였어요', earned: petition, rule: PETITION_RULE },
       { id: 'record', label: '기록이 없던 동네에 탑승 기록을 만들었어요', earned: record },
       { id: 'reasons', label: '두 선택 모두 이유를 적었어요', earned: reasons },
       { id: 'solvent', label: '파산·계약 종료 없이 학기를 마쳤어요', earned: !!(s.end && s.end.cause === 'complete') }

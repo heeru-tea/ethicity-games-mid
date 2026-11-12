@@ -50,6 +50,9 @@
         config.satisfactionTargets=challenge.targets;config.familyTrips=challenge.families;config.residents=config.residents.concat(clone(challenge.residents||[]));
         config.nodes=config.nodes.concat(challenge.nodes);config.demandRows=config.demandRows.concat(challenge.demandRows);
         config.residents.forEach(function(r){if(r.itineraries){r.itineraries[6]={o:'J',d:'H',depart:60,returnAt:100,stay:20,returnTo:'B'};r.itineraries[7]=clone(r.itineraries[5]);}});
+        /* 랜덤(도전) 모드 전용 재정(2026-11-12 교사 랜덤 검토 5번): config.challenge.finance의 값만 덮어쓴다(기본 모드 finance는 그대로).
+         * 저장본은 랜덤 세팅의 config를 통째로 담으므로, 이 값을 바꿔도 예전 랜덤 저장본은 그때 값으로 이어진다 */
+        if(challenge.finance)Object.keys(challenge.finance).forEach(function(k){config.finance[k]=clone(challenge.finance[k]);});
       }
       // 배치(2026-10-27): 역할 자리 세로로 펼치고 나머지 생활권은 분산 표본 + 완화 — js/layout.js. 같은 시드 = 같은 배치
       var placed=Layout.place(config.nodes,Rng.create(seed ^ 0x51ed270b));
@@ -640,6 +643,10 @@
     entry.eventFare = s.config.finance.fare * c.result.passengers.filter(function (p) { return p.kind === 'extra' && p.firstBoardT != null; }).length;
     entry.rideLog = RideLog.fromRun(c.result.passengers);
     if (s.fixedPetition && s.phase === s.fixedPetition.phase + 1) entry.petitionCheck = petitionZoneAt(c.result.passengers, s.fixedPetition.t, s.fixedPetition.zone);
+    else if (s.mode !== 'default') { /* 2026-11-12 랜덤 검토 4번: 사건 청원도 다음 단계에 같은 시각·구역의 참고 숫자를 남긴다(그 뒤 화면 ‘참고’ 줄) */
+      var prevH = s.history.filter(function (x) { return x.phase === s.phase - 1; })[0], pp = prevH && prevH.petition && !prevH.petition.fixed ? prevH.petition : null;
+      if (pp) entry.petitionCheck = petitionZoneAt(c.result.passengers, pp.t, pp.zone);
+    }
     s.history.push(entry);
     if (s.config.petition && s.phase === s.config.petition.phase && c.result.petition) { var fp = c.result.petition; s.fixedPetition = { phase: s.phase, zone: fp.zone, t: fp.t, count: fp.count, total: fp.total, noRecord: !!fp.noRecord }; }
     settle(s, entry);

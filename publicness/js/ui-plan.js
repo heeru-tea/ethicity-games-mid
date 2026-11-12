@@ -412,7 +412,7 @@
       agenda.appendChild(el('p',{'class':'note'},'늦게 도착하면 체류 시간을 채운 뒤 귀가해요. 목적지에 못 갔다면 귀가 요청도 생기지 않아요.'));panel.appendChild(agenda);
     }
     panel.appendChild(el('p',{id:'plan-message',role:'status','class':P.preview?'callout':'note'},PB.Names.text(P.message||hint())));
-    var FA=UI.fairness,hooks={rerender:render,nudge:P.nudge||null};if(FA){var fc=s.phase===3?FA.petitionCard(App,s,hooks):s.phase===4?FA.elderCard(App,s,hooks):null,fr=fc?null:FA.required(App,s);/* ‘골라야 출발’ 줄은 카드 안 맨 아래에 있다(2026-11-11) — 카드가 없을 때만 따로 */if(fc)panel.appendChild(fc);if(fr)panel.appendChild(fr);if(FA.profitToggle)panel.appendChild(FA.profitToggle(App,s,hooks));}
+    var FA=UI.fairness,hooks={rerender:render,nudge:P.nudge||null};if(FA){var pc=FA.petitionCard(App,s,hooks),ec=s.phase===4?FA.elderCard(App,s,hooks):null,fc=pc||ec,fr=fc?null:FA.required(App,s);/* 2026-11-12: 사건 청원 답과 4단계 무임 정책이 같은 단계면 한 카드 안에 차례로(넓은 화면 칸 하나) — ‘골라야 출발’ 줄은 맨 아래 하나만 */if(pc&&ec){var dup=pc.querySelector('#choice-required');if(dup)dup.remove();ec.classList.remove('fair-card');ec.classList.add('fair-sub');pc.appendChild(ec);}/* ‘골라야 출발’ 줄은 카드 안 맨 아래에 있다(2026-11-11) — 카드가 없을 때만 따로 */if(fc)panel.appendChild(fc);if(fr)panel.appendChild(fr);if(FA.profitToggle)panel.appendChild(FA.profitToggle(App,s,hooks));}
     // 노선을 하나라도 완성한 뒤에만 막힌 이유를 띄운다(처음엔 위 안내가 할 일을 알려 줌)
     var blocked=s.draft.routes.some(function(r){return r.nodes.length>=2;})?blockers():[];if(blocked.length)blocker(panel,blocked);
     routes(panel);buses(panel);outlook(panel);ai(panel);
@@ -445,7 +445,7 @@
     return {noBus:c.noBus,lines:out};
   }
   /* 이유 안내(2026-11-10): 답은 골랐는데 이유가 비었으면 같은 단계의 첫 출발 클릭에서만 한 번 안내하고 이유 칸으로 포커스. 안내 여부는 P에만(저장 안 함) */
-  function whyNudge(s){var k=UI.fairness&&UI.fairness.kindOf(s);if(!k)return false;var f=s[PB.Choices.KINDS[k].field];P.nudged=P.nudged||{};if(!f||!f.choice||f.why||P.nudged[k])return false;P.nudged[k]=true;P.nudge=k;render('#'+k+'-why');return true;}
+  function whyNudge(s){var k=UI.fairness&&UI.fairness.kindOf(s);if(!k)return false;var f=PB.Choices.get(s,k);P.nudged=P.nudged||{};if(!f||!f.choice||f.why||P.nudged[k])return false;P.nudged[k]=true;P.nudge=k;render('#'+k+'-why');return true;}
   function departCheck(){
     var s=st(),body=document.querySelector('#confirm-depart-body'),c=departLines(s),show=c.lines.slice(0,3),rest=c.lines.slice(3);body.textContent='';
     document.querySelector('#confirm-depart-h').textContent=c.noBus?'운행하는 버스가 없어요':'이대로 출발할까요?';
