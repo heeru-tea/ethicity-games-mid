@@ -4,7 +4,7 @@
  'use strict';
  const UI=window.TransparencyUI;
  const {E,D,S,$,esc,btn,line,more,stage,caseStage,paint,itemView,evidenceHead,defaultView,judgeIndex,autoEvidence,judgeBlock,
-  followView,followBody,noticeBody,noticeStage,reflectSummary,writeBox,reportPage}=UI;
+  followView,followBody,noticeBody,noticeStage,noticeTitle,reflectSummary,writeBox,reportPage}=UI;
  const STEP_LABELS={hook:'궁금한 것',check:'직접 확인',choose:'선택',result:'결과',follow:'후속 조사',notice:'만든 사람이라면: 미리 알리기',reflect:'생각 정리'};
  const lines=list=>list.map(l=>line(l)).join('');
 
@@ -144,7 +144,7 @@
   },
   notice({meta,k,c}){
    return {
-    h:head(meta,c.notice.title),
+    h:head(meta,noticeTitle(k)),
     v:noticeStage(k),
     b:noticeBody(k)+nav(true,nextButton('생각 정리하기'))
    };

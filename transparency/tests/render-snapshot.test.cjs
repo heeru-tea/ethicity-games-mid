@@ -64,7 +64,14 @@ function play(opts,script){
   const ans=E.followAnswers[k];act('follow-judge',{id:m.followRight?ans:E.stamps[(E.stamps.indexOf(ans)+1+(m.v||0))%3]});
   if(m.wrongTaps){if(k==='photo')act('mark',{id:'p1',value:'cut'},'mark-locked');if(k==='writing')act('run',undefined,'run-disabled');if(k==='face')act('row',{id:'r1'},'row-after');if(k==='share')act('list',{id:'dm'},'list-after');}
  }
- function notice(m){const {k}=at(),n=E.noticeCards[k],pick=id=>act('notice-pick',{id}),post=()=>act('notice-post');
+ function notice(m){const {s,k}=at(),n=E.noticeCards[k],pick=id=>act('notice-pick',{id}),post=()=>act('notice-post');
+  // 사건 4·5 고치기(2026-11-12 요청 10): 초안이 들어 있다. setTo = 원하는 집합과 다른 카드만 눌러 맞춘다. 초안 그대로는 붙일 수 없다.
+  if(E.noticeFix(s,k)){const setTo=ids=>{for(const id of E.noticeIds(k))if(ids.includes(id)!==g.state().notices[k].picked.includes(id))pick(id);};
+   if(m.notice==='ok'){act('notice-post',undefined,'post-same-draft');setTo(n.must);post();}
+   if(m.notice==='nice'){setTo([...n.nice,...n.must]);post();}
+   if(m.notice==='stay'){setTo([n.must[0],n.conflict[0]]);post();}
+   if(m.notice==='fix'){act('notice-post',undefined,'post-same-draft');pick(n.promise[0]);post();pick(n.promise[0]);act('notice-post',undefined,'post-back-to-draft');setTo(n.must);post();pick(n.conflict[0]);pick(n.nice[0]);post();}
+   return;}
   if(m.notice==='ok'){n.must.forEach(pick);post();}
   if(m.notice==='nice'){[...n.nice,...n.must].forEach(pick);post();}
   if(m.notice==='stay'){[n.must[0],n.conflict[0]].forEach(pick);post();}

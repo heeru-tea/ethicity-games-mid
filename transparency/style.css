@@ -245,6 +245,7 @@ span.blank{display:inline-block;width:3.2em;border-bottom:2px solid currentColor
 .n-flag{font-size:.88rem;font-weight:800}
 .n-missing{color:var(--muted)}
 .notice-sum .v-pick{margin:2px 0 0}
+.n-changes{margin:0 0 2px}
 .card-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .card-links button{font-size:.9rem;min-height:40px;padding:6px 14px}
 dialog .case-card{margin:12px 0}
@@ -308,6 +309,9 @@ dialog .case-card{margin:12px 0}
 .step-notice .notice-verdict p{margin-bottom:2px}
 .step-notice .step-nav{margin-top:14px}
 .step-notice .hint{font-size:.95rem;margin:6px 0 0}
+/* 사건 4·5 고치기(2026-11-12): 초안에 있던 카드의 글자 표시 — 얇은 전체 테두리, 글자 크기는 카드와 같게(16px 이상) */
+.draft-tag{display:inline-block;font-size:1rem;font-weight:700;line-height:1.35;color:#4a463f;background:#f3efe6;border:1px solid #8a8378;border-radius:999px;padding:0 8px;margin-left:2px;white-space:nowrap}
+.notice-card[aria-pressed=false] .draft-tag{background:#fff;border-style:dashed}
 @media(max-width:860px){
  .step-notice h1{margin-bottom:8px}
 }
@@ -323,6 +327,7 @@ dialog .case-card{margin:12px 0}
  .step-notice .body{margin-top:0}
  .step-notice .visual .stage{display:none}
  .step-notice .notice-paper.empty{display:none}
+ .step-notice .notice-paper.draft{display:none}
 }
 
 /* 인쇄(PDF로 저장): A4 세로, 여백 15mm, 흰 바탕 검은 글자. 사건 하나가 페이지 사이에서 잘리지 않게 한다(사건마다 새 페이지는 아님). */
@@ -355,6 +360,7 @@ dialog .case-card{margin:12px 0}
  .notice-list{padding:0;display:inline}
  .notice-list li{display:inline;margin-right:6pt}
  .notice-sum .v-pick{display:inline;margin-left:4pt}
+ .notice-sum .n-changes{display:inline;margin:0 6pt 0 0}
  .n-missing{color:#333}
  .frame-text{margin:3pt 0 1pt}
  .answer{margin:0 0 3pt}

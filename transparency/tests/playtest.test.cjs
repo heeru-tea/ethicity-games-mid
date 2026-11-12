@@ -163,6 +163,8 @@ function v6at(key,step,tweak){
   s=E.reduce(s,{type:'next'});}
  // 옛 모양으로: version 6, 버스 쪽지 자료 없음, 사건 5 후속 조사의 옛 정답은 ‘자료와 달라’
  const old=JSON.parse(JSON.stringify(s));old.version=6;old.evidence=old.evidence.filter(id=>id!=='camp-bus');
+ // version 6에는 고치기(fix)가 없었다: 사건 4·5 안내문은 카드 고르기 모양(꼭 필요 카드만 골라 붙임, 아직 미리 알리기에 서 있으면 빈 칸)으로 되돌린다.
+ for(const k of ['camp','share']){const n=old.notices[k];if(n.fix){delete n.fix;const done=Array.isArray(n.posted);n.picked=done?E.noticeCards[k].must.slice():[];if(done)n.posted=E.noticeCards[k].must.slice();}}
  if(old.follows.share.judgment)old.follows.share.judgment='different';
  if(tweak)tweak(old);return old;
 }
@@ -175,7 +177,9 @@ test('version 6 saves move to version 7: scenes and answers kept; the bus note c
   old=v6at('camp',step);s=E.restore(JSON.stringify(old));
   assert.equal(s.version,7);assert.equal(s.scene,old.scene,step);assert.equal(s.furthest,old.furthest);
   assert.deepEqual(s.judgments.camp,[old.judgments.camp[0],old.judgments.camp[1],'legacy']);assert.deepEqual(s.evidence,[...old.evidence,'camp-bus']);
-  assert.deepEqual(s.cases,old.cases);assert.deepEqual(s.asked,old.asked);assert.deepEqual(s.notices,old.notices);assert.deepEqual(s.follows.camp,old.follows.camp);
+  // 미리 알리기에 서 있고 아직 아무것도 안 고른 저장만 초안이 들어간다(2026-11-12 고치기). 나머지 안내문은 그대로.
+  const want=step==='notice'?{...old.notices,camp:{picked:E.noticeDraft('camp'),posted:null,fix:true}}:old.notices;
+  assert.deepEqual(s.cases,old.cases);assert.deepEqual(s.asked,old.asked);assert.deepEqual(s.notices,want);assert.deepEqual(s.follows.camp,old.follows.camp);
   if(step==='result'||step==='reflect')assert.equal(E.canAdvance(s),true,'legacy never blocks: '+step);
   assert.deepEqual(E.restore(JSON.stringify(s)),s,'round-trips as version 7');}
  // 판단 3을 지금 다시 하면 새 문장의 답으로 들어간다
@@ -204,4 +208,97 @@ test('version 6 saves move to version 7: scenes and answers kept; the bus note c
  old=v6at('camp','reflect');old.evidence=null;assert.deepEqual(E.restore(JSON.stringify(old)),E.initial());
  old=v6at('camp','reflect');old.follows=null;assert.deepEqual(E.restore(JSON.stringify(old)),E.initial());
  assert.deepEqual(E.restore({version:6}),E.initial());assert.deepEqual(E.restore({version:8,scene:0}),E.initial(),'unknown newer version');
+});
+
+// ── 2026-11-12 수정 요청 10: 사건 4·5 미리 알리기 ‘고치기’ ──
+// 틀린 초안(engine noticeDrafts)에서 시작한다. 카드·판정은 그대로. 초안 그대로는 붙일 수 없다. 저장은 version 7 그대로, 칸 notices[k].fix 하나만 더한다.
+// 그 전에 카드 고르기로 붙인(또는 고르던) 사건 4·5 안내문은 fix 없이 그대로 둔다.
+function walk(key,step){let s=E.initial();const goal=E.sceneOf(key,step);
+ while(s.scene<goal){const k=E.caseKey(s.scene),st=E.stepOf(s.scene);
+  if(st==='hook'&&k==='camp')s=E.reduce(s,{type:'ask',id:'who'});
+  if(st==='check'){for(const id of E.checks[k])s=E.reduce(s,{type:'check',id});for(const a of E.answers[k])s=E.reduce(s,{type:'judge',stamp:a});}
+  if(st==='choose'){s=E.reduce(s,{type:'choose',id:E.choices[k][0]});continue;}
+  if(st==='follow'){const m=E.followMarks[k];m.ids.forEach((id,i)=>{s=E.reduce(s,{type:'mark',id,value:k==='photo'?E.truth[i]:m.values[0]});});s=E.reduce(s,{type:'follow-judge',stamp:E.followAnswers[k]});}
+  if(st==='notice'){for(const id of E.noticeIds(k))if(E.noticeCards[k].must.includes(id)!==s.notices[k].picked.includes(id))s=E.reduce(s,{type:'notice-pick',id});s=E.reduce(s,{type:'notice-post'});}
+  s=E.reduce(s,{type:'next'});}
+ return s;}
+const pick=(s,id)=>E.reduce(s,{type:'notice-pick',id}),post=s=>E.reduce(s,{type:'notice-post'});
+test('notice fix (request 10): cases 4 and 5 start from a flawed draft; cases 1~3 still start empty; the drafts hold no right answer set',()=>{
+ assert.deepEqual(E.noticeDrafts,{camp:['camp-role','camp-never','camp-everyone'],share:['share-same','share-spell']});
+ for(const k of ['photo','writing','face']){const s=walk(k,'notice');assert.deepEqual(s.notices[k],{picked:[],posted:null},k+' card picking as before');assert.equal(E.noticeFix(s,k),false);assert.equal(E.noticeDraft(k),null);}
+ for(const k of ['camp','share']){const s=walk(k,'notice');
+  assert.deepEqual(s.notices[k],{picked:E.noticeDrafts[k],posted:null,fix:true},k+' draft put in on arrival');assert.equal(E.noticeFix(s,k),true);
+  const r=E.noticeCheck(k,E.noticeDrafts[k]);assert.equal(r.ok,false,'the draft is wrong');assert.ok(r.missing.length>=2,'at least two must cards to add');assert.equal(r.promises.length,1,'one promise to remove');
+  for(const id of E.noticeDrafts[k])assert.ok(E.noticeKind(k,id),'draft cards are this case’s cards');
+  assert.equal(E.canAdvance(s),false,'post once before moving on');
+  // 다른 단계에는 초안이 없다(미리 알리기 전에는 picked가 비어 있다)
+  const before=walk(k,'follow');assert.deepEqual(before.notices[k],{picked:[],posted:null});}
+ // 모양이 다른 두 초안: 사건 4는 부딪침 카드가 있고 사건 5는 없다(사건 5 초안에는 있으면 좋음 카드)
+ assert.deepEqual(E.noticeCheck('camp',E.noticeDrafts.camp).conflicts,['camp-everyone']);assert.deepEqual(E.noticeCheck('share',E.noticeDrafts.share).conflicts,[]);
+ assert.deepEqual(E.noticeCheck('share',E.noticeDrafts.share).extras,['share-spell']);
+});
+test('notice fix: the draft cannot be posted unchanged; one change is enough to post (even if still wrong); back to the draft blocks posting again but keeps the last posted notice',()=>{
+ let s=walk('camp','notice');
+ s=post(s);assert.equal(s.notices.camp.posted,null,'draft as it is cannot be posted');assert.equal(E.canAdvance(s),false);
+ s=pick(s,'camp-never');assert.deepEqual(s.notices.camp.picked,['camp-role','camp-everyone']);s=post(s);
+ assert.deepEqual(s.notices.camp.posted,['camp-role','camp-everyone'],'one change: can post');assert.equal(E.canAdvance(s),true,'posting once is enough, as before');
+ const r=E.noticeCheck('camp',s.notices.camp.posted);assert.deepEqual([r.ok,r.missing,r.conflicts,r.promises],[false,['camp-office','camp-appeal'],['camp-everyone'],[]]);
+ assert.deepEqual(E.noticeChanges('camp',s.notices.camp.posted),{removed:['camp-never'],added:[]});
+ s=pick(s,'camp-never');assert.equal(E.noticeSameDraft('camp',s.notices.camp.picked),true);s=post(s);
+ assert.deepEqual(s.notices.camp.posted,['camp-role','camp-everyone'],'back to the draft: posting ignored, the last posted notice stays');assert.equal(E.canAdvance(s),true);
+ // 모두 고침: 다 맞음
+ for(const id of ['camp-never','camp-everyone','camp-office','camp-appeal'])s=pick(s,id);s=post(s);
+ assert.deepEqual(s.notices.camp.posted,['camp-role','camp-office','camp-appeal']);assert.equal(E.noticeCheck('camp',s.notices.camp.posted).ok,true);
+ assert.deepEqual(E.noticeChanges('camp',s.notices.camp.posted),{removed:['camp-never','camp-everyone'],added:['camp-office','camp-appeal']});
+ // 빈 안내문은 여전히 붙일 수 없다
+ let e=walk('share','notice');e=pick(pick(e,'share-same'),'share-spell');assert.deepEqual(e.notices.share.picked,[]);e=post(e);assert.equal(e.notices.share.posted,null);
+ // 사건 5: 순서가 달라도 같은 집합이면 초안 그대로
+ e=pick(pick(e,'share-spell'),'share-same');assert.equal(E.noticeSameDraft('share',e.notices.share.picked),true);assert.equal(post(e).notices.share.posted,null);
+ e=pick(pick(e,'share-ai'),'share-real');e=post(e);assert.deepEqual(E.noticeCheck('share',e.notices.share.posted).promises,['share-same']);
+ // 다시 들어와도 초안을 다시 넣지 않는다(고친 것 그대로)
+ let back=E.reduce(e,{type:'revisit',scene:E.sceneOf('share','follow')});back=E.reduce(back,{type:'next'});assert.deepEqual(back.notices.share,e.notices.share);
+ // 다 고친 뒤 다음으로, 저장·복원 그대로
+ s=E.reduce(s,{type:'next'});assert.equal(E.stepOf(s.scene),'reflect');assert.deepEqual(E.restore(JSON.stringify(s)),s);
+ // 같은 화면에서 모두 빼도 picked가 비고 fix는 남는다 — 다시 열어도 초안을 다시 넣지 않는다
+ let none=walk('camp','notice');for(const id of E.noticeDrafts.camp)none=pick(none,id);assert.deepEqual(none.notices.camp,{picked:[],posted:null,fix:true});assert.deepEqual(E.restore(JSON.stringify(none)),none);
+});
+test('notice fix: the fix mark is only kept where it makes sense; a bad mark never wipes a save',()=>{
+ const s=walk('camp','reflect');assert.equal(s.notices.camp.fix,true);
+ for(const bad of ['yes',1,false,null]){const v=JSON.parse(JSON.stringify(s));v.notices.camp.fix=bad;const r=E.restore(JSON.stringify(v));
+  assert.equal(r.scene,s.scene,'save kept: '+bad);assert.equal('fix' in r.notices.camp,false,'not a fix notice: '+bad);assert.deepEqual(r.notices.camp.posted,s.notices.camp.posted);}
+ const v=JSON.parse(JSON.stringify(s));v.notices.photo.fix=true;assert.equal('fix' in E.restore(JSON.stringify(v)).notices.photo,false,'cases 1~3 never fix');
+ const early=walk('camp','follow');const w=JSON.parse(JSON.stringify(early));w.notices.share.fix=true;const r=E.restore(JSON.stringify(w));assert.deepEqual(r.notices.share,{picked:[],posted:null},'not reached yet');assert.equal(r.scene,early.scene);
+});
+test('notice fix and old saves (version 6 and 7 from before this change): card-picked notices stay card-picked; an untouched notice step gets the draft',()=>{
+ // 옛 모양: 사건 4·5 안내문은 꼭 필요 카드만 골라 붙임(fix 없음)
+ const oldShape=(key,step,ver)=>{const s=JSON.parse(JSON.stringify(walk(key,step)));s.version=ver;
+  for(const k of ['camp','share']){const n=s.notices[k];if(n.fix){delete n.fix;const done=Array.isArray(n.posted);n.picked=done?E.noticeCards[k].must.slice():[];if(done)n.posted=E.noticeCards[k].must.slice();}}
+  if(ver===6){s.evidence=s.evidence.filter(id=>id!=='camp-bus');if(s.follows.share.judgment)s.follows.share.judgment='different';if(stamps(s.judgments.camp[2]))s.judgments.camp[2]='confirmed';}
+  return s;};
+ const stamps=x=>E.stamps.includes(x);
+ for(const ver of [6,7]){
+  // 미리 알리기를 지난 저장(생각 정리·다음 사건·마지막·보고서): 카드로 붙인 안내문 그대로, fix 없음
+  for(const [key,step] of [['camp','reflect'],['share','hook'],['share','notice'],['share','reflect']]){const old=oldShape(key,step,ver),s=E.restore(JSON.stringify(old));
+   assert.equal(s.scene,old.scene,ver+' '+key+' '+step);assert.deepEqual(s.notices.camp,{picked:E.noticeCards.camp.must,posted:E.noticeCards.camp.must},ver+' camp kept as card-picked');
+   assert.equal(E.noticeFix(s,'camp'),false);assert.equal(E.noticeCheck('camp',s.notices.camp.posted).ok,true);}
+  for(const to of [E.END,E.REPORT]){let n=walk('share','reflect');while(n.scene<to)n=E.reduce(n,{type:'next'});
+   const old=JSON.parse(JSON.stringify(n));old.version=ver;for(const k of ['camp','share']){delete old.notices[k].fix;old.notices[k]={picked:E.noticeCards[k].must.slice(),posted:E.noticeCards[k].must.slice()};}
+   const s=E.restore(JSON.stringify(old));assert.equal(s.scene,to);assert.equal(s.completed,true);
+   for(const k of ['camp','share'])assert.deepEqual(s.notices[k],{picked:E.noticeCards[k].must,posted:E.noticeCards[k].must},ver+' finished save: '+k+' as the student posted it');}
+  // 미리 알리기에 서 있고 아직 아무것도 안 고른 저장: 초안이 들어간다
+  for(const k of ['camp','share']){const old=oldShape(k,'notice',ver);assert.deepEqual(old.notices[k],{picked:[],posted:null});
+   const s=E.restore(JSON.stringify(old));assert.equal(s.scene,old.scene);assert.deepEqual(s.notices[k],{picked:E.noticeDrafts[k],posted:null,fix:true},ver+' '+k+' draft put in');
+   assert.deepEqual(E.restore(JSON.stringify(s)),s,'round-trips');}
+  // 미리 알리기에서 카드를 고르던 저장: 고른 것 그대로, 카드 고르기로 이어서(초안을 덮어쓰지 않는다)
+  for(const k of ['camp','share']){const old=oldShape(k,'notice',ver);old.notices[k].picked=[E.noticeCards[k].must[1]];
+   let s=E.restore(JSON.stringify(old));assert.deepEqual(s.notices[k],{picked:[E.noticeCards[k].must[1]],posted:null},ver+' '+k+' picks kept, no draft');
+   s=post(s);assert.deepEqual(s.notices[k].posted,[E.noticeCards[k].must[1]],'card picking: posts as before');s=E.reduce(s,{type:'next'});assert.equal(E.stepOf(s.scene),'reflect');}
+  // 미리 알리기에서 붙인 뒤 뒤로 갔다 온 저장(furthest = 미리 알리기, 장면은 후속 조사): 붙인 것 그대로, 다음으로 가도 초안을 넣지 않는다
+  {const old=oldShape('camp','reflect',ver);old.scene=E.sceneOf('camp','follow');old.furthest=E.sceneOf('camp','notice');
+   let s=E.restore(JSON.stringify(old));assert.deepEqual(s.notices.camp,{picked:E.noticeCards.camp.must,posted:E.noticeCards.camp.must});s=E.reduce(s,{type:'next'});assert.deepEqual(s.notices.camp,{picked:E.noticeCards.camp.must,posted:E.noticeCards.camp.must});}
+  // 사건 4 후속 조사 도중(미리 알리기 전): 칸 그대로, 들어가면 초안
+  {const old=oldShape('camp','follow',ver);let s=E.restore(JSON.stringify(old));assert.deepEqual(s.notices.camp,{picked:[],posted:null});
+   s=E.reduce(E.reduce(s,{type:'mark',id:'changed',value:'found'}),{type:'follow-judge',stamp:'different'});s=E.reduce(s,{type:'next'});
+   assert.equal(E.stepOf(s.scene),'notice');assert.deepEqual(s.notices.camp,{picked:E.noticeDrafts.camp,posted:null,fix:true},ver+' reaches the notice step after the change: draft');}
+ }
 });
