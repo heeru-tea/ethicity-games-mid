@@ -142,6 +142,8 @@
     root.clearInterval(R.timer);
     if (R.raf) root.cancelAnimationFrame(R.raf);
     R.done = true;
+    /* 2026-11-12 랜덤 검토 9번: 운행이 끝나면 상태 줄 문장(예: ‘11:00 · 이제 15:00까지…’)과 11:00 물음 창을 지운다 — 다음 계획 화면(05:00)에 남지 않게 */
+    var sbt = document.getElementById('run-statusbar-text'); if (sbt) sbt.textContent = ''; var ask = document.getElementById('skip-fix-ask'); if (ask) ask.remove();
     document.querySelectorAll('#stage-overlay .bubble').forEach(function (b) { b.remove(); });
     clearAlerts();
   }
@@ -170,7 +172,7 @@
       if (chimed) App.chime();
       else if (resident) App.sfx('resident');
       else if (people && now - R.lastPop > 450) { R.lastPop = now; App.sfx('person'); }
-      var opened = R.fixAt != null && R.minute < R.fixAt && m >= R.fixAt && !reached;
+      var opened = R.fixAt != null && R.minute < R.fixAt && m >= R.fixAt && !reached && tf < W; /* 끝까지 건너뛰며 지나간 11:00은 알리지 않는다(2026-11-12 랜덤 검토 9번 — 그 문장이 다음 계획 화면까지 남았다) */
       R.minute = m;
       R.s.runCursor=m;App.save();
       if (opened) { setStatus(App.clock(R.fixAt) + ' · 이제 ' + fixSpan().split('~')[1] + '까지 노선을 한 번 고칠 수 있어요(‘노선 고치기 · 한 번’).'); pulseFix(); }
@@ -696,7 +698,32 @@
   }
 
   // 끝까지 건너뛰기 — 노선 고치기를 안 썼어도 묻지 않는다(안 쓰면 아무 일도 없음, 2026-11-09)
-  function skipToEnd() { if (!R || R.done || R.finishing) return; runToEnd(); }
+  /* 2026-11-12 랜덤 검토 6번: 노선 고치기를 아직 안 썼고 11:00 전이면 ‘끝까지’도 11:00에 한 번 멈춰 묻는다 — 「노선 고치기 · 한 번」 / ‘그대로 끝까지’.
+   * 3단계부터 모든 단계 같음(R.fixAt = 오늘 고칠 수 있는 첫 시각, 이미 고쳤거나 1·2단계면 null). 한 번 물은 뒤 다시 누르면 끝까지. 테스트용 빠른 재생(__pbFast)은 묻지 않는다(옛 검사들) */
+  function skipToEnd() {
+    if (!R || R.done || R.finishing) return;
+    tick(); if (!R || R.done || R.finishing) return;
+    var st = fixState();
+    if (!root.__pbFast && !R.skipAsked && R.fixAt != null && R.tf < R.fixAt && st && st.why === 'early' && R.pendingEmergency == null) { askAtFix(); return; }
+    runToEnd();
+  }
+  function askAtFix() {
+    var App = app(), at = R.fixAt; R.skipAsked = true;
+    R.paused = true; R.hold = true; R.mode = 'normal'; R.tf = at; R.last = root.performance.now(); drawBuses(App, at);
+    var m = Math.floor(at); if (m !== R.minute) { R.minute = m; R.s.runCursor = m; App.save(); onMinute(App, m); if (PB.Hud && PB.Hud.live) PB.Hud.live(R.res, at); }
+    setStatus(App.clock(at) + ' · 이제 ' + fixSpan().split('~')[1] + '까지 노선을 한 번 고칠 수 있어요(‘노선 고치기 · 한 번’).', true); pulseFix(); syncControls();
+    var d = $('#skip-fix-ask'); if (d) d.remove();
+    d = el('dialog', { id: 'skip-fix-ask', 'class': 'skip-fix-ask', 'aria-labelledby': 'skip-fix-ask-h' });
+    d.appendChild(el('h2', { id: 'skip-fix-ask-h' }, App.clock(at) + ' · 노선 고치기 · 한 번'));
+    d.appendChild(el('p', { id: 'skip-fix-ask-text' }, '끝까지 가기 전에 멈췄어요. ' + fixSpan().split('~')[1] + '까지 노선을 한 번 고칠 수 있어요. 고치지 않으면 그대로 끝까지 가요.'));
+    var acts = el('div', { 'class': 'row-actions' });
+    var fix = el('button', { type: 'button', id: 'skip-fix-open', 'class': 'btn btn-primary', onclick: function () { d.close(); d.remove(); openFix(); } }, '노선 고치기 · 한 번');
+    var go = el('button', { type: 'button', id: 'skip-fix-go', 'class': 'btn', onclick: function () { d.close(); d.remove(); runToEnd(); } }, '그대로 끝까지');
+    acts.appendChild(fix); acts.appendChild(go); d.appendChild(acts);
+    d.addEventListener('cancel', function (e) { e.preventDefault(); d.close(); d.remove(); setStatus(App.clock(at) + ' · 멈췄어요. ‘노선 고치기 · 한 번’으로 고치거나 재개해요.', true); });
+    document.body.appendChild(d); d.showModal(); fix.focus();
+  }
+  UI.runAskAtFix = function () { return R && R.skipAsked; };
   function runToEnd() {
     if (!R || R.done || R.finishing) return;
     var d = $('#emergency-dialog'); if (d) { if (d.open) d.close(); d.remove(); }

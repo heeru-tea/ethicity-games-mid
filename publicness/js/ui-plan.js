@@ -26,7 +26,8 @@
     active:function(){return active();},
     begin:function(mode){var r=active();if(!r||!this.enabled())return null;return {num:r.num,mode:mode,route:PB.RouteEdit.copy(r),original:PB.RouteEdit.copy(r),base:snapshot(),startId:r.nodes[mode.end==='head'?0:r.nodes.length-1]};},
     valid:function(r){return S.routeFits(st(),r.num,r)&&(r.nodes.length<2||!G.validateRoute(S.graph(st()),r).length);},
-    choose:function(end){var r=active();if(!r)return;P.mapSegment=null;P.mapEnd={num:r.num,end:end};P.message=app().nodeName(r.nodes[end==='head'?0:r.nodes.length-1])+' 쪽 끝을 골랐어요.';render();},
+    /* 2026-11-12 랜덤 검토 3번: 지도에서 고른 끝을 정류장 목록 연결(insert)에도 — 머리 = P.anchor −1(맨 앞), 꼬리 = 마지막 정류장 */
+    choose:function(end){var r=active();if(!r)return;P.mapSegment=null;P.mapEnd={num:r.num,end:end};if(!G.isLoop(r))P.anchor=end==='head'?-1:r.nodes.length-1;P.message=app().nodeName(r.nodes[end==='head'?0:r.nodes.length-1])+' 쪽 끝을 골랐어요.';render();},
     end:function(id){var r=active();return PB.RouteEdit.end(r,id,function(n){var p=app().nodeXY(n),q=app().view.project(p.x,p.y);return{x:q.left,y:q.top};},P.mapEnd&&P.mapEnd.num===r.num?P.mapEnd.end:null);},
     mode:function(id){var r=active();return P.mapSegment&&P.mapSegment.num===r.num&&P.mapSegment.index<r.nodes.length-1?{index:P.mapSegment.index}:{end:this.end(id)};},
     preview:function(tx){
@@ -46,7 +47,7 @@
       if(!this.enabled()||snapshot()!==tx.base||!this.valid(tx.route)||JSON.stringify(tx.route)===JSON.stringify(tx.original))return false;
       var r=S.routeByNum(st(),tx.num);changed();r.nodes=tx.route.nodes.slice();r.stops=tx.route.stops.slice();
       if(tx.original.nodes.length<2)S.autoPlace(st(),r.num);
-      P.anchor=null;P.mapEnd=null;P.mapSegment=null;
+      P.anchor=tx.mode.end&&!G.isLoop(r)?(tx.mode.end==='head'?-1:r.nodes.length-1):null;P.mapEnd=null;P.mapSegment=null;/* 끌어서 이은 끝을 목록 연결도 따른다(2026-11-12) */
       P.message=tx.mode.index!=null?app().nodeName(tx.last)+' 정류장을 사이에 넣었어요.':app().nodeName(tx.startId||r.nodes[0])+' 쪽 끝에 '+(r.nodes.length<tx.original.nodes.length?app().nodeName(tx.last||r.nodes[r.nodes.length-1])+'까지 줄였어요.':PB.Narrative.josa(app().nodeName(tx.last||r.nodes[r.nodes.length-1]),'을를')+' 이었어요.');
       render();return true;
     }
@@ -134,9 +135,11 @@
         changed();r.nodes.push(id);r.stops.push(true);P.anchor=null;P.message='순환 노선으로 연결했어요. 표시된 순서로 돌아요.';
       }else{P.anchor=r.nodes.indexOf(id);P.message=app().nodeName(id)+' 다음에 추가할 곳을 고르세요.';}
     }else{
+      var chosenEnd=P.mapEnd&&P.mapEnd.num===r.num?P.mapEnd.end:null,head=P.anchor===-1&&!G.isLoop(r);
       changed();var before=r.nodes.length,at=P.anchor==null?(G.isLoop(r)?r.nodes.length-1:r.nodes.length):P.anchor+1;
       // 첫 정류장만 고른 때는 아직 선이 없다 — ‘연결했어요’ 대신 시작 안내(2026-11-01)
-      r.nodes.splice(at,0,id);r.stops.splice(at,0,true);P.anchor=at;P.message=before===0?app().nodeName(id)+'에서 시작해요. 이어 갈 정류장을 누르세요.':app().nodeName(id)+' 정류장을 연결했어요.';
+      /* 맨 앞(머리 끝)에 붙이는 중이면 다음 정류장도 머리 끝에(사이로 들어가지 않게), 지도에서 고른 끝은 그대로 유지 */
+      r.nodes.splice(at,0,id);r.stops.splice(at,0,true);P.anchor=head&&before>0?-1:at;if(chosenEnd)P.mapEnd={num:r.num,end:chosenEnd};P.message=before===0?app().nodeName(id)+'에서 시작해요. 이어 갈 정류장을 누르세요.':app().nodeName(id)+' 정류장을 연결했어요.';
       // 노선이 처음 완성되는 순간(정류장 2곳) 대기 버스 1대가 운행을 시작한다 — 같은 편집 단계라 되돌리기 한 번에 함께 돌아간다
       if(before<2&&r.nodes.length>=2){var placed=S.autoPlace(st(),r.num);
         if(placed&&placed.busId!=null)P.message+=' '+B(placed.busId,null).replace(/^대기 버스/,'대기 버스 한 대')+'가 나와 '+R(r.num)+' 운행을 시작해요 · 운영·연료 약 '+app().won(S.busCost(st(),placed.busId,r.num))+'.';
@@ -303,6 +306,11 @@
       var options=el('details',{id:'stop-picker'});options.open=P.pickerOpen!=null?P.pickerOpen:!r.nodes.length;
       options.addEventListener('toggle',function(){P.pickerOpen=options.open;});options.appendChild(el('summary',null,'정류장 목록에서 연결하기'));
       var loop=G.isLoop(r),count=loop?r.nodes.length-1:r.nodes.length;
+      /* 2026-11-12 랜덤 검토 3번: 목록으로 이을 때 어느 끝에 붙는지 늘 한 줄로 + 끝 바꾸기(지도에서 고른 끝·끌어 이은 끝과 같은 규칙) */
+      if(!loop&&count>=1){var atHead=P.anchor===-1&&count>=2,atTail=P.anchor==null||P.anchor===count-1;
+        if(atHead||atTail){var endId=atHead?r.nodes[0]:r.nodes[count-1],line=el('p',{id:'picker-end','class':'note picker-end'},'지금 '+app().nodeName(endId)+' 쪽 끝에 붙어요. ');
+          if(count>=2){var other=atHead?r.nodes[count-1]:r.nodes[0];line.appendChild(btn(app().nodeName(other)+' 쪽 끝으로 바꾸기','picker-end-switch',function(){P.anchor=atHead?count-1:-1;P.mapEnd={num:r.num,end:atHead?'tail':'head'};P.mapSegment=null;P.pickerOpen=true;P.message=app().nodeName(other)+' 쪽 끝을 골랐어요.';render('#picker-end-switch');},'btn-sm'));}
+          options.appendChild(line);}}
       if(count){var pos=el('select',{id:'insert-at','aria-label':'추가 위치'});
         if(!loop)pos.appendChild(el('option',{value:'-1'},'맨 앞에'));
         for(var k=0;k<count;k++)pos.appendChild(el('option',{value:String(k)},(k===count-1&&!loop?'맨 끝(':'')+app().nodeName(r.nodes[k])+' 다음'+(k===count-1&&!loop?')':'')));
@@ -335,7 +343,7 @@
   function people(sec,m){
     var s=st(),tally=PB.Narrative.residentTally(s.config,s.history),ul=el('ul',{id:'resident-forecast','class':'resident-outcomes'});
     PB.Demand.residents(s.config,s.phase).forEach(function(rd){var r=m.residents[rd.id],t=tally[rd.id];if(!r)return;
-      ul.appendChild(el('li',{'data-resident':rd.id,'data-status':r.dayStatus},rd.name+' · '+(r.satisfied?'기준 충족 예상':(r.reasons||[]).map(function(x){return x.text;}).join(' ')||(rd.itineraries?TRIP:DAY)[r.dayStatus])+(t?' · 누적 '+t.completed+'/'+t.threshold+'회'+(t.completed>=t.threshold?' 기준 달성':' · 남은 '+t.remaining+'단계'):'')));});
+      ul.appendChild(el('li',{'data-resident':rd.id,'data-status':r.dayStatus},rd.name+' · '+(r.satisfied?'기준 충족 예상':(r.reasons||[]).map(function(x){return x.text;}).join(' ')||(rd.itineraries?TRIP:DAY)[r.dayStatus])+(t?' · 누적 '+PB.Narrative.tallyText(t.completed,t.threshold)+(t.completed>t.threshold?'':t.completed>=t.threshold?' 기준 달성':' · 남은 '+t.remaining+'단계'):'')));});
     if(m.families&&m.families.total)ul.appendChild(el('li',{id:'family-forecast'},'호수공원 가족 '+m.families.total+'팀 중 '+m.families.complete+'팀 전원 왕복 예상'));
     sec.appendChild(el('h4',null,'주요 인물·가족 예상'));sec.appendChild(ul);
   }
@@ -364,7 +372,7 @@
     var sec=el('section',{id:'resident-chips','aria-labelledby':'cast-h'});sec.appendChild(el('h3',{id:'cast-h'},'오늘 지켜볼 사람'));
     var row=el('div',{'class':'chips'});
     list.forEach(function(rd){var t=tally[rd.id];
-      var b=btn(rd.name+' · '+(rd.returnTo&&PB.Hud&&PB.Hud.itinerary?PB.Hud.itinerary(rd):app().clock(rd.depart)+' '+app().nodeName(rd.o)+' → '+app().nodeName(rd.d))+/* 유나·다은은 다음 이동까지(2026-11-11) */(t?' · 누적 '+t.completed+'/'+t.threshold+'회'+(t.completed>=t.threshold?' 달성':''):''),'resident-chip-'+rd.id,function(){
+      var b=btn(rd.name+' · '+(rd.returnTo&&PB.Hud&&PB.Hud.itinerary?PB.Hud.itinerary(rd):app().clock(rd.depart)+' '+app().nodeName(rd.o)+' → '+app().nodeName(rd.d))+/* 유나·다은은 다음 이동까지(2026-11-11) */(t?' · 누적 '+PB.Narrative.tallyText(t.completed,t.threshold)+(t.completed===t.threshold?' 달성':''):''),'resident-chip-'+rd.id,function(){
         app().view.setSelected([rd.o,rd.d]);app().view.flash(rd.o);app().view.flash(rd.d);
         document.querySelector('#plan-message').textContent=rd.name+' · 출발 '+app().nodeName(rd.o)+', 목적지 '+PB.Narrative.josa(app().nodeName(rd.d),'을를')+' 지도에 표시했어요.';
       },'resident-chip');b.dataset.resident=rd.id;row.appendChild(b);});

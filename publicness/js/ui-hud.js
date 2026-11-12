@@ -94,13 +94,13 @@
     b.appendChild(el('b', null, rd.name));
     b.appendChild(el('span', { 'class': 'person-chip-time' }, A.clock(rd.depart)));
     b.appendChild(el('span', { 'class': 'person-chip-trip' }, shortName(rd.o) + '→' + shortName(rd.d)));
-    if (t) b.appendChild(el('span', { 'class': 'person-chip-count' }, t.completed + '/' + t.threshold));
+    if (t) b.appendChild(el('span', { 'class': 'person-chip-count' }, PB.Narrative.tallyText(t.completed, t.threshold, true)));
     /* 2026-11-11 플레이테스트 4: 두 번째 이동이 다른 곳으로 가는 인물(유나·다은)은 칩에 다음 이동도 — ‘20:00 이후 →주거지’(오른쪽 칸이 좁아 한 줄에 들어가게 짧게). 운행이 끝나는 시각(23:00 전 도착)은 읽어 주는 이름·눌렀을 때 안내에 */
     if (rd.returnTo) b.appendChild(el('span', { 'class': 'person-chip-next' }, A.clock(rd.returnAt) + ' 이후 →' + shortName(rd.returnTo)));
     if (st === 'impossible') b.appendChild(el('span', { 'class': 'person-chip-flag' }, '기준 달성 불가'));
     /* 2026-11-12 랜덤 검토 2번: 계획 화면에서 이 사람의 길이 갈아타기 두 번 이상이면 미리 경고(갈아타기는 한 번까지) */
     if (tr) b.appendChild(el('span', { 'class': 'person-chip-flag transfer' }, '갈아타기 ' + tr.n + '번 필요'));
-    var label = rd.name + ' · ' + (rd.returnTo ? itinerary(rd) : A.clock(rd.depart) + ' ' + A.nodeName(rd.o) + '에서 ' + A.nodeName(rd.d) + '까지') + (t ? ' · 학기 누적 ' + t.completed + '/' + t.threshold + '회' : '') +
+    var label = rd.name + ' · ' + (rd.returnTo ? itinerary(rd) : A.clock(rd.depart) + ' ' + A.nodeName(rd.o) + '에서 ' + A.nodeName(rd.d) + '까지') + (t ? ' · 학기 누적 ' + PB.Narrative.tallyText(t.completed, t.threshold) : '') +
       (st === 'impossible' ? ' · 남은 단계로는 기준 달성 불가' : st === 'done' ? ' · 기준 달성' : '') + (tr ? ' · ' + rd.name + ': 갈아타기 ' + tr.n + '번 필요, 이대로면 못 가요(갈아타기는 한 번까지)' : '') + ' · 누르면 지도에 경로를 보여 줘요';
     b.setAttribute('aria-label', label); b.title = label;
     b.setAttribute('aria-pressed', String(picked.id === rd.id && picked.key === key()));
@@ -130,7 +130,7 @@
       else if (done) text = '왕복 완료 ✓';
       else if (outDone) text = '가는 길 ✓ · ' + (!back || tf < back.t ? '볼일 중' : '돌아오는 길 ' + (onBus(back) ? '버스 안' : '대기 중'));
       else if (out && tf >= out.t) text = '가는 길 ' + (onBus(out) ? '버스 안' : '대기 중');
-      var cnt = b.querySelector('.person-chip-count'); if (cnt && t) { var v = (t.completed + gained) + '/' + t.threshold; if (cnt.textContent !== v) cnt.textContent = v; /* 2026-11-06 P2-7: 읽어 주는 이름표도 같은 숫자 */ var al = b.getAttribute('aria-label') || '', al2 = al.replace(/학기 누적 \d+\/\d+회/, '학기 누적 ' + v + '회'); if (al2 !== al) b.setAttribute('aria-label', al2); }
+      var cnt = b.querySelector('.person-chip-count'); if (cnt && t) { var v = PB.Narrative.tallyText(t.completed + gained, t.threshold, true), vl = PB.Narrative.tallyText(t.completed + gained, t.threshold); if (cnt.textContent !== v) cnt.textContent = v; /* 2026-11-06 P2-7: 읽어 주는 이름표도 같은 숫자 */ var al = b.getAttribute('aria-label') || '', al2 = al.replace(/학기 누적 \d+\/\d+회( 달성\(\+\d+\))?/, '학기 누적 ' + vl); if (al2 !== al) b.setAttribute('aria-label', al2); }
       var lv = b.querySelector('.person-chip-live'); if (!lv) { lv = el('span', { 'class': 'person-chip-live' }); b.appendChild(lv); }
       if (lv.textContent !== text) lv.textContent = text; lv.hidden = !text; lv.classList.toggle('bad', /기준 초과$/.test(text)); lv.classList.toggle('good', text === '왕복 완료 ✓');
       b.dataset.live = text; b.title = b.getAttribute('aria-label') + (text ? ' · 지금: ' + text : '');

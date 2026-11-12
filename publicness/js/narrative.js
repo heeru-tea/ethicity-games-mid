@@ -286,6 +286,12 @@
   /* ── 2026-11-01 단계 전 설명을 결과 화면으로: 순수 함수(화면 문장·판정만, 계산 규칙은 그대로) ── */
   // 학기 말 기준 상태: 이미 달성 / 남은 단계를 모두 해내도 못 채움(‘기준 달성 불가’) / 아직 가능
   // t = residentTally의 한 줄 {completed, threshold, remaining}(remaining = 아직 기록되지 않은 단계 수)
+  /* 누적 횟수 표시(2026-11-12 랜덤 검토 10번): 목표를 넘으면 ‘7/6회’ 대신 ‘6/6회 달성(+1)’. short = 칩처럼 좁은 곳(‘6/6(+1)’) */
+  function tallyText(done, need, short) {
+    if (need == null) return String(done);
+    if (done > need) return need + '/' + need + (short ? '(+' + (done - need) + ')' : '회 달성(+' + (done - need) + ')');
+    return done + '/' + need + (short ? '' : '회');
+  }
   function criterionState(t) {
     if (!t) return null;
     if (t.completed >= t.threshold) return 'done';
@@ -331,21 +337,25 @@
     var worst = pool[0] || null, tied = pool[1] && pool[1].left / pool[1].N === worst.left / worst.N ? pool[1] : null;
     /* 살펴볼 곳 = 주제 지역 가운데 못 간 이동이 있는 곳만 */
     var open = ids.filter(function (id) { return stat([id]).left > 0; }), f = stat(open), openNames = open.map(function (id) { return nodeName(config, id); }).join('·');
-    var themeIsWorst = !!worst && open.length === 1 && (open[0] === worst.id || (!!tied && open[0] === tied.id)), ethics = !t.N || t.rate < FOCUS_RATE, line = '';
-    if (worst) {
-      var one = function (z, kind) { return josaNote(nodeName(config, z.id), z.N + '건 중 ' + z.left + '건 목적지까지 못 감', kind); };
-      line = tied ? '남은 비율이 가장 큰 곳은 ' + one(worst, '과와') + ' ' + one(tied, '이에요') + '.' : '남은 비율이 가장 큰 곳은 ' + josa(nodeName(config, worst.id), '이에요') + '. 출발한 이동 ' + worst.N + '건 중 ' + worst.left + '건은 목적지까지 못 갔어요.';
+    var ethics = !t.N || t.rate < FOCUS_RATE, line = '', pick = null;
+    /* 2026-11-12 랜덤 검토 11번: 다음 운행 목표는 한 곳만, 이유 한 줄. 이번 단계 주제 지역에 못 간 이동이 있으면 그곳(못 간 비율이 큰 곳, 같으면 건수) —
+     * 단계가 챙기기로 한 곳이라서. 없으면 못 간 비율이 가장 큰 출발지(같으면 건수·정류장 순). 예전 ‘남은 비율이 가장 큰 곳은 … 살펴볼 곳은 …’(두 곳) 대신 */
+    if (open.length) {
+      pick = open.map(function (id) { var z = stat([id]); z.id = id; return z; }).sort(function (a, b) { return b.left / b.N - a.left / a.N || b.left - a.left; })[0];
+      line = '다음 운행에서 살펴볼 곳은 ' + josa(nodeName(config, pick.id), '이에요') + '. 이번 단계가 챙기기로 한 곳인데 출발한 이동 ' + pick.N + '건 중 ' + pick.left + '건이 목적지까지 못 갔어요.';
+    } else if (worst) {
+      pick = worst;
+      line = '다음 운행에서 살펴볼 곳은 ' + josa(nodeName(config, pick.id), '이에요') + '. 출발한 이동 가운데 목적지까지 못 간 비율이 가장 커요(' + pick.N + '건 중 ' + pick.left + '건).';
     }
     if (!t.N) line += (line ? ' ' : '') + '이번에는 ' + names + '에서 출발한 이동이 없었어요.';
     else if (!worst) line = names + '에서 출발한 이동 ' + t.N + '건이 모두 도착했어요.';
-    else if (open.length && !themeIsWorst) line += ' 이번 단계에서 살펴볼 곳은 ' + josa(openNames, '이에요') + '(출발 ' + f.N + '건 중 ' + f.left + '건 목적지까지 못 감).';
     /* 모두 도착했지만 AI가 못 본 주제 지역: 왜 짚는지 까닭을 적는다 */
     ids.forEach(function (id) {
       var u = unseen[id], z = stat([id]);
       if (!u || u.seen !== 0 || !(u.real > 0) || !z.N || z.left > 0) return;
       line += (line ? ' ' : '') + josa(nodeName(config, id), '은는') + (worst ? ' 출발 ' + z.N + '건이 모두 도착했지만,' : '') + ' AI가 본 이동 0건 · 실제 ' + u.real + '건이라 AI 제안에서 빠지기 쉬운 곳이에요.';
     });
-    return { bridge: line, ethics: ethics, theme: t, worst: worst, focus: open };
+    return { bridge: line, ethics: ethics, theme: t, worst: worst, focus: pick ? [pick.id] : [], pick: pick ? pick.id : null };
   }
   function bridgeLine(config, phase, passengers, mobility, opts) { return thinkFocus(config, phase, passengers, mobility, opts).bridge; }
   // 인물 결과 한 줄: 어느 이동인지, 어디서 얼마나 기다렸는지, 만차·노선 없음, 그 노선의 버스 수·간격
@@ -387,7 +397,7 @@
     if (worst) return head + legText(worst, worst === back ? backLabel : outLabel) + (Evaluation.overWait(config, worst.waitTotal) ? ', 기준 ' + dur(sv.maxWait) + ' 넘김' : '');
     return head + ((rec.reasons || [])[0] ? rec.reasons[0].text : '이동을 마치지 못했어요.');
   }
-  var api = { criterionState: criterionState, mergeRepeats: mergeRepeats, bridgeLine: bridgeLine, thinkFocus: thinkFocus, residentLine: residentLine, THEME: THEME, won:won, financeReview:financeReview, josa:josa, josaNote:josaNote, residentResult:residentResult,satisfactionTargets:satisfactionTargets,satisfactionText:satisfactionText,residentTally:residentTally,endingReactions:endingReactions,endingConclusion:endingConclusion, fill: fill, bubbles: bubbles, residentStory: residentStory, zoneSubtitleText: zoneSubtitleText, hookLines: hookLines, nodeName: nodeName };
+  var api = { tallyText: tallyText, criterionState: criterionState, mergeRepeats: mergeRepeats, bridgeLine: bridgeLine, thinkFocus: thinkFocus, residentLine: residentLine, THEME: THEME, won:won, financeReview:financeReview, josa:josa, josaNote:josaNote, residentResult:residentResult,satisfactionTargets:satisfactionTargets,satisfactionText:satisfactionText,residentTally:residentTally,endingReactions:endingReactions,endingConclusion:endingConclusion, fill: fill, bubbles: bubbles, residentStory: residentStory, zoneSubtitleText: zoneSubtitleText, hookLines: hookLines, nodeName: nodeName };
   root.PB = root.PB || {};
   root.PB.Narrative = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

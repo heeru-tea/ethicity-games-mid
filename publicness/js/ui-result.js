@@ -56,7 +56,7 @@
     words.appendChild(el('span',{'class':'resident-state '+(r.satisfied?'complete':'incomplete')},(r.satisfied?'✓ 만족':'○ 불만족')));// 이유 한 줄(2026-11-01): 어느 이동인지·어디서 얼마나 기다렸는지·만차·노선 없음·그 노선의 버스 수와 간격
     words.appendChild(el('span',{'class':'resident-reason'},PB.Narrative.residentLine(App.s.config,rd,r,App.s.current.result.passengers,routeInfoFor(App))));
     // 학기 누적 n/m과 ‘기준 달성 불가’(남은 단계를 모두 해내도 못 채움)
-    if(t){var cs=PB.Narrative.criterionState(t),tl=words.appendChild(el('span',{'class':'resident-tally'+(cs==='impossible'?' impossible':cs==='done'?' done':'')},'누적 '+t.completed+'/'+t.threshold+'회'+(cs==='impossible'?' · 기준 달성 불가':cs==='done'?' · 기준 달성':' · 남은 '+t.remaining+'단계')));tl.dataset.state=cs;}
+    if(t){var cs=PB.Narrative.criterionState(t),tl=words.appendChild(el('span',{'class':'resident-tally'+(cs==='impossible'?' impossible':cs==='done'?' done':'')},'누적 '+PB.Narrative.tallyText(t.completed,t.threshold)+(cs==='impossible'?' · 기준 달성 불가':cs==='done'?(t.completed>t.threshold?'':' · 기준 달성'):' · 남은 '+t.remaining+'단계')));tl.dataset.state=cs;}
     head.appendChild(words);
     // 펼침 표시(2026-11-01): 펼치면 ＋ → −, aria-expanded도 함께
     var mark=el('span',{'class':'resident-expand','aria-hidden':'true'});mark.appendChild(PB.Icons.create('plus'));head.appendChild(mark);head.setAttribute('aria-expanded','false');card.appendChild(head);
@@ -69,7 +69,7 @@
     card.addEventListener('toggle',function(){if(!card.open||mm.firstChild||!PB.Hud)return;var f=focusLeg(App,rd,r,res,info),map=PB.Hud.miniMap(mmState,mmRoutes,f);
       map.setAttribute('aria-label',rd.name+'의 구간 · '+App.nodeName(f.o)+'에서 '+App.nodeName(f.d)+'까지'+(f.legs?'':' · 잇는 노선 없음'));mm.appendChild(map);
       mm.appendChild(el('figcaption',{'class':'note'},App.nodeName(f.o)+' → '+App.nodeName(f.d)+(f.legs?'':' · 잇는 노선 없음')));});
-    if(t)body.appendChild(el('p',{'class':'note'},'엔딩 기준 · 누적 '+t.completed+'/'+t.threshold+'회'+(t.completed>=t.threshold?' · 기준 달성':' · 남은 '+t.remaining+'단계')));
+    if(t)body.appendChild(el('p',{'class':'note'},'엔딩 기준 · 누적 '+PB.Narrative.tallyText(t.completed,t.threshold)+(t.completed>t.threshold?'':t.completed>=t.threshold?' · 기준 달성':' · 남은 '+t.remaining+'단계')));
     var times=el('details',{'class':'resident-times'});times.appendChild(el('summary',null,'도착 시각 기록'));
     times.appendChild(el('p',{'class':'note'},'첫 도착 '+(r.arriveT!=null?App.clock(r.arriveT):'아직 못 감')+' · 최종 도착 '+(r.homeT!=null?App.clock(r.homeT):'아직 못 감')));body.appendChild(times);card.appendChild(body);
     // 눌러서 닫은 뒤에는 마우스가 카드를 떠날 때까지 올려 두기만으로 다시 펼치지 않는다(펼친 내용·작은 지도로 카드 높이가 바뀌어도 닫힌 채)

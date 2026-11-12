@@ -22,5 +22,5 @@ test('같은 뜻은 같은 말: 결과 카드 구간 상태·지역 버튼·두 
 test('지역 문장: 숫자는 그대로, 말만 바뀜', () => {
   const cfg=require('../js/config.js'),N=require('../js/narrative.js');
   const mob={ worst:{ id:'A', N:33, done:10, missed:23 }, zones:{ A:{ N:33, done:10 }, F:{ N:12, done:12 } } };
-  assert.match(N.bridgeLine(cfg,1,[],mob), /^남은 비율이 가장 큰 곳은 기차역이에요\. 출발한 이동 33건 중 23건은 목적지까지 못 갔어요\./);
+  assert.match(N.bridgeLine(cfg,1,[],mob), /^다음 운행에서 살펴볼 곳은 기차역이에요\. 출발한 이동 가운데 목적지까지 못 간 비율이 가장 커요\(33건 중 23건\)\./); /* 2026-11-12 한 곳만 */
 });
