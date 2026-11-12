@@ -285,7 +285,7 @@
         who('haneul', 'yard', 17, 11, 'left'), who('jiho', 'yard', 11, 6, 'down')],
       // 2026-11-12 대사 보완 시범(교사 검수 대기). castLines는 지나갈 때 머리 위 말풍선으로도 뜨므로 짧게(40자 안)
       castLines: {
-        haneul: '왔냐! 오늘 부스 투표 나온대. 사진관 되면 다 찍어서 다 올린다.',
+        haneul: '왔냐! 오늘 부스 투표 나온대. 사진관 되면 우리 반 다 같이 찍자.',
         jiho: '아, 안녕… 반짝이 스티커 사 왔어. 너무 많이 샀나…'
       },
       greet: [
@@ -385,7 +385,7 @@
     c1_e3_anon: { place: 'classroom', tint: 'day', card: 'D-1 · 교실', cast: only(classmates, ['saebom', 'haneul']) }, // 지호 '(개인톡)' 줄
     c1_e3_cap: { place: 'classroom', tint: 'day', card: 'D-1 점심 · 교실', cast: [] }, // 하늘 개인톡 + 반응에서 새봄·하늘·지호 모두 메시지
     c2_e4_a: { place: 'store', tint: 'evening', cast: [who('haneul', 'yard', 22, 14, 'left')],
-      bubbles: [{ on: '누가 만든 거래', who: 'haneul', text: '이거 봐 ㅋㅋ' }, { on: '나 보낸 거 지울게', who: 'haneul', text: '…' }] },
+      bubbles: [{ on: '누가 만든 거래', who: 'haneul', text: '신기하지?' }, { on: '나 보낸 거 지울게', who: 'haneul', text: '…' }] },
     c2_e4_b: { place: 'road', tint: 'evening', card: '그날 저녁 · 집에 가는 길', cast: [] },
     c2_e5_a: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
     c2_e5_b: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
@@ -436,7 +436,7 @@
     haneul: [
       { if: 'e6=logout', text: '그때 로그아웃해 준 거 진짜 고마웠다.' },
       { if: 'e6=leave || e6b=deny', text: '내 계정에 이상한 거 올린 사람 아직도 못 찾았어 ㅡㅡ' }, // 내가 털어놓았으면(own) 하늘이는 이미 안다
-      { if: 'trust.haneul<0', text: '…뭐.' },
+      { if: 'trust.haneul<0', text: '…나중에 얘기하자.' },
       { text: '축제 때 사진 많이 찍자 ㅋㅋ' }
     ],
     jiho: [

@@ -416,10 +416,12 @@
           'jiho: 나 꾸미기 해도 돼?',
           'jiho: 배경 천이랑 액자 같은 거… 만들어 보고 싶었어',
           'saebom: 당연하지! 지호 꾸미는 거 잘하잖아',
+          'haneul: 인정 ㅋㅋ 지호 액자면 손님 줄 선다',
           'minjun: 소품 할게',
           'minjun: 집에 옛날 카메라 모형 있음',
           'haneul: 오 민준이 단톡에서 말하는 거 처음 봄 ㅋㅋ',
           'minjun: 읽고는 있음',
+          'haneul: ㅋㅋ 알지 알지. 카메라 모형 완전 기대됨',
           'saebom: 오늘 역할만 정하면 내일부터 바로 준비할 수 있어',
           'saebom: {name} 넌 뭐 할래? 사진, 홍보, 정산 자리가 남았어',
           'saebom: 정산은 지금 나 혼자라… 누가 좀 ㅠ'
@@ -524,7 +526,8 @@
           'narr: 부스 꾸미기 중. 민준이가 페인트 묻은 얼굴로 책상에 엎드려 잠들었다. 볼에 반짝이까지 붙어 있다.',
           // 첫 'haneul: ' 줄과 조건 없는 선택지 문구는 시작 화면 미리보기·말풍선에 그대로 쓰인다(app.js renderPeek) — 바꾸면 시작 화면도 바뀜
           'haneul: (속삭이며) 야, 이건 찍어야 돼. 레전드다.',
-          'haneul: 쟤 맨날 무표정이잖아. 이런 얼굴은 다시 안 나와.',
+          'haneul: 민준이 이렇게 푹 자는 거 처음 봐. 완전 애기 같아.',
+          'haneul: 부스 준비 기념사진으로 딱이다.',
           'narr: 교실 저쪽에서는 새봄이와 지호가 간판 글씨에 매달려 있다. 이쪽을 보는 사람은 없다.',
           'haneul: 너도 얼른 꺼내. 깨기 전에.',
           { who: 'narr', text: '내 손에는 부스용 카메라가 들려 있다.', if: 'role=photo' }
@@ -533,7 +536,7 @@
         choices: [
           { id: 'shoot', text: '같이 웃으며 사진을 찍는다.',
             set: { e2shot: 'nocheck', e2_photo: true },
-            react: ['narr: 찰칵. 민준이는 깨지 않았다.', 'haneul: (입을 틀어막고) 반짝이 봐, 반짝이…', 'haneul: 이거 완전 프사감이다.'], next: 'c1_e2_b' },
+            react: ['narr: 찰칵. 민준이는 깨지 않았다.', 'haneul: (입을 틀어막고) 반짝이 봐, 반짝이…', 'haneul: 이거 우리 반 축제 앨범 1번 사진이다.'], next: 'c1_e2_b' },
           { id: 'ask', text: '민준이를 깨워 찍어도 되는지 먼저 묻는다.',
             say: '민준아, 지금 너 얼굴 완전 웃긴데… 사진 찍어도 돼?',
             set: { e2shot: 'asked', e2_photo: true }, add: { consent: 1 },
@@ -543,8 +546,8 @@
           { id: 'no', text: '자는 사람은 찍지 말자고 하늘이에게 말한다.',
             say: '자는 사람 찍는 건 좀 아니다. 그냥 두자',
             set: { e2shot: 'none' },
-            react: ['haneul: 아, 재미없어… 알았어, 알았어.', 'haneul: 이런 얼굴 진짜 다시 안 나온다니까.',
-              'narr: 하늘이는 아쉬운 얼굴로 휴대폰을 주머니에 넣고, 배경 천 쪽으로 돌아갔다.'], next: 'c1_e3_a' }
+            react: ['haneul: 아… 알았어, 알았어.', 'haneul: 진짜 귀여웠는데.',
+              'narr: 하늘이는 아쉬운 얼굴로 휴대폰을 주머니에 넣었다. 그러고는 의자에 걸린 민준이 겉옷을 어깨에 덮어 주고, 배경 천 쪽으로 돌아갔다.'], next: 'c1_e3_a' }
         ]
       },
       c1_e2_b: {
@@ -555,12 +558,14 @@
           { kind: 'image', text: '민준이가 엎드려 자는 사진', alt: '교실 책상에 엎드려 자는 민준', photo: 'assets/photos/minjun-sleep.png', placeholder: 'assets/sprites/minjun_sleep.png' },
           'haneul: ㅋㅋㅋㅋㅋㅋㅋ',
           'haneul: 아까 그 사진 봐 볼에 반짝이 붙은 거',
-          'haneul: 몇 번을 봐도 웃김',
+          'haneul: 몇 번을 봐도 귀여움 ㅋㅋ',
           'haneul: 근데 확대하니까 [[교복 이름표까지]] 선명하게 나왔네',
           'haneul: 화질 뭐야 ㅋㅋ',
           'haneul: 이거 스토리 올려도 되지?',
           'haneul: 아님 반톡? 반톡은 우리끼리니까 괜찮잖아',
           { who: 'haneul', text: '부스 홍보 계정에 올려도 웃기겠다 ㅋㅋ 팔로워 확 늘 듯', if: 'role=sns' },
+          'haneul: 민준이 반에서 맨날 조용히 있잖아',
+          'haneul: 이거 올리면 애들이 민준이한테 말 좀 걸걸?',
           'haneul: 민준이도 보면 웃을걸',
           { who: 'narr', text: '민준이는 분명 “올리진 마”라고 했다.', if: 'e2shot=asked' }
         ],
@@ -572,16 +577,16 @@
             react: ['haneul: 에이 물어보면 당연히 싫다고 하지', 'haneul: …알았어. 물어봐',
               'narr: 민준이에게 메시지를 보냈다. 답은 한참 뒤에 왔다.',
               'minjun: (개인톡) 아', 'minjun: 그건 좀…', 'minjun: 자는 얼굴이랑 이름표 나온 건 안 올렸으면 좋겠어',
-              'haneul: 거봐 ㅋㅋ', 'haneul: 아깝다… 그럼 우리끼리만 보고 말자'],
+              'haneul: 아… 싫구나', 'haneul: 알았어. 안 올릴게. 우리끼리만 보고 말자'],
             next: 'c1_e3_a' },
           { id: 'keep', if: 'e2shot=asked', text: '민준이가 올리지 말라고 했다고 말한다.',
             say: '민준이가 찍는 건 되는데 올리는 건 안 된대',
             set: { e2post: 'keep' }, add: { minimize: 1 },
-            react: ['haneul: 아 맞다 그랬지', 'haneul: 근데 이건 진짜 아깝다…', 'haneul: 알았어 ㅋㅋ 내 폰에만 둘게. 심심할 때 혼자 봐야지'], next: 'c1_e3_a' },
+            react: ['haneul: 아 맞다 그랬지', 'haneul: 근데 이건 진짜 아깝다…', 'haneul: 알았어 ㅋㅋ 아무 데도 안 올릴게', 'haneul: 민준이한테만 보내 줘야지. 자기가 이렇게 자는 줄 모를걸'], next: 'c1_e3_a' },
           { id: 'group', text: '“우리끼리”니까 반 단톡방에만 올린다.',
             set: { e2post: 'group' }, add: { spread: 1 },
             react: ['narr: [[28명 방에]] 사진이 올라갔다. ‘ㅋㅋㅋ’ 반응이 14개 달렸다.',
-              'haneul: 반응 봐 ㅋㅋㅋ', 'haneul: 민준이는 아직 안 읽었네. 내일 아침에 보면 난리 나겠다',
+              'haneul: 반응 봐 ㅋㅋㅋ 다들 귀엽대', 'haneul: 민준이는 아직 안 읽었네', 'haneul: 내일 보면 뭐라 하려나… 웃겠지?',
               'narr: 누가 사진을 저장했는지는 표시되지 않는다. 그래서 아무도 모른다.'], next: 'c1_e2_d' },
           { id: 'story', text: '스냅로그 스토리에 올린다. 부스 홍보도 되니까.',
             set: { e2post: 'story', school_visible: true }, add: { spread: 2 },
@@ -618,6 +623,7 @@
             set: { e2fix: 'all' }, add: { repair: 2, 'trust.minjun': 1 },
             // 민준이와의 개인톡 화면이라 단톡방 답은 '(단톡)'을 붙인다(사건 8 crew와 같은 방식)
             react: ['sys: 게시물이 삭제되었습니다', 'saebom: (단톡) 헉 나 저장했었어. 방금 지움', 'jiho: (단톡) 난 저장 안 했어. 민준이 괜찮아?',
+              'haneul: (단톡) 나도 저장한 거 지웠어. 민준아 미안 ㅠ 찍자고 한 거 나야',
               'narr: 몇 명은 지웠다고 답했다. [[답하지 않은 사람도 있다]].', 'minjun: 단톡에 그렇게까지 쓸 줄은 몰랐어', 'minjun: 고마워. 진짜로'], next: 'c1_e3_a' },
           { id: 'no', text: '“다들 웃기다는데?” 하고 넘긴다.',
             say: '에이 다들 웃기다는데? 너무 신경 쓰지 마',
@@ -631,14 +637,22 @@
         chapter: 1, event: 'e3', label: '지호의 고민',
         view: { type: 'dm', title: '지호' },
         lines: [
+          // 2026-11-12 대사 보완(사건 3~9, 교사 검수 대기): 지호는 개인톡에서만 길어진다 — 망설이다 털어놓기. 문서 privacy/docs/voice-sheet.md
           'sys: D-2 · 밤 10:21',
-          'jiho: {name} 자? 할 말 있는데',
+          'jiho: {name} 자?',
+          'jiho: 자면 내일 봐도 돼',
+          'jiho: …아니다 그냥 지금 말할게',
           'jiho: 나 사실 축제 날 앞에서 손님 받는 거 너무 무서워',
-          'jiho: 작년 발표 때도 사람들 앞에 서니까 숨이 막혀서 말이 안 나왔어',
-          'jiho: 준비하는 동안은 꾸미기인데, 축제 당일엔 새봄이가 나를 손님 안내 담당으로 정했거든',
-          'jiho: 이제 와서 못 하겠다고 하면 다들 이상하게 볼까 봐 말을 못 하겠어',
+          'jiho: 작년 발표 때도 사람들 앞에 서니까 숨이 막혀서',
+          'jiho: 준비한 말이 하나도 안 나왔어',
+          'jiho: 준비하는 동안은 꾸미기인데',
+          'jiho: 축제 당일엔 새봄이가 나를 손님 안내 담당으로 정했거든',
+          'jiho: 새봄이 역할표 짜느라 고생하는 거 아니까…',
+          'jiho: 이제 와서 못 하겠다고 하면',
+          'jiho: 다들 이상하게 볼까 봐 말을 못 하겠어',
           'jiho: 이거 [[너한테만]] 하는 말이야. 아무한테도 말하지 마',
           'jiho: 진짜로',
+          'narr: 읽기는 했는데, 뭐라고 답해야 할지 몰라 화면만 보다가 잠이 들었다.',
           'narr: 다음 날 아침, 새봄이에게서 메시지가 왔다.'
         ],
         next: 'c1_e3_b'
@@ -648,27 +662,32 @@
         view: { type: 'dm', title: '새봄' },
         lines: [
           'sys: D-1 · 오전 8:05',
+          'saebom: {name} 일어났어?',
           'saebom: 지호 요즘 왜 그래?',
           'saebom: 역할 얘기만 꺼내면 다른 얘기로 넘어가',
+          'saebom: 어제도 안내 멘트 같이 연습하자니까 갑자기 반짝이 사러 가야 된대',
           'saebom: 너 지호랑 친하잖아. 뭐 들은 거 있어?',
-          'saebom: 역할표 오늘 점심까지 선생님께 내야 해서 ㅠ'
+          'saebom: 역할표 오늘 점심까지 선생님께 내야 해서 ㅠ',
+          'saebom: 혹시 내가 뭘 잘못 정한 건가 싶기도 하고…'
         ],
         prompt: '새봄이에게 어떻게 답할까?',
         choices: [
           { id: 'ask', text: '새봄이와 이 일을 의논해도 되는지 지호에게 먼저 묻는다.',
             set: { e3: 'ask' }, add: { consent: 1, 'trust.jiho': 1 },
             react: ['narr: 새봄이에게 “잠깐만”이라고 보내고, 지호에게 물었다.',
-              'jiho: …새봄이한테는 [[역할 바꾸고 싶다는 것만]] 말해 줘',
-              'jiho: 무서워하는 건 내가 나중에 직접 말할게'],
+              'jiho: (개인톡) 새봄이가 벌써 눈치챘구나…',
+              'jiho: (개인톡) …새봄이한테는 [[역할 바꾸고 싶다는 것만]] 말해 줘',
+              'jiho: (개인톡) 무서워하는 건 내가 나중에 직접 말할게'],
             next: 'c1_e3_ask' },
           { id: 'anon', text: '이름과 구체적인 사정은 빼고, 역할을 다시 신청받자고만 한다.',
             say: '안내가 부담스러운 사람도 있을 수 있잖아. 역할 한 번 다시 신청받는 건 어때?',
             set: { e3: 'anon' }, add: { minimize: 1 },
-            react: ['saebom: 오 그러네', 'saebom: 누가 그런지 콕 집어 묻는 것보다 낫겠다. 다시 받을게!'], next: 'c1_e3_anon' },
+            react: ['saebom: 아 그럴 수도 있겠다', 'saebom: 사실 나도 지호한테 대놓고 묻기는 좀 그랬거든', 'saebom: 점심 전에 다시 받아 볼게! 공지 지금 쓴다'], next: 'c1_e3_anon' },
           { id: 'capture', text: '새봄이가 정확히 알아야 할 것 같아 지호와의 대화를 캡처해 보낸다.',
             set: { e3: 'capture' }, add: { spread: 1 },
             react: [{ kind: 'image', text: '지호와의 대화 캡처 1장 — [[“아무한테도 말하지 마”까지 함께 찍혔다]]' },
-              'saebom: 헐 몰랐어…', 'saebom: 알려 줘서 고마워. 역할표 짤 때 참고할게'], next: 'c1_e3_cap' }
+              'saebom: 헐', 'saebom: 지호가 이렇게까지 힘들어하는 줄 몰랐어…',
+              'saebom: 알려 줘서 고마워', 'saebom: 점심때 하늘이랑 역할표 마저 짜면서 바꿔 볼게'], next: 'c1_e3_cap' }
         ]
       },
       c1_e3_ask: {
@@ -676,8 +695,10 @@
         view: { type: 'dm', title: '지호' },
         lines: [
           'narr: 새봄이에게는 지호가 역할을 바꾸고 싶어 한다는 것만 전했다. 지호는 축제 당일에 안내 대신 부스 안쪽 정리를 맡게 됐다.',
-          'jiho: 고마워. 내가 정한 만큼만 말해 줘서',
-          'jiho: 꾸미기 하면서 사람 많은 데 천천히 익숙해져 볼게'
+          'jiho: 새봄이가 이유는 안 물어봤어',
+          'jiho: 내가 정한 만큼만 말해 줘서… 고마워',
+          'jiho: 꾸미기 하면서 사람 많은 데 천천히 익숙해져 볼게',
+          'jiho: 안쪽 정리는 진짜 잘할 자신 있어'
         ],
         next: '@chapter:sc'
       },
@@ -685,10 +706,15 @@
         chapter: 1, event: 'e3', label: '역할 재신청',
         view: { type: 'group', title: '2학년 3반 축제준비방', meta: '28명' },
         lines: [
+          'saebom: 📢 축제 당일 역할 다시 받아요',
           'saebom: 역할 바꾸고 싶은 사람 있으면',
           'saebom: 오늘 점심까지 나한테 개인톡 주세요~ 이유는 안 써도 돼요',
+          'haneul: 오 그럼 나도 바꿀까 ㅋㅋ',
+          'saebom: 하늘이 넌 벌써 세 번 바꿨어',
+          'haneul: ㅋㅋ 농담이야. 바꾸고 싶은 사람 눈치 보지 말고 말해~',
           'narr: 점심 무렵, 지호의 축제 당일 역할이 안내에서 부스 안쪽 정리로 바뀌었다.',
-          'jiho: (개인톡) 나 당일 안내 말고 부스 정리로 역할 바꿨어! 이유 안 물어봐서 다행이다 ㅠ',
+          'jiho: (개인톡) 나 당일 안내 말고 부스 정리로 역할 바꿨어!',
+          'jiho: (개인톡) 이유 안 물어봐서 다행이다 ㅠ',
           'narr: 지호는 내가 무슨 말을 했는지 모른다. 지호의 이야기는 지호의 것으로 남았다.'
         ],
         next: '@chapter:sc'
@@ -698,27 +724,34 @@
         view: { type: 'dm', title: '하늘' },
         lines: [
           'sys: D-1 · 오후 1:10',
-          'haneul: 야 지호 무대공포증이라며? ㅋㅋ',
+          'haneul: 야',
+          'haneul: 지호 사람들 앞에 서는 거 무서워한대?',
           'haneul: 새봄이가 역할표 짜다가 캡처 보여 줌',
           'haneul: “아무한테도 말하지 마” 이것까지 다 찍혀 있던데',
+          'haneul: 난 진짜 몰랐어. 나는 앞에 서는 게 제일 재밌거든',
+          'haneul: 지호는 그동안 혼자 엄청 힘들었겠다',
+          'haneul: 당일에 안내는 내가 대신 설까? 나 그런 거 잘함',
           'narr: 새봄이가 역할을 바꾸면서 하늘이에게 캡처를 보여 줬다. [[한 장이 두 사람에게 갔다]].'
         ],
         prompt: '어떻게 할까?',
         choices: [
           { id: 'full', text: '새봄이와 하늘이에게 지워 달라고 한 뒤, 지호에게 솔직히 말하고 사과한다.',
             set: { e3fix: 'full' }, add: { repair: 2, 'trust.jiho': -1 },
-            react: ['saebom: 아… 미안. 생각 없이 보여 줬어', 'saebom: 캡처 지웠어', 'haneul: 나도 지움. 다른 데 보낸 적 없어',
-              'jiho: …화나. 아무한테도 말하지 말랬잖아', 'jiho: 그래도 다른 데서 듣기 전에', 'jiho: 네가 먼저 말해 줘서 그건 다행이야'],
+            // 하늘이와의 개인톡 화면이라, 새봄·지호의 답은 '(개인톡)'을 붙인다
+            react: ['saebom: (개인톡) 아…', 'saebom: (개인톡) 하늘이랑 역할표 같이 보다가 그냥 보여 줬어', 'saebom: (개인톡) 미안 ㅠ', 'saebom: (개인톡) 캡처 지웠어',
+              'haneul: 나도 지움', 'haneul: 진짜 다른 데 보낸 적 없음', 'haneul: 지호한테 나도 따로 미안하다고 할게',
+              'jiho: (개인톡) …', 'jiho: (개인톡) 화나. 아무한테도 말하지 말랬잖아', 'jiho: (개인톡) 하늘이까지 알아…?',
+              'jiho: (개인톡) 그래도 다른 데서 듣기 전에', 'jiho: (개인톡) 네가 먼저 말해 줘서 그건 다행이야'],
             next: '@chapter:sc' },
           { id: 'part', text: '하늘이에게만 더 퍼뜨리지 말라고 한다.',
             say: '그거 아무한테도 말하지 마. 지호가 비밀로 해 달라고 한 거야',
             set: { e3fix: 'part' }, add: { repair: 1 },
-            react: ['haneul: ㅇㅋ 알았어. 아무한테도 말 안 할게',
+            react: ['haneul: 아 ㅇㅋㅇㅋ', 'haneul: 나 입 무거움. 아무한테도 말 안 할게',
               'narr: 지호는 아직 아무것도 모른다. [[캡처가 지금 휴대폰 몇 대에 있는지도]] 모른다.'],
             next: '@chapter:sc' },
           { id: 'none', text: '이미 보낸 거니 어쩔 수 없다고 생각한다.',
             set: { e3fix: 'none' }, add: { spread: 1, 'trust.jiho': -2 },
-            react: ['narr: 점심시간, 지호가 교실에 들어오자 [[몇 명이 지호를 쳐다봤다]].', 'jiho: (개인톡) 너지?'],
+            react: ['narr: 점심시간, 지호가 교실에 들어오자 [[몇 명이 지호를 쳐다봤다]].', 'jiho: (개인톡) 나 너한테만 말했는데', 'jiho: (개인톡) 너지?'],
             next: '@chapter:sc' }
         ]
       },
@@ -809,18 +842,20 @@
         view: { type: 'place', title: '매점 앞 · D-1 오후 6:05' },
         lines: [
           'narr: 새봄이는 축제 홍보용 셀카를 공개 계정에 올렸었다.',
-          'haneul: 야 이거 봤냐 ㅋㅋ',
-          'haneul: 누가 만든 거래',
+          // 2026-11-12 대사 보완: 장소 장면(소리 내 하는 말)이라 하늘의 'ㅋㅋ'는 행동으로. 그림 줄·해설(교사 검수 문장)은 그대로
+          'haneul: (눈이 동그래져서) 야, 이거 봤냐?',
+          'haneul: 누가 만든 거래. 이게 된다는 게 신기하지 않냐?',
           { who: 'narr', text: '하늘이가 휴대폰 화면을 내 쪽으로 돌렸다. 새봄이가 올렸던 그 셀카다.', cg: 'saebom-selfie' },
           { who: 'narr', text: '하늘이가 화면을 누르자, 사진 속 새봄이가 우스꽝스러운 춤을 추기 시작했다.', cg: 'saebom-dance' },
           'haneul: AI에 사진 한 장만 넣으면 이런 영상이 나온대',
           'narr: 새봄이는 이런 춤을 춘 적이 없다. 그런데 얼굴도 옷도 새봄이 그대로라, 진짜로 찍은 영상처럼 보인다.',
           'narr: 자세히 보면 어깨 옆에 셀카 속 노란 깃발 조각이 엉뚱하게 붙어 있다. 하지만 넘겨 보는 사람 눈에는 잘 띄지 않는다.',
           { who: 'narr', text: '한 적 없는 행동을 AI가 진짜처럼 만들어 낸 영상. 이런 걸 딥페이크라고 한다.', cg: null },
-          'haneul: 익명 계정에서 돌고 있음',
-          'haneul: [[다른 반 애들도]] 벌써 다 봄',
-          'haneul: 근데 공개 계정에 셀카 올린 새봄이도 좀 그렇지 않냐?',
-          'haneul: 너한테도 보냈다 ㅋㅋ',
+          'haneul: 익명 계정에서 돌고 있는데,',
+          'haneul: [[다른 반 애들도]] 벌써 다 봤대.',
+          'haneul: 근데 공개 계정에 올린 사진이면 아무나 갖다 써도 되는 건가?',
+          'haneul: 새봄이도 봤으려나… 새봄이면 웃고 넘기겠지?',
+          'haneul: 아, 너한테도 방금 보냈어. 폰 봐 봐.',
           { who: 'narr', text: '오늘 아침 내가 보낸 지호의 캡처도, 이틀 전 내가 올린 민준이 사진도 이렇게 다른 사람의 화면으로 옮겨 갔었다.', if: 'e3=capture && e2post=group|story' },
           { who: 'narr', text: '오늘 아침 내가 보낸 지호의 캡처도 이렇게 다른 사람의 화면으로 옮겨 갔었다.', if: 'e3=capture && e2post!=group|story' },
           { who: 'narr', text: '이틀 전 내가 올린 민준이 사진이 떠올랐다.', if: 'e3!=capture && e2post=group|story' }
@@ -829,15 +864,16 @@
         choices: [
           { id: 'forward', text: '웃기다며 다른 친구 몇 명에게 전달한다.',
             set: { e4: 'forward' }, add: { spread: 2, serious: 1 },
-            react: ['sys: 3명에게 전달됨', 'narr: 그중 한 명이 [[또 다른 방에]] 올렸다.',
+            react: ['sys: 3명에게 전달됨', 'haneul: 반응 어때? 다들 웃지?', 'narr: 그중 한 명이 [[또 다른 방에]] 올렸다.',
               'narr: 가짜 영상이지만, 그 안의 얼굴은 새봄이의 진짜 얼굴이다. 만든 건 익명 계정이어도, 다음 방으로 옮긴 건 나다.'], next: 'c2_e4_b' },
           { id: 'refuse', text: '“공개 사진이라고 AI에 넣어도 되는 건 아니야”라고 말하고, 받은 영상은 저장하지 않는다.',
             say: '공개로 올린 사진이라고 아무나 AI에 넣어서 가짜 영상을 만들어도 되는 건 아니잖아. 새봄이 잘못 아니야',
             set: { e4: 'refuse' }, add: { minimize: 1 },
-            react: ['haneul: …그건 그렇네', 'haneul: 나도 그냥 받은 건데', 'haneul: 나 보낸 거 지울게'], next: 'c2_e4_b' },
+            react: ['haneul: …그건 그렇네.', 'haneul: 나도 그냥 받은 거야. 내가 만든 것도 아니고.', 'haneul: 알았어. 나 보낸 거 지울게.', 'haneul: …새봄이가 이거 봤으면 진짜 속상했겠다.'], next: 'c2_e4_b' },
           { id: 'ignore', text: '“어, 그렇네” 하고 넘긴다.',
             set: { e4: 'ignore' },
-            react: ['narr: 대충 웃고 넘겼다. 하늘이가 보낸 영상은 내 대화방에 그대로 남아 있다.',
+            react: ['haneul: 그치? 요즘 AI 진짜 별걸 다 한다.',
+              'narr: 대충 웃고 넘겼다. 하늘이가 보낸 영상은 내 대화방에 그대로 남아 있다.',
               'narr: 그사이 [[다른 사람들은 계속 공유하고 있다]].'], next: 'c2_e4_b' }
         ]
       },
@@ -848,8 +884,11 @@
           'sys: D-1 · 저녁 7:20',
           'saebom: {name}… 혹시 그 영상 봤어?',
           'saebom: 내가 춤추는 영상. [[다른 반 애들까지]] 돌려 봤대',
-          'saebom: 근데 나 그런 춤 춘 적 없어. 누가 내 셀카 한 장으로 AI한테 만들게 한 거래',
+          // 2026-11-12 대사 보완: 휴대폰 말풍선이 길어 둘로 끊음(교사 검수 문장 — 글자는 그대로)
+          'saebom: 근데 나 그런 춤 춘 적 없어',
+          'saebom: 누가 내 셀카 한 장으로 AI한테 만들게 한 거래',
           'saebom: 아까 복도 지나가는데 다들 나 보고 웃는 것 같았어',
+          'saebom: 지금도 알림이 계속 와서 폰을 못 보겠어',
           'saebom: 너무 진짜 같아서, 본 애들은 내가 진짜로 춘 줄 알아',
           'saebom: 그 셀카, 부스 홍보하려고 공개 계정에 올린 거였는데',
           'saebom: 내가 공개로 올린 게 잘못이었나',
@@ -862,22 +901,27 @@
             set: { e4b: 'ask' }, add: { consent: 1, help: 1, 'trust.saebom': 1 },
             react: ['saebom: …응. 일단 그 계정부터 신고하고 싶어', 'saebom: 선생님한테도 말할래', 'saebom: 혼자 가기는 좀 무서운데, 같이 가 줄래?',
               'narr: 익명 계정을 신고하고, 새봄이와 함께 담임 선생님을 찾아갔다.',
-              'teacher: 말해 줘서 고마워. 게시물 주소와 날짜를 같이 정리해 두자.',
+              'teacher: 새봄아, 많이 놀랐겠다. 말해 줘서 고마워.',
+              'teacher: 게시물 주소와 날짜를 같이 정리해 두자.',
               'teacher: 퍼뜨리는 일은 선생님이 반에서 따로 이야기할게.'],
             next: 'c2_e5_a' },
           { id: 'report', text: '익명 계정을 신고하고, 받은 사람은 지워 달라고 단톡방에 말한다.',
             say: '새봄이 춤 영상 받은 사람, 더 보내지 말고 지워 줘. AI로 만든 가짜야. 그 계정은 신고했어',
             set: { e4b: 'report' }, add: { repair: 1 },
-            react: ['haneul: 나 받은 거 지움', 'narr: 익명 계정 옆에 ‘신고 접수됨’이 떴다.', 'saebom: 고마워… 단톡에 대신 말해 줘서'], next: 'c2_e5_a' },
+            // 새봄이와의 개인톡 화면이라 단톡방 답은 '(단톡)'을 붙인다
+            react: ['haneul: (단톡) 아 ㅇㅋ 나 받은 거 지움', 'haneul: (단톡) 새봄아 미안 ㅠ 아무 생각 없이 보여 주고 다녔어', 'jiho: (단톡) 나도 지웠어', 'narr: 익명 계정 옆에 ‘신고 접수됨’이 떴다.',
+              'saebom: 고마워… 단톡에 대신 말해 줘서', 'saebom: 나 혼자였으면 아무 말도 못 했을 거야'], next: 'c2_e5_a' },
           { id: 'confess', if: 'e4=forward', text: '내가 전달했다고 털어놓고, 전달한 친구들에게 지워 달라고 한다.',
             say: '사실 나도 그거 3명한테 보냈어. 미안해. 지금 다 지워 달라고 할게',
             set: { e4b: 'confess' }, add: { repair: 2, 'trust.saebom': -1 },
             react: ['saebom: …너도?', 'narr: 3명에게 지워 달라고 했다. 2명은 지웠다고 답했다.',
-              'narr: 한 명은 “[[이미 다른 방에도 있음]]”이라고 답했다.'], next: 'c2_e5_a' },
+              'narr: 한 명은 “[[이미 다른 방에도 있음]]”이라고 답했다.',
+              'saebom: 말해 준 건 알겠어', 'saebom: 근데 지금은 좀 혼자 있고 싶어'], next: 'c2_e5_a' },
           { id: 'blame', text: '“그러게 왜 공개로 올렸어”라고 답한다.',
             say: '그러게… 왜 공개로 올렸어',
             set: { e4b: 'blame' }, add: { 'trust.saebom': -2 },
-            react: ['saebom: …그렇지', 'saebom: 공개로 올린 내가 바보지', 'narr: 새봄이는 계정을 비공개로 바꿨다. [[가짜 영상은 여전히 돌고 있었다]].'],
+            react: ['saebom: …그렇지', 'saebom: 공개로 올린 내가 바보지', 'saebom: 부스 홍보 도우려고 올린 거였는데',
+              'narr: 새봄이는 계정을 비공개로 바꿨다. [[가짜 영상은 여전히 돌고 있었다]].'],
             next: 'c2_e5_a' }
         ]
       },
@@ -956,8 +1000,11 @@
           'narr: 안내문을 출력하러 도서관 공용 PC에 앉았다.',
           { kind: 'setting', text: '스냅로그 — @haneul_sky 님으로 로그인됨', meta: '새 메시지 7' },
           'narr: 하늘이가 어제 쓰고 로그아웃을 안 한 모양이다.',
-          'friend: 오 하늘이 계정 로그인돼 있네? 새 메시지 7개 ㅋㅋ',
-          'friend: 누구랑 무슨 얘기 하나 DM 좀 보자'
+          // 2026-11-12 대사 보완: 옆 반 친구는 바로 옆에서 소리 내 말한다(채팅 'ㅋㅋ' 대신 말투로). 'post' 선택지가 갑자기 나오지 않게 부추기는 말을 먼저
+          'friend: 오, 하늘이 계정 로그인돼 있네? 새 메시지 7개래.',
+          'friend: 하늘이 요즘 누구랑 그렇게 연락하는지 궁금했는데.',
+          'friend: DM 좀 보자. 딱 하나만.',
+          'friend: 아니면 하늘이 계정으로 장난 하나 칠까? “나는 바보다” 이런 거.'
         ],
         prompt: '이 화면을 어떻게 할까?',
         choices: [
@@ -967,11 +1014,13 @@
               'narr: 볼 수 있었다. 하지만 볼 권리가 생긴 건 아니었다.'], next: 'c2_e6_b' },
           { id: 'post', text: '옆 반 친구가 부추겨 하늘이 계정으로 “나는 바보다” 스토리를 올린다.',
             set: { e6: 'post' }, add: { spread: 1, serious: 1, 'trust.haneul': -2 }, addV2: { consent: -1 }, // 남의 계정으로 글 올리기 = 범죄가 될 수 있음. ENDING_V2: 허락 없이 남의 계정을 씀 → 동의에서 뺌(자백·삭제 own은 repair로 따로)
-            react: ['friend: ㅋㅋㅋㅋ 미쳤다 진짜 올라갔어', 'narr: 스토리가 하늘이의 [[팔로워 418명에게]] 올라갔다.'], next: 'c2_e6_b' },
+            react: ['friend: (배를 잡고) 미쳤다, 진짜 올라갔어!', 'narr: 스토리가 하늘이의 [[팔로워 418명에게]] 올라갔다.'], next: 'c2_e6_b' },
           { id: 'logout', text: '아무것도 열지 않고 로그아웃한 뒤 하늘이에게 알려 준다.',
             say: '(하늘에게) 도서관 PC에 너 스냅로그 로그인돼 있어서 로그아웃했어. 아무것도 안 열었어',
             set: { e6: 'logout' }, add: { repair: 1, 'trust.haneul': 2 },
-            react: ['friend: 아 뭐야 재미없게', 'haneul: 헐 고마워 진짜. 어제 안내문 뽑고 그냥 나왔나 봐', 'haneul: 비번도 지금 바로 바꿀게'], next: 'c2_e6_c' },
+            // 하늘이의 답은 내 휴대폰으로 온다 → '(개인톡)'
+            react: ['friend: 아, 뭐야. 재미없게.', 'haneul: (개인톡) 헐', 'haneul: (개인톡) 어제 안내문 뽑고 그냥 나왔나 봐 ㅋㅋ',
+              'haneul: (개인톡) 고마워 진짜. 비번 지금 바로 바꿀게'], next: 'c2_e6_c' },
           { id: 'leave', text: '내 일만 하고 그냥 자리를 뜬다.',
             set: { e6: 'leave' },
             react: ['narr: 출력물을 챙겨 일어났다. [[옆 반 친구가 그 자리에 앉았다]].'], next: 'c2_e6_c' }
@@ -982,7 +1031,7 @@
         view: { type: 'pc', title: '도서관 공용 PC 3번', login: '@haneul_sky' },
         lines: [
           { who: 'friend', text: '뭐 있어? 하늘이 누구랑 싸웠대?', if: 'e6=peek' },
-          { who: 'friend', text: '캡처 떠서 나한테 보내 줘 ㅋㅋ', if: 'e6=peek' },
+          { who: 'friend', text: '캡처 떠서 나한테 보내 줘. 나만 볼게.', if: 'e6=peek' },
           // 공용 PC 창 안이 아니라 내 휴대폰 알림으로(kind:'push')
           { who: 'haneul', kind: 'push', meta: '개인톡', text: '야 내 계정에 누가 이상한 거 올렸어?? [[팔로워 418명한테 다 떴어]]', if: 'e6=post' },
           { who: 'haneul', kind: 'push', meta: '개인톡', text: '너 아까 도서관 갔었지', if: 'e6=post' }
@@ -992,33 +1041,42 @@
           { id: 'stop', if: 'e6=peek', text: '캡처하지 않고 로그아웃한다. 하늘이에게 로그인이 남아 있었다고 알린다.',
             say: '(하늘에게) 도서관 PC에 로그인돼 있더라. 로그아웃했어. 비번 바꿔',
             set: { e6b: 'stop' }, add: { repair: 1 },
-            react: ['haneul: 헐 고마워. 어제 거기서 로그아웃을 깜빡했나 봐', 'narr: 미리보기를 봤다는 말은 하지 못했다.'], next: 'c2_e6_c' },
+            react: ['friend: 아, 왜 꺼. 아직 다 못 봤는데.', 'haneul: (개인톡) 헐 고마워', 'haneul: (개인톡) 어제 거기서 로그아웃을 깜빡했나 봐',
+              'narr: 미리보기를 봤다는 말은 하지 못했다.'], next: 'c2_e6_c' },
           { id: 'cap', if: 'e6=peek', text: '옆 반 친구에게 몇 개 캡처해 보낸다.',
             set: { e6b: 'cap' }, add: { spread: 2, 'trust.haneul': -2 },
-            react: ['friend: ㅋㅋㅋ 하늘이 이런 얘기도 하네', 'friend: 우리 반 단톡에도 올려야지', 'narr: 하늘이의 가족 이야기가 [[다른 반 단톡방으로]] 넘어갔다.'], next: 'c2_e6_c' },
+            react: ['friend: 헐, 하늘이 이런 얘기도 하네.', 'friend: 이건 우리 반 애들도 봐야 돼.', 'narr: 하늘이의 가족 이야기가 [[다른 반 단톡방으로]] 넘어갔다.'], next: 'c2_e6_c' },
           { id: 'own', if: 'e6=post', text: '내가 올렸다고 말하고 스토리를 지운다. 비밀번호도 바꾸라고 알려 준다.',
             say: '미안, 그거 나야. 지금 지웠어. 로그인 남아 있었으니까 비번 바꿔',
             set: { e6b: 'own' }, add: { repair: 1, 'trust.haneul': 1 },
-            react: ['haneul: 아 진짜… ㅡㅡ', 'haneul: 그래도 네가 먼저 말해 줘서 다행이다. 비번 바꿀게'], next: 'c2_e6_c' },
+            react: ['haneul: (개인톡) 아 진짜… ㅡㅡ', 'haneul: (개인톡) 아침부터 다들 나한테 바보냐고 물어봄',
+              'haneul: (개인톡) 학원 애들까지 봤대. 진짜 창피했어',
+              'haneul: (개인톡) 그래도 네가 먼저 말한 거니까… 비번 바꿀게'], next: 'c2_e6_c' },
           { id: 'deny', if: 'e6=post', text: '모른 척한다.',
             say: '몰라? 나 출력만 하고 나왔는데',
             set: { e6b: 'deny' }, add: { 'trust.haneul': -1 },
-            react: ['haneul: 진짜 누구지… 계정 해킹당한 줄 알았잖아', 'narr: 하늘이는 하루 종일 누가 올렸는지 찾아다녔다.'], next: 'c2_e6_c' }
+            react: ['haneul: (개인톡) 진짜 누구지…', 'haneul: (개인톡) 해킹당한 줄 알고 심장 떨어질 뻔했잖아',
+              'narr: 하늘이는 하루 종일 누가 올렸는지 찾아다녔다.'], next: 'c2_e6_c' }
         ]
       },
       c2_e6_c: {
         chapter: 2, event: 'e6', label: '1교시 뒤',
         view: { type: 'place', title: '복도 · 1교시 뒤' },
         lines: [
-          { who: 'haneul', text: '누가 내 계정 건드렸냐 ㅡㅡ', if: 'e6=leave' },
-          { who: 'haneul', text: '도서관에서 이상한 스토리 올라갔대', if: 'e6=leave' },
+          // 2026-11-12 대사 보완: 현관 앞에서 마주쳐 소리 내 하는 말(채팅 기호 대신 말투). 조건은 그대로, 같은 조건 줄만 더함
+          { who: 'haneul', text: '아 진짜, 누가 내 계정 건드렸냐.', if: 'e6=leave' },
+          { who: 'haneul', text: '도서관에서 이상한 스토리 올라갔대. 아침부터 다 그 얘기야.', if: 'e6=leave' },
           { who: 'narr', text: '내가 일어난 뒤 그 자리에 앉은 사람이 올린 것이다. 로그아웃 버튼 하나면 됐다.', if: 'e6=leave' },
-          { who: 'haneul', text: '아까 진짜 고마웠어', if: 'e6=logout' },
-          { who: 'haneul', text: '남이 내 DM 봤으면 끔찍했을 듯', if: 'e6=logout' },
+          { who: 'haneul', text: '아까 진짜 고마웠어.', if: 'e6=logout' },
+          { who: 'haneul', text: '남이 내 DM 봤으면 진짜 끔찍했을 거야. 집안 얘기도 있는데.', if: 'e6=logout' },
+          { who: 'haneul', text: '아까 알려 줘서 고마워. 비번도 바꿨어.', if: 'e6b=stop' },
           { who: 'narr', text: '하늘이는 내가 무엇을 봤는지 모른다. 나는 안다.', if: 'e6b=stop' },
-          { who: 'haneul', text: '야… 내 DM 캡처 [[돌고 있던데]]', if: 'e6b=cap' },
+          { who: 'haneul', text: '야… 내 DM 캡처 [[돌고 있던데]].', if: 'e6b=cap' },
+          { who: 'haneul', text: '우리 집 얘기까지.', if: 'e6b=cap' },
           { who: 'haneul', text: '너야?', if: 'e6b=cap' },
+          { who: 'haneul', text: '애들이 아직도 나만 보면 바보래.', if: 'e6b=own' },
           { who: 'haneul', text: '다음부터는 진짜 그러지 마라', if: 'e6b=own' },
+          { who: 'haneul', text: '도서관에 아침에 누가 있었는지 사서 선생님한테 물어보려고.', if: 'e6b=deny' },
           'narr: 축제가 시작됐다.'
         ],
         next: '@chapter:3'
@@ -1030,64 +1088,79 @@
         view: { type: 'place', title: '운동장 부스 뒤 · 축제 당일 오후 1:15' },
         lines: [
           'narr: 부스 뒤 천막 그늘. 민준이는 소품을 가지러 교실에 갔다.',
-          'haneul: 민준이 아까 사진관에서 계속 혼자 있더라 ㅋㅋ',
-          'haneul: 친구 만들어 주자',
-          'haneul: [[중고마켓 무료나눔 글에 민준이 번호]] 올려 놓자',
-          'haneul: “안 쓰는 카메라 무료로 드려요” 이렇게 쓰면 모르는 사람들한테 연락 엄청 올걸 ㅋㅋ',
-          'friend: ㅋㅋㅋㅋㅋ 해 해',
-          { who: 'haneul', text: '나도 저번에 단톡에 번호 올렸잖아', if: 'e1b=pass' },
-          { who: 'haneul', text: '누가 저장했는지 모르는 번호로 연락 오더라 ㅋㅋ', if: 'e1b=pass' },
-          { who: 'haneul', text: '그거 은근 웃김', if: 'e1b=pass' },
-          'haneul: {name} 너 민준이 번호 있지?',
-          'haneul: 보내 줘',
+          // 2026-11-12 대사 보완: 장소 장면이라 'ㅋㅋ'는 말투·행동으로. 하늘은 악의보다 "다들 웃을 장난"이라 믿는다(voice-sheet). 방법을 더 자세히 쓰지 않는다
+          'haneul: 아까 봤냐? 민준이 사진관에서 계속 혼자 카메라 모형만 닦고 있더라.',
+          'haneul: 오늘 축제인데 혼자 있으면 좀 그렇잖아.',
+          'haneul: 민준이 친구 좀 만들어 주자.',
+          'haneul: [[중고마켓 무료나눔 글에 민준이 번호]] 올려 놓는 거야.',
+          'haneul: “안 쓰는 카메라 무료로 드려요.” 이러면 모르는 사람들한테 연락 엄청 올걸?',
+          'haneul: 그럼 내일 그 얘기로 민준이도 애들이랑 말 좀 트겠지.',
+          'friend: (킥킥대며) 해 해, 빨리.',
+          { who: 'haneul', text: '나도 저번에 단톡에 번호 올렸잖아.', if: 'e1b=pass' },
+          { who: 'haneul', text: '모르는 번호로 연락 몇 번 와서 솔직히 좀 놀랐거든.', if: 'e1b=pass' },
+          { who: 'haneul', text: '근데 별일 없었어. 그러니까 이것도 별거 아니야.', if: 'e1b=pass' },
+          'haneul: 민준이도 나중에 알면 웃을걸. 장난인데 뭐.',
+          'haneul: {name}, 너 민준이 번호 있지?',
+          'haneul: 보내 줘. 민준이 오기 전에, 빨리.',
           'narr: 옆에 있던 친구들이 킥킥 웃었다. 다들 나를 본다. 다음은 내 차례다.'
         ],
         prompt: '어떻게 답할까?',
         choices: [
           { id: 'join', text: '같이 웃으면서 민준이 번호를 보낸다.',
             set: { e7: 'join', e7done: true }, add: { spread: 2, serious: 1 },
-            react: ['narr: 글이 올라갔다. 10분 뒤, 민준이 휴대폰에 [[모르는 번호로 메시지 4개]].'], next: 'c3_e7_b' },
+            react: ['haneul: (휴대폰을 들여다보며) 올라갔다. 이따 민준이 오면 같이 보자.',
+              'narr: 글이 올라갔다. 10분 뒤, 민준이 휴대폰에 [[모르는 번호로 메시지 4개]].'], next: 'c3_e7_b' },
           { id: 'stop', text: '“모르는 사람한테 번호 주는 건 장난 아니야. 하지 말자”고 말한다.',
             say: '모르는 사람한테 민준이 번호 주는 건 장난 아니야. 하지 말자',
             set: { e7: 'stop' },
             react: [
-              { who: 'haneul', text: '…그래 알았어', if: 'trust.haneul>=1' },
-              { who: 'haneul', text: '네 말이 맞다. 안 할게', if: 'trust.haneul>=1' },
-              { who: 'haneul', text: '아 진지하긴 ㅋㅋ', if: 'trust.haneul<1' },
-              { who: 'haneul', text: '됐어 번호 말고 이름만 올림', if: 'trust.haneul<1' },
+              // 2026-11-12: "네 말이 맞다"(정답 맞힌 소리) → 하늘다운 짧은 인정
+              { who: 'haneul', text: '…알았어, 알았어. 안 할게.', if: 'trust.haneul>=1' },
+              { who: 'haneul', text: '너 그런 얼굴로 말하니까 좀 무섭다.', if: 'trust.haneul>=1' },
+              { who: 'haneul', text: '…민준이 진짜 싫어했으려나.', if: 'trust.haneul>=1' },
+              { who: 'haneul', text: '아… 그렇게까지 할 일은 아닌데.', if: 'trust.haneul<1' },
+              { who: 'haneul', text: '알았어, 번호는 안 올려. 이름만 올릴게. 그럼 괜찮잖아.', if: 'trust.haneul<1' },
               { who: 'narr', text: '하늘이는 ‘연락 주실 분 솔빛 2-3 민준’이라고만 올렸다. [[민준이의 계정을 찾아 메시지를 보내는 사람이 생겼다]].', if: 'trust.haneul<1' }
             ],
             next: [{ if: 'trust.haneul>=1', to: 'c3_e7_b' }, { to: 'c3_e7_small' }] },
           { id: 'warn', text: '대답하지 않고 자리를 떠서, 민준이에게 따로 알린다.',
             set: { e7: 'warn', e7done: true }, add: { 'trust.minjun': 1 },
+            // 민준이의 답은 교실에서 개인톡으로 온다(장소 장면 대화창이라 '(개인톡)'을 붙인다)
             react: ['narr: 민준이에게 개인톡을 보냈다. “하늘이네가 네 번호를 중고마켓에 올리려고 해. 모르는 번호 오면 받지 말고 차단해.”',
-              { who: 'minjun', text: '…네가 왜 신경 써?', if: 'trust.minjun<1' },
-              { who: 'minjun', text: '그래도 알려 줘서 고마워', if: 'trust.minjun<1' },
-              { who: 'minjun', text: '알려 줘서 고마워', if: 'trust.minjun>=1' },
-              { who: 'minjun', text: '차단할게', if: 'trust.minjun>=1' },
+              { who: 'minjun', text: '(개인톡) …네가 왜 신경 써?', if: 'trust.minjun<1' },
+              { who: 'minjun', text: '(개인톡) …알았어. 그래도 알려 줘서 고마워', if: 'trust.minjun<1' },
+              { who: 'minjun', text: '(개인톡) …알려 줘서 고마워', if: 'trust.minjun>=1' },
+              { who: 'minjun', text: '(개인톡) 모르는 번호는 다 차단할게', if: 'trust.minjun>=1' },
               'narr: 하늘이는 [[다른 친구에게 번호를 받아]] 글을 올렸다.'], next: 'c3_e7_b' },
           { id: 'silent', text: '아무 말도 하지 않는다.',
             set: { e7: 'silent', e7done: true }, add: { spread: 1, 'trust.minjun': -1 }, // 2026-11-10: 가만히 있던 것도 민준이에게는 피해였다
-            react: ['narr: 다른 친구가 번호를 보냈고, [[글이 올라갔다]]. 나는 그 옆에 서 있었다.'], next: 'c3_e7_b' }
+            react: ['haneul: 번호 없어? 됐어, 다른 애한테 받을게.',
+              'narr: 다른 친구가 번호를 보냈고, [[글이 올라갔다]]. 나는 그 옆에 서 있었다.'], next: 'c3_e7_b' }
         ]
       },
       c3_e7_small: {
         chapter: 3, event: 'e7', label: '이름만 올린 글',
         view: { type: 'dm', title: '민준' },
         lines: [
+          // 2026-11-12 대사 보완: 민준은 이름을 먼저 부르고 짧게 끊어 보낸다(voice-sheet)
+          'minjun: {name}',
           'minjun: 모르는 사람이 나한테 DM 보냈어',
-          'minjun: “[[솔빛 2-3 민준]] 맞죠? 나눔 아직 돼요?” 이러는데',
-          'minjun: 나 아무것도 올린 적 없거든. 이거 뭐야?'
+          'minjun: “[[솔빛 2-3 민준]] 맞죠? 나눔 아직 돼요?”',
+          'minjun: 이러는데',
+          'minjun: 나 아무것도 올린 적 없거든',
+          'minjun: 이거 뭐야?'
         ],
         prompt: '민준이에게 어떻게 할까?',
         choices: [
           { id: 'help', text: '사실대로 말하고, 글을 지우게 한 뒤 함께 차단·신고한다.',
             say: '하늘이가 장난으로 글 올렸어. 지우라고 할게. 그 계정들은 같이 차단하고 신고하자',
             set: { e7b: 'del', e7done: true }, add: { repair: 1 },
-            react: ['haneul: 아 미안… 글 지웠어', 'minjun: …그런 거였구나', 'minjun: [[이름이랑 반만 보고]] 내 계정을 찾아낸 거네', 'minjun: 알려 줘서 고마워'], next: 'c3_e8_a' },
+            // 민준이와의 개인톡 화면이지만 하늘이는 부스에서 내 옆에 있다(무대에 서 있음) → '(옆에서)'. '(개인톡)'은 무대에 없는 사람만(fix-1109 C1)
+            react: ['haneul: (옆에서) 아 미안… 글 지웠어', 'haneul: (옆에서) 이름만 올린 건데 그걸로 찾아낼 줄은 몰랐지', 'haneul: (옆에서) 민준이한테는 내가 가서 직접 사과할게',
+              'minjun: …그런 거였구나', 'minjun: [[이름이랑 반만 보고]] 내 계정을 찾아낸 거네', 'minjun: 신고는 같이 하자. 알려 줘서 고마워'], next: 'c3_e8_a' },
           { id: 'none', text: '나는 말렸으니 모르는 척한다.',
             set: { e7b: 'none', e7done: true },
-            react: ['narr: 메시지는 저녁까지 이어졌다. 말린 것만으로는 끝나지 않았다.'], next: 'c3_e8_a' }
+            react: ['minjun: …아무도 모르나 보네', 'narr: 메시지는 저녁까지 이어졌다. 말린 것만으로는 끝나지 않았다.'], next: 'c3_e8_a' }
         ]
       },
       c3_e7_b: {
@@ -1095,23 +1168,32 @@
         view: { type: 'dm', title: '민준' },
         lines: [
           { who: 'narr', text: '그날 오후, 민준이의 휴대폰은 조용했다. 민준이는 이런 일이 있었는지도 모를 것이다.', if: 'e7=stop' },
-          { who: 'minjun', text: '모르는 번호로 계속 연락 와. [[벌써 열 통 넘었어]]', if: 'e7=join|silent' },
-          { who: 'minjun', text: '“나눔 아직 돼요?” “지금 학교 앞인데 어디로 가요?” 이러면서…', if: 'e7=join|silent' },
+          // 2026-11-12 대사 보완: 휴대폰 말풍선을 짧게 끊음. 낯선 연락의 내용은 옛 줄 그대로(더 무섭게 하지 않음)
+          { who: 'minjun', text: '모르는 번호로 계속 연락 와', if: 'e7=join|silent' },
+          { who: 'minjun', text: '[[벌써 열 통 넘었어]]', if: 'e7=join|silent' },
+          { who: 'minjun', text: '“나눔 아직 돼요?” “지금 학교 앞인데 어디로 가요?”', if: 'e7=join|silent' },
+          { who: 'minjun', text: '이러면서…', if: 'e7=join|silent' },
           { who: 'minjun', text: '좀 무서워', if: 'e7=join|silent' },
           { who: 'minjun', text: '네가 미리 말해 줘서 모르는 번호는 바로 차단하고 있어', if: 'e7=warn' },
-          { who: 'minjun', text: '근데 [[번호를 바꿔 가면서]] 계속 와', if: 'e7=warn' }
+          { who: 'minjun', text: '근데 [[번호를 바꿔 가면서]] 계속 와', if: 'e7=warn' },
+          { who: 'minjun', text: '이거 언제까지 와?', if: 'e7=warn' }
         ],
         prompt: '민준이를 위해',
         choices: [
           { id: 'help', if: 'e7!=stop', text: '글을 지우게 하고, 민준이와 함께 선생님께 알린다.',
             set: { e7b: 'help' }, add: { help: 1, repair: 1 },
-            react: ['teacher: 민준아, 번호 바꾸는 것까지 보호자분과 같이 알아보자.',
+            react: ['narr: 하늘이에게 글을 지우게 하고, 민준이와 교무실로 갔다.',
+              'teacher: 민준아, 많이 놀랐지. 온 메시지는 지우지 말고 그대로 두자.',
+              'teacher: 번호 바꾸는 것까지 보호자분과 같이 알아보자.',
               'teacher: 글 올린 친구들과는 선생님이 이야기할게.',
-              'haneul: …진짜 이렇게까지 될 줄 몰랐어', 'haneul: 미안해'], next: 'c3_e8_a' },
+              'haneul: …진짜 이렇게까지 될 줄 몰랐어', 'haneul: 민준아, 미안해'], next: 'c3_e8_a' },
           { id: 'del', if: 'e7!=stop', text: '하늘이에게 글을 지우라고만 한다.',
             say: '그 글 지워. 민준이 진짜 힘들어해',
             set: { e7b: 'del' }, add: { repair: 1 },
-            react: ['haneul: 지웠어. 민준이가 그 정도로 힘들어할 줄은 몰랐어', 'narr: 글은 지워졌다. [[이미 번호를 저장한 사람들은 남았다]].'], next: 'c3_e8_a' },
+            // 하늘이는 부스에서 내 옆에 있다(무대에 서 있음) → '(옆에서)'
+            react: ['haneul: (옆에서) 지웠어', 'haneul: (옆에서) 민준이가 그 정도로 힘들어할 줄은 몰랐어', 'haneul: (옆에서) 장난이었는데…',
+              'haneul: (옆에서) …나 민준이한테 가 볼게.',
+              'narr: 글은 지워졌다. [[이미 번호를 저장한 사람들은 남았다]].'], next: 'c3_e8_a' },
           { id: 'none', if: 'e7=warn|silent', text: '내가 올린 건 아니니까 그냥 둔다.',
             set: { e7b: 'none' },
             react: ['narr: 민준이는 [[그날 저녁 내내]] 모르는 번호로 연락을 받았다.'], next: 'c3_e8_a' },
@@ -1151,7 +1233,8 @@
               'stranger: ㅋㅋ 그래 다 데려와',
               'narr: 반 단톡방에도 올렸다. “오늘 밤 9시 학교 정문, 같이 갈 사람?” [[28명이 시간과 장소를 봤다]].',
               'haneul: (단톡) 진짜? 9시 정문? ㅋㅋ 나 감',
-              'minjun: (단톡) …그거 위험한 거 아니야? 상대가 누군지도 모르잖아'], next: 'c3_e8_b' },
+              'jiho: (단톡) …진짜 가는 거야?',
+              'minjun: (단톡) …그거 위험한 거 아니야?', 'minjun: (단톡) 상대가 누군지도 모르잖아'], next: 'c3_e8_b' },
           { id: 'block', text: '위치는 말하지 않고 대화를 끊은 뒤 차단한다.',
             set: { e8: 'block' },
             react: ['sys: 차단했습니다',
@@ -1174,17 +1257,25 @@
           { title: '알림' }] },
         lines: [
           'sys: 저녁 8:30',
-          { who: 'minjun', text: '{name} 진짜 나가?', if: '!hurt.minjun' },
-          { who: 'minjun', text: '댓글로만 싸운 사람이잖아. 몇 살인지도, 몇 명이 올지도 모르고', if: '!hurt.minjun' },
-          { who: 'minjun', text: '그런 사람 진짜 올 수도 있어. 가지 마', if: '!hurt.minjun' },
-          { who: 'jiho', text: '{name}, 너 오늘 밤에 진짜 나가?', if: 'hurt.minjun && !hurt.jiho && trust.jiho>=0' },
-          { who: 'jiho', text: '댓글로만 싸운 사람이잖아. 몇 살인지도, 몇 명이 올지도 모르고', if: 'hurt.minjun && !hurt.jiho && trust.jiho>=0' },
-          { who: 'jiho', text: '나라면 무서워서 못 가. 가지 마', if: 'hurt.minjun && !hurt.jiho && trust.jiho>=0' },
+          // 2026-11-12 대사 보완: 말리는 친구마다 말투를 나눔(민준 = 짧게 끊어, 지호 = 질문으로 조심스럽게, 새봄 = 문장 끝까지·ㅠ). 조건은 그대로
+          { who: 'minjun', text: '{name}', if: '!hurt.minjun' },
+          { who: 'minjun', text: '진짜 나가?', if: '!hurt.minjun' },
+          { who: 'minjun', text: '댓글로만 싸운 사람이잖아', if: '!hurt.minjun' },
+          { who: 'minjun', text: '몇 살인지도, 몇 명이 올지도 모르고', if: '!hurt.minjun' },
+          { who: 'minjun', text: '가지 마', if: '!hurt.minjun' },
+          { who: 'jiho', text: '{name}… 너 오늘 밤에 진짜 나가?', if: 'hurt.minjun && !hurt.jiho && trust.jiho>=0' },
+          { who: 'jiho', text: '댓글로만 싸운 사람이잖아…', if: 'hurt.minjun && !hurt.jiho && trust.jiho>=0' },
+          { who: 'jiho', text: '몇 살인지도, 몇 명이 올지도 모르고', if: 'hurt.minjun && !hurt.jiho && trust.jiho>=0' },
+          { who: 'jiho', text: '나라면 무서워서 못 가', if: 'hurt.minjun && !hurt.jiho && trust.jiho>=0' },
+          { who: 'jiho', text: '…안 가면 안 돼?', if: 'hurt.minjun && !hurt.jiho && trust.jiho>=0' },
           { who: 'saebom', text: '{name} 너 오늘 밤에 누구 만나러 간다며?', if: ['hurt.minjun', 'hurt.jiho || trust.jiho<0', '!hurt.saebom && trust.saebom>=0'] },
-          { who: 'saebom', text: '모르는 사람이잖아. 어른이 나올 수도 있고, 몇 명이 올지도 모르고', if: ['hurt.minjun', 'hurt.jiho || trust.jiho<0', '!hurt.saebom && trust.saebom>=0'] },
-          { who: 'saebom', text: '가지 마. 진짜로', if: ['hurt.minjun', 'hurt.jiho || trust.jiho<0', '!hurt.saebom && trust.saebom>=0'] },
+          { who: 'saebom', text: '모르는 사람이잖아!', if: ['hurt.minjun', 'hurt.jiho || trust.jiho<0', '!hurt.saebom && trust.saebom>=0'] },
+          { who: 'saebom', text: '어른이 나올 수도 있고, 몇 명이 올지도 모르고', if: ['hurt.minjun', 'hurt.jiho || trust.jiho<0', '!hurt.saebom && trust.saebom>=0'] },
+          { who: 'saebom', text: '가지 마. 진짜로 ㅠ', if: ['hurt.minjun', 'hurt.jiho || trust.jiho<0', '!hurt.saebom && trust.saebom>=0'] },
           { who: 'narr', text: '휴대폰은 조용했다. 아무도 말리지 않았다.', if: ['hurt.minjun', 'hurt.jiho || trust.jiho<0', 'hurt.saebom || trust.saebom<0'] },
-          { who: 'haneul', text: '(단톡) 근데 생각해 보니 상대가 어른일 수도 있잖아… 나 못 갈 듯', if: 'e8=crew' }
+          // 마지막 줄은 하늘의 "못 갈 듯"이어야 한다(check-story 5e — 질문 '9시까지 30분' 바로 앞)
+          { who: 'haneul', text: '(단톡) 근데 생각해 보니 상대가 어른일 수도 있잖아…', if: 'e8=crew' },
+          { who: 'haneul', text: '(단톡) 나 못 갈 듯. {name} 너도 가지 마', if: 'e8=crew' }
         ],
         prompt: '9시까지 30분',
         choices: [
@@ -1272,15 +1363,25 @@
         lines: [
           'narr: 다음 날 아침. 교실 문을 열자 몇 명이 휴대폰 화면을 내렸다.',
           'narr: 어젯밤 영상은 [[우리 반 단톡방에도]] 올라와 있었다. 그 자리에 없던 새봄이도, 하늘이도, 민준이도 이미 본 얼굴이었다.',
-          'haneul: 야… 너 이런 애였어? 영상 보고 놀랐어.',
-          { who: 'saebom', text: '다친 데는 없어? 그런데 어제 거기까지 간 건 걱정돼.', if: 'trust.saebom>=0' },
-          { who: 'saebom', text: '…그 영상, 우리 반 단톡에도 올라왔더라. 나는 따로 할 말 없어.', if: 'trust.saebom<0' },
-          'jiho: 그 영상만 보고 다 안다는 듯이 말하지는 말자.',
-          { who: 'minjun', text: '괜찮아? 밤새 걱정했어… 나가지 말라고 했잖아. 연락이라도 해 주지.', if: 'trust.minjun>=0 && !hurt.minjun' },
-          { who: 'minjun', text: '…영상은 봤어. 그 얘긴 나한테 하지 마.', if: 'trust.minjun>=0 && hurt.minjun' },
-          { who: 'minjun', text: '나가지 말라고 했잖아. …됐어, 지금은 그 얘기 하기 싫어.', if: 'trust.minjun<0 && !hurt.minjun' },
+          // 2026-11-12 대사 보완: 지호의 말을 단정·훈계에서 지호다운 머뭇거림으로(voice-sheet "단정하는 경고·몰아세우는 말 ×"), 하늘은 놀란 말을 스스로 변명
+          'haneul: 야… 너 이런 애였어?',
+          'haneul: 영상 보고 진짜 놀랐어. 밤에 혼자 거기 간 거야?',
+          { who: 'saebom', text: '다친 데는 없어?', if: 'trust.saebom>=0' },
+          { who: 'saebom', text: '…그런데 어제 거기까지 간 건 솔직히 좀 걱정돼.', if: 'trust.saebom>=0' },
+          { who: 'saebom', text: '…그 영상, 우리 반 단톡에도 올라왔더라.', if: 'trust.saebom<0' },
+          { who: 'saebom', text: '나는 따로 할 말 없어.', if: 'trust.saebom<0' },
+          'jiho: 근데… 그 영상 몇 초만 보고 다 아는 것처럼 말하는 건 좀…',
+          'haneul: …아, 그런 뜻 아니었어. 걱정돼서 그랬어.',
+          { who: 'minjun', text: '…괜찮아?', if: 'trust.minjun>=0 && !hurt.minjun' },
+          { who: 'minjun', text: '나가지 말라고 했잖아.', if: 'trust.minjun>=0 && !hurt.minjun' },
+          { who: 'minjun', text: '연락이라도 해 주지. 밤새 휴대폰만 봤어.', if: 'trust.minjun>=0 && !hurt.minjun' },
+          { who: 'minjun', text: '…영상은 봤어.', if: 'trust.minjun>=0 && hurt.minjun' },
+          { who: 'minjun', text: '그 얘긴 나한테 하지 마.', if: 'trust.minjun>=0 && hurt.minjun' },
+          { who: 'minjun', text: '나가지 말라고 했잖아.', if: 'trust.minjun<0 && !hurt.minjun' },
+          { who: 'minjun', text: '…됐어. 지금은 그 얘기 하기 싫어.', if: 'trust.minjun<0 && !hurt.minjun' },
           { who: 'narr', text: '민준이는 나를 한 번 보더니, 아무 말 없이 고개를 돌렸다.', if: 'trust.minjun<0 && hurt.minjun' },
-          'jiho: 싸운 건 따로 이야기해야겠지만, 그걸 계속 돌려 보는 것도 다른 문제잖아.'
+          'jiho: 싸운 건 싸운 거고…',
+          'jiho: 그걸 다들 계속 돌려 보는 것도… 좀 아닌 것 같아.'
         ],
         prompt: '영상은 아직 돌고 있다. 어떻게 할까?',
         choices: [
@@ -1288,12 +1389,15 @@
             say: '내가 싸움에 참여한 건 잘못했어. 그런데 그 영상을 계속 돌리는 건 멈춰 줬으면 해. 선생님께도 이야기할게.',
             set: { e8_response: 'support' }, add: { repair: 1, help: 1, 'trust.saebom': 1, 'trust.minjun': 1 },
             react: ['saebom: 알겠어. 어디에 올라왔는지부터 같이 정리하자.',
-              'haneul: …나도 받은 거 안 돌릴게. 아까 그렇게 말한 건 미안.',
+              'haneul: …나도 받은 거 안 돌릴게. 아까 말 막 한 건 미안.',
+              'haneul: 우리 반 단톡에 링크 올린 애한테도 내리라고 할게.',
+              'jiho: 나도… 링크 본 데 적어 둘게.',
               'narr: 몇 명이 전송을 멈췄다. [[이미 저장된 영상]]과 어긋난 사이가 한 번에 사라지지는 않았다.'],
             next: 'c3_e8_h' },
           { id: 'expose', text: '상대가 먼저 도발했다는 걸 보여 주려고 계정과 대화 캡처를 공개한다.',
             set: { e8_response: 'expose' }, add: { spread: 1 },
-            react: ['narr: [[상대의 계정 이름과 댓글 캡처]]를 내 스토리에 올렸다. “먼저 시비 건 건 저쪽”이라고 적었다.'],
+            react: ['narr: [[상대의 계정 이름과 댓글 캡처]]를 내 스토리에 올렸다. “먼저 시비 건 건 저쪽”이라고 적었다.',
+              'haneul: 오, 저쪽이 먼저 시비 건 거 다 보이네.', 'jiho: …'],
             next: 'c3_e8_g' },
           { id: 'silence', text: '아무에게도 말하지 않고 관련 알림을 끈다.',
             set: { e8_response: 'silence' },
@@ -1328,20 +1432,24 @@
         view: { type: 'dm', title: '민준' },
         lines: [
           'sys: 1교시 쉬는 시간 · 9:50',
-          'minjun: 영상 얘기 들었어. [[우리 반 단톡에도]] 누가 링크 올렸더라',
-          { who: 'minjun', text: '아침엔 서운해서 말이 세게 나갔어. 미안', if: '!hurt.minjun' },
-          { who: 'minjun', text: '혼자 끌어안고 있지 말고', if: '!hurt.minjun' },
+          // 2026-11-12 대사 보완: 아침 교실에서 이미 영상을 본 민준(c3_e8_f)이라 '얘기 들었어' 대신 아직 돈다는 말로. 짧게 끊어 보냄. 조건은 그대로
+          'minjun: {name}',
+          'minjun: 영상 아직 돌아. [[우리 반 단톡에도]] 누가 또 링크 올렸더라',
+          { who: 'minjun', text: '아침엔 서운해서 말이 세게 나갔어', if: '!hurt.minjun' },
+          { who: 'minjun', text: '미안', if: '!hurt.minjun' },
+          { who: 'minjun', text: '혼자 끌어안고 있지 마', if: '!hurt.minjun' },
           { who: 'minjun', text: '선생님한테 같이 가 줄까?', if: '!hurt.minjun' },
           { who: 'minjun', text: '번호 일은 솔직히 아직 화나.', if: 'e7=join|silent || e7b=none' },
           { who: 'minjun', text: '그 사진 일은 솔직히 아직 화나.', if: ['hurt.minjun', 'e7!=join|silent', 'e7b!=none'] },
-          { who: 'minjun', text: '그래도 이건 혼자 둘 일 아니야. 담임쌤한테는 말해.', if: 'hurt.minjun' },
+          { who: 'minjun', text: '그래도 이건 혼자 둘 일 아니야', if: 'hurt.minjun' },
+          { who: 'minjun', text: '담임쌤한테는 말해', if: 'hurt.minjun' },
           { who: 'minjun', text: '같이 가 달라고 하면 교무실 앞까지는 가 줄게.', if: 'hurt.minjun' }
         ],
         prompt: '민준이에게 뭐라고 할까?',
         choices: [
           { id: 'accept', text: '“같이 가 줘”라고 답하고 선생님께 간다.',
             set: { e8_reach: 'accept' }, add: { help: 1, 'trust.minjun': 1 },
-            react: ['me: 응… 같이 가 줘', 'minjun: 교무실 앞에서 기다릴게', 'minjun: 영상 올라온 데는 내가 아는 만큼 적어 갈게'],
+            react: ['me: 응… 같이 가 줘', 'minjun: 응', 'minjun: 교무실 앞에서 기다릴게', 'minjun: 영상 올라온 데는 내가 아는 만큼 적어 갈게'],
             next: 'c3_e8_h' },
           { id: 'fine', text: '“괜찮아, 알아서 할게”라고 답한다.',
             set: { e8_reach: 'fine', e8_unresolved_threat: true },
@@ -1356,10 +1464,12 @@
         chapter: 3, event: 'e8', label: '선생님과 나눈 이야기',
         view: { type: 'place', title: '상담실 · 축제 다음 날', cg: 'teacher-support' },
         lines: [
+          // 2026-11-12 대사 보완: 같은 뜻 두 줄(퍼뜨리고 조롱해도 / 찍고 올리고 놀려도)을 한 줄로, 안부를 먼저(voice-sheet 담임)
           'teacher: 먼저 다친 곳은 없는지 확인하자.',
-          'teacher: 싸움에 참여한 행동은 함께 돌아봐야 해. 그렇다고 누군가 네 영상을 퍼뜨리고 조롱해도 되는 건 아니야.',
-          'teacher: 밖에서 있었던 일이라고 해서, 누구나 찍고 올리고 놀려도 되는 건 아니란다.',
-          'teacher: 안전하게 지낼 방법과 영상이 더 퍼지지 않게 할 방법을 나눠서 생각해 보자.',
+          'teacher: 어젯밤에 많이 놀랐겠다. 여기까지 와 줘서 고마워.',
+          'teacher: 싸움에 참여한 행동은 함께 돌아봐야 해.',
+          'teacher: 그렇다고 누군가 네 영상을 찍어 올리고 놀려도 되는 건 아니야. 밖에서 있었던 일이라도 마찬가지야.',
+          'teacher: 안전하게 지낼 방법과, 영상이 더 퍼지지 않게 할 방법을 나눠서 생각해 보자.',
           'narr: 영상이 올라온 곳을 선생님과 함께 정리하고 신고했다. [[이미 저장해 간 사람이 몇인지는]] 알 수 없었다.'
         ],
         next: 'c3_e9_a'
@@ -1375,13 +1485,17 @@
           { who: 'anon', kind: 'post', text: '솔빛 2-3 사진관 개노잼. 꾸민 거 다 싸구려ㅋ 꾸민 애 지호라던데 센스 실화냐', meta: '좋아요 87 · 댓글 23' },
           { who: 'saebom', kind: 'post', text: '이 계정 주인 찾았음. 이름 ○○○ / △△학교 2학년 / □□동 거주 / 얼굴 사진 첨부. 다들 퍼 가 주세요', meta: '새봄의 스토리 · 조회 156' },
           { who: 'me', kind: 'thought', text: '나도 몇 초짜리 영상으로 판단받았는데… 지금 이 사람에게 똑같이 하고 있는 건 아닐까?', if: 'e8_video_spread' },
+          // 2026-11-12 대사 보완: 새봄의 이유(지호를 위한 억울함 + 자기가 당한 일)를 먼저, 부탁은 끝에. 줄마다 조건은 그대로(순서만 옮김)
           { who: 'saebom', text: '(개인톡) 이번엔 우리가 당하고만 있으면 안 돼', if: '!hurt.saebom' },
           { who: 'saebom', text: '지호 이름까지 써서 비웃었잖아', if: '!hurt.saebom' },
+          { who: 'saebom', text: '지호 그 글 보고 아까부터 말도 별로 안 해', if: '!hurt.saebom' },
           { who: 'saebom', text: '나도 저번에 가짜 영상 당했잖아', if: '!hurt.saebom' },
-          { who: 'saebom', text: '너도 공유해 줘. 많이 퍼져야 걔도 자기가 뭘 했는지 알지', if: '!hurt.saebom' },
           { who: 'saebom', text: '그때 신고했는데', if: ['e4b=ask|report', '!hurt.saebom'] },
           { who: 'saebom', text: '결국 누가 만든 건지도 못 찾았잖아', if: ['e4b=ask|report', '!hurt.saebom'] },
-          { who: 'saebom', text: '(반 단톡 28명) 지호 비웃은 계정 주인 찾았어. 내 스토리에 다 올려 놨으니까 다들 퍼 가 줘', if: 'hurt.saebom' },
+          { who: 'saebom', text: '너도 공유해 줘', if: '!hurt.saebom' },
+          { who: 'saebom', text: '많이 퍼져야 걔도 자기가 뭘 했는지 알지', if: '!hurt.saebom' },
+          { who: 'saebom', text: '(반 단톡 28명) 지호 비웃은 계정 주인 찾았어', if: 'hurt.saebom' },
+          { who: 'saebom', text: '(반 단톡 28명) 내 스토리에 다 올려 놨으니까 다들 퍼 가 줘', if: 'hurt.saebom' },
           { who: 'narr', text: '새봄이는 나에게 따로 연락하지 않았다. 반 단톡방에 올라온 그 말을, 나도 다른 애들처럼 읽었을 뿐이다.', if: 'hurt.saebom' },
           'narr: 지호를 비웃은 글은 분명 잘못됐다. 그런데 새봄이의 스토리에는 그 사람이 한 말이 아니라, 그 사람의 [[이름·학교·동네·얼굴]]이 있다.'
         ],
@@ -1396,14 +1510,18 @@
           { id: 'ask', text: '피해를 입은 지호에게 어떻게 하고 싶은지 먼저 묻는다.',
             set: { e9: 'ask' }, add: { consent: 1 },
             react: [
+              // 2026-11-12 대사 보완: 지호에게 개인톡으로 물은 것을 해설로 먼저(스토리 화면 위에 지호 말이 갑자기 뜨지 않게)
+              'narr: 지호에게 개인톡을 보냈다. “새봄이 스토리 봤어? 너는 어떻게 하고 싶어?”',
               { who: 'jiho', text: '…이제 와서 내 생각을 묻는 거야?', if: 'trust.jiho<0' },
               { who: 'jiho', text: '새봄이한테 내 캡처 보낸 거 너였다며', if: 'e3fix=part' },
               { who: 'jiho', text: '새봄이가 말해 줬어', if: 'e3fix=part' },
-              'jiho: 나는 그냥 그 글 신고만 하고 싶어', 'jiho: 그 사람 이름이랑 학교, 사는 동네까지 퍼지면', 'jiho: 나 때문에 일이 커진 것 같잖아. 그건 싫어'],
+              'jiho: 나는…', 'jiho: 그냥 그 글 신고만 하고 싶어', 'jiho: 그 사람 이름이랑 학교, 사는 동네까지 퍼지면',
+              'jiho: 나 때문에 일이 커진 것 같잖아', 'jiho: 그건 싫어'],
             next: [{ if: 'e3fix=part', to: 'c3_e9_j' }, { to: 'c3_e9_b' }] }, // 캡처 전달을 지호가 방금 알게 된 경로만 사과 장면을 거친다(2026-11-10)
           { id: 'report', text: '후기 글과 신상 스토리를 둘 다 신고하고, 선생님께 알린다.',
             set: { e9: 'report' }, add: { help: 1 },
             react: ['teacher: 잘 알려 줬어. 그 후기 글은 학교에서 상대 학교와도 이야기해 볼게.',
+              'teacher: 지호도 그 글 봤겠구나. 지호한테는 선생님이 먼저 괜찮은지 물어볼게.',
               'teacher: 새봄이 스토리는 선생님이 새봄이와 따로 이야기할게.',
               'narr: 소문을 퍼뜨린 게 아니라, 막을 수 있는 사람에게만 정확히 알렸다.'],
             next: 'c3_e9_b' }
@@ -1416,6 +1534,7 @@
         view: { type: 'place', title: '교실 · 쉬는 시간' },
         lines: [
           'narr: 캡처 얘기가 나온 뒤로, 지호와 나 사이에 잠깐 말이 끊겼다.',
+          'narr: 쉬는 시간, 지호가 내 자리로 왔다. 손에 쥔 반짝이 스티커 봉지만 만지작거렸다.',
           'jiho: 왜 그랬는지는 안 물을게.',
           'jiho: 그냥… 다른 사람한테 듣기 전에, 너한테 먼저 듣고 싶었어.'
         ],
@@ -1428,7 +1547,8 @@
           { id: 'excuse', text: '도우려고 한 일이었다고 설명한다.',
             say: '새봄이가 역할표 때문에 급하다고 해서… 너 도우려고 그런 거였어',
             set: { e9j: 'excuse' }, add: { 'trust.jiho': -2 },
-            react: ['jiho: 도우려던 건 알아.', 'jiho: 근데 내 얘기를 어디까지 할지는, 내가 정하고 싶었어.'], next: 'c3_e9_b' }
+            react: ['jiho: 도우려던 건 알아.', 'jiho: 근데 내 얘기를 어디까지 할지는, 내가 정하고 싶었어.',
+              'narr: 지호는 그 말만 하고 자기 자리로 돌아갔다.'], next: 'c3_e9_b' }
         ]
       },
       c3_e9_b: {
@@ -1440,6 +1560,7 @@
           { who: 'anon', kind: 'post', text: '○○○ 내일 △△학교 앞에서 기다리자 ㅋㅋ', meta: '공유된 스토리에 달린 댓글', if: 'e9=share' },
           { who: 'saebom', text: '…그래도 그냥 넘어가면 억울한데', if: 'e9=critique|ask' },
           { who: 'saebom', text: '지호 비웃은 건 그 사람인데 왜 우리가 참아야 돼?', if: 'e9=critique|ask' },
+          { who: 'saebom', text: '나도 당해 봐서 알아. 가만있으면 아무도 몰라줘', if: 'e9=critique|ask' },
           { who: 'narr', text: '지호의 뜻을 새봄이에게 전했다.', if: 'e9=ask' },
           { who: 'narr', text: '새봄이의 스토리는 선생님과 이야기한 뒤 내려갔다. [[이미 캡처해 간 사람이 몇 명]] 있었다.', if: 'e9=report' }
         ],
@@ -1457,9 +1578,9 @@
             react: [
               { who: 'saebom', text: '…그래 네 말이면', if: ['trust.saebom>=1', 'e9=critique'] },
               { who: 'saebom', text: '…지호가 그러길 원하면', if: ['trust.saebom>=1', 'e9=ask'] }, // 지호의 뜻을 전한 경로(2026-11-10)
-              { who: 'saebom', text: '내릴게', if: 'trust.saebom>=1' },
-              { who: 'saebom', text: '알았어 내릴게', if: 'trust.saebom<1' },
-              { who: 'saebom', text: '근데 아직 화나', if: 'trust.saebom<1' },
+              { who: 'saebom', text: '내릴게. 단톡 공지는 내가 쓸게', if: 'trust.saebom>=1' },
+              { who: 'saebom', text: '알았어. 내릴게', if: 'trust.saebom<1' },
+              { who: 'saebom', text: '근데 나 아직 화나 있는 거 알지?', if: 'trust.saebom<1' },
               'narr: 새봄이의 스토리가 내려갔다. [[이미 퍼 간 사람이 세 명]] 있었다.'], next: '@chapter:4' },
           { id: 'step', if: 'e9=critique|ask', text: '할 말은 했으니 더 끼어들지 않는다.',
             set: { e9b: 'step' },
@@ -1479,6 +1600,7 @@
           { who: 'narr', text: '번호 장난이 있던 날 내가 그 옆에 서 있었다는 걸, 민준이도 이제 안다. 글을 올린 건 내가 아니었지만, 말릴 수 있었던 사람이기는 했다.', if: 'e7=silent' }, // 2026-11-10: 가만히 있던 경로의 에필로그
           { who: 'narr', text: '하늘이 계정에 올라간 “나는 바보다” 스토리는 팔로워 418명이 본 뒤에야 지워졌다.', if: 'e6=post' },
           { who: 'haneul', text: '도서관 PC 기록 보니까 그 시간에 너 있었더라. 내 계정에 올린 거, 너였지?', if: 'e6b=deny' },
+          { who: 'haneul', text: '그날 하루 종일 누가 그랬나 찾아다녔어. …그냥 말해 주지.', if: 'e6b=deny' },
           { who: 'narr', text: '내가 공유한 스토리 속 그 학생은 며칠째 학교에 나오지 못하고 있다고 했다.', if: 'e9=share && e9b=none' },
           { who: 'narr', text: '내가 전달한 새봄이의 가짜 춤 영상은 그 뒤로도 [[몇 개의 방을 더]] 돌았다. 새봄이는 아직 공개 계정을 닫아 두고 있다.', if: 'e4=forward' },
           { who: 'teacher', text: '그날 밤 일과 그 영상은 혼자 감당할 일이 아니었어. 보호자분과 상담 선생님까지 함께 이어 둘게.', if: 'e8_unresolved_threat' },
@@ -1490,6 +1612,7 @@
           // 2026-11-10 플레이테스트: 사진을 지운 경로(e2fix)는 모두 내가 올린 경로다 → 고맙다는 말 대신 양쪽을 다 말한다. 그 뒤 번호 장난으로 또 해쳤으면(e7·e7b) 이 말도 없다
           { who: 'minjun', text: '(쉬는 시간) 그 사진… 올린 것도 너였지만, 지워 준 것도 너였지.', if: ['e2fix=sorry|all', 'e7!=join|silent', 'e7b!=none'] },
           { who: 'narr', text: '민준이는 아직 나와 눈을 잘 마주치지 않는다.', if: 'trust.minjun<0' },
+          { who: 'haneul', text: '(쉬는 시간) 민준이한테 그날 일 다시 사과했어. 빵도 하나 사 줬고.', if: 'e7b=help|del && trust.haneul>=0' },
           { who: 'jiho', text: '다음 축제 땐 안내도 한번 해 볼까 생각 중이야. 천천히, 내가 정해서.', if: 'trust.jiho>=1' },
           { who: 'narr', text: '지호와 나 사이에는 아직 어색한 공기가 남아 있다.', if: 'trust.jiho<0' },
           { who: 'haneul', text: '야, 나 그날 이후로 PC방 가면 로그아웃부터 함 ㅋㅋ', if: 'trust.haneul>=1' },
