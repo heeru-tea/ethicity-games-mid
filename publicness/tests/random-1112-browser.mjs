@@ -204,6 +204,34 @@ try {
     await page.close();
   }
 
+  // ── 기본 모드 5단계 한 번(무난한 노선 playtest-1111-plan) — 그림을 막은 채 3·4단계 칩·지도 핀·결과·엔딩에 깨진 그림 없음, 화면 버튼으로 출발·끝까지 ──
+  {
+    const { PLAN } = require('./playtest-1111-plan.cjs');
+    page = await newPage(1280, 800);
+    await page.goto(base + '?no3d=1'); await page.evaluate(() => localStorage.clear()); await page.reload();
+    await page.locator('#btn-start').click(); await closeIntro(page);
+    for (let p = 1; p <= 5; p++) {
+      await page.evaluate((PL) => { const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true; S.beginPlan(s); s.draft.routes = []; s.draft.buses.forEach((b) => { b.routeNum = null; });
+        PL.forEach(([nodes, n], i) => { s.draft.routes.push({ num: i + 1, nodes: nodes.slice(), stops: nodes.map(() => true), autoPlaced: true }); for (let k = 0; k < n; k++) { const b = s.draft.buses.filter((x) => x.routeNum == null)[0]; if (b) b.routeNum = i + 1; } });
+        A.enterPlan(); document.querySelectorAll('dialog[open]').forEach((d) => d.close()); }, PLAN[p - 1]);
+      await page.waitForTimeout(700); await answerChoices(page);
+      if (p >= 3) { assert.deepEqual(await brokenImages(page), [], '기본 ' + p + '단계 계획: 깨진 그림 없음'); assert.ok(await page.locator('#people-hud .img-fallback-initial, #map-people .img-fallback-initial').count() >= 2, '기본 ' + p + '단계: 막은 초상은 이름 첫 글자'); }
+      if (p === 4) await page.screenshot({ path: shot('default-plan4-1280') });
+      await depart(page); await page.locator('#confirm-yes').click(); await skip(page, p);
+      assert.deepEqual(await brokenImages(page), [], '기본 ' + p + '단계 결과: 깨진 그림 없음');
+      if (p < 5) await nextStage(page);
+    }
+    await page.locator('#btn-next-phase').click();
+    for (let i = 0; i < 40 && await page.locator('#goal-intro').evaluate((d) => d.open); i++) { await page.locator('#btn-goal-start').click().catch(() => {}); await page.waitForTimeout(80); }
+    await page.locator('#ending-verdict').waitFor({ timeout: 30000 }); await page.waitForTimeout(600);
+    assert.deepEqual(await brokenImages(page), [], '기본 엔딩: 깨진 그림 없음');
+    const dflt = await page.evaluate(() => ({ bal: Math.round(PB.Session.balance(PB.App.s)), petitions: PB.Choices.list(PB.App.s).map((p) => p.kind) }));
+    assert.equal(dflt.bal, 234298, '기본 모드 무난한 노선 누적 잔액 = 수정 전과 같음(CLAUDE.md 11-11 표 234,298)'); assert.deepEqual(dflt.petitions, ['fixed'], '기본 모드는 고정 청원만');
+    await page.locator('#btn-report').click(); await page.locator('#report-badges').waitFor();
+    log('기본 모드 5단계·엔딩·보고서: 누적 잔액 ' + dflt.bal + ' · 깨진 그림 없음');
+    await page.close();
+  }
+
   // ── 그림을 막지 않은 진짜 파일: 랜덤 4·7단계 칩·지도 핀이 모두 풀림(404 없음) ──
   page = await newPage(1280, 800, false);
   await page.goto(base + '?no3d=1&seed=' + SEED); await page.evaluate(() => localStorage.clear()); await page.reload();
