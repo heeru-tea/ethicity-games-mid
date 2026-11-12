@@ -274,7 +274,7 @@
       if(S.stopLimit(st(),r.num)===2)c.appendChild(el('p',{id:'regional-rule','class':'callout'},'광역 노선 · 마을 한 곳 ↔ 대도시. 광역 버스 전용·정원 24명. 마을 쪽 정류장을 골라 시내버스와 환승할 수 있게 연결하세요.'));
       if(S.stopLimit(st(),r.num)===3)c.appendChild(el('p',{id:'express-rule','class':'callout'},'직행 노선 · 최대 3개 정류장 ('+new Set(r.nodes).size+'/3). 직행 버스는 정원 18명·주행 속도 1.5배인 전용 버스예요. 정류장은 언제든 바꿀 수 있어요.'));
       var econLine=PB.UI.Econ?PB.UI.Econ.routeLine(st(),r.num):'';if(econLine)c.appendChild(el('p',{id:'route-econ-text','class':'note econ-route'},econLine));
-      c.appendChild(el('p',{'class':'route-summary'},R(r.num)+' · '+(G.isLoop(r)?'순환':'왕복')+(ok?(st().config.challengeApplied&&r.num===5?' · 직행 버스 한 바퀴 '+app().duration(PB.Schedule.cycleMinutes(S.graph(st()),st().config,7,r)):' · 한 바퀴 '+app().duration(G.cycleMinutes(S.graph(st()),r))):'')));
+      c.appendChild(el('p',{'class':'route-summary'},R(r.num)+' · '+(G.isLoop(r)?'순환':'왕복')+(ok?(st().config.challengeApplied&&r.num===5?' · 직행 버스 한 바퀴 ':' · 한 바퀴 ')+app().duration(S.routeCycle(st(),r.num)):'')));
       if(!r.nodes.length)c.appendChild(el('p',{'class':'note'},'아직 연결한 정류장이 없어요. 지도나 아래 목록에서 두 곳 이상 선택하세요.'));
       var running=assigned(r.num),allocation=el('div',{id:'route-allocation','class':running.length?'note':'callout warn'});
       if(running.length)allocation.textContent='운행 버스 '+running.length+'대';

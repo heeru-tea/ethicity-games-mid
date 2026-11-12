@@ -21,8 +21,7 @@
   E.headway = function (s, num, n) {
     var r = S.routeByNum(s, num);
     if (!r || !n || G.validateRoute(S.graph(s), r).length) return null;
-    var first = s.draft.buses.filter(function (b) { return b.routeNum === num; })[0], id = first ? first.id : 1;
-    return Q.cycleMinutes(S.graph(s), s.config, id, r) / n;
+    return S.routeHeadway(s, num, n); // 2026-11-12: 노선 번호로 차량 속도(Schedule.routeCycle) — 노선 칩·글 목록과 같은 값
   };
   E.routeKm = function (s, num) { var r = S.routeByNum(s, num); return r && r.nodes.length >= 2 && !G.validateRoute(S.graph(s), r).length ? G.routeKm(S.graph(s), r) : null; };
   function km(x) { return (Math.round(x * 10) / 10) + 'km'; }

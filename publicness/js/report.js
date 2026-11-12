@@ -14,7 +14,13 @@
     var loop = nodes.length > 2 && nodes[0] === nodes[nodes.length - 1], ns = loop ? nodes.slice(0, -1) : nodes;
     return ns.map(f.name).join(' → ') + (loop ? ' (순환)' : '');
   }
-  function routeLine(f, r, i) { return (r.num != null ? f.route(r.num) : '노선 ' + (i + 1)) + ': ' + pathText(f, r.nodes) + ' · 버스 ' + r.buses + '대'; }
+  /* 한 바퀴·간격(2026-11-12 랜덤 검토 7번): 노선 칩·글 목록과 같은 함수(Schedule.routeCycle — 노선 번호로 차량 속도). 정차 여부는 출발한 계획(h.plan)의 같은 노선에서 */
+  function lapText(f, r) {
+    var L = f.lap; if (!L || r.num == null || !r.nodes || r.nodes.length < 2) return '';
+    var c = L(r); if (c == null) return '';
+    return ' · 한 바퀴 ' + f.duration(c) + (r.buses ? ' · 간격 약 ' + f.duration(c / r.buses) : '');
+  }
+  function routeLine(f, r, i) { return (r.num != null ? f.route(r.num) : '노선 ' + (i + 1)) + ': ' + pathText(f, r.nodes) + ' · 버스 ' + r.buses + '대' + lapText(f, r); }
   /* ‘내 계획’ = 출발할 때 계획 그대로(운행 중 고친 것은 여기 섞지 않는다 — 아래 changeItems가 따로 싣는다) */
   function planLines(p, f) {
     var out = p.routes.map(function (r, i) { return routeLine(f, r, i); });
@@ -117,6 +123,15 @@
       { id: 'solvent', label: '파산·계약 종료 없이 학기를 마쳤어요', earned: !!(s.end && s.end.cause === 'complete') }
     ];
   }
+  function lapFor(s, h) {
+    var G = lib('Graph', './graph.js'), Q = lib('Schedule', './schedule.js'); if (!G || !Q || !s.config || !s.config.nodes || !s.config.bus) return null;
+    var g; try { g = G.build(s.config, h.phase); } catch (e) { return null; }
+    var planned = ((h.plan && h.plan.buses) || []).map(function (b) { return b.route; }).filter(Boolean);
+    return function (r) {
+      var hit = planned.filter(function (x) { return x.nodes && x.nodes.join('|') === r.nodes.join('|'); })[0];
+      try { return Q.routeCycle(g, s.config, r.num, { nodes: r.nodes.slice(), stops: hit && hit.stops ? hit.stops.slice() : r.nodes.map(function () { return true; }) }); } catch (e) { return null; }
+    };
+  }
   function build(s, f) {
     var NT = notes(), phases = (s.config && s.config.phases) || [], hist = s.history || [], bal = hist.reduce(function (a, h) { return a + h.metrics.costs.total; }, 0);
     var mode = s.mode === 'random' ? '랜덤 세팅 · 번호 ' + s.seed : s.mode === 'fixed' ? '지정 세팅 · 번호 ' + s.seed : '기본 세팅';
@@ -126,7 +141,8 @@
       meta: { mode: mode, date: dateText(f.date || new Date()), end: endText(s, f, bal), stages: phases.length + '단계 중 ' + hist.length + '단계 운행' },
       stages: hist.map(function (h) {
         var said = NT.sentences(NT.get(s, h.phase)), pick = (s.choices || {})[h.phase], e = evalOf(h), p = NT.planOf(s, h), ch = changeItems(s, h, f, p);
-        return { phase: h.phase, title: h.phase + '단계 · ' + (phases[h.phase - 1] || ''), planLabel: ch.length ? '내 계획 (출발할 때)' : '내 계획', plan: planLines(p, f),
+        var fl = Object.assign({}, f, { lap: lapFor(s, h) });
+        return { phase: h.phase, title: h.phase + '단계 · ' + (phases[h.phase - 1] || ''), planLabel: ch.length ? '내 계획 (출발할 때)' : '내 계획', plan: planLines(p, fl),
           changes: ch, changeNote: ch.length ? CHANGE_NOTE : null, numbers: numbers(h, f, e), eval: e,
           goal: pick && f.choices[pick] ? f.choices[pick] : '(고르지 않음)', mine: said.mine, ai: said.ai };
       }),

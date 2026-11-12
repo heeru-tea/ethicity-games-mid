@@ -404,7 +404,7 @@
       var st = routeStyle(r.num), buses = s.draft.buses.filter(function (b) { return b.routeNum === r.num; });
       var ok = PB.Graph.validateRoute(g, r).length === 0;
       var li = el('li', null, PB.Names.route(r.num) + ': ' + App.describeRoute(r) +
-        (ok ? ' · 한 바퀴 ' + App.duration(PB.Graph.cycleMinutes(g, r)) : ' · 아직 완성되지 않음') +
+        (ok ? ' · 한 바퀴 ' + App.duration(S.routeCycle(s, r.num)) + (buses.length ? ' · 간격 약 ' + App.duration(S.routeHeadway(s, r.num)) : '') : ' · 아직 완성되지 않음') +
         ' · ' + (buses.length ? '버스 ' + buses.length + '대' : '배정된 버스 없음'));
       ul.appendChild(li);
     });

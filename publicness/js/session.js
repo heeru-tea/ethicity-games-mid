@@ -451,11 +451,14 @@
    * 노선이 있어도 버스가 없으면 그 정류장에는 아무도 못 오므로 ‘운행하는 노선’만 센다. 새 정류장을 앞에 */
   /* 노선별 배차 간격(2026-11-11 플레이테스트 7): 한 바퀴 시간 ÷ 그 노선 버스 수(자동 간격 출발과 같은 기준 — ui-economy headway와 같은 식).
    * over = 주요 인물 대기 기준(config.service.maxWait, 4시간 3분)을 넘는 간격. 노선 탭·출발 확인창이 같은 값을 쓴다 */
+  /* 한 바퀴·배차 간격 한 곳(2026-11-12 랜덤 검토 7번 — Schedule.routeCycle: 노선 번호로 차량 속도). n을 안 주면 그 노선에 배정된 버스 수 */
+  function routeCycle(s, num) { return Schedule.routeCycle(graph(s), s.config, num, routeByNum(s, num)); }
+  function routeHeadway(s, num, n) { if (n == null) n = s.draft.buses.filter(function (b) { return b.routeNum === num; }).length; var c = routeCycle(s, num); return c != null && n ? c / n : null; }
   function routeGaps(s) {
     var g = graph(s), max = s.config.service ? s.config.service.maxWait : null;
     return routesInOrder(s).map(function (r) {
       var bs = s.draft.buses.filter(function (b) { return b.routeNum === r.num; }), ok = r.nodes.length >= 2 && !Graph.validateRoute(g, r).length;
-      var h = ok && bs.length ? Schedule.cycleMinutes(g, s.config, bs[0].id, r) / bs.length : null;
+      var h = ok && bs.length ? routeHeadway(s, r.num, bs.length) : null;
       return { num: r.num, buses: bs.length, valid: ok, headway: h, over: h != null && max != null && h > max };
     });
   }
@@ -788,7 +791,7 @@
   var api = {
     checkSave: checkSave, safeRestore: safeRestore,
     elderChoice: elderChoice, petitionAt: petitionAt, petitionZoneAt: petitionZoneAt, rideRequests: rideRequests, aiView: aiView,
-    departChecks:departChecks,routeGaps:routeGaps,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
+    departChecks:departChecks,routeGaps:routeGaps,routeCycle:routeCycle,routeHeadway:routeHeadway,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
