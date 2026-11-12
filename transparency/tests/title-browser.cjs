@@ -118,7 +118,7 @@ async function flow(){
  await withPage({width:1280,height:800},null,async p=>{
   await settle(p);
   const fresh=JSON.parse(await stored(p));
-  assert.deepEqual(Object.keys(fresh).sort(),Object.keys(E.initial()).sort(),'저장 형식은 그대로(시작 화면을 봤는지는 저장하지 않는다)');assert.equal(fresh.version,6);
+  assert.deepEqual(Object.keys(fresh).sort(),Object.keys(E.initial()).sort(),'저장 형식은 그대로(시작 화면을 봤는지는 저장하지 않는다)');assert.equal(fresh.version,7);
   // Tab으로 버튼까지 가서 Enter
   let tabs=0,a;do{await p.keyboard.press('Tab');tabs++;a=await active(p);}while(!(a&&a.act==='start')&&tabs<6);
   assert.equal(a.act,'start','Tab으로 시작 버튼에 닿는다');assert.ok(tabs<=2,'Tab '+tabs+'번');

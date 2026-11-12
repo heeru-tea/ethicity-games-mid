@@ -24,7 +24,7 @@ async function discover(p,id){
  if(id==='photo-rule')for(const i of [0,1,2])await p.locator(`[data-act="region"][data-id="${i}"]`).click();
  if(id==='writing-history')await p.locator('[data-act="record"][data-id="h4"]').click();
  if(id==='face-clerk')await p.locator('[data-act="segment"][data-id="person"]').click();
- if(id==='camp-page')await p.locator('[data-act="cell"][data-id="office"]').click();
+ if(id==='camp-page')for(const c of ['office','appeal'])await p.locator(`[data-act="cell"][data-id="${c}"]`).click();
  if(id==='camp-results')await p.locator('[data-act="village"][data-id="pine"]').click();
  if(id==='camp-criteria')for(const r of ['join','essay','order','secret'])await p.locator(`[data-act="crit"][data-id="${r}"]`).click();
  if(id==='share-log')await p.locator('[data-act="part"][data-id="pic"]').click();
@@ -33,7 +33,7 @@ async function discover(p,id){
 }
 // 근거 자료마다 화면에서 찾을 표시
 const MARK={'photo-rule':'.guide-box','writing-guide':'.visual .document ul','writing-history':'.visual .records','face-alert':'.visual .document','face-photo':'.visual .evidence-photo',
- 'camp-page':'.visual .document','camp-results':'.visual .camp-table','camp-criteria':'.visual .score-formula','share-log':'.visual .records','share-photo':'.visual .sky-pair','share-compare':'.visual .compare-pair'};
+ 'camp-page':'.visual .document','camp-results':'.visual .camp-table','camp-criteria':'.visual .score-formula','camp-bus':'.visual .note-card','share-log':'.visual .records','share-photo':'.visual .sky-pair','share-compare':'.visual .compare-pair'};
 async function caseRun(p,k,vp,wrong){
  const c=D.cases[k],n=E.sceneOf(k,'check');
  await seed(p,stateAt(k,'check'));
@@ -96,7 +96,7 @@ async function caseRun(p,k,vp,wrong){
    await seed(p,old);
    assert.match(await p.locator('.judge-head').innerText(),/3\/3/);assert.ok(await p.locator('.visual .evidence-photo').isVisible(),'이어하기에서도 근거 자료(비교 사진)');assert.equal(await p.locator('.compare-labels span').first().innerText(),'등록된 사진');
    await p.screenshot({path:path.join(shotDir,'_t1106-compare-1280.png')});
-   const s=await state(p);assert.equal(s.version,6);assert.deepEqual(Object.keys(s).sort(),Object.keys(base).sort(),'저장 구조 그대로');ok('version 6 이어하기');await ctx.close();}
+   const s=await state(p);assert.equal(s.version,7);assert.deepEqual(Object.keys(s).sort(),Object.keys(base).sort(),'저장 구조 그대로');ok('version 7 이어하기');await ctx.close();}
   // 후속 조사 카드·집계 기준
   {const ctx=await browser.newContext({viewport:{width:1280,height:800},reducedMotion:'reduce'}),p=throughTitle(await ctx.newPage());await p.goto(url);
    await seed(p,stateAt('photo','follow'));

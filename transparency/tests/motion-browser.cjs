@@ -131,8 +131,10 @@ const anim = sel => `(() => { const el = document.querySelector(${JSON.stringify
     // ---- 시작 화면 ----
     {
       const { ctx, p } = await open({ width: 1280, height: 800 }, null, { reducedMotion: 'reduce' });
-      const s = await p.evaluate(`(() => { const x = document.querySelector('.peek-stamps span'); const c = getComputedStyle(x); return { border: c.borderTopWidth, radius: c.borderTopLeftRadius }; })()`);
+      const s = await p.evaluate(`(() => { const x = document.querySelector('.peek-stamps span'); const c = getComputedStyle(x); const all = [...document.querySelectorAll('.peek-stamps span')]; const r = all.map(e => e.getBoundingClientRect()); return { border: c.borderTopWidth, radius: c.borderTopLeftRadius, bg: c.backgroundColor, pad: c.paddingLeft, n: all.length, sep: all.slice(1).map(e => getComputedStyle(e, '::before').content), gaps: r.slice(1).map((x, i) => Math.round(x.left - r[i].right)), sameRow: r.every(x => Math.abs(x.top - r[0].top) < 2), focusable: all.some(e => e.tabIndex >= 0), role: document.querySelector('.peek-card').getAttribute('role') }; })()`);
       ok('시작 화면: 한 장면의 세 갈래에 테두리 없음', s.border === '0px', s);
+      // 2026-11-12: 글자만(바탕·안쪽 여백 없음), 가운뎃점으로 셋을 나눈다. 누를 수 없는 그림 구실은 그대로.
+      ok('시작 화면: 세 갈래는 글자만(바탕 없음)·가운뎃점으로 나뉨·초점 안 받음', s.bg === 'rgba(0, 0, 0, 0)' && s.pad === '0px' && s.n === 3 && s.sep.every(x => x.includes('·')) && !s.focusable && s.role === 'img', s);
       await p.screenshot({ path: path.join(outDir, 'motion-title-1280.png') });
       await ctx.close();
     }

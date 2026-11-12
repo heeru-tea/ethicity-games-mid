@@ -57,27 +57,37 @@ async function discover(p,k,id,wrongFirst){
  if(id==='writing-history'){assert.equal(await p.locator('[data-act="record"]').count(),5,'five timed versions');
   if(wrongFirst){await click(p,'[data-act="record"][data-id="h3"]');assert.match(await p.locator('.tap-hint').innerText(),/비슷하지만/);}
   await click(p,'[data-act="record"][data-id="h4"]');}
- if(id==='face-clerk'){if(wrongFirst){await click(p,'[data-act="segment"][data-id="system"]');assert.match(await p.locator('.tap-hint').innerText(),/알림/);}await click(p,'[data-act="segment"][data-id="person"]');}
+ // 사건 3 점원의 말(2026-11-12): 문장마다 다른 안내. ‘바로 막으라고’는 가게 규칙 이야기(아직 확인 아님), ‘그 손님이래요’를 눌러야 확인.
+ if(id==='face-clerk'){if(wrongFirst){await click(p,'[data-act="segment"][data-id="system"]');assert.match(await p.locator('.tap-hint').innerText(),/알림/);}
+  await click(p,'[data-act="segment"][data-id="rule"]');assert.match(await p.locator('.tap-hint').innerText(),/가게 규칙이야. 알림의 말을 바꿔 말한 문장은 따로 있어/);assert.ok(!(await state(p)).evidence.includes('face-clerk'),'shop-rule sentence does not confirm');
+  await click(p,'[data-act="segment"][data-id="person"]');assert.match(await p.locator('.tap-hint').innerText(),/‘그 손님’이라고 정한 건 점원이야/);assert.equal(await p.locator('.visual .segments mark').count(),1);}
  // 사건 4: 공개 페이지 빈 칸, 마을별 결과(솔숲마을), 기준표 네 줄을 모두 열면 마무리 줄
  if(id==='camp-page'){assert.equal(await p.locator('[data-act="cell"]').count(),4);
   if(wrongFirst){await click(p,'[data-act="cell"][data-id="use"]');assert.match(await p.locator('.tap-hint').innerText(),/적혀 있어/);}
-  await click(p,'[data-act="cell"][data-id="office"]');assert.equal(await p.locator('.visual mark').count(),2,'both blank cells marked');}
+  // 빈 칸은 누른 칸만 표시, 둘 다 눌러야 확인(2026-11-12). 칸 버튼은 한 줄(높이 60px 아래)이고 .blank class가 없다.
+  await click(p,'[data-act="cell"][data-id="office"]');assert.equal(await p.locator('.visual mark').count(),1,'only the pressed cell is marked');assert.ok(!(await state(p)).evidence.includes('camp-page'),'one cell is not enough');
+  assert.match(await p.locator('.tap-hint').innerText(),/하나 더 있어/);
+  await click(p,'[data-act="cell"][data-id="appeal"]');assert.equal(await p.locator('.visual mark').count(),2,'both blank cells marked');
+  {const cells=await p.locator('[data-act="cell"]').evaluateAll(a=>a.map(b=>({h:b.getBoundingClientRect().height,w:b.getBoundingClientRect().width,pw:b.parentElement.getBoundingClientRect().width,blank:b.classList.contains('blank'),vh:b.querySelector('.kv-v').getBoundingClientRect().height})));
+   for(const c of cells){assert.equal(c.blank,false);assert.ok(Math.abs(c.w-c.pw)<2,'cell is full width '+JSON.stringify(c));assert.ok(c.h<60&&c.vh<40,'cell value on one line '+JSON.stringify(c));}}}
  if(id==='camp-results'){assert.equal(await p.locator('[data-act="village"]').count(),4);
   if(wrongFirst){await click(p,'[data-act="village"][data-id="city"]');assert.match(await p.locator('.tap-hint').innerText(),/절반 넘게/);}
   await click(p,'[data-act="village"][data-id="pine"]');assert.equal(await p.locator('.visual mark').innerText(),'솔숲마을');}
  if(id==='camp-criteria'){assert.equal(await p.locator('[data-act="crit"]').count(),4);for(const r of ['join','essay','order'])await click(p,`[data-act="crit"][data-id="${r}"]`);
   assert.equal(await p.locator('.score-formula').count(),0,'closing line only after all four rows');await click(p,'[data-act="crit"][data-id="secret"]');
   assert.match(await p.locator('.score-formula').innerText(),/참여 횟수/);assert.match(await p.locator('.hidden-row').innerText(),/영업비밀/);}
- // 사건 5(혼자): 잘못 누르면 글 안내 없이 '아님' 표시만
- if(id==='share-log'){if(wrongFirst){await click(p,'[data-act="part"][data-id="text"]');assert.equal(await p.locator('.tap-hint').count(),0,'solo: no tap hint');assert.equal(await p.locator('[data-act="part"][data-id="text"] .tried-tag').count(),1);}
+ // 사건 5(혼자): 잘못 누르면 '아님' 표시와 짧은 중립 안내 한 줄(2026-11-12 — 모아 해설은 여전히 없음)
+ if(id==='share-log'){if(wrongFirst){await click(p,'[data-act="part"][data-id="text"]');assert.match(await p.locator('.tap-hint').innerText(),/루루가 직접 쓴 부분이야/,'solo: short neutral line');assert.equal(await p.locator('[data-act="part"][data-id="text"] .tried-tag').count(),1);}
   await click(p,'[data-act="part"][data-id="pic"]');assert.equal(await p.locator('.visual mark').innerText(),'은하수 그림');}
- if(id==='share-photo'){assert.equal(await p.locator('.visual .sky-art').count(),2,'AI picture and real photo side by side');if(wrongFirst){await click(p,'[data-act="skyline"][data-id="date"]');assert.equal(await p.locator('.tried-tag').count(),1);}
+ if(id==='share-photo'){assert.equal(await p.locator('.visual .sky-art').count(),2,'AI picture and real photo side by side');if(wrongFirst){await click(p,'[data-act="skyline"][data-id="date"]');assert.equal(await p.locator('.tried-tag').count(),1);assert.match(await p.locator('.tap-hint').innerText(),/날짜와 시간/);}
   await click(p,'[data-act="skyline"][data-id="sky"]');assert.match(await p.locator('.visual mark').innerText(),/은하수는 거의 안 보임/);}
- if(id==='share-compare'){if(wrongFirst){await click(p,'[data-act="said"][data-id="post"]');assert.equal(await p.locator('.tap-hint').count(),0);assert.equal(await p.locator('.tried-tag').count(),1);}
+ if(id==='share-compare'){if(wrongFirst){await click(p,'[data-act="said"][data-id="post"]');assert.match(await p.locator('.tap-hint').innerText(),/AI라는 말이 없어/);assert.equal(await p.locator('.tried-tag').count(),1);}
   await click(p,'[data-act="said"][data-id="dm"]');}
+ if(D.cases[k].solo)assert.equal(await p.locator('.tap-hint').count(),0,'the right tap clears the line');
  assert.ok((await state(p)).evidence.includes(id),'checked '+id);
  if(D.cases[k].solo){assert.equal(await p.locator('.body .finding').count(),0,'solo: no 모아 finding for '+id);assert.doesNotMatch(await p.locator('.body').innerText(),/남은 자료/,'solo: no remaining-records hint');}
- else assert.ok((await p.locator('.finding').count())>0,'finding shown for '+id);
+ // 사건 3부터는 한마디(모아)가 없는 자료가 있다: 한마디나 자세히 보기가 있는 자료만 상자가 나온다
+ else{const x=D.cases[k].checks.find(c=>c.id===id);assert.equal((await p.locator('.finding').count())>0,!!(x.finding||x.more),'finding box for '+id);}
 }
 async function judgeThree(p,k,judge){let n=0;
  for(let i=0;i<3;i++){
@@ -197,7 +207,9 @@ async function playCase(p,k,{tag,viewport,pick,judge,wrongFirst,shots,write={},n
   if(c.asks){// 사건 4: 구청에 묻기. 하나 이상 물어야 직접 확인
    assert.equal(await p.locator('[data-act="ask"]').count(),4);if(!(await state(p)).asked.length)assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),true,'ask first');
    await click(p,'[data-act="ask"][data-id="appeal"]');let f=await p.locator('.body .finding').innerText();assert.match(f,/구청 청소년과/);assert.match(f,/아직 따로 정한 방법이 없어요\./);assert.match(f,/상자가 조금 열려/);
-   await click(p,'[data-act="ask"][data-id="who"]');assert.match(await p.locator('.body .finding').innerText(),/공개 페이지에는 아직 안 적혀 있어요/);
+   // 받은 답은 모두 쌓인다(2026-11-12). 담당 부서 답은 빈 칸을 미리 알려 주지 않는다.
+   await click(p,'[data-act="ask"][data-id="who"]');f=await p.locator('.body .finding').innerText();assert.match(f,/구청 청소년과예요/);assert.doesNotMatch(f,/안 적혀/);assert.match(f,/아직 따로 정한 방법이 없어요/,'earlier answer still shown');
+   assert.equal(await p.locator('.answer-item').count(),2);assert.equal(await p.locator('.answer-item[role="status"]').count(),1);
    assert.deepEqual((await state(p)).asked,['appeal','who']);assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false);}
   else assert.equal(await p.locator('[data-act="ask"]').count(),0);
   if(k==='camp')assert.match(await p.locator('.stage-screen').innerText(),/마을 신문[\s\S]*AI가 솔숲마을 차별/);
@@ -270,9 +282,9 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    assert.match(note,/1\. “이번 사진은[^”]*”\s*내 판단: 자료로는 알 수 없어 · 다시 볼 것 \(정리: 자료로 확인돼\)/);assert.match(note,/처음 조치\s*자동으로 자른 사진/);assert.match(note,/최종 조치\s*모두 나오는 사진/);
    await p.keyboard.press('Escape');assert.equal(await p.locator('dialog').isVisible(),false);
    await click(p,'header [data-act="settings"]');await click(p,'#modal-body [data-act="reset-ask"]');await click(p,'[data-act="reset"]');
-   const saved=JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY));assert.equal((await state(p)).scene,0);assert.equal(saved.scene,0);assert.equal(saved.version,6);
+   const saved=JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY));assert.equal((await state(p)).scene,0);assert.equal(saved.scene,0);assert.equal(saved.version,7);
    assert.equal(await p.evaluate(()=>localStorage.getItem('ethicity.player')),JSON.stringify({nickname:'테스트<b>'}),'shared player data untouched');
-   results.checks.push({saveResume:'mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 6)'});
+   results.checks.push({saveResume:'mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 7)'});
   });
   // 처음부터 다시 하기: '이름과 학번도 지우기'(기본 체크) — 체크면 함께 지우고, 풀면 이름·학번만 남긴다
   await withPage(PHONE,async p=>{const done=finishedState();done.reporter={name:'하늘',number:'10203'};
@@ -295,7 +307,7 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
   // 이전 저장: version 1 revision 4 (scene 5 = 글 사건 시작), revision 3, 손상 저장
   await withPage(DESKTOP,async p=>{
    const r4={version:1,revision:4,scene:5,furthest:5,evidence:['photo-original','photo-rule'],judgments:{photo:'unknown',writing:null,face:null},cases:{photo:{first:'auto',final:'auto'},writing:{first:null,final:null},face:{first:null,final:null}},question:null,completed:false};
-   await seedPage(p,r4);let s=await state(p);assert.equal(s.version,6);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'hook');
+   await seedPage(p,r4);let s=await state(p);assert.equal(s.version,7);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'hook');
    assert.match(await p.locator('h1').innerText(),/의심 표시가 붙은 원고/);await click(p,'.step-nav [data-act="next"]');assert.equal(E.stepOf((await state(p)).scene),'check');
    await click(p,'header [data-act="notebook"]');assert.match(await p.locator('#modal-body').innerText(),/이전 저장에서 넘어와 아직 안 함/);
    await click(p,'#modal-body [data-act="revisit"][data-scene="2"]');assert.match(await p.locator('.judge .question-label').innerText(),/2\/3/);
@@ -307,16 +319,16 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
   await withPage(DESKTOP,async p=>{
    const v2={version:2,scene:7,furthest:7,evidence:[...E.checks.photo],judgments:{photo:E.answers.photo.slice(),writing:[null,null,null],face:[null,null,null]},cases:{photo:{first:'auto',final:'all'},writing:{first:null,final:null},face:{first:null,final:null}},
     follows:{photo:{marks:Object.fromEntries(E.followMarks.photo.ids.map((id,i)=>[id,E.truth[i]])),judgment:'different'},writing:{marks:{},judgment:null},face:{marks:{},judgment:null}},question:null,completed:false};
-   await seedPage(p,v2);const s=await state(p);assert.equal(s.version,6);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');
+   await seedPage(p,v2);const s=await state(p);assert.equal(s.version,7);assert.equal(E.caseKey(s.scene),'writing');assert.equal(E.stepOf(s.scene),'check');
    assert.deepEqual(s.reflections.photo,{q1:'',q2:''});assert.deepEqual(s.cases.photo,{first:'auto',final:'all'});
-   assert.equal(JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY)).version,6,'same key, rewritten as version 6');
+   assert.equal(JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY)).version,7,'same key, rewritten as version 7');
    await click(p,'.step-nav [data-act="back"]');await click(p,'.step-nav [data-act="back"]');assert.equal(E.stepOf((await state(p)).scene),'reflect','new reflection screen of the photo case can be opened');
    assert.equal(await p.locator('.empty-note:visible').count(),2);
    results.checks.push({v2Migration:'version 2 save at old scene 7 resumes at writing check as version 5 with empty reflections; photo reflection reachable'});});
   // version 3 저장(옛 장면 18 = 빵집 생각 정리, 서술 있음) → version 4: 세 사건 미리 알리기는 '아직 안 함', 이어하기는 그대로
   await withPage(DESKTOP,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));
    const v3=oldSave(3);v3.scene=v3.furthest=18;v3.question=null;v3.completed=false;v3.reflections.face.q1='점검 기록';
-   await seedPage(p,v3);let s=await state(p);assert.equal(s.version,6);assert.equal(s.scene,E.sceneOf('face','reflect'));assert.equal(s.reflections.face.q1,'점검 기록');
+   await seedPage(p,v3);let s=await state(p);assert.equal(s.version,7);assert.equal(s.scene,E.sceneOf('face','reflect'));assert.equal(s.reflections.face.q1,'점검 기록');
    assert.ok(OLD3.every(k=>s.notices[k].posted==='legacy'));assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),false,'not blocked');
    await click(p,'header [data-act="notebook"]');assert.equal(await p.locator('#modal-body [data-act="revisit"]').filter({hasText:'미리 알리기 해 보기'}).count(),3);
    for(const [i,k] of OLD3.entries())noticeShown(await p.locator('#modal-body .case-card').nth(i).innerText(),k,s,'legacy notebook');
@@ -335,7 +347,7 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
   for(const ver of [4,5])await withPage(WIDE,async p=>{const errors=[];p.on('pageerror',e=>errors.push(String(e)));
    const old=oldSave(4);old.scene=old.furthest=ver===4?23:37;old.question='unknown';old.completed=true;old.reflections.writing={q1:'작성 기록',q2:'검사 이유'};old.finalNote='먼저 물어볼래';old.reporter={name:'하늘',number:'10203'};
    if(ver===5){old.version=5;delete old.question;old.asked=['unknown','input'];for(const k of ['library','recommend']){old.judgments[k]=[null,null,null];old.cases[k]={first:null,final:null};old.follows[k]={marks:{},judgment:null};old.reflections[k]={q1:'옛 사건',q2:''};old.notices[k]={picked:[],posted:null};}old.evidence.push('library-guide','recommend-reason');}
-   await seedPage(p,old);await assets(p);let s=await state(p);assert.equal(s.version,6);assert.equal(s.scene,E.sceneOf('camp','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);
+   await seedPage(p,old);await assets(p);let s=await state(p);assert.equal(s.version,7);assert.equal(s.scene,E.sceneOf('camp','hook'));assert.equal(s.completed,false);assert.deepEqual(s.asked,[]);
    assert.match(await p.locator('h1').innerText(),/겨울 캠프 명단/);assert.match(await p.locator('.resume').innerText(),/이어서/);
    for(const k of OLD3)assert.deepEqual(s.notices[k],old.notices[k],'posted notices kept '+k);
    const opts={tag:'v'+ver,viewport:WIDE,pick:{camp:'quiet',share:'tag'},judge:right,wrongFirst:false,shots:[]};
@@ -343,7 +355,7 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    s=await state(p);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.deepEqual(s.asked,['appeal','who']);
    await click(p,'.step-nav [data-act="next"]');assert.equal((await state(p)).scene,E.REPORT);
    await reportCheck(p,{writing:{q1:'작성 기록',q2:'검사 이유'}},'먼저 물어볼래');
-   assert.match(await p.locator('#report-camp').innerText(),/구청 발표대로/);assert.match(await p.locator('#report-writing').innerText(),/검사 이유/);assert.equal(await p.locator('[data-reporter="name"]').inputValue(),'하늘');
+   assert.match(await p.locator('#report-camp').innerText(),/구청 발표를 그대로 받아/);assert.match(await p.locator('#report-camp').innerText(),/3. “참여 횟수 기준은 버스가 적은 솔숲마을에 불리하게 작용했을 수 있어.”/);assert.match(await p.locator('#report-share').innerText(),/“게시물과 게시판을 본 사람은 DM을 보지 못했어.”/);assert.match(await p.locator('#report-writing').innerText(),/검사 이유/);assert.equal(await p.locator('[data-reporter="name"]').inputValue(),'하늘');
    assert.deepEqual(errors,[]);results.checks.push({['v'+ver+'Migration']:'version '+ver+' completed save → new case 4 hook (resume notice, old question dropped), cases 1~3 kept; play case 4 (quiet) and case 5 (tag) → ending → report with 5 cases'});});
   // 서술 자동 저장·이어하기, 보고서 → 서술 고치기 → 보고서, 인쇄 제목, PDF 쪽수, 캡처(1280×800·390×844)
   const done=finishedState();
