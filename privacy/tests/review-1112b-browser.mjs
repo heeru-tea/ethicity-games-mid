@@ -182,12 +182,16 @@ try {
       // 숨은 줄(넓은 화면의 조이스틱 줄, 좁은 화면의 '조작 안내 다시 보기')은 Tab에 걸리지 않는다
       const hiddenFocusable = await p.evaluate(() => [...document.querySelectorAll('#menu button, #menu input')].filter((n) => !n.getClientRects().length).map((n) => n.id));
       console.log('    ' + size + ' 메뉴에서 숨은 조작 요소: ' + (hiddenFocusable.join(', ') || '없음'));
+      // 메뉴를 내려 본 채 닫고 다시 열면 맨 위부터(2026-11-12 사용자 결정)
+      await p.evaluate(() => { const s = document.querySelector('#menu .sheet'); s.scrollTop = s.scrollHeight; });
       // Escape → 메뉴 버튼으로
       await p.keyboard.press('Escape'); await p.waitForTimeout(150); a = await at();
       ok(await p.evaluate(() => document.getElementById('menu').hidden) && a.id === 'btn-menu', size + ' Escape → 메뉴 닫힘, 초점은 메뉴 버튼', a);
       // 다시 열어 닫기 버튼 → 메뉴 버튼으로
       await p.keyboard.press('Enter'); await p.waitForTimeout(200); a = await at();
       ok(a.inMenu && a.val === 'instant', size + ' 다시 열면 지금 고른 속도(한 번에)에 초점', a);
+      const sc = await p.evaluate(() => { const s = document.querySelector('#menu .sheet'); return { top: s.scrollTop, scrolls: s.scrollHeight > s.clientHeight + 1, titleIn: document.getElementById('menu-title').getBoundingClientRect().top >= s.getBoundingClientRect().top - 1 }; });
+      ok(sc.top === 0 && sc.titleIn, size + ' 내려 본 채 닫았다 다시 열면 맨 위부터(메뉴 제목이 보임)' + (sc.scrolls ? '' : ' — 이 크기는 스크롤이 안 생김'), sc);
       await p.keyboard.press('Shift+Tab'); await p.keyboard.press('Enter'); await p.waitForTimeout(150); a = await at();
       ok(await p.evaluate(() => document.getElementById('menu').hidden) && a.id === 'btn-menu', size + ' 닫기 → 초점은 메뉴 버튼', a);
       // 확인 창(기존 초점 제한 유지)

@@ -35,10 +35,10 @@ const photo = (s) => { const it = share(s), i = it.findIndex((x) => x.head === '
 const clean = run({}), noDelete = run({ c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'no' }), fixed = run({ c1_e2_a: 'ask', c1_e2_b: 'story', c1_e2_d: 'all' });
 ok('대표 A 경로 = 엔딩 A', clean.ending === 'A', clean.ending);
 ok('대표 A 경로: "매번 상대에게 물으며" 그대로', /매번 상대에게 물으며/.test(text(clean)) && /필요한 범위에서만 공유하고 대응했다\./.test(text(clean)), text(clean));
-ok('삭제 거절 경로: 판정은 여전히 A(조건은 안 바꿈 — 사용자 판단 대기)', noDelete.ending === 'A', noDelete.ending);
+ok('삭제 거절 경로: A가 아니다(2026-11-12 사용자 결정 — A에 해친 친구 없음 조건)', noDelete.ending !== 'A', noDelete.ending);
 ok('삭제 거절 경로: "매번 상대에게 물으며" 없음', !/매번 상대에게 물으며/.test(text(noDelete)), text(noDelete));
 ok('삭제 거절 경로: "다른 사람이 퍼뜨린 정보" 없음(내가 퍼뜨린 일을 남 탓으로 돌리지 않음)', !/다른 사람이 퍼뜨린 정보/.test(text(noDelete)));
-ok('삭제 거절 경로: 요약이 "그러지 못한 순간도 있었다"', /그러지 못한 순간도 있었다/.test(text(noDelete)));
+ok('삭제 거절 경로: A의 요약·본문이 나오지 않는다', !/정보의 주인에게 먼저 묻고/.test(text(noDelete)) && !/함께 세운 것이다/.test(text(noDelete)), text(noDelete));
 ok('삭제 거절 경로: "지워 달라고 했는데도 사진을 내리지 않았고" 줄', /지워 달라고 했는데도 사진을 내리지 않았고/.test(text(noDelete)), text(noDelete));
 ok('올리고 지운 경로: "지우고 사과했지만, 올린 사람은 나였고" 줄', /지우고 사과했지만, 올린 사람은 나였고/.test(text(fixed)) && !/지워 달라고 했는데도/.test(text(fixed)), text(fixed));
 ok('세 경로의 엔딩 글이 서로 다름', new Set([text(clean), text(noDelete), text(fixed)]).size === 3);

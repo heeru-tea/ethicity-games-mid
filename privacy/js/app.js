@@ -1406,6 +1406,7 @@
   function openOverlay(id) {
     lastFocus = document.activeElement;
     $(id).hidden = false;
+    var sheet = $(id).querySelector('.sheet'); if (sheet) sheet.scrollTop = 0; // 창은 열 때마다 맨 위부터(내려 본 채 닫았다 다시 열어도) — 2026-11-12 사용자 결정
     var f = tabStops(id)[0]; // Tab으로 처음 닿는 곳 — 메뉴는 지금 고른 속도(라디오 묶음은 고른 것 하나만 Tab에 걸린다)
     if (f) f.focus();
   }
