@@ -1,0 +1,11 @@
+/* First-screen title only. Text remains accessible and is the image-error fallback. */
+.series-title .title-ink{position:relative;display:inline-block;max-width:100%;vertical-align:middle}
+.series-title .title-ink>img{display:none;width:100%;height:auto;image-rendering:auto}
+.series-title .title-ink.is-ready>img{display:block}
+.series-title .title-ink.is-ready>.title-text{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
+
+#v-start #start-title{display:flex;align-items:flex-start;gap:0;white-space:nowrap;font-size:clamp(32px,4vw,52px);line-height:1.2}
+#start-title .share-word{width:3em;flex:0 1 3em}
+#start-title .moment-word{width:2em;flex:0 1 2em;color:#147D75}
+#start-title .title-share-bubble{width:.29em;height:.29em;flex:0 0 .29em;margin:.05em .16em 0 .05em;color:#147D75}
+@media(max-width:600px){#v-start #start-title{font-size:clamp(32px,11.8vw,46px)}}
