@@ -283,17 +283,18 @@
       hint: '방향키·WASD 또는 화면을 눌러 걸어요',
       cast: [who('saebom', 'classroom', 12, 8, 'down'), who('minjun', 'classroom', 29, 11, 'up'),
         who('haneul', 'yard', 17, 11, 'left'), who('jiho', 'yard', 11, 6, 'down')],
+      // 2026-11-12 대사 보완 시범(교사 검수 대기). castLines는 지나갈 때 머리 위 말풍선으로도 뜨므로 짧게(40자 안)
       castLines: {
-        haneul: '어, 왔냐? 이번 축제 때 사진 진짜 많이 찍자 ㅋㅋ 다 올려야지!',
-        jiho: '안녕… 꾸미기 하고 싶은데… 반짝이 스티커 사 왔어.'
+        haneul: '왔냐! 오늘 부스 투표 나온대. 사진관 되면 다 찍어서 다 올린다.',
+        jiho: '아, 안녕… 반짝이 스티커 사 왔어. 너무 많이 샀나…'
       },
       greet: [
-        { who: 'saebom', text: '왔구나! 오늘 방과 후부터 축제 준비 시작이야.' },
-        { who: 'saebom', text: '오늘 방과 후에 단톡방에서 역할 정하자. 공지 꼭 봐 줘.' },
-        { who: 'saebom', text: '여기 민준이. 손재주가 진짜 좋아.' },
-        { who: 'minjun', text: '…안녕. 집에 옛날 카메라 모형 있는데… 가져와 볼까.' },
-        { who: 'saebom', text: '오는 길에 하늘이랑 지호도 봤지? 우리 반 다 같이 잘해 보자!', met: ['haneul', 'jiho'],
-          alt: '하늘이랑 지호는 아까 마당에 있더라. 우리 반 다 같이 잘해 보자!' } // met: 이 걷기에서 둘 다 마주쳤을 때만(지나가며 인사·말 걸기), 아니면 alt
+        { who: 'saebom', text: '왔구나! 오늘 방과 후에 부스 투표 결과 나와.' },
+        { who: 'saebom', text: '결과 나오면 바로 단톡방에서 역할 정할 거야. 공지 꼭 봐 줘!' },
+        { who: 'saebom', text: '아, 여기 민준이. 손재주 진짜 좋아.' },
+        { who: 'minjun', text: '…안녕. 집에 옛날 카메라 모형 있는데, 쓸 데 있으면 가져올게.' },
+        { who: 'saebom', text: '오는 길에 하늘이랑 지호도 봤지? 하늘이는 벌써 사진관 될 거라고 신났더라.', met: ['haneul', 'jiho'],
+          alt: '하늘이랑 지호는 아까 마당에 있더라. 하늘이는 벌써 사진관 될 거라고 신났어.' } // met: 이 걷기에서 둘 다 마주쳤을 때만(지나가며 인사·말 걸기), 아니면 alt
       ] },
     c1_e1_a: { time: 'D-4 · 하교', mission: '집에 가기 — 마을 길 끝 우리 집, 내 방 침대', target: { obj: 'bed' }, spawn: 'classroom', tint: 'evening',
       cast: [who('saebom', 'classroom', 12, 8, 'down'), who('haneul', 'classroom', 19, 9, 'left')],

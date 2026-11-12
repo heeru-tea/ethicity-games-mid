@@ -408,23 +408,32 @@
         chapter: 0, event: null, label: '역할 정하기',
         view: { type: 'group', title: '2학년 3반 축제준비방', meta: '28명' },
         lines: [
+          // 2026-11-12 대사 보완 시범(교사 검수 대기): 네 친구 말투를 나눔 — 문서 privacy/docs/voice-sheet.md
           'sys: 축제까지 D-4 · 오후 5:30',
-          'saebom: 투표 끝! 우리 부스는 레트로 사진관📸 확정',
-          'saebom: 오늘 역할만 정하면 내일부터 바로 준비할 수 있어',
-          'haneul: 사진관이면 사진 진짜 많이 찍겠다 ㅋㅋ',
+          'saebom: 투표 끝!! 우리 부스는 레트로 사진관📸 확정',
+          'haneul: ㅋㅋㅋ 내가 낸 거 됐다',
           'haneul: 손님 사진이든 우리 사진이든 찍는 족족 다 올린다',
-          'jiho: 나는 꾸미기 할래. 배경 천이랑 액자 만드는 거',
-          'minjun: 소품 맡을게. 집에 옛날 카메라 모형 있어',
-          'saebom: {name} 넌 뭐 할래? 사진, 홍보, 정산 자리가 남았어'
+          'jiho: 나 꾸미기 해도 돼?',
+          'jiho: 배경 천이랑 액자 같은 거… 만들어 보고 싶었어',
+          'saebom: 당연하지! 지호 꾸미는 거 잘하잖아',
+          'minjun: 소품 할게',
+          'minjun: 집에 옛날 카메라 모형 있음',
+          'haneul: 오 민준이 단톡에서 말하는 거 처음 봄 ㅋㅋ',
+          'minjun: 읽고는 있음',
+          'saebom: 오늘 역할만 정하면 내일부터 바로 준비할 수 있어',
+          'saebom: {name} 넌 뭐 할래? 사진, 홍보, 정산 자리가 남았어',
+          'saebom: 정산은 지금 나 혼자라… 누가 좀 ㅠ'
         ],
         prompt: '어떤 역할을 맡을까?',
         choices: [
           { id: 'photo', text: '사진 찍는 담당을 맡는다.', say: '나 사진 찍을게. 부스 카메라도 내가 챙길게', set: { role: 'photo' },
-            react: ['saebom: 오 좋아! 부스 카메라 너한테 맡길게', 'saebom: 손님 사진은 찍고 나서 그 손님한테만 보내 주면 돼'], next: '@chapter:1' },
+            react: ['saebom: 오 좋아! 부스 카메라 너한테 맡길게', 'haneul: 나 잘 나오게 찍어 줘 ㅋㅋ 프사 바꿀 때 됐어',
+              'saebom: 손님 사진은 찍고 나서 그 손님한테만 보내 주는 걸로! 공지에도 쓸게'], next: '@chapter:1' },
           { id: 'sns', text: 'SNS 홍보를 맡는다.', say: '홍보는 내가 할게. 스토리 만드는 건 자신 있어', set: { role: 'sns' },
-            react: ['haneul: 홍보 계정 조회수 뽑아 줘 ㅋㅋ', 'saebom: 좋아. 홍보 글 올리기 전에 나한테 한 번만 보여 줘'], next: '@chapter:1' },
+            react: ['haneul: 오 홍보 ㄱㄱ 조회수 뽑아 줘 ㅋㅋ', 'haneul: 내 얼굴 써도 됨. 아니 써 줘',
+              'saebom: 좋아! 올리기 전에 나한테 한 번만 보여 줘', 'saebom: 반장이라 나도 확인은 해야 돼서 ㅠ'], next: '@chapter:1' },
           { id: 'money', text: '정산을 돕는다.', say: '새봄아 정산 같이 하자. 혼자 28명 거 하기 힘들잖아', set: { role: 'money' },
-            react: ['saebom: 살았다 ㅠㅠ 혼자 하려니까 막막했거든', 'saebom: 오늘 저녁에 재료비 공지 올릴게'], next: '@chapter:1' }
+            react: ['saebom: 헐 살았다 ㅠㅠ', 'saebom: 표 만들다가 30분째 멍하니 보고 있었거든', 'saebom: 오늘 저녁에 재료비 공지 올릴게! 같이 보자'], next: '@chapter:1' }
         ]
       },
 
@@ -434,13 +443,17 @@
         view: { type: 'group', title: '2학년 3반 축제준비방', meta: '28명' },
         lines: [
           'sys: D-4 · 저녁 8:12',
-          'saebom: 재료비 공지! 1인 3,000원이고 금요일까지 보내 주면 돼',
+          'saebom: 📢 재료비 공지',
+          'saebom: 1인 3,000원이고 금요일까지 보내 주면 돼!',
           'saebom: 가상은행 0000-00-000000 김새봄',
+          'minjun: 보냄',
+          'saebom: 벌써?? 민준 최고',
           'saebom: 아 그리고 아까 현금으로 더 낸 사람 3명 있지?',
           'saebom: 남은 돈 돌려줄게. 계좌 알려 줘 ㅠ',
+          'haneul: 나 나 나',
           'haneul: 여기다 바로 쓰면 됨?',
           'haneul: 최하늘 가상은행 1111-11-111111',
-          'haneul: 010-0000-0000 이건 내 번호! 보내면 문자 줘 ㅋㅋ',
+          'haneul: 010-0000-0000 이건 내 번호! 입금하면 문자 줘 ㅋㅋ 바로 확인하게',
           { who: 'narr', text: '정산을 돕기로 했으니, 누가 얼마를 돌려받는지 내가 정리해야 한다.', if: 'role=money' },
           'narr: 나도 현금으로 2,000원을 더 냈다. 돌려받으려면 새봄이에게 계좌번호를 알려 줘야 한다.'
         ],
@@ -448,16 +461,19 @@
         choices: [
           { id: 'public', text: '나도 단톡방에 계좌번호를 올린다.', say: '{name} 가상은행 2222-22-222222',
             set: { e1: 'public' }, add: { spread: 1 },
-            react: ['saebom: ㅇㅋ 확인! 내일 바로 보낼게', 'narr: [[28명이 내 이름과 계좌번호를 함께 봤다]]. 대화는 금방 위로 밀려 올라갔다.'],
+            react: ['saebom: 확인!! 내일 아침에 바로 보낼게', 'jiho: 액자 재료는 내일 내가 사 올게',
+              'narr: [[28명이 내 이름과 계좌번호를 함께 봤다]]. 대화는 금방 위로 밀려 올라갔다.'],
             next: 'c1_e1_b' },
           { id: 'dm', text: '새봄이에게 개인톡으로만 계좌번호를 보낸다.',
             set: { e1: 'dm' }, add: { minimize: 1 },
-            react: ['narr: [[새봄이와의 개인톡에만]] 계좌번호를 보냈다.', 'saebom: (개인톡) 받았어! 2,000원 맞지? 내일 보낼게'],
+            // react[0] = 강조가 든 해설(tests/probe-post.js 'typing'이 이 줄로 타자 효과를 검사)
+            react: ['narr: [[새봄이와의 개인톡에만]] 계좌번호를 보냈다.', 'saebom: (개인톡) 받았어!', 'saebom: (개인톡) 2,000원 맞지? 내일 아침에 보낼게'],
             next: 'c1_e1_b' },
           { id: 'propose', text: '단톡방에 “계좌는 새봄이한테 개인톡으로 보내자”고 남긴다.',
             say: '여기 28명이나 있는데, 계좌는 정산하는 새봄이한테만 개인톡으로 보내자',
             set: { e1: 'propose' }, add: { minimize: 1, 'trust.saebom': 1 },
-            react: ['saebom: 오 맞네, 그게 낫겠다', 'saebom: 다들 계좌번호는 여기 말고 나한테 개인톡으로 보내 줘!', 'haneul: 아 난 벌써 올렸는데 ㅋㅋ [[전화번호까지]]'],
+            react: ['saebom: 아 그게 낫겠다', 'saebom: 여기 섞여 올라오면 나도 누가 보냈는지 헷갈려 ㅠ', 'saebom: 다들 계좌번호는 여기 말고 나한테 개인톡으로 보내 줘!',
+              'haneul: 아 난 벌써 올렸는데 ㅋㅋ [[전화번호까지]]'],
             next: 'c1_e1_b' }
         ]
       },
@@ -466,27 +482,36 @@
         view: { type: 'group', title: '2학년 3반 축제준비방', meta: '28명' },
         lines: [
           'narr: 하늘이의 메시지에는 계좌번호뿐 아니라 [[전화번호도]] 들어 있다.',
-          'jiho: 하늘아 너 전화번호까지 올렸어',
-          'jiho: 누가 캡처라도 하면 그 번호 그대로 돌아다닐걸',
+          'jiho: 어… 하늘아',
+          'jiho: 번호까지 올라갔는데 일부러 올린 거야?',
+          'haneul: ㅇㅇ 문자 받으려고 ㅋㅋ',
+          'jiho: 아니 여기 사람 많아서…',
+          'jiho: 누가 캡처라도 하면 그 번호 그대로 돌아다닐까 봐',
           'haneul: 에이 우리 반끼린데 뭐 어때 ㅋㅋ',
           'haneul: 어차피 다 아는 애들이잖아',
+          'haneul: 내 번호 모르는 사람 손 ✋',
+          'jiho: …',
           { who: 'narr', text: '말하려다 보니, 내 계좌번호도 아직 위에 남아 있다.', if: 'e1=public' }
         ],
         prompt: '하늘이의 메시지를 어떻게 할까?',
         choices: [
           // 2026-11-10 플레이테스트: 하늘이가 올린 메시지는 계좌·전화번호 두 개 → 선택지 문구·삭제 표시를 두 개로 맞춤
           { id: 'fix', if: 'e1!=public', text: '계좌번호와 전화번호를 둘 다 지우고, 계좌는 새봄이에게만 보내라고 하늘이에게 말한다.',
-            say: '우리 반이어도 28명이야. 한 명만 캡처해도 끝이니까 계좌랑 전화번호 둘 다 지우고, 계좌는 새봄이한테만 보내',
+            say: '우리 반이어도 28명이야. 한 명만 캡처해도 끝이야. 둘 다 지우고 계좌는 새봄이한테만 보내',
             set: { e1b: 'fix' }, add: { repair: 1 },
-            react: ['haneul: 아 그런가… ㅇㅋ 둘 다 지움', 'sys: 메시지 2개가 삭제되었습니다'], next: 'c1_e2_a' },
+            react: ['haneul: 아 알았어 알았어 ㅋㅋ', 'haneul: 둘 다 지움', 'sys: 메시지 2개가 삭제되었습니다',
+              'haneul: 근데 번호 지우면 입금 문자는 어떻게 받냐', 'saebom: 보내고 개인톡으로 말해 줄게 ㅋㅋ'], next: 'c1_e2_a' },
           { id: 'fixboth', if: 'e1=public', text: '내 계좌 메시지를 먼저 지우고, 하늘이에게도 지우자고 한다.',
             say: '나도 내 계좌 지울게. 여기 28명이니까 하늘아 너도 번호 지우자',
             set: { e1b: 'fixboth' }, add: { repair: 1 },
-            react: ['haneul: 아 ㅇㅋ 나도 둘 다 지움. 새봄아 계좌는 개인톡으로 보낼게', 'sys: 메시지 3개가 삭제되었습니다', // 내 계좌 1 + 하늘이 계좌·전화번호 2
+            react: ['haneul: 뭐야 {name}도 지워?', 'haneul: 그럼 나도 지움 ㅋㅋ 나만 남아 있으면 좀 그렇잖아',
+              'sys: 메시지 3개가 삭제되었습니다', // 내 계좌 1 + 하늘이 계좌·전화번호 2
+              'haneul: 새봄아 계좌는 개인톡으로 보낼게',
               'narr: 지우기 전까지 [[몇 명이 봤는지는 알 수 없다]].'], next: 'c1_e2_a' },
           { id: 'pass', text: '괜찮겠지 하고 넘어간다.',
             set: { e1b: 'pass' },
-            react: ['narr: 대화는 곧 소품 이야기로 넘어갔다. [[하늘이의 번호는 그대로 남았다]].'], next: 'c1_e2_a' }
+            react: ['jiho: 배경 천은 무슨 색이 좋을까', 'haneul: 무조건 빨강 ㅋㅋ 레트로잖아', 'minjun: 갈색',
+              'narr: 대화는 그렇게 부스 꾸미기 이야기로 넘어갔다. [[하늘이의 번호는 그대로 남았다]].'], next: 'c1_e2_a' }
         ]
       },
 
@@ -497,22 +522,29 @@
         lines: [
           'sys: D-3 · 오후 4:40',
           'narr: 부스 꾸미기 중. 민준이가 페인트 묻은 얼굴로 책상에 엎드려 잠들었다. 볼에 반짝이까지 붙어 있다.',
+          // 첫 'haneul: ' 줄과 조건 없는 선택지 문구는 시작 화면 미리보기·말풍선에 그대로 쓰인다(app.js renderPeek) — 바꾸면 시작 화면도 바뀜
           'haneul: (속삭이며) 야, 이건 찍어야 돼. 레전드다.',
+          'haneul: 쟤 맨날 무표정이잖아. 이런 얼굴은 다시 안 나와.',
+          'narr: 교실 저쪽에서는 새봄이와 지호가 간판 글씨에 매달려 있다. 이쪽을 보는 사람은 없다.',
+          'haneul: 너도 얼른 꺼내. 깨기 전에.',
           { who: 'narr', text: '내 손에는 부스용 카메라가 들려 있다.', if: 'role=photo' }
         ],
         prompt: '찍을까?',
         choices: [
           { id: 'shoot', text: '같이 웃으며 사진을 찍는다.',
             set: { e2shot: 'nocheck', e2_photo: true },
-            react: ['narr: 찰칵. 민준이는 깨지 않았다.', 'haneul: ㅋㅋㅋㅋ 이거 프사감'], next: 'c1_e2_b' },
+            react: ['narr: 찰칵. 민준이는 깨지 않았다.', 'haneul: (입을 틀어막고) 반짝이 봐, 반짝이…', 'haneul: 이거 완전 프사감이다.'], next: 'c1_e2_b' },
           { id: 'ask', text: '민준이를 깨워 찍어도 되는지 먼저 묻는다.',
             say: '민준아, 지금 너 얼굴 완전 웃긴데… 사진 찍어도 돼?',
             set: { e2shot: 'asked', e2_photo: true }, add: { consent: 1 },
-            react: ['minjun: …뭐야. 찍는 건 괜찮은데, 어디 올리진 마.', 'haneul: ㅋㅋ ㅇㅋㅇㅋ'], next: 'c1_e2_b' },
+            // 다음 장면 사진은 '엎드려 자는 모습'이라, 허락한 뒤 도로 엎드린 모습을 찍는다
+            react: ['narr: 민준이가 부스스 고개를 들었다.', 'minjun: …뭐야.', 'minjun: 찍는 건 괜찮은데, 어디 올리진 마.', 'minjun: …5분만 더 잘게.',
+              'narr: 민준이는 도로 엎드렸다. 찰칵.', 'haneul: (작게) 됐다. 이제 허락받은 사진이다.'], next: 'c1_e2_b' },
           { id: 'no', text: '자는 사람은 찍지 말자고 하늘이에게 말한다.',
             say: '자는 사람 찍는 건 좀 아니다. 그냥 두자',
             set: { e2shot: 'none' },
-            react: ['haneul: 아 재미없어~ 알았어', 'narr: 하늘이는 휴대폰을 내렸다.'], next: 'c1_e3_a' }
+            react: ['haneul: 아, 재미없어… 알았어, 알았어.', 'haneul: 이런 얼굴 진짜 다시 안 나온다니까.',
+              'narr: 하늘이는 아쉬운 얼굴로 휴대폰을 주머니에 넣고, 배경 천 쪽으로 돌아갔다.'], next: 'c1_e3_a' }
         ]
       },
       c1_e2_b: {
@@ -521,11 +553,15 @@
         lines: [
           'sys: D-3 · 저녁 9:03',
           { kind: 'image', text: '민준이가 엎드려 자는 사진', alt: '교실 책상에 엎드려 자는 민준', photo: 'assets/photos/minjun-sleep.png', placeholder: 'assets/sprites/minjun_sleep.png' },
-          'haneul: 아까 그 사진 봐 ㅋㅋ 볼에 반짝이 붙은 거 완전 웃김',
-          'haneul: 근데 [[교복 이름표까지]] 선명하게 나왔네',
+          'haneul: ㅋㅋㅋㅋㅋㅋㅋ',
+          'haneul: 아까 그 사진 봐 볼에 반짝이 붙은 거',
+          'haneul: 몇 번을 봐도 웃김',
+          'haneul: 근데 확대하니까 [[교복 이름표까지]] 선명하게 나왔네',
+          'haneul: 화질 뭐야 ㅋㅋ',
           'haneul: 이거 스토리 올려도 되지?',
           'haneul: 아님 반톡? 반톡은 우리끼리니까 괜찮잖아',
           { who: 'haneul', text: '부스 홍보 계정에 올려도 웃기겠다 ㅋㅋ 팔로워 확 늘 듯', if: 'role=sns' },
+          'haneul: 민준이도 보면 웃을걸',
           { who: 'narr', text: '민준이는 분명 “올리진 마”라고 했다.', if: 'e2shot=asked' }
         ],
         prompt: '사진을 어떻게 할까?',
@@ -533,19 +569,24 @@
           { id: 'ask', if: 'e2shot!=asked', text: '올리기 전에 민준이에게 물어보자고 한다.',
             say: '올리는 건 민준이한테 먼저 물어보고 하자. 이름표도 보이잖아',
             set: { e2post: 'ask' }, add: { consent: 1 },
-            react: ['narr: 민준이에게 메시지를 보냈다.', 'minjun: 아 그건 좀…', 'minjun: 자는 얼굴이랑 이름표 나온 건 올리지 말아 줘', 'haneul: ㅇㅋ 그럼 우리끼리만 보고 말자'],
+            react: ['haneul: 에이 물어보면 당연히 싫다고 하지', 'haneul: …알았어. 물어봐',
+              'narr: 민준이에게 메시지를 보냈다. 답은 한참 뒤에 왔다.',
+              'minjun: (개인톡) 아', 'minjun: 그건 좀…', 'minjun: 자는 얼굴이랑 이름표 나온 건 안 올렸으면 좋겠어',
+              'haneul: 거봐 ㅋㅋ', 'haneul: 아깝다… 그럼 우리끼리만 보고 말자'],
             next: 'c1_e3_a' },
           { id: 'keep', if: 'e2shot=asked', text: '민준이가 올리지 말라고 했다고 말한다.',
             say: '민준이가 찍는 건 되는데 올리는 건 안 된대',
             set: { e2post: 'keep' }, add: { minimize: 1 },
-            react: ['haneul: 아 맞다, 그랬지. ㅇㅋ', 'haneul: 아깝다 ㅋㅋ 그럼 내 폰에만 둘게'], next: 'c1_e3_a' },
+            react: ['haneul: 아 맞다 그랬지', 'haneul: 근데 이건 진짜 아깝다…', 'haneul: 알았어 ㅋㅋ 내 폰에만 둘게. 심심할 때 혼자 봐야지'], next: 'c1_e3_a' },
           { id: 'group', text: '“우리끼리”니까 반 단톡방에만 올린다.',
             set: { e2post: 'group' }, add: { spread: 1 },
             react: ['narr: [[28명 방에]] 사진이 올라갔다. ‘ㅋㅋㅋ’ 반응이 14개 달렸다.',
+              'haneul: 반응 봐 ㅋㅋㅋ', 'haneul: 민준이는 아직 안 읽었네. 내일 아침에 보면 난리 나겠다',
               'narr: 누가 사진을 저장했는지는 표시되지 않는다. 그래서 아무도 모른다.'], next: 'c1_e2_d' },
           { id: 'story', text: '스냅로그 스토리에 올린다. 부스 홍보도 되니까.',
             set: { e2post: 'story', school_visible: true }, add: { spread: 2 },
-            react: ['narr: ‘#솔빛축제 #레트로사진관’ 태그를 달았다. [[1시간 만에 조회 312회]].'], next: 'c1_e2_d' }
+            react: ['narr: ‘#솔빛축제 #레트로사진관’ 태그를 달았다.', 'haneul: 오 하트 벌써 옴', 'haneul: 다른 학교 애들도 보는 듯 ㅋㅋ',
+              'narr: [[1시간 만에 조회 312회]].'], next: 'c1_e2_d' }
         ]
       },
       c1_e2_d: {
@@ -553,6 +594,7 @@
         view: { type: 'dm', title: '민준' },
         lines: [
           'sys: D-2 · 오전 7:58',
+          'minjun: {name}',
           'minjun: 어제 그 사진 말이야…',
           'minjun: 내려 줄 수 있어? 아침에 알림 보고 깜짝 놀랐어',
           { who: 'minjun', text: '[[다른 학교 다니는 사촌까지]] 봤대. 학교 태그 보고 들어왔대', if: 'e2post=story' },
@@ -560,24 +602,27 @@
           { who: 'minjun', text: '[[반 애들이 아침부터]] 나 보면서 웃어', if: 'e2post=group' },
           { who: 'minjun', text: '누가 저장했는지도 모르니까 더 신경 쓰여', if: 'e2post=group' },
           { who: 'minjun', text: '내가 찍는 건 괜찮다고 했지', if: 'e2shot=asked' },
-          { who: 'minjun', text: '어디 올려도 된다고는 안 했잖아', if: 'e2shot=asked' }
+          { who: 'minjun', text: '어디 올려도 된다고는 안 했잖아', if: 'e2shot=asked' },
+          'minjun: 웃긴 건 아는데',
+          'minjun: 나는 좀 싫어'
         ],
         prompt: '민준이에게 뭐라고 할까?',
         choices: [
           { id: 'sorry', text: '바로 내리고, 동의 없이 올린 걸 사과한다.',
             say: '바로 내릴게. 묻지도 않고 올려서 진짜 미안해',
             set: { e2fix: 'sorry' }, add: { repair: 1 },
-            react: ['sys: 게시물이 삭제되었습니다', 'minjun: …응 고마워. 지웠다고 말해 줘서',
+            react: ['sys: 게시물이 삭제되었습니다', 'minjun: …응', 'minjun: 지운 거 봤어', 'minjun: 오늘은 그냥 조용히 지나갔으면 좋겠다',
               'narr: 게시물은 사라졌다. 이미 [[저장된 사진이 어디에 몇 장 있는지]]는 알 수 없다.'], next: 'c1_e3_a' },
           { id: 'all', text: '사진을 내리고, 저장한 사람도 지워 달라고 단톡방에 부탁한다.',
             say: '어제 민준이 사진 저장한 사람 있으면 지워 줘. 내가 민준이한테 묻지도 않고 올렸어',
             set: { e2fix: 'all' }, add: { repair: 2, 'trust.minjun': 1 },
-            react: ['sys: 게시물이 삭제되었습니다', 'saebom: 나 저장했었는데 방금 지웠어',
-              'narr: 몇 명은 지웠다고 답했다. [[답하지 않은 사람도 있다]].', 'minjun: 고마워', 'minjun: 진짜로'], next: 'c1_e3_a' },
+            // 민준이와의 개인톡 화면이라 단톡방 답은 '(단톡)'을 붙인다(사건 8 crew와 같은 방식)
+            react: ['sys: 게시물이 삭제되었습니다', 'saebom: (단톡) 헉 나 저장했었어. 방금 지움', 'jiho: (단톡) 난 저장 안 했어. 민준이 괜찮아?',
+              'narr: 몇 명은 지웠다고 답했다. [[답하지 않은 사람도 있다]].', 'minjun: 단톡에 그렇게까지 쓸 줄은 몰랐어', 'minjun: 고마워. 진짜로'], next: 'c1_e3_a' },
           { id: 'no', text: '“다들 웃기다는데?” 하고 넘긴다.',
             say: '에이 다들 웃기다는데? 너무 신경 쓰지 마',
             set: { e2fix: 'no' }, add: { spread: 1, 'trust.minjun': -2 },
-            react: ['minjun: …알겠어', 'narr: 민준이는 그 뒤로 답이 없었다. [[사진은 계속 공유됐다]].'], next: 'c1_e3_a' }
+            react: ['minjun: …다들 웃기다니까 됐네', 'minjun: 알겠어', 'narr: 민준이는 그 뒤로 답이 없었다. [[사진은 계속 공유됐다]].'], next: 'c1_e3_a' }
         ]
       },
 
