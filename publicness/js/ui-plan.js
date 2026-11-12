@@ -425,6 +425,8 @@
     var c=S.departChecks(s),out=[],W=app().won,N=app().nodeName,F=s.config.finance;
     function list(a,fmt){return a.slice(0,4).map(fmt).join(', ')+(a.length>4?' 외 '+(a.length-4)+'곳':'');}
     if(c.noBus)out.push({id:'depart-no-bus',text:'이대로 출발하면 아무도 버스를 탈 수 없어요.'});
+    /* 2026-11-12 랜덤 검토 2번: 노선은 이어졌지만 갈아타기가 두 번 넘게 필요한 주요 인물(갈아타기는 한 번까지라 못 감) — 출발 전에 먼저 */
+    if(c.transfers&&c.transfers.length)out.push({id:'depart-transfers',text:c.transfers.map(function(t){return t.name+': 갈아타기 '+t.n+'번 필요, 이대로면 못 가요';}).join(' · ')+' (갈아타기는 한 번까지예요).'});
     /* 2026-11-11 플레이테스트 7: 배차 간격이 기준을 넘는 노선 · 버스가 없는 노선 · 노선이 없는 정류장을 먼저 요약(문제가 없으면 줄이 없다 — 전처럼 제목 한 줄) */
     if(c.overGap.length)out.push({id:'depart-over-gap',text:'배차 간격이 기준('+app().duration(s.config.service.maxWait)+')을 넘는 노선: '+c.overGap.map(function(x){return C(x.num)+'(버스 '+x.buses+'대 · 약 '+app().duration(x.headway)+')';}).join(', ')+'.'});
     if(c.idleRoutes.length&&!c.noBus)out.push({id:'depart-idle-routes',text:'버스가 없는 노선: '+c.idleRoutes.map(function(n){return C(n);}).join(', ')+' — 이 노선은 운행하지 않아요.'});
@@ -443,7 +445,7 @@
     if(show.length){var ul=el('ul',{id:'depart-checks','class':'callout warn depart-checks'});show.forEach(function(l){put(ul,l);});body.appendChild(ul);}
     if(rest.length){var more=el('details',{id:'depart-more'});more.appendChild(el('summary',null,'자세히'));var ul2=el('ul',{'class':'depart-checks'});rest.forEach(function(l){put(ul2,l);});more.appendChild(ul2);body.appendChild(more);}
     
-    document.querySelector('#confirm-depart').showModal();document.querySelector(c.noBus?'#confirm-no':'#confirm-yes').focus();
+    document.querySelector('#confirm-depart').showModal();/* 2026-11-12 랜덤 검토 8번: 경고가 하나라도 있으면 기본 초점은 ‘노선 고치기’, 없을 때만 ‘이대로 출발’ */document.querySelector(c.lines.length?'#confirm-no':'#confirm-yes').focus();
   }
   var M=PB.Metrics;
   document.querySelector('#confirm-yes').addEventListener('click',function(){document.querySelector('#confirm-depart').close();if(S.startRun(st()))app().go('run');});

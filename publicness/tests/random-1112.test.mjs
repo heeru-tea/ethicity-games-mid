@@ -44,3 +44,33 @@ test('7번: 보고서 노선 줄에도 같은 한 바퀴·간격', () => {
   assert.ok(st.plan[0].endsWith(' · 한 바퀴 D' + lap5 + ' · 간격 약 D' + lap5), st.plan[0]);
   assert.ok(st.plan[1].endsWith(' · 한 바퀴 D' + lap1 + ' · 간격 약 D' + lap1 / 2), st.plan[1]);
 });
+
+test('2번: 노선은 이어지지만 갈아타기 2번 → TOO_MANY_TRANSFERS(유나·다은), 정말 안 이어지면 NO_LINK — 길 찾기 규칙(1번까지)은 그대로', () => {
+  const s = reach(4); lay(s, [[1, ['J', 'B'], [1]], [2, ['B', 'A'], [2]], [3, ['A', 'H'], [3]]]);
+  const Sim = require('../js/sim.js'), g = S.graph(s), plan = S.toPlan(s);
+  assert.equal(Sim.transfersNeeded(g, plan, 'J', 'H'), 2); assert.equal(Sim.structural(g, plan, 'J', 'H'), false, '한 번 환승으로는 못 감(규칙 그대로)');
+  assert.equal(Sim.transfersNeeded(g, plan, 'J', 'A'), 1); assert.equal(Sim.transfersNeeded(g, plan, 'J', 'C'), null);
+  const tr = S.departChecks(s).transfers;
+  assert.deepEqual(tr.map((x) => x.name), ['유나', '다은'], '계획 화면·출발 확인창이 미리 경고할 인물');
+  assert.ok(tr.every((x) => x.n === 2 && x.legs[0].o === 'J' && x.legs[0].d === 'H'));
+  const r = S.startRun(s), yuna = r.passengers.find((p) => p.residentId === 'yuna' && p.leg === 'outbound');
+  assert.equal(yuna.fail, 'TOO_MANY_TRANSFERS'); assert.equal(yuna.waitTotal, 0, '노선 없음처럼 기다린 것으로 세지 않음(대기·해시 그대로)');
+  const m = s.current.metrics; assert.ok(m.transfers >= 2, '결과 요약: 갈아타기 2번 이동 따로 셈 ' + m.transfers);
+  assert.equal(r.passengers.filter((p) => p.fail === 'NO_LINK').length, m.noLink, '잇는 노선이 정말 없는 이동만 noLink');
+  const rec = S.finishRun(s).residents.yuna;
+  assert.equal(rec.reasons[0].code, 'transfers'); assert.match(rec.reasons[0].text, /갈아타기를 두 번 해야 해서 못 가요\(갈아타기는 한 번까지\)/);
+  const N = require('../js/narrative.js');
+  assert.ok(Object.keys(N).length > 0);
+  const sc = s.history[s.history.length - 1].scores.mobility.reasons; assert.ok(sc.transfers >= 2, '평가 대상 못 간 이유도 나눠 셈');
+});
+
+test('2번: 예전 저장본(transfers 없는 기록)도 그대로 읽힌다 — 보고서·재정 돌아보기', () => {
+  const s = reach(3); lay(s, [[1, ['A', 'B'], [1]]]); S.startRun(s); S.finishRun(s);
+  const h = s.history[s.history.length - 1]; delete h.metrics.transfers; delete h.scores.mobility.reasons.transfers;
+  Object.values(h.metrics.zones).forEach((z) => delete z.transfers);
+  const back = S.safeRestore(JSON.parse(JSON.stringify(S.serialize(s))), cfg); assert.ok(back);
+  const N = require('../js/narrative.js'), fr = N.financeReview(back.config, back.history); assert.equal(fr.transfers, 0);
+  const Report = require('../js/report.js'), D = require('../js/demand.js');
+  const f = { won: String, duration: String, rate: String, name: (id) => id, route: (n) => 'R' + n, clock: (t) => D.clock(back.config, t), choices: {}, date: new Date(2026, 10, 12) };
+  const st = Report.build(back, f).stages.find((x) => x.phase === 3); assert.ok(st.numbers.length > 0);
+});

@@ -67,6 +67,7 @@
   function legState(p, m, rd) {
     var dest = app().nodeName(p.d), where = p.leg === 'return' ? '다음 이동' : '첫 이동';
     if (p.fail === 'NO_LINK') return where + ' — ' + app().nodeName(p.o) + '→' + dest + ' 잇는 노선이 없어 떠나지 못함';
+    if (p.fail === 'TOO_MANY_TRANSFERS') return where + ' — ' + app().nodeName(p.o) + '→' + dest + ' 갈아타기를 두 번 해야 해서 못 감(갈아타기는 한 번까지)';
     if (p.fail === 'NO_TRIP_IN_WINDOW') return where + ' — 운행 시간 안에 탈 수 있는 버스가 없음';
     if (p.arriveT != null && p.arriveT <= m) return dest + ' 도착 ' + app().clock(p.arriveT) + (p.leg === 'return' ? ' · 일정 끝' : ' · 볼일 뒤 다음 이동');
     var boards = R.boardsByPid[p.id] || [], boarded = boards.filter(function (t) { return t <= m; });
@@ -580,10 +581,10 @@
 
   // ‘지금 운행 상황’ — 그 분까지의 로그로 센다(엔진이 이미 계산한 결과를 시간순으로 보여 줄 뿐)
   function liveCounts(m) {
-    var c = { requests: 0, arrived: 0, noLink: 0, fulls: 0, left: 0 };
+    var c = { requests: 0, arrived: 0, noLink: 0, transfers: 0, fulls: 0, left: 0 };
     R.res.log.forEach(function (e) {
       if (e.t > m) return;
-      if (e.type === 'request') { c.requests++; if (R.byId[e.pid] && R.byId[e.pid].fail === 'NO_LINK') c.noLink++; }
+      if (e.type === 'request') { c.requests++; if (R.byId[e.pid] && R.byId[e.pid].fail === 'NO_LINK') c.noLink++; if (R.byId[e.pid] && R.byId[e.pid].fail === 'TOO_MANY_TRANSFERS') c.transfers++; }
       if (e.type === 'arrive') c.arrived++;
       if (e.type === 'full') { c.fulls++; c.left += e.data.left; }
     });
@@ -598,7 +599,7 @@
     var c = liveCounts(m), rows = [
       ['생긴 이동 요청', c.requests + '건'], ['목적지 도착', c.arrived + '건'],
       ['지금 버스 안', c.riding + '명'], ['지금 정류장 대기', c.waiting + '명' + (c.top ? ' · 가장 많은 곳 ' + app().nodeName(c.top.node) + ' ' + c.top.n + '명' : '')],
-      ['노선이 없어 떠나지 못함', c.noLink + '건'], ['만차로 남겨짐', c.fulls ? c.fulls + '회 · ' + c.left + '명' : '없음']
+      ['노선이 없어 떠나지 못함', c.noLink + '건'], ['갈아타기를 두 번 해야 해서 못 감', c.transfers + '건'], ['만차로 남겨짐', c.fulls ? c.fulls + '회 · ' + c.left + '명' : '없음']
     ];
     var dl = box.querySelector('dl'); dl.textContent = '';
     rows.forEach(function (r) { dl.appendChild(el('dt', null, r[0])); dl.appendChild(el('dd', null, r[1])); });
@@ -634,7 +635,7 @@
     var who = it.bubble.residentId ? cfg.residents.filter(function (r) { return r.id === it.bubble.residentId; })[0].name : '';
     var b = el('div', { 'class': 'bubble' });
     b.dataset.node = it.node; b.dataset.kind = it.bubble.kind;
-    var issue = { noLink: '노선 없음', full: '만차', wait: '긴 기다림', petition: '주민 민원' }[it.bubble.kind];
+    var issue = { noLink: '노선 없음', transfers: '갈아타기 2번', full: '만차', wait: '긴 기다림', petition: '주민 민원' }[it.bubble.kind];
     if (issue) b.appendChild(el('b', { 'class': 'bubble-issue' }, issue + ' · '));
     if (who) b.appendChild(el('b', null, who + ' '));
     b.appendChild(document.createTextNode(it.bubble.text));

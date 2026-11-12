@@ -66,7 +66,7 @@
   function evalOf(h) {
     var m = h.scores && h.scores.mobility; if (!m || !m.N) return null;
     var r = m.reasons || {}, n = function (k) { return r[k] || 0; };
-    return { N: m.N, done: m.done, score: m.score, missed: m.N - m.done, tried: n('noLink') + n('full') + n('time'), stayHome: n('stayHome'), notStarted: n('parentFailed') + n('lateParent') };
+    return { N: m.N, done: m.done, score: m.score, missed: m.N - m.done, tried: n('noLink') + n('transfers') + n('full') + n('time'), stayHome: n('stayHome'), notStarted: n('parentFailed') + n('lateParent') };
   }
   function missedText(e) {
     var parts = [];

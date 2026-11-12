@@ -462,6 +462,17 @@
       return { num: r.num, buses: bs.length, valid: ok, headway: h, over: h != null && max != null && h > max };
     });
   }
+  /* 주요 인물 경로의 갈아타기(2026-11-12 랜덤 검토 2번): 운행하는 노선(버스 있는 것)만으로 첫 이동·다음 이동을 잇는 데 필요한 최소 환승 횟수.
+   * 길 찾기는 한 번까지만 길로 친다(Sim) — 2번 이상이면 계획 화면 칩·출발 확인창이 ‘이대로면 못 가요’를 미리 알린다. 출발·도착 정류장에 노선이 없는 인물은 residents가 따로 알린다 */
+  function residentTransfers(s) {
+    var g = graph(s), buses = s.draft.buses, plan = { buses: s.draft.routes.filter(function (r) { return r.nodes.length >= 2 && !Graph.validateRoute(g, r).length && buses.some(function (b) { return b.routeNum === r.num; }); }).map(function (r) { return { route: r }; }) };
+    var out = [];
+    Demand.residents(s.config, s.phase).forEach(function (rd) {
+      var legs = [[rd.o, rd.d], [rd.d, rd.returnTo || rd.o]].map(function (x) { return { o: x[0], d: x[1], n: Sim.transfersNeeded(g, plan, x[0], x[1]) }; }).filter(function (l) { return l.n != null && l.n >= 2; });
+      if (legs.length) out.push({ id: rd.id, name: rd.name, legs: legs, n: Math.max.apply(null, legs.map(function (l) { return l.n; })) });
+    });
+    return out;
+  }
   function departChecks(s) {
     var g = graph(s), buses = s.draft.buses, F = s.config.finance, phase = s.phase, gaps = routeGaps(s);
     var running = s.draft.routes.filter(function (r) { return r.nodes.length >= 2 && !Graph.validateRoute(g, r).length && buses.some(function (b) { return b.routeNum === r.num; }); });
@@ -474,7 +485,8 @@
       resting: owned.length, restingCost: owned.length * F.holding, restingLeased: leased.length, restingLeaseCost: leased.length * F.lease.fee,
       overGap: gaps.filter(function (x) { return x.over; }), idleRoutes: gaps.filter(function (x) { return x.valid && !x.buses; }).map(function (x) { return x.num; }),
       unserved: unserved.filter(isNew).concat(unserved.filter(function (id) { return !isNew(id); })), newStops: fresh,
-      residents: Demand.residents(s.config, phase).filter(function (rd) { return !serves(rd.o) || !serves(rd.d); }).map(function (rd) { return { id: rd.id, name: rd.name, o: rd.o, d: rd.d }; })
+      residents: Demand.residents(s.config, phase).filter(function (rd) { return !serves(rd.o) || !serves(rd.d); }).map(function (rd) { return { id: rd.id, name: rd.name, o: rd.o, d: rd.d }; }),
+      transfers: residentTransfers(s)
     };
   }
   // 긴급 조정 시점(엔진 시간, 10:06·15:03) — 운행 화면(ui-run)도 이 값을 쓴다
@@ -791,7 +803,7 @@
   var api = {
     checkSave: checkSave, safeRestore: safeRestore,
     elderChoice: elderChoice, petitionAt: petitionAt, petitionZoneAt: petitionZoneAt, rideRequests: rideRequests, aiView: aiView,
-    departChecks:departChecks,routeGaps:routeGaps,routeCycle:routeCycle,routeHeadway:routeHeadway,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
+    departChecks:departChecks,residentTransfers:residentTransfers,routeGaps:routeGaps,routeCycle:routeCycle,routeHeadway:routeHeadway,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
