@@ -568,7 +568,7 @@
       Array.prototype.forEach.call(document.querySelectorAll('input[name=setting]'), function (r) { r.disabled = true; });
     } else if (App.seedParam.note) note.textContent = App.seedParam.note;
     var lines = PB.Narrative.hookLines(S.create(cfg, { mode: 'default' }));
-    $('#hook-1').textContent = lines[0];
+    /* 2026-11-12 사용자 지시: 시작 화면의 ‘버스 2대, 첫 운행 예정 이동 N건.’ 줄(#hook-1)은 지웠다 — hookLines[0]은 다른 곳에서 쓰지 않는다 */
     $('#hook-2').textContent = lines[1];
 
     var controls={onCamera:function(){if(App.net)App.net.redraw();},onNode:onNode,canEdit:function(){return App.s&&App.s.stage==='plan';},onLink:function(a,b){if(App.onLink)App.onLink(a,b);},onRoute:function(n,i){if(App.onRouteClick)App.onRouteClick(n,i);},onRouteDouble:function(n,i){if(App.onRouteDouble)App.onRouteDouble(n,i);},

@@ -82,7 +82,7 @@ body[data-screen="title"] #topbar, body[data-screen="title"] #screen-game { disp
 .depart-checks li + li { margin-top: 2px; }
 .depot-bus .new-tag { align-self: center; }
 .radio, .check { display: flex; gap: 10px; align-items: flex-start; min-height: 44px; padding: 8px 0; cursor: pointer; }
-.radio input, .check input { width: 20px; height: 20px; margin-top: 4px; accent-color: var(--accent); }
+.radio input, .check input { flex: none; width: 20px; height: 20px; margin-top: 4px; accent-color: var(--accent); } /* flex: none — 설명이 긴 항목(랜덤)에서 원이 눌려 작아지고 글 시작이 어긋나던 것(2026-11-12) */
 .title-art { margin: 0; background: #fff; position: absolute; inset: 0; z-index: 0; overflow: hidden; }
 .title-art img { width: 100%; height: 100%; object-fit: contain; object-position: right center; display: block; }
 @media (max-width: 1000px) {
