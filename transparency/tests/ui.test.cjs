@@ -570,3 +570,11 @@ test('follow-up 5: the privacy law note says it covers fully automated decisions
  assert.match(t,/완전히 자동으로 내린 결정/);assert.match(t,/행정기본법 제20조/);assert.match(t,/담당자가 명단을 최종 확인하므로, 이 조항이 그대로 적용된다고 볼 수는 없어요/);
  assert.match(t,/문제의 짜임만 참고했어요/);assert.match(t,/사업자의 의무예요\. 이용자 한 사람 한 사람의 의무를 정한 조항은 아니에요/,'case 5 distinction kept');
 });
+
+// ── 2026-11-12 배경음악: 설정 창의 ‘배경음악’ 체크(값은 진행 저장과 따로) ──
+test('bgm setting: the settings window has a 배경음악 checkbox, on by default, off when the separate settings key says so; the progress save is not touched',()=>{
+ const g=open('photo','hook');const saved=g.stored();g.click('settings');
+ assert.ok(g.snap().modalBody.includes('<label class="check-row"><input type="checkbox" id="opt-bgm" checked> 배경음악</label>'));assert.equal(g.stored(),saved);
+ const off=createGame({storage:{[KEY]:JSON.stringify(stateAt('photo','hook')),'ethicity.transparency.settings.v1':'{"bgm":false}'}});off.click('start');off.click('settings');
+ assert.ok(off.snap().modalBody.includes('<input type="checkbox" id="opt-bgm"> 배경음악'));assert.equal(JSON.parse(off.stored()).bgm,undefined,'progress save has no bgm field');
+});
