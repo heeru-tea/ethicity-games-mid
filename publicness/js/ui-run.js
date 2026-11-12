@@ -713,7 +713,7 @@
     var m = Math.floor(at); if (m !== R.minute) { R.minute = m; R.s.runCursor = m; App.save(); onMinute(App, m); if (PB.Hud && PB.Hud.live) PB.Hud.live(R.res, at); }
     setStatus(App.clock(at) + ' · 이제 ' + fixSpan().split('~')[1] + '까지 노선을 한 번 고칠 수 있어요(‘노선 고치기 · 한 번’).', true); pulseFix(); syncControls();
     var d = $('#skip-fix-ask'); if (d) d.remove();
-    d = el('dialog', { id: 'skip-fix-ask', 'class': 'skip-fix-ask', 'aria-labelledby': 'skip-fix-ask-h' });
+    d = el('dialog', { id: 'skip-fix-ask', 'class': 'dialog skip-fix-ask', 'aria-labelledby': 'skip-fix-ask-h' });
     d.appendChild(el('h2', { id: 'skip-fix-ask-h' }, App.clock(at) + ' · 노선 고치기 · 한 번'));
     d.appendChild(el('p', { id: 'skip-fix-ask-text' }, '끝까지 가기 전에 멈췄어요. ' + fixSpan().split('~')[1] + '까지 노선을 한 번 고칠 수 있어요. 고치지 않으면 그대로 끝까지 가요.'));
     var acts = el('div', { 'class': 'row-actions' });
