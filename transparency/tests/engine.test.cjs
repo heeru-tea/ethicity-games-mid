@@ -68,7 +68,7 @@ test('cases 4 and 5: records, choices, judgments (each stamp once), follow-up ma
  s=judgeAll(checkAll(s,'camp'),'camp');assert.equal(E.canAdvance(s),true);s=E.reduce(s,{type:'next'});
  s=E.reduce(s,{type:'choose',id:'accurate'});assert.equal(E.stepOf(s.scene),'result');s=E.reduce(s,{type:'next'});
  assert.equal(E.canAdvance(s),false);s=E.reduce(s,{type:'mark',id:'changed',value:'found'});s=E.reduce(s,{type:'follow-judge',stamp:'different'});s=E.reduce(s,{type:'next'});
- assert.equal(E.stepOf(s.scene),'notice');s=E.reduce(s,{type:'notice-pick',id:E.noticeCards.camp.must[0]});s=E.reduce(s,{type:'notice-post'});s=E.reduce(s,{type:'next'});
+ assert.equal(E.stepOf(s.scene),'notice');for(const x of E.noticeSlots.camp)s=E.reduce(s,{type:'notice-slot',slot:x.id,opt:x.options[0]});s=E.reduce(s,{type:'notice-post'});s=E.reduce(s,{type:'next'});
  assert.equal(E.stepOf(s.scene),'reflect');s=E.reduce(s,{type:'next'});assert.equal(s.scene,E.sceneOf('share','hook'));
  // 사건 5 후속 조사: 세 곳을 모두 열어야 판단
  s=at(E.sceneOf('share','follow'),s=>{for(const c of E.CASES)s.cases[c]={first:E.choices[c][0],final:E.choices[c][0]};s.asked=['who'];return s;});
@@ -279,7 +279,7 @@ function walkTo(goal){let s=E.initial();
   if(st==='check')s=judgeAll(checkAll(s,k),k);
   if(st==='choose'){s=E.reduce(s,{type:'choose',id:E.choices[k][0]});continue;}
   if(st==='follow'){const m=E.followMarks[k];m.ids.forEach((id,i)=>{s=E.reduce(s,{type:'mark',id,value:k==='photo'?E.truth[i]:m.values[0]});});s=E.reduce(s,{type:'follow-judge',stamp:E.followAnswers[k]});}
-  if(st==='notice'){s=E.reduce(s,{type:'notice-pick',id:E.noticeCards[k].must[0]});s=E.reduce(s,{type:'notice-post'});}
+  if(st==='notice'){if(E.noticeFix(s,k))for(const x of E.noticeSlots[k])s=E.reduce(s,{type:'notice-slot',slot:x.id,opt:x.ok[0]});else s=E.reduce(s,{type:'notice-pick',id:E.noticeCards[k].must[0]});s=E.reduce(s,{type:'notice-post'});}
   s=E.reduce(s,{type:'next'});}
  return s;}
 test('review 6: the text cap cuts at the same unit as the input box and never leaves half an emoji; cut text survives save and reload',()=>{

@@ -7,7 +7,7 @@ const {createGame}=require('./dom-stub.cjs');
 const HASHES=path.join(__dirname,'render-snapshot.hashes.json'),FULL=path.join(__dirname,'render-snapshot.full.json.br');
 const UPDATE=process.env.UPDATE_SNAPSHOT==='1';
 // 화면 코드가 처리하는 data-act 전부(2026-11-10 나누기 전 app.js 기준 37개 + 2026-11-11 시작 화면의 start·title). 대본이 하나도 빠짐없이 눌러 봐야 한다.
-const ALL_ACTS=['close','next','back','source','item','spot','region','record','segment','cell','village','crit','part','skyline','said','change','list','judge','judge-next','notice-pick','notice-post',
+const ALL_ACTS=['close','next','back','source','item','spot','region','record','segment','cell','village','crit','part','skyline','said','change','list','judge','judge-next','notice-pick','notice-slot','notice-post',
  'mark','run','row','follow-judge','choose','rechoose','ask','notebook','print','to-report','revisit','sources','discussion','settings','reset-ask','reset','start','title'];
 const FIELDS=['cls','html','modalOpen','modalTitle','modalBody','save','stored','title','state','art','fx'];
 const sha=s=>crypto.createHash('sha256').update(s).digest('hex').slice(0,16);
@@ -65,12 +65,13 @@ function play(opts,script){
   if(m.wrongTaps){if(k==='photo')act('mark',{id:'p1',value:'cut'},'mark-locked');if(k==='writing')act('run',undefined,'run-disabled');if(k==='face')act('row',{id:'r1'},'row-after');if(k==='share')act('list',{id:'dm'},'list-after');}
  }
  function notice(m){const {s,k}=at(),n=E.noticeCards[k],pick=id=>act('notice-pick',{id}),post=()=>act('notice-post');
-  // 사건 4·5 고치기(2026-11-12 요청 10): 초안이 들어 있다. setTo = 원하는 집합과 다른 카드만 눌러 맞춘다. 초안 그대로는 붙일 수 없다.
-  if(E.noticeFix(s,k)){const setTo=ids=>{for(const id of E.noticeIds(k))if(ids.includes(id)!==g.state().notices[k].picked.includes(id))pick(id);};
-   if(m.notice==='ok'){act('notice-post',undefined,'post-same-draft');setTo(n.must);post();}
-   if(m.notice==='nice'){setTo([...n.nice,...n.must]);post();}
-   if(m.notice==='stay'){setTo([n.must[0],n.conflict[0]]);post();}
-   if(m.notice==='fix'){act('notice-post',undefined,'post-same-draft');pick(n.promise[0]);post();pick(n.promise[0]);act('notice-post',undefined,'post-back-to-draft');setTo(n.must);post();pick(n.conflict[0]);pick(n.nice[0]);post();}
+  // 사건 4·5 고치기(2026-11-12 요청 10·후속 6): 칸마다 선택지. 모든 칸을 골라야 붙인다. right = 맞는 첫 선택지, alt = 맞는 마지막 선택지, wrong = 틀린 첫 선택지.
+  if(E.noticeFix(s,k)){const slots=E.noticeSlots[k],choose=(x,o)=>act('notice-slot',{id:x.id,value:o}),right=x=>x.ok[0],alt=x=>x.ok[x.ok.length-1],wrong=x=>x.options.find(o=>!x.ok.includes(o));
+   if(m.notice==='ok'){act('notice-post',undefined,'post-not-ready');slots.forEach(x=>choose(x,right(x)));post();}
+   if(m.notice==='nice'){slots.forEach(x=>choose(x,alt(x)));post();}
+   if(m.notice==='stay'){slots.forEach((x,i)=>choose(x,i?right(x):wrong(x)));post();}
+   if(m.notice==='fix'){choose(slots[0],wrong(slots[0]));act('notice-post',undefined,'post-not-ready');slots.forEach(x=>choose(x,wrong(x)));post();choose(slots[1],right(slots[1]));post();
+    slots.forEach(x=>choose(x,right(x)));post();slots.forEach(x=>x.options.filter(o=>o!==right(x)).forEach(o=>choose(x,o)));post();}
    return;}
   if(m.notice==='ok'){n.must.forEach(pick);post();}
   if(m.notice==='nice'){[...n.nice,...n.must].forEach(pick);post();}

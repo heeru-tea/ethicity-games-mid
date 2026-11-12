@@ -14,7 +14,7 @@ function stateAt(key,step){
   if(st==='check'){for(const id of E.checks[k])s=E.reduce(s,{type:'check',id});for(const a of E.answers[k])s=E.reduce(s,{type:'judge',stamp:a});}
   if(st==='choose'){s=E.reduce(s,{type:'choose',id:E.choices[k][0]});continue;}
   if(st==='follow'){const m=E.followMarks[k];m.ids.forEach((id,i)=>{s=E.reduce(s,{type:'mark',id,value:k==='photo'?E.truth[i]:m.values[0]});});s=E.reduce(s,{type:'follow-judge',stamp:E.followAnswers[k]});}
-  if(st==='notice'){for(const id of E.noticeIds(k))if(E.noticeCards[k].must.includes(id)!==s.notices[k].picked.includes(id))s=E.reduce(s,{type:'notice-pick',id});s=E.reduce(s,{type:'notice-post'});}
+  if(st==='notice'){if(E.noticeFix(s,k))for(const x of E.noticeSlots[k])s=E.reduce(s,{type:'notice-slot',slot:x.id,opt:x.ok[0]});else for(const id of E.noticeIds(k))if(E.noticeCards[k].must.includes(id)!==s.notices[k].picked.includes(id))s=E.reduce(s,{type:'notice-pick',id});s=E.reduce(s,{type:'notice-post'});}
   s=E.reduce(s,{type:'next'});}
  assert.equal(s.scene,goal);return s;
 }
@@ -420,87 +420,87 @@ test('a11y: every village button is named “마을, 신청 N명, 합격 N명”
  assert.deepEqual(done.map(visible),C.criteria.rows.map(r=>r.name+' '+r.w.toFixed(1)));
 });
 
-// ── 2026-11-12 수정 요청 10: 사건 4·5 미리 알리기 ‘고치기’ 화면 ──
-// 틀린 초안이 들어 있고(초안에 있던 카드에 글자 표시·aria-label), 초안 그대로면 붙이기 버튼이 꺼지고 ‘초안과 같아…’, 붙이면 초안과 견준 상태 글자와 남은 것을 말하는 판정.
-// 보고서·수첩: 고치기로 붙인 안내문에는 ‘초안에서 뺀 문장 N개 · 새로 넣은 문장 N개’ 한 줄, 카드 고르기로 붙인 옛 안내문은 예전 그대로.
+
+// ── 2026-11-12 수정 요청 10·후속 6: 사건 4·5 미리 알리기 ‘고치기’ 화면 ──
+// 칸마다 이름·초안 한 줄·선택지 버튼(aria-pressed), 모든 칸을 골라야 붙이기, 붙이면 칸마다 ✓/! 태그와 한 줄, 판정은 다시 볼 칸 이름.
+// 보고서·수첩: ‘고친 안내문’ + 최종 문장 + 다시 볼 칸 + 판정. 이 기능 전에 카드로 붙인 사건 4·5 안내문은 ‘이전 방식으로 작성한 안내문’.
 const NF=D.notice.fix;
-const fbTag=(html,id)=>{const m=new RegExp('<p class="card-fb[^"]*" id="fb-'+id+'"><span class="fb-tag">([^<]*)</span>([^<]*)</p>').exec(html);return m?{tag:unesc(m[1]),say:unesc(m[2]).trim()}:null;};
-const cardAttrs=(html,id)=>parseTags(html,'button').find(b=>b['data-act']==='notice-pick'&&b['data-id']===id);
+const fbOf=(html,id)=>{const m=new RegExp('<p class="card-fb ([^"]*)" id="fb-slot-'+id+'"><span class="fb-tag">([^<]*)</span>([^<]*)</p>').exec(html);return m?{cls:m[1],tag:unesc(m[2]),say:unesc(m[3]).trim()}:null;};
+const opt=(html,slot,value)=>parseTags(html,'button').find(b=>b['data-act']==='notice-slot'&&b['data-id']===slot&&b['data-value']===value);
 const postBtn=html=>parseTags(html,'button').find(b=>b['data-act']==='notice-post');
-const paper=html=>{const m=/<div class="notice-paper[^"]*">([\s\S]*?)<\/div>/.exec(html);return {cls:/<div class="(notice-paper[^"]*)"/.exec(html)[1],text:textOf(m[1])};};
-test('request 10: case 4 notice starts from the flawed draft — marked draft cards, the draft cannot be posted as it is, feedback says what is still missing',()=>{
- const C=D.cases.camp,g=open('camp','notice');let h=g.app.innerHTML;
- assert.ok(h.includes('<h1 tabindex="-1">'+C.notice.fix.title+'</h1>'));assert.equal(C.notice.fix.title,'구청 공개 페이지 초안, 어디를 고칠까?');
- assert.ok(textOf(h).includes(NF.task));assert.match(h,/role="group" aria-label="안내문에 넣을 문장"/);
- // 초안에 있던 카드: 눌린 채, 글자 표시, 이름 = ‘문장 (초안에 있던 문장)’
- for(const card of C.notice.cards){const b=cardAttrs(h,card.id),d=E.noticeDrafts.camp.includes(card.id);
-  assert.equal(b['aria-pressed'],String(d),card.id);assert.equal(b['aria-label'],d?card.text+' (초안에 있던 문장)':undefined,card.id+' name');}
- assert.equal((h.match(/<span class="draft-tag">초안에 있던 문장<\/span>/g)||[]).length,3);
- assert.ok('disabled' in postBtn(h),'draft as it is: post button off');
- assert.match(h,/<button {2}data-act="notice-post" disabled>고친 안내문 붙이기<\/button><p class="hint same">초안과 같아\. 고칠 곳을 찾아 봐\.<\/p>/);
- assert.deepEqual(paper(h),{cls:'notice-paper draft',text:'처음 초안 · 구청 공개 페이지 '+E.noticeDrafts.camp.map(id=>C.notice.cards.find(c=>c.id===id).text).join(' ')});
- assert.equal(h.includes('card-fb'),false,'no feedback before posting');
- // 한 군데 고치기(약속 카드 빼기) → 붙이기 켜짐
- g.click('notice-pick',{id:'camp-never'});h=g.app.innerHTML;assert.equal('disabled' in postBtn(h),false);assert.equal(h.includes('hint same'),false);assert.match(h,/안내문을 한 번 붙이면 다음으로 갈 수 있어\./);
- assert.match(h,/<span class="draft-tag">초안에 있던 문장<\/span>/,'the removed card keeps its draft mark');assert.equal(cardAttrs(h,'camp-never')['aria-pressed'],'false');
+const paperOf=html=>{const m=/<div class="(notice-paper[^"]*)">([\s\S]*?)<\/div>/.exec(html);return {cls:m[1],text:textOf(m[2])};};
+test('request 6: case 4 — a short 구청 notice with three blanks and an overstated line; choose a sentence for every slot, then post; feedback names the slots to look at again',()=>{
+ const C=D.cases.camp,X=C.notice.fix,g=open('camp','notice');let h=g.app.innerHTML;
+ assert.ok(h.includes('<h1 tabindex="-1">구청 안내문 초안, 어디를 고칠까?</h1>'));assert.ok(textOf(h).includes(NF.task));
+ assert.deepEqual(paperOf(h),{cls:'notice-paper draft',text:'처음 초안 · 구청 안내문 · 청소년 겨울 캠프 AI가 하는 일: (비어 있음) 담당 부서: (비어 있음) 재검토 방법: (비어 있음) AI가 뽑으니 절대 차별이 없어요.'});
+ const groups=[...h.matchAll(/<div class="fix-slot" role="group" aria-label="([^"]*)">/g)].map(m=>unesc(m[1]));
+ assert.deepEqual(groups,['칸 1. AI가 하는 일, 초안: (비어 있음)','칸 2. 담당 부서, 초안: (비어 있음)','칸 3. 재검토 방법, 초안: (비어 있음)','칸 4. 마지막 문장, 초안: “AI가 뽑으니 절대 차별이 없어요.”']);
+ const labels=slot=>[...h.matchAll(new RegExp('data-id="'+slot+'" data-value="[^"]*" aria-pressed="false"><span class="pick-box" aria-hidden="true"></span><span>([^<]*)</span>','g'))].map(m=>unesc(m[1]));
+ assert.deepEqual(labels('role'),['비워 두기','AI가 알아서 명단을 정해요.','AI가 점수를 매기고, 담당자가 최종 확인해요.']);
+ assert.deepEqual(labels('appeal'),['비워 두기','이의가 있으면 14일 안에 재검토를 신청해요.','신청자 모두의 이름과 점수를 공개해요.']);
+ assert.deepEqual(labels('claim'),['그대로 두기','이 문장 빼기','점수에 쓰는 항목과 비중을 알려 드려요.']);
+ assert.ok('disabled' in postBtn(h));assert.match(h,/<p class="hint">모든 칸을 골라야 붙일 수 있어\. 남은 칸 4개\.<\/p>/);
+ // 세 칸만 고르면 아직
+ g.click('notice-slot',{id:'role',value:'camp-auto'});g.click('notice-slot',{id:'office',value:'camp-office'});g.click('notice-slot',{id:'appeal',value:'camp-everyone'});h=g.app.innerHTML;
+ assert.equal(opt(h,'role','camp-auto')['aria-pressed'],'true');assert.ok('disabled' in postBtn(h));assert.match(h,/남은 칸 1개\./);
+ g.click('notice-slot',{id:'claim',value:'keep'});h=g.app.innerHTML;assert.equal('disabled' in postBtn(h),false);assert.match(h,/안내문을 한 번 붙이면 다음으로 갈 수 있어\./);
  g.click('notice-post');h=g.app.innerHTML;
- assert.deepEqual(fbTag(h,'camp-never'),{tag:'✓ 지킬 수 없는 약속 · 뺐음',say:'잘 뺐어. 지킬 수 없는 약속은 오히려 믿음을 깨.'});
- assert.equal(fbTag(h,'camp-everyone').tag,'! 부딪침 · 넣음');assert.equal(fbTag(h,'camp-role').tag,'✓ 꼭 필요 · 넣음');
- assert.deepEqual(fbTag(h,'camp-office'),{tag:'! 꼭 필요 · 빠짐',say:'이게 없으면 쓰는 사람이 미리 알 수 없어.'});assert.equal(fbTag(h,'camp-items').tag,'○ 있으면 좋음 · 안 넣음');
- assert.match(h,/<div class="finding again notice-verdict" role="status"><p class="again-head">고칠 점이 있어<\/p><p>아직 빠진 꼭 필요 문장 2개 · 아직 남은 부딪치는 문장 1개\. 문장을 더 고쳐서 다시 붙여 볼 수 있어\. 이대로 넘어가도 돼\.<\/p><\/div>/);
- assert.equal(paper(h).cls,'notice-paper',' posted: the paper shows the posted notice');assert.equal(paper(h).text,'구청 공개 페이지 AI가 점수를 매기고, 담당자가 최종 확인해요. 신청자 모두의 이름과 점수를 공개해요.');
+ assert.deepEqual(fbOf(h,'role'),{cls:'fb-again',tag:'! AI가 하는 일 · 다시 보기',say:X.say['camp-auto']});
+ assert.deepEqual(fbOf(h,'office'),{cls:'fb-ok',tag:'✓ 담당 부서',say:D.notice.fb.must.in});
+ assert.deepEqual(fbOf(h,'appeal'),{cls:'fb-again',tag:'! 재검토 방법 · 다시 보기',say:C.notice.cards.find(c=>c.id==='camp-everyone').clash});
+ assert.deepEqual(fbOf(h,'claim'),{cls:'fb-again',tag:'! 마지막 문장 · 다시 보기',say:D.notice.fb.promise.in});
+ assert.match(h,/<div class="finding again notice-verdict" role="status"><p class="again-head">고칠 점이 있어<\/p><p>다시 볼 칸: AI가 하는 일, 재검토 방법, 마지막 문장\. 그 칸을 다시 골라 붙여 볼 수 있어\. 이대로 넘어가도 돼\.<\/p><\/div>/);
+ assert.equal(opt(h,'role','camp-auto')['aria-describedby'],'fb-slot-role');
+ assert.deepEqual(paperOf(h),{cls:'notice-paper',text:'구청 안내문 · 청소년 겨울 캠프 AI가 알아서 명단을 정해요. 담당 부서는 구청 청소년과예요. 신청자 모두의 이름과 점수를 공개해요. AI가 뽑으니 절대 차별이 없어요.'});
  assert.ok(!parseTags(h,'button').find(b=>b['data-act']==='next'&&'disabled' in b),'posted once: can move on');
- // 초안으로 되돌리면 다시 붙일 수 없고(붙인 것은 그대로), 바꿨다는 안내 대신 ‘초안과 같아…’
- g.click('notice-pick',{id:'camp-never'});h=g.app.innerHTML;assert.ok('disabled' in postBtn(h));assert.match(h,/고친 안내문 다시 붙이기<\/button><p class="hint same">/);assert.equal(h.includes('class="hint repost"'),false);
- assert.deepEqual(st(g).notices.camp.posted,['camp-role','camp-everyone']);
- // 다른 문장으로 바꾸면 ‘문장을 바꿨어…’
- g.click('notice-pick',{id:'camp-office'});h=g.app.innerHTML;assert.match(h,/<p class="hint repost" role="status">문장을 바꿨어\. ‘고친 안내문 다시 붙이기’를 누르면 다시 확인해 줄게\.<\/p>/);assert.equal(h.includes('card-fb'),false,'old feedback hidden');
- // 다 고침
- for(const id of ['camp-never','camp-everyone','camp-appeal','camp-items'])g.click('notice-pick',{id});g.click('notice-post');h=g.app.innerHTML;
- assert.equal(fbTag(h,'camp-office').tag,'✓ 꼭 필요 · 새로 넣음');assert.equal(fbTag(h,'camp-items').tag,'✓ 있으면 좋음 · 새로 넣음');assert.equal(fbTag(h,'camp-everyone').tag,'✓ 부딪침 · 뺐음');
- assert.match(h,/<div class="finding notice-verdict" role="status"><p><strong>다 맞았어\.<\/strong> 이제 쓰는 사람이 미리 알고 고를 수 있어\./);
- // 수첩·보고서: 한 줄 더
- g.click('notebook');const nb=g.snap().modalBody;assert.match(nb,/<div class="notice-sum"><p class="n-changes">초안에서 뺀 문장 2개 · 새로 넣은 문장 3개<\/p><ul class="notice-list">/);assert.match(textOf(nb),/판정: 다 맞음/);
- g.click('close');assert.deepEqual(E.restore(g.stored()),st(g),'saved as shown');assert.equal(st(g).notices.camp.fix,true);
+ // 한 칸을 바꾸면 피드백을 숨기고 다시 붙이기 안내
+ g.click('notice-slot',{id:'role',value:'camp-role'});h=g.app.innerHTML;assert.equal(h.includes('card-fb'),false);assert.match(h,/<p class="hint repost" role="status">칸을 바꿨어\. ‘고친 안내문 다시 붙이기’를 누르면 다시 확인해 줄게\.<\/p>/);
+ g.click('notice-slot',{id:'appeal',value:'camp-appeal'});g.click('notice-slot',{id:'claim',value:'drop'});g.click('notice-post');h=g.app.innerHTML;
+ assert.deepEqual(fbOf(h,'claim'),{cls:'fb-ok',tag:'✓ 마지막 문장',say:D.notice.fb.promise.out});assert.match(h,/<p><strong>다 맞았어\.<\/strong> 이제 쓰는 사람이 미리 알고 고를 수 있어\./);
+ g.click('notice-slot',{id:'claim',value:'camp-items'});g.click('notice-post');assert.deepEqual(fbOf(g.app.innerHTML,'claim'),{cls:'fb-ok',tag:'✓ 마지막 문장',say:X.say['camp-items']});
+ // 수첩: 고친 안내문 문장과 판정
+ g.click('notebook');const nb=g.snap().modalBody;
+ assert.match(nb,/<div class="notice-sum"><p class="n-kind">고친 안내문<\/p><ul class="notice-list"><li>AI가 점수를 매기고, 담당자가 최종 확인해요\.<\/li><li>담당 부서는 구청 청소년과예요\.<\/li><li>이의가 있으면 14일 안에 재검토를 신청해요\.<\/li><li>점수에 쓰는 항목과 비중을 알려 드려요\.<\/li><\/ul><p class="v-pick">판정: <span class="v-tag v-ok">다 맞음<\/span><\/p><\/div>/);
+ g.click('close');assert.deepEqual(E.restore(g.stored()),st(g));
+ // 새로고침: 고른 칸과 붙인 안내문 그대로
+ const again=createGame({storage:{[KEY]:g.stored()}});again.click('start');h=again.app.innerHTML;assert.equal(opt(h,'claim','camp-items')['aria-pressed'],'true');assert.match(h,/다 맞았어\./);
 });
-test('request 10: case 5 (alone) — same fix step, tags only and a one-line verdict; the clash reason stays',()=>{
+test('request 6: case 5 (alone) — the 냥스타 notice; ‘#AI그림’ alone is not enough without the real sky; tags only, the clash reason stays, one-line verdict',()=>{
  const C=D.cases.share,g=open('share','notice');let h=g.app.innerHTML;
- assert.match(h,/<h1 tabindex="-1">냥스타 게시물 글 초안, 어디를 고칠까\?<\/h1>/);assert.match(h,/<p class="line plain">알리는 건 벌이 아니야\./);assert.equal((h.match(/class="draft-tag"/g)||[]).length,2);
- assert.ok('disabled' in postBtn(h));
- g.click('notice-pick',{id:'share-ai'});g.click('notice-post');h=g.app.innerHTML;
- assert.deepEqual(fbTag(h,'share-ai'),{tag:'✓ 꼭 필요 · 새로 넣음',say:''},'alone: tag only');assert.deepEqual(fbTag(h,'share-same'),{tag:'! 지킬 수 없는 약속 · 넣음',say:''});
- assert.deepEqual(fbTag(h,'share-real'),{tag:'! 꼭 필요 · 빠짐',say:''});assert.deepEqual(fbTag(h,'share-spell'),{tag:'✓ 있으면 좋음 · 넣음',say:''});
- const clash=C.notice.cards.find(c=>c.id==='share-settings').clash;assert.deepEqual(fbTag(h,'share-settings'),{tag:'✓ 부딪침 · 안 넣음',say:clash},'never in the draft and not added: 안 넣음 (not 뺐음); the clash reason stays');
- assert.match(h,/<div class="finding again notice-verdict" role="status"><p><strong>고칠 점이 있어<\/strong> · 아직 빠진 꼭 필요 문장 1개 · 아직 남은 지킬 수 없는 약속 1개\.<\/p><\/div>/);
- assert.equal((h.match(/class="line moa"/g)||[]).length,0,'still no 모아 lines in case 5');
- g.click('notice-pick',{id:'share-same'});g.click('notice-pick',{id:'share-real'});g.click('notice-post');h=g.app.innerHTML;
- assert.match(h,/<p><strong>다 맞았어\.<\/strong><\/p>/);assert.equal(fbTag(h,'share-same').tag,'✓ 지킬 수 없는 약속 · 뺐음');
- g.click('next');g.click('notebook');assert.match(g.snap().modalBody,/초안에서 뺀 문장 1개 · 새로 넣은 문장 2개/);
+ assert.ok(h.includes('<h1 tabindex="-1">냥스타 홍보문 초안, 어디를 고칠까?</h1>'));assert.match(h,/<p class="line plain">알리는 건 벌이 아니야\./);
+ assert.equal(paperOf(h).text,'처음 초안 · 냥스타 홍보문 · 루루 이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임 AI로 만든 부분: (비어 있음) 토요일에 이 그림처럼 보일 거예요. 덧붙일 것: (비어 있음)');
+ assert.ok(opt(h,'more','blank'));assert.match(h,/data-value="blank" aria-pressed="false"><span class="pick-box" aria-hidden="true"><\/span><span>덧붙이지 않기<\/span>/);
+ for(const [id,o] of [['ai','share-tag'],['sky','keep'],['more','share-settings']])g.click('notice-slot',{id,value:o});g.click('notice-post');h=g.app.innerHTML;
+ assert.deepEqual(fbOf(h,'ai'),{cls:'fb-ok',tag:'✓ AI로 만든 부분',say:''},'alone: tag only');
+ assert.deepEqual(fbOf(h,'sky'),{cls:'fb-again',tag:'! 실제 하늘 · 다시 보기',say:''});
+ assert.deepEqual(fbOf(h,'more'),{cls:'fb-again',tag:'! 덧붙일 것 · 다시 보기',say:C.notice.cards.find(c=>c.id==='share-settings').clash},'the clash reason stays');
+ assert.match(h,/<div class="finding again notice-verdict" role="status"><p><strong>고칠 점이 있어<\/strong> · 다시 볼 칸: 실제 하늘, 덧붙일 것\.<\/p><\/div>/);
+ assert.equal((h.match(/class="line moa"/g)||[]).length,0,'still no 모아 lines');
+ g.click('notice-slot',{id:'sky',value:'share-real'});g.click('notice-slot',{id:'more',value:'blank'});g.click('notice-post');h=g.app.innerHTML;
+ assert.match(h,/<p><strong>다 맞았어\.<\/strong><\/p>/);assert.equal(paperOf(h).text,'냥스타 홍보문 · 루루 이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임 #AI그림 실제 뒷산에서는 은하수가 거의 안 보여요.');
+ g.click('next');g.click('notebook');assert.match(textOf(g.snap().modalBody),/고친 안내문 이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임 #AI그림 실제 뒷산에서는 은하수가 거의 안 보여요\. 판정: 다 맞음/);
 });
-test('request 10 and old saves: a case 4/5 notice posted by card picking before this change shows as before (title, task, no draft marks, no change line) in the step, notebook and report',()=>{
- // 다 마친 version 6 저장: 사건 4·5 안내문을 카드 고르기로 붙였다(사건 4는 다 맞음, 사건 5는 약속 카드가 든 채)
+test('request 6 and old saves: a case 4/5 notice posted by card picking before this change shows as ‘이전 방식으로 작성한 안내문’ and stays card-style on its screen',()=>{
  const fin=JSON.parse(JSON.stringify(E.reduce(E.reduce(stateAt('share','reflect'),{type:'next'}),{type:'next'})));
  const v6=JSON.parse(JSON.stringify(fin));v6.version=6;v6.evidence=v6.evidence.filter(id=>id!=='camp-bus');v6.follows.share.judgment='different';
  v6.notices.camp={picked:['camp-role','camp-office','camp-appeal'],posted:['camp-role','camp-office','camp-appeal']};v6.notices.share={picked:['share-ai','share-same'],posted:['share-ai','share-same']};
- const g=createGame({storage:{[KEY]:JSON.stringify(v6)}});g.click('start');let s=st(g);
+ const g=createGame({storage:{[KEY]:JSON.stringify(v6)}});g.click('start');const s=st(g);
  assert.deepEqual(s.notices.camp,v6.notices.camp);assert.deepEqual(s.notices.share,v6.notices.share,'never rewritten');
- const rep=g.app.innerHTML;assert.equal(rep.includes('n-changes'),false,'report: no change line for card-picked notices');assert.equal(rep.includes('초안'),false);
- const cards=[...rep.matchAll(/<section class="case-card" id="report-(\w+)"[\s\S]*?<\/section>/g)];const card=k=>textOf(cards.find(m=>m[1]===k)[0]);
- assert.match(card('camp'),/미리 알리기 AI가 점수를 매기고, 담당자가 최종 확인해요\. 담당 부서는 구청 청소년과예요\. 이의가 있으면 14일 안에 재검토를 신청해요\. 판정: 다 맞음/);
- assert.match(card('share'),/토요일에 이 그림처럼 보일 거예요\. \(지킬 수 없는 약속\)[\s\S]*빠짐: 실제 뒷산에서는 은하수가 거의 안 보여요\. 판정: 고칠 점 있음/);
- g.click('notebook');assert.equal(g.snap().modalBody.includes('n-changes'),false,'notebook: same');g.click('close');
- // 그 단계로 다시 가 보면 예전 카드 고르기 화면(제목·과제·표시 없음), 다시 고르고 붙여도 카드 고르기
+ const rep=g.app.innerHTML,card=k=>textOf([...rep.matchAll(/<section class="case-card" id="report-(\w+)"[\s\S]*?<\/section>/g)].find(m=>m[1]===k)[0]);
+ assert.match(card('camp'),/미리 알리기 이전 방식으로 작성한 안내문 AI가 점수를 매기고, 담당자가 최종 확인해요\. 담당 부서는 구청 청소년과예요\. 이의가 있으면 14일 안에 재검토를 신청해요\. 판정: 다 맞음/);
+ assert.match(card('share'),/미리 알리기 이전 방식으로 작성한 안내문 토요일에 이 그림처럼 보일 거예요\. \(지킬 수 없는 약속\) 은하수 그림은 AI로 만들었어요\. 빠짐: 실제 뒷산에서는 은하수가 거의 안 보여요\. 판정: 고칠 점 있음/);
+ assert.equal(textOf(rep).includes('고친 안내문'),false);
+ for(const k of ['photo','writing','face'])assert.equal(card(k).includes('이전 방식'),false,'cases 1~3 have no label');
  g.click('notebook');g.click('revisit',{scene:E.sceneOf('camp','choose')});g.click('next');g.click('next');g.click('next');assert.equal(g.state().scene,E.sceneOf('camp','notice'));let h=g.app.innerHTML;
- assert.ok(h.includes('<h1 tabindex="-1">'+D.cases.camp.notice.title+'</h1>'));assert.ok(textOf(h).includes(D.notice.task));assert.equal(h.includes('draft-tag'),false);assert.match(h,/aria-label="안내문에 붙일 카드"/);
- assert.match(h,/안내문 다시 붙이기<\/button>/);assert.equal(h.includes('고친 안내문'),false);assert.match(h,/다 맞았어\./,'the posted notice’s feedback as before');
- g.click('notice-pick',{id:'camp-items'});g.click('notice-post');assert.equal(st(g).notices.camp.fix,undefined);assert.match(g.app.innerHTML,/class="notice-paper"><p class="doc-label">구청 공개 페이지<\/p>/);
- // version 6 저장이 사건 4 미리 알리기에 서 있고 아직 아무것도 안 골랐으면 → 고치기 화면
+ assert.ok(h.includes('<h1 tabindex="-1">'+D.cases.camp.notice.title+'</h1>'));assert.ok(textOf(h).includes(D.notice.task));assert.equal(h.includes('fix-slot'),false);assert.match(h,/안내문 다시 붙이기<\/button>/);
+ g.click('notice-pick',{id:'camp-items'});g.click('notice-post');assert.equal(st(g).notices.camp.mode,undefined,'still card-style');
+ // version 6 저장이 사건 4 미리 알리기에 서 있고 아무것도 안 골랐으면 → 고치기 화면, 이어서 다음으로
  const at6=JSON.parse(JSON.stringify(stateAt('camp','notice')));at6.version=6;at6.evidence=at6.evidence.filter(id=>id!=='camp-bus');at6.notices.camp={picked:[],posted:null};
  const g2=createGame({storage:{[KEY]:JSON.stringify(at6)}});g2.click('start');h=g2.app.innerHTML;
- assert.match(h,/구청 공개 페이지 초안, 어디를 고칠까\?/);assert.equal((h.match(/class="draft-tag"/g)||[]).length,3);assert.match(h,/저장된 곳부터 이어서 해요\./);
- g2.click('notice-pick',{id:'camp-everyone'});g2.click('notice-post');g2.click('next');assert.equal(E.stepOf(g2.state().scene),'reflect','continues past the step');
- // 고르던 중이던 version 7 저장 → 카드 고르기 그대로
- const mid=JSON.parse(JSON.stringify(at6));mid.version=7;mid.evidence=stateAt('camp','notice').evidence;mid.notices.camp={picked:['camp-office'],posted:null};
+ assert.match(h,/구청 안내문 초안, 어디를 고칠까\?/);assert.equal((h.match(/class="fix-slot"/g)||[]).length,4);assert.match(h,/저장된 곳부터 이어서 해요\./);
+ for(const x of E.noticeSlots.camp)g2.click('notice-slot',{id:x.id,value:x.options[0]});g2.click('notice-post');g2.click('next');assert.equal(E.stepOf(g2.state().scene),'reflect','continues past the step');
+ // 카드를 고르던 중이던 version 7 저장 → 카드 고르기 그대로
+ const mid=JSON.parse(JSON.stringify(stateAt('camp','notice')));mid.version=7;mid.notices.camp={picked:['camp-office'],posted:null};
  const g3=createGame({storage:{[KEY]:JSON.stringify(mid)}});g3.click('start');h=g3.app.innerHTML;
- assert.ok(h.includes(D.cases.camp.notice.title));assert.equal(h.includes('draft-tag'),false);assert.equal(cardAttrs(h,'camp-office')['aria-pressed'],'true');assert.equal('disabled' in postBtn(h),false);
+ assert.ok(h.includes(D.cases.camp.notice.title));assert.equal(h.includes('fix-slot'),false);assert.equal(parseTags(h,'button').find(b=>b['data-id']==='camp-office')['aria-pressed'],'true');
 });
