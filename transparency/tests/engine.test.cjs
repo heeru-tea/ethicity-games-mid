@@ -58,10 +58,10 @@ test('case 4 hook: asking the 구청 at least one question opens the check; ques
  assert.equal(E.canAdvance(at(E.sceneOf('share','hook'))),true,'case 5 has no question gate');
 });
 test('cases 4 and 5: records, choices, judgments (each stamp once), follow-up marks',()=>{
- assert.deepEqual(E.checks.camp,['camp-page','camp-results','camp-criteria']);assert.deepEqual(E.checks.share,['share-log','share-photo','share-compare']);
+ assert.deepEqual(E.checks.camp,['camp-page','camp-results','camp-criteria','camp-bus']);assert.deepEqual(E.checks.share,['share-log','share-photo','share-compare']);
  assert.deepEqual(E.choices.camp,['loud','accurate','quiet']);assert.deepEqual(E.choices.share,['keep','tag','explain']);
  assert.deepEqual(E.answers.camp,['unknown','different','confirmed']);assert.deepEqual(E.answers.share,['different','confirmed','unknown']);
- assert.equal(E.followAnswers.camp,'different');assert.equal(E.followAnswers.share,'different');
+ assert.equal(E.followAnswers.camp,'different');assert.equal(E.followAnswers.share,'confirmed');
  assert.deepEqual(E.followMarks.camp,{ids:['changed'],values:['found']});assert.deepEqual(E.followMarks.share,{ids:['dm','post','board'],values:['open']});
  // 사건 4 한 바퀴: 질문 → 자료 셋 → 판단 셋 → 선택 → 후속 조사 → 미리 알리기 → 생각 정리 → 사건 5
  let s=at(E.sceneOf('camp','check'),s=>{for(const c of E.CASES.slice(0,3))s.cases[c]={first:E.choices[c][0],final:E.choices[c][0]};s.asked=['who'];return s;});
@@ -73,7 +73,7 @@ test('cases 4 and 5: records, choices, judgments (each stamp once), follow-up ma
  // 사건 5 후속 조사: 세 곳을 모두 열어야 판단
  s=at(E.sceneOf('share','follow'),s=>{for(const c of E.CASES)s.cases[c]={first:E.choices[c][0],final:E.choices[c][0]};s.asked=['who'];return s;});
  s=E.reduce(s,{type:'mark',id:'dm',value:'open'});s=E.reduce(s,{type:'mark',id:'post',value:'open'});s=E.reduce(s,{type:'follow-judge',stamp:'different'});assert.equal(s.follows.share.judgment,null);
- s=E.reduce(s,{type:'mark',id:'board',value:'open'});s=E.reduce(s,{type:'follow-judge',stamp:'different'});assert.equal(E.canAdvance(s),true);
+ s=E.reduce(s,{type:'mark',id:'board',value:'open'});s=E.reduce(s,{type:'follow-judge',stamp:'confirmed'});assert.equal(E.canAdvance(s),true);
 });
 test('ending: entering it after the case 5 reflection completes the game; the final note only there',()=>{
  const last=E.sceneOf('share','reflect');let s=at(last,s=>{for(const c of E.CASES)s.cases[c]={first:E.choices[c][0],final:E.choices[c][0]};s.asked=['who'];return s;});

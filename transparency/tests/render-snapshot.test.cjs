@@ -30,7 +30,7 @@ function play(opts,script){
    'photo-rule':()=>({act:'region',wrong:[],right:[0,1,2]}),
    'writing-history':()=>({act:'record',wrong:ids(D.history,r=>!r.target),right:ids(D.history,r=>r.target)}),
    'face-clerk':()=>({act:'segment',wrong:ids(D.cases.face.clerkSegments,r=>!r.found),right:pickOne(ids(D.cases.face.clerkSegments,r=>r.found),v)}),
-   'camp-page':()=>({act:'cell',wrong:ids(C.page.rows,r=>!r.blank),right:pickOne(ids(C.page.rows,r=>r.blank),v)}),
+   'camp-page':()=>({act:'cell',wrong:ids(C.page.rows,r=>!r.blank),right:v?ids(C.page.rows,r=>r.blank).reverse():ids(C.page.rows,r=>r.blank)}),
    'camp-results':()=>({act:'village',wrong:ids(C.results.rows,r=>!r.target),right:ids(C.results.rows,r=>r.target)}),
    'camp-criteria':()=>({act:'crit',wrong:[],right:v?ids(C.criteria.rows,()=>true).reverse():ids(C.criteria.rows,()=>true)}),
    'share-log':()=>({act:'part',wrong:ids(S.log,r=>!r.target),right:ids(S.log,r=>r.target)}),
@@ -165,12 +165,13 @@ SCENARIOS['title']=t=>{const {act}=t;
 SCENARIOS['view-state']=t=>{const {act,E,D}=t,m={judge:()=>true,choice:0,followRight:true,notice:'ok',asks:'all'};
  act('next');act('next');act('item',{id:'photo-rule'});act('region',{id:0});act('back');act('next');act('item',{id:'photo-rule'});act('back');
  t.oneCase(m);t.oneCase(m);
- // 사건 3: 점원의 말을 마지막 자료로, ‘바로 막으라고’ 문장으로 찾는다. 판단하는 중에 틀린 곳을 눌러 안내를 띄운 뒤 다음 말로 넘어간다.
- act('next');for(const id of ['face-photo','face-alert','face-clerk'])act('item',{id});act('segment',{id:'system'});act('segment',{id:'rule'});
- act('item',{id:'face-clerk'});act('segment',{id:'system'},'wrong-while-judging');
+ // 사건 3: 점원의 말을 마지막 자료로. 문장마다 다른 안내가 나오고(‘바로 막으라고’는 가게 규칙 이야기 — 아직 확인 아님), ‘그 손님이래요’ 문장으로 찾는다.
+ // 판단하는 중에 다른 문장을 눌러 안내를 띄운 뒤 다음 말로 넘어간다.
+ act('next');for(const id of ['face-photo','face-alert','face-clerk'])act('item',{id});act('segment',{id:'system'});act('segment',{id:'rule'});act('segment',{id:'person'});
+ act('item',{id:'face-clerk'});act('segment',{id:'system'},'wrong-while-judging');act('segment',{id:'rule'},'rule-after-found');act('segment',{id:'person'},'person-again');
  for(let i=0;i<3;i++){act('judge',{id:E.answers.face[i]});if(i<2)act('judge-next');}
  t.rest(m);
- act('ask',{id:'who'});act('next');act('item',{id:'camp-criteria'});act('crit',{id:'essay'});act('item',{id:'camp-page'});act('cell',{id:'use'});act('back');act('next');act('item',{id:'camp-criteria'});act('item',{id:'camp-page'});
+ act('ask',{id:'who'});act('next');act('item',{id:'camp-criteria'});act('crit',{id:'essay'});act('item',{id:'camp-page'});act('cell',{id:'use'});act('cell',{id:'appeal'},'cell-one-of-two');act('back');act('next');act('item',{id:'camp-criteria'});act('item',{id:'camp-page'});
  t.check(m);t.rest(m);
  act('next');act('item',{id:'share-log'});act('part',{id:'text'});act('item',{id:'share-photo'});act('skyline',{id:'date'});act('item',{id:'share-compare'});act('said',{id:'post'});
  act('item',{id:'share-log'});act('back');act('next');for(const id of E.checks.share)act('item',{id});

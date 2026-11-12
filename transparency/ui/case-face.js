@@ -8,7 +8,7 @@
  function alertDoc(){
   return `<div class="document"><p class="doc-label">알림 기록 · 빵집 앱</p><p>${esc(D.alertText)}</p></div>`;
  }
- // 점원의 말: 알림과 다른 말을 찾는다.
+ // 점원의 말: 문장을 누르면 문장마다 다른 안내가 나온다. 알림의 말을 바꿔 말한 문장(found가 있는 문장)을 눌러야 자료를 확인한 것이 된다.
  function clerk(done){
   const segments=D.cases.face.clerkSegments.map(s=>
    btn(done&&s.found?`<mark>${esc(s.text)}</mark>`:esc(s.text),'segment',`data-id="${s.id}"`,'segment'));
@@ -62,11 +62,12 @@
  actions.segment=b=>{
   const s=D.cases.face.clerkSegments.find(x=>x.id===b.dataset.id);
   if(!s.found){
-   miss(s.hint);
+   // rest = 아직 찾지 못했을 때만 덧붙이는 한마디(‘가게 규칙’ 문장: 알림과 다르긴 하지만 찾는 문장은 아니다).
+   miss(s.hint+(s.rest&&!S.state.evidence.includes('face-clerk')?' '+s.rest:''));
    return;
   }
-  // ‘바로 막으라고 배웠어요’를 찾았을 때만 그 문장의 설명을 안내로 남긴다.
-  S.tapHint=s.id==='rule'?s.found:'';
+  // 찾은 문장도 그 문장의 설명을 안내로 남긴다(문장마다 피드백).
+  S.tapHint=s.found;
   send({type:'check',id:'face-clerk'});
  };
  actions.row=openMark;

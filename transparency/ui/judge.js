@@ -36,7 +36,8 @@
   if(!key||key===S.autoKey)return;
   const first=S.autoKey===null;
   S.autoKey=key;
-  S.tapHint='';
+  // 마지막 자료를 막 찾아 판단할 말이 처음 나올 때는 방금 누른 곳의 안내(점원의 말 문장별 피드백 등)를 남긴다. 다음 말로 넘어갈 때 지운다.
+  if(!first)S.tapHint='';
   const src=D.cases[k].judges[idx].src;
   if(!src.includes(S.view)){
    if(first&&S.view)S.keepFinding=S.view;

@@ -6,11 +6,16 @@
  const {D,S,esc,btn,send,actions,found,miss,screenCard}=UI;
  const C=D.cases.camp;
 
- // 사건 4: 공개 페이지(빈 칸 누르기), 마을별 결과(합격 비율이 가장 낮은 마을), 기준표(‘?’ 줄을 열면 마무리 줄)
+ // 사건 4: 공개 페이지(빈 칸 둘을 모두 누르기), 마을별 결과(합격 비율이 가장 낮은 마을), 기준표(‘?’ 줄을 열면 마무리 줄), 버스 쪽지(읽기)
+ // 빈 칸은 누른 칸만 확인 표시가 붙고(S.opened의 'page:칸'), 둘을 다 눌러야 자료를 확인한 것이 된다. 이미 확인한 저장은 둘 다 표시.
+ // ⚠ 칸의 class는 is-empty — 생각 정리 문장 틀의 빈칸 밑줄(.blank, 너비 3.2em)과 이름이 겹치면 버튼이 54px로 줄어든다(2026-11-12 고침).
+ const blanks=C.page.rows.filter(r=>r.blank);
  function page(done){
   const row=r=>{
-   const label=`<span class="kv-k">${esc(r.k)}</span><span class="kv-v">${done&&r.blank?`<mark>${esc(r.text)}</mark>`:esc(r.text)}</span>`;
-   return btn(label,'cell',`data-id="${r.id}"`,'record kv'+(r.blank?' blank':''));
+   const hit=r.blank&&(done||S.opened.has('page:'+r.id));
+   const value=hit?`<mark>${esc(r.text)}</mark> <span class="cell-tag">${esc(C.checks[0].cellTag)}</span>`:esc(r.text);
+   const label=`<span class="kv-k">${esc(r.k)}</span><span class="kv-v">${value}</span>`;
+   return btn(label,'cell',`data-id="${r.id}"`,'record kv'+(r.blank?' is-empty':''));
   };
   return `<div class="document"><p class="doc-label">${esc(C.page.label)}</p><div class="records">${C.page.rows.map(row).join('')}</div></div>`;
  }
@@ -39,8 +44,14 @@
    const label=show?'':` aria-label="${r.hidden?'가린 항목':esc(r.name)} 비중 열기"`;
    return btn(cells(r,show),'crit',`data-id="${r.id}"${label}`,'score-row'+(show?' open':''));
   };
-  const closing=all?`<p class="score-formula">${esc(T.done)}</p><p class="caption">${esc(T.bus)}</p>`:'';
+  const closing=all?`<p class="score-formula">${esc(T.done)}</p>`:'';
   return `<div class="document score-table crit-table">${tableHead(T)}${T.rows.map(row).join('')}${closing}</div>`;
+ }
+
+ // 버스 쪽지: 본문 크기의 자료 카드. 누를 곳이 없어 여는 것만으로 확인한 것이 된다(plain).
+ function busNote(){
+  const N=C.note;
+  return `<div class="document note-card"><p class="doc-label">${esc(N.label)}</p>${N.lines.map(t=>`<p>${esc(t)}</p>`).join('')}</div>`;
  }
 
  // 사건 4: 예전 공개 페이지 · 새 공개 페이지(달라진 말 누르기)
@@ -57,7 +68,8 @@
  UI.views.camp={
   // 마을 신문 1면
   stage:x=>({screen:screenCard(x)}),
-  evidence:{'camp-page':page,'camp-results':results,'camp-criteria':criteria},
+  plain:['camp-bus'],
+  evidence:{'camp-page':page,'camp-results':results,'camp-criteria':criteria,'camp-bus':busNote},
   follow:{
    view:followView,
    fact:({f})=>f.fact,
@@ -68,8 +80,14 @@
  // 사건 4·5 자료 찾기
  actions.cell=b=>{
   const x=C.page.rows.find(r=>r.id===b.dataset.id);
-  if(x.blank)found('camp-page');
-  else miss(C.checks[0].hint);
+  if(!x.blank){
+   miss(C.checks[0].hint);
+   return;
+  }
+  // 누른 칸만 확인 표시. 빈 칸 둘을 다 눌러야 자료를 확인한 것이 된다.
+  S.opened.add('page:'+x.id);
+  if(blanks.every(r=>S.opened.has('page:'+r.id))||S.state.evidence.includes('camp-page'))found('camp-page');
+  else miss(C.checks[0].one);
  };
  actions.village=b=>{
   const x=C.results.rows.find(r=>r.id===b.dataset.id);

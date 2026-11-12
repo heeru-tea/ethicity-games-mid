@@ -1,6 +1,6 @@
 (function(root){
  'use strict';
- // 저장 version 6(2026-11-10 사건 4·5 새로 짬: camp·share). 사건 다섯 개, 사건마다 일곱 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사)
+ // 저장 version 7(2026-11-12 수정 요청: 사건 4 자료 넷(버스 쪽지)·판단 3 교체, 사건 5 후속 조사 판단 교체 — version 6 저장은 restore가 옮긴다). 사건 다섯 개, 사건마다 일곱 단계: hook(궁금한 것) → check(직접 확인 + 판단 셋) → choose(선택) → result(결과) → follow(후속 조사)
  // → notice(만든 사람이라면: 미리 알리기) → reflect(생각 정리).
  // 마지막은 end(마무리 + 마지막 서술) → report(나의 조사 보고서). 질문 고르기(구청에 묻기)는 사건 4(camp)의 궁금한 것 화면에서 한다.
  // 장면 번호는 LAYOUT에서 계산한다: 0 프롤로그, 1~7 사진, 8~14 글, 15~21 얼굴, 22~28 구청 캠프, 29~35 은하수 그림, 36 마지막, 37 보고서.
@@ -23,14 +23,14 @@
  const TEXT_MAX=4000;
  const REPORTER=['name','number'];
  const checks={photo:['photo-original','photo-rule'],writing:['writing-guide','writing-history'],face:['face-alert','face-clerk','face-photo'],
-  camp:['camp-page','camp-results','camp-criteria'],share:['share-log','share-photo','share-compare']};
+  camp:['camp-page','camp-results','camp-criteria','camp-bus'],share:['share-log','share-photo','share-compare']};
  // version 5 저장에 있던 옛 사건 4·5(도서관·밤하늘) 자료. 옛 저장 검사에만 쓰고 버린다.
  const OLD5_CHECKS=['library-guide','library-loans','library-scores','recommend-reason','recommend-meeting','recommend-bus'];
  const choices={photo:['auto','all'],writing:['detector','review','draft'],face:['maintain','release','crowd'],camp:['loud','accurate','quiet'],share:['keep','tag','explain']};
  const stamps=['confirmed','unknown','different'];
  // 사건마다 판단 셋. 세 칸이 사건마다 한 번씩 정답이 된다.
  const answers={photo:['confirmed','different','unknown'],writing:['unknown','confirmed','different'],face:['different','confirmed','unknown'],camp:['unknown','different','confirmed'],share:['different','confirmed','unknown']};
- const followAnswers={photo:'different',writing:'confirmed',face:'unknown',camp:'different',share:'different'};
+ const followAnswers={photo:'different',writing:'confirmed',face:'unknown',camp:'different',share:'confirmed'};
  // 후속 조사 표시: 구청 캠프는 새 공개 페이지에서 달라진 말 하나를 찾으면 끝, 은하수 그림은 세 곳(DM·냥스타·게시판)을 모두 연다.
  const followMarks={photo:{ids:['p1','p2','p3','p4','p5','p6'],values:['shown','cut']},writing:{ids:['run'],values:['done']},face:{ids:['r1','r2','r3','r4'],values:['open']},
   camp:{ids:['changed'],values:['found']},share:{ids:['dm','post','board'],values:['open']}};
@@ -80,7 +80,7 @@
  const clone=v=>JSON.parse(JSON.stringify(v));
  const each=f=>Object.fromEntries(CASES.map(k=>[k,f(k)])),eachOld=f=>Object.fromEntries(OLD3.map(k=>[k,f(k)]));
  // asked = 사건 4 궁금한 것에서 물어본 질문(누른 순서). completed = 마지막 장면에 들어갔음.
- function initial(){return {version:6,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),asked:[],completed:false,
+ function initial(){return {version:7,scene:0,furthest:0,evidence:[],judgments:each(()=>[null,null,null]),cases:each(()=>({first:null,final:null})),follows:each(()=>({marks:{},judgment:null})),asked:[],completed:false,
   reflections:each(()=>({q1:'',q2:''})),finalNote:'',reporter:{name:'',number:''},notices:each(()=>({picked:[],posted:null}))};}
  // 처음부터 다시 하기: 진행은 모두 지운다. 이름·학번은 기본으로 함께 지우고(공용 PC), keepReporter일 때만 남긴다.
  function restart(s,{keepReporter=false}={}){const n=initial();if(keepReporter&&s&&s.reporter)for(const f of REPORTER)n.reporter[f]=typeof s.reporter[f]==='string'?s.reporter[f]:'';return n;}
@@ -214,11 +214,24 @@
  }
  // 옛 저장에서 이미 미리 알리기 자리를 지난 사건은 '아직 안 함'(legacy)으로 둔다. 넘어가기는 막지 않고, 수첩에서 다시 열 수 있다.
  function legacyNotices(s){for(const key of CASES)if(s.furthest>sceneOf(key,'notice')&&s.notices[key].posted===null)s.notices[key].posted='legacy';}
+ // version 6(2026-11-10~12) → 7. 장면 번호·칸은 그대로이고 문장이 바뀐 두 판단만 손본다.
+ //  · 사건 4: 버스 쪽지가 기준표 카드 아래 한 줄에서 따로 여는 자료(camp-bus)가 됐다. 기준표를 다 연 저장은 그 쪽지를 이미 본 것이므로 확인한 자료에 넣는다.
+ //    판단 3은 다른 문장(참여 횟수 비중 → 버스가 적은 마을에 불리했을 수 있다)이 됐으므로 옛 답은 'legacy'(이전 저장에서 넘어와 아직 안 함)로 둔다. 판단 1·2는 문장이 같아 그대로.
+ //  · 사건 5 후속 조사 판단도 다른 문장(해도 된다 → 사실 문장, 정답도 다름)이라 옛 답은 'legacy'. 연 곳(marks)은 그대로.
+ //  legacy는 이어하기를 막지 않고, 수첩에서 다시 열어 해 볼 수 있다.
+ function from6(v){
+  const w=clone(v);w.version=7;
+  if(Array.isArray(w.evidence)&&w.evidence.includes('camp-criteria')&&!w.evidence.includes('camp-bus'))w.evidence.push('camp-bus');
+  const j=w.judgments&&w.judgments.camp;if(Array.isArray(j)&&stamps.includes(j[2]))j[2]='legacy';
+  const f=w.follows&&w.follows.share;if(f&&typeof f==='object'&&stamps.includes(f.judgment))f.judgment='legacy';
+  return w;
+ }
  function restore(raw){
-  try{const v=typeof raw==='string'?JSON.parse(raw):raw;
+  try{let v=typeof raw==='string'?JSON.parse(raw):raw;
    if(!v||typeof v!=='object')return initial();
+   if(v.version===6)v=from6(v);
    if(v.version===1){const r=v.revision===4?restore4(v):migrate3(v);return r?upgrade(r):initial();}
-   if(![2,3,4,5,6].includes(v.version))return initial();
+   if(![2,3,4,5,7].includes(v.version))return initial();
    // version 2·3·4 → 5: 장면 번호를 새 배치로 옮긴다(옛 마지막·보고서는 사건 4 첫 화면, 완료 아님). version 2는 서술을, 2·3은 안내문을 빈 값(지난 사건은 legacy)으로 둔다.
    // version 5(옛 사건 4·5 = 도서관·밤하늘) → 6: 사건 1~3은 그대로, 장면 22 이상(옛 사건 4·5·마지막·보고서)은 새 사건 4 첫 화면(완료 아님). 옛 사건 4·5 칸·자료는 버린다.
    // 옛 저장의 질문(question·asked)은 지금 사건에 없는 질문이라 검사만 하고 버린다. 새 사건 4·5 칸은 빈 값.

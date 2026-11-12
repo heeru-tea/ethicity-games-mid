@@ -1,5 +1,5 @@
 // 사건 5 「은하수 홍보 그림」(share, 모아 혼자): 루루가 AI로 만든 홍보 그림. 이 사건만의 그림·자료·후속 조사·누르기 처리.
-// 혼자 규칙: 틀린 곳을 눌러도 글 안내 없이 '아님' 표시만 남긴다.
+// 혼자 규칙: 모아의 해설은 없다. 답이 아닌 곳을 누르면 '아님' 표시와 짧은 중립 안내 한 줄만 남긴다(2026-11-12).
 (function(){
  'use strict';
  const UI=window.TransparencyUI;
@@ -65,19 +65,24 @@
   }
  };
 
+ // 맞는 곳: 답이 아닌 곳을 눌렀을 때의 안내를 지우고 자료를 확인한 것으로 한다.
+ const hit=id=>{
+  S.tapHint='';
+  send({type:'check',id});
+ };
  actions.part=b=>{
   const x=C.log.find(r=>r.id===b.dataset.id);
-  if(x.target)send({type:'check',id:'share-log'});
-  else missQuietly('log:'+x.id);
+  if(x.target)hit('share-log');
+  else missQuietly('log:'+x.id,x.hint);
  };
  actions.skyline=b=>{
   const x=C.photos.lines.find(r=>r.id===b.dataset.id);
-  if(x.target)send({type:'check',id:'share-photo'});
-  else missQuietly('sky:'+x.id);
+  if(x.target)hit('share-photo');
+  else missQuietly('sky:'+x.id,x.hint);
  };
  actions.said=b=>{
-  if(b.dataset.id==='dm')send({type:'check',id:'share-compare'});
-  else missQuietly('said:post');
+  if(b.dataset.id==='dm')hit('share-compare');
+  else missQuietly('said:post',C.compare.post.hint);
  };
  actions.list=openMark;
 })();

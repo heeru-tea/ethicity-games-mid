@@ -19,22 +19,37 @@
   return `${resume}<p class="meta">${esc(meta)}</p><h1 tabindex="-1">${esc(title)}</h1>`;
  }
 
- // 사건 4: 구청에 묻기 넷. 하나 이상 물어야 직접 확인으로 간다. 대답은 마지막에 누른 질문의 것.
+ // 사건 4: 구청에 묻기 넷. 하나 이상 물어야 직접 확인으로 간다. 받은 답은 물어본 순서대로 모두 쌓아 보여 준다(2026-11-12).
+ // 답마다 그 질문과 이어지는 자료 이름을 적고, 직접 확인 화면에서는 그 자료 버튼에 ‘물어본 것’ 표시가 붙는다(askedChecks).
+ // 방금 누른 질문의 답에만 role=status를 준다(쌓인 답 전체를 다시 읽지 않게).
  function askBlock(c){
-  const shown=c.asks.some(a=>a[0]===S.view)?S.view:S.state.asked[S.state.asked.length-1];
-  const options=c.asks.map(([id,q])=>btn(esc(q),'ask',`data-id="${id}" aria-pressed="${S.state.asked.includes(id)}"`,'option'));
+  const asked=S.state.asked;
+  const options=c.asks.map(([id,q])=>btn(esc(q),'ask',`data-id="${id}" aria-pressed="${asked.includes(id)}"`,'option'));
   let b=`<p class="question-label">${esc(c.askPrompt)}</p><div class="options asks">${options.join('')}</div>`;
-  if(shown){
-   const a=c.asks.find(x=>x[0]===shown);
-   b+=`<div class="finding" role="status">${line([c.askWho,a[2]])}<p>${esc(c.afterAsk)}</p></div>`;
+  if(asked.length){
+   const cur=asked.includes(S.view)?S.view:asked[asked.length-1];
+   const answers=asked.map(id=>{
+    const a=c.asks.find(x=>x[0]===id);
+    const src=c.checks.find(x=>x.id===a[3]);
+    return `<div class="answer-item"${id===cur?' role="status"':''}><p class="answer-q">${esc(a[1])}</p>${line([c.askWho,a[2]])}`
+     +`<p class="answer-src">${esc(c.askSrc)}: ${esc(src.name)}</p></div>`;
+   });
+   b+=`<div class="finding answers" role="group" aria-label="${esc(c.askedLabel)}">${answers.join('')}<p>${esc(c.afterAsk)}</p></div>`;
   }
   return b;
  }
+ // 물어본 질문과 이어지는 자료(id). 묻기가 없는 사건은 빈 묶음.
+ function askedChecks(c){
+  return new Set(c.asks?S.state.asked.map(id=>c.asks.find(a=>a[0]===id)[3]):[]);
+ }
  // 직접 확인의 오른쪽 위: 자료 버튼 줄
  function itemButtons(c){
+  const related=askedChecks(c);
   const buttons=c.checks.map(x=>{
    const seen=S.state.evidence.includes(x.id)?' <span class="seen">· 확인함</span>':'';
-   return btn(esc(x.label)+seen,'item',`data-id="${x.id}" aria-pressed="${S.view===x.id}"`);
+   // 물어본 질문과 이어지는 자료: 굵은 테두리와 함께 글자 표시(색만으로 구분하지 않는다).
+   const tag=related.has(x.id)?` <span class="asked-tag">${esc(c.askedTag)}</span>`:'';
+   return btn(esc(x.label)+tag+seen,'item',`data-id="${x.id}" aria-pressed="${S.view===x.id}"`,related.has(x.id)?'asked':'');
   });
   return `<div class="items" role="group" aria-label="확인할 자료">${buttons.join('')}</div>`;
  }
@@ -43,10 +58,12 @@
   let b='';
   if(S.revealCue&&judging)b+=`<p class="cue" role="status">아래에 판단할 말이 나왔어.</p>`;
   if(!S.state.evidence.includes(item.id))b+=`<p class="task">${esc(item.task)}</p>`;
-  if(S.tapHint&&!c.solo)b+=`<p class="tap-hint" role="status">${esc(S.tapHint)}</p>`;
+  // 누른 곳에 대한 짧은 안내. 사건 5(혼자)도 답이 아닌 곳을 누르면 중립 안내 한 줄을 보인다(2026-11-12 — 아무 반응이 없으면 고장처럼 보인다).
+  if(S.tapHint)b+=`<p class="tap-hint" role="status">${esc(S.tapHint)}</p>`;
   const said=S.keepFinding?c.checks.find(x=>x.id===S.keepFinding):item;
-  if(!c.solo&&S.state.evidence.includes(said.id)){
-   b+=`<div class="finding${judging?' quiet':''}" role="status">${lines(said.finding)}${more(said.more)}</div>`;
+  // 찾은 뒤 한마디(모아)와 자세히 보기. 사건 3부터는 한마디가 없는 자료가 있다 — 둘 다 없으면 상자를 그리지 않는다.
+  if(!c.solo&&S.state.evidence.includes(said.id)&&(said.finding||said.more)){
+   b+=`<div class="finding${judging?' quiet':''}" role="status">${lines(said.finding||[])}${more(said.more)}</div>`;
   }
   return b;
  }

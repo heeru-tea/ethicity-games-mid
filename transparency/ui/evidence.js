@@ -30,9 +30,10 @@
   S.tapHint=hint;
   UI.render();
  }
- // 사건 5(혼자): 글 안내 대신 누른 곳에 '아님' 표시만 남긴다.
- function missQuietly(key){
+ // 사건 5(혼자): 누른 곳에 '아님' 표시를 남기고, 무엇을 눌렀는지 짧은 중립 안내 한 줄(hint)을 보인다. 모아의 해설은 아니다.
+ function missQuietly(key,hint){
   S.tried.add(key);
+  S.tapHint=hint||'';
   UI.render();
  }
  const triedTag=key=>S.tried.has(key)?' <span class="tried-tag">아님</span>':'';

@@ -236,7 +236,8 @@ button.stamp-mine:disabled{color:var(--text);background:#fff;border:2px dashed #
 .v-none{color:var(--muted)}
 .pair .k{display:inline-block;min-width:5.2em;font-size:.85rem;font-weight:800;color:var(--muted)}
 .frame-text{display:block;font-weight:700;margin:6px 0 2px;word-break:keep-all}
-.blank{display:inline-block;width:3.2em;border-bottom:2px solid currentColor;vertical-align:-2px;margin:0 2px}
+/* 빈칸 밑줄은 문장 틀 안쪽의 span에만(2026-11-12: 전역 .blank가 사건 4 공개 페이지 칸 button.record.kv.blank에 걸려 버튼이 54px로 줄었다 — 그 칸은 이제 .is-empty) */
+span.blank{display:inline-block;width:3.2em;border-bottom:2px solid currentColor;vertical-align:-2px;margin:0 2px}
 .answer{white-space:pre-wrap;margin:0 0 6px}
 .not-written{color:var(--muted)}
 .notice-list{margin:0 0 2px;padding-left:1.2em}
@@ -410,7 +411,19 @@ button.score-row:not(.open) .num:nth-child(n+3){color:#8c4008;font-weight:800}
 /* 사건 4·5(2026-11-10): 공개 페이지·마을별 결과·기준표, 작업 기록·하늘 그림·DM/게시물 비교·세 곳 */
 .record.kv{display:grid;grid-template-columns:7.5em minmax(0,1fr) auto;gap:8px;align-items:center;min-height:44px;padding:6px 12px;text-align:left}
 .kv-k{font-weight:800}
-.record.kv.blank .kv-v{color:var(--muted)}
+.record.kv.is-empty .kv-v{color:var(--muted)}
+/* 누른 빈 칸에만 붙는 글자 표시(색만으로 구분하지 않는다) */
+.cell-tag{display:inline-block;font-size:.8rem;font-weight:800;color:#4a463f;border:1.5px solid #6d675c;border-radius:6px;padding:0 5px;margin-left:4px;line-height:1.4;vertical-align:1px;white-space:nowrap}
+/* 버스 쪽지: 본문 크기의 자료 카드 */
+.note-card p{font-size:1rem}
+/* 구청에 묻기(2026-11-12): 받은 답을 모두 쌓아 보여 준다. 답 사이는 얇은 선 하나. */
+.answers .answer-item{padding:0 0 8px;margin:0 0 10px;border-bottom:1px solid var(--border)}
+.answers .answer-q{font-size:.88rem;font-weight:700;color:var(--muted);margin:0 0 2px}
+.answers .line{margin:0 0 2px}
+.answers .answer-src{font-size:.88rem;color:var(--muted);margin:0}
+/* 물어본 질문과 이어지는 자료 버튼: 굵은 테두리 + ‘물어본 것’ 글자 */
+.items button.asked{border-width:2px;border-color:var(--accent-dark)}
+.asked-tag{display:inline-block;font-size:.78rem;font-weight:800;color:var(--accent-dark);border:1px solid var(--accent-dark);border-radius:999px;padding:0 7px;margin-left:4px;line-height:1.5;vertical-align:1px;white-space:nowrap}
 .camp-table .score-headrow,.camp-table .score-row{grid-template-columns:minmax(0,1fr) 4em 4em}
 .crit-table .score-headrow,.crit-table .score-row{grid-template-columns:minmax(0,1fr) 3.6em}
 .camp-table .score-headrow span:nth-child(n+2),.camp-table .num,.crit-table .score-headrow span:nth-child(n+2),.crit-table .num{text-align:right}
@@ -465,9 +478,10 @@ body:has(#app.at-title)>footer{width:100%}
 .peek-ask{font-size:.82rem;font-weight:800;color:#5a5449}
 .title-panel .peek-say{font-size:1rem;font-weight:500;line-height:1.5;margin:2px 0 8px}
 .peek-who{font-size:.82rem;font-weight:400;color:#5a5449;white-space:nowrap}
-.peek-stamps{display:flex;flex-wrap:wrap;gap:6px}
-/* 세 갈래는 누르는 버튼이 아니라 미리 보는 그림이다: 테두리와 흰 바탕을 빼고, 옅은 바탕의 둥근 이름표로(게임 안 버튼은 흰 바탕 + 테두리 + 8px 모서리) */
-.peek-stamps span{flex:0 1 auto;text-align:center;font-size:.8rem;line-height:1.4;padding:2px 10px;border-radius:999px;background:rgba(74,69,60,.1);color:#4a453c}
+.peek-stamps{display:flex;flex-wrap:wrap;gap:2px 0;margin:0}
+/* 세 갈래는 누르는 버튼이 아니라 미리 보는 그림이다: 테두리도 바탕도 없이 글자만 두고, 가운뎃점으로 셋을 나눈다(2026-11-12 — 옅은 바탕의 둥근 이름표도 버튼처럼 보였다) */
+.peek-stamps span{flex:0 1 auto;font-size:.82rem;font-weight:700;line-height:1.5;padding:0;border:0;border-radius:0;background:none;color:#4a453c;white-space:nowrap}
+.peek-stamps span+span::before{content:'·';margin:0 .55em;font-weight:400;color:#8a8478}
 .peek-card{cursor:default;user-select:none}
 .title-actions{display:grid;gap:8px;justify-items:start}
 .title-actions button{text-align:center}
