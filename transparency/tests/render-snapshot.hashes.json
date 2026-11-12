@@ -26,7 +26,7 @@
  "steps": 1700,
  "scenarios": {
   "walk-correct": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "next 577db9057fbeb530",
    "next f75226da4c81a621",
@@ -177,21 +177,21 @@
    "item:camp-page b9bac702d70de454",
    "cell:office 4700ffdcea08122c",
    "cell:appeal af10d995588e6406",
-   "item:camp-results aee1da5511d480c9",
-   "village:pine 6a83788b8ecfeef5",
+   "item:camp-results b2651c1e12f1bc10",
+   "village:pine 52da6e1258456dec",
    "item:camp-criteria d2df68fde9f0a96b",
-   "crit:join 3841d1b615600e88",
-   "crit:essay 3d9076cf7c649148",
-   "crit:order 4144161381cc39ec",
-   "crit:secret b2516fdb5c4a65a3",
-   "item:camp-bus 6bce97b3a69faa87",
-   "judge1 96419af14a67e3fa",
-   "judge-next cbf27ba2a22aa9ea",
-   "judge2 face39cfcbce6086",
-   "judge-next 8554cf5d12c968a8",
-   "judge3 e29578da90b201f3",
-   "notebook 94a34e3cfa8fb89f",
-   "close-notebook 9c137247a49ba689",
+   "crit:join 06ad6802f8b3733f",
+   "crit:essay da9ec7935eb4ec59",
+   "crit:order 41af2d3b7d976296",
+   "crit:secret 4a73e61f10d1cf79",
+   "item:camp-bus 4fb7e7a2374ab34e",
+   "judge1 acb496602bf71c22",
+   "judge-next 61223ba44be8bb2a",
+   "judge2 8b7bcc0722a9d0d1",
+   "judge-next 7c81eec5aa9ccf80",
+   "judge3 e6d3b9d47e0b2c6a",
+   "notebook 95786ef5fee7ed87",
+   "close-notebook 2a1b989a0f8dc056",
    "next 03f8f1e519fc3667",
    "choose:loud 45a2ede615b212d7",
    "notebook a634ab13c5a63c94",
@@ -305,7 +305,7 @@
    "next f74d25ee562a7512"
   ],
   "walk-wrong": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "next 577db9057fbeb530",
    "next f75226da4c81a621",
@@ -546,38 +546,38 @@
    "cell:appeal a41dc72c4fba63e1",
    "again-cell e6210e5094f86c63",
    "again-wrong-cell dd0c0a853a4a4cb4",
-   "item:camp-results 91f9079c3c7ab3e8",
-   "wrong-village:city 37a5806c08c60896",
-   "wrong-village:river 67033dae2d1386eb",
-   "wrong-village:hill c2be895bc7263d0f",
-   "village:pine c2afc08b7e5abc6f",
-   "again-village c2afc08b7e5abc6f",
-   "again-wrong-village 3995fb0e82b273ce",
+   "item:camp-results fe157bfaa7089e8c",
+   "wrong-village:city 83525b753380e750",
+   "wrong-village:river fa14cdb153dc5dce",
+   "wrong-village:hill cb926d628512acdb",
+   "village:pine ff43f415188f09f1",
+   "again-village ff43f415188f09f1",
+   "again-wrong-village 38c77bb69e0f8925",
    "item:camp-criteria 8d80dcf44d72c140",
-   "crit:join 6cfac1566ba4bd1d",
-   "crit:essay e132f4a94c643e49",
-   "crit:order a7fe09427f9c15ae",
-   "crit:secret 48d3165d94ceb646",
-   "item:camp-bus 796e3f82633b702e",
-   "source:camp-criteria 68fcdef80e619cba",
-   "source:camp-results bb6e68c0ef164b21",
-   "item-while-judging 7f3df5a48618caba",
-   "judge1 6afa1aa66d3f01d3",
-   "judge-disabled 148ae920714c8fb1",
-   "source-after-judge 745e4f54b4776074",
-   "judge-next 64963b4af4c86b10",
-   "source:camp-results a775a515c353d70d",
-   "item-while-judging 7c6aa0663aa8d442",
-   "judge2 c6bec3ad9e8f6789",
-   "judge-disabled 3e70eca577170dbc",
-   "source-after-judge a24a3485dbe239f9",
-   "judge-next 99ddffebcf000b7f",
-   "source:camp-criteria 97a8fd8df880ac04",
+   "crit:join 014ab7ad9d0bdc2b",
+   "crit:essay 3572f6ef93cfd537",
+   "crit:order c809f85e355af72e",
+   "crit:secret b37a77804ff99978",
+   "item:camp-bus bb22a2e23f386a66",
+   "source:camp-criteria a65f18ced4901160",
+   "source:camp-results bfd9dedb8f294b93",
+   "item-while-judging e12242e87d35b28c",
+   "judge1 168eb3cb13d389ee",
+   "judge-disabled 3423d4753ef8ac88",
+   "source-after-judge 48a9faa5c435e999",
+   "judge-next faec72a7bc2b20fb",
+   "source:camp-results 140cb5d697349086",
+   "item-while-judging d77c324c4c685530",
+   "judge2 2dc430baaa554f04",
+   "judge-disabled b743e961d4c2dbb5",
+   "source-after-judge 8492c4b341c6d8a7",
+   "judge-next 1c6d091159ad8c79",
+   "source:camp-criteria 01bd3da00e278cc6",
    "source:camp-bus 3b9456888bede8e1",
    "item-while-judging f7c332ed36432088",
    "judge3 f6bcd06174dfb355",
    "judge-disabled f8354e7cea5203cc",
-   "source-after-judge 6c2bebeaf19445c3",
+   "source-after-judge f453021e5399174f",
    "back 93ec7bd7b865c7eb",
    "next-again bec735e9a6c59a04",
    "next f11b70b1614bf89f",
@@ -706,7 +706,7 @@
    "reset 3a167b26353f88b8"
   ],
   "walk-mixed": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "next 577db9057fbeb530",
    "next f75226da4c81a621",
@@ -814,22 +814,22 @@
    "next 53215d5f80499697",
    "item:camp-bus 1fcb826d22b6f932",
    "item:camp-criteria 7957f765c45af915",
-   "crit:secret 0cc6bb852eef1a21",
-   "crit:order 3880e12ce154243a",
-   "crit:essay a70198919ab9df48",
-   "crit:join 890657647c78ff8d",
-   "item:camp-results f9b64fe5c215f73d",
-   "village:pine b1637d0525fb203a",
+   "crit:secret 8ff99dc20d673e26",
+   "crit:order 582d230504e47629",
+   "crit:essay 6263d31fd25c6d86",
+   "crit:join b3f2dc3e5345ca00",
+   "item:camp-results 4a0882e757739c81",
+   "village:pine 67103f27f748a87e",
    "item:camp-page ef4c92bd28bc2a1d",
    "cell:appeal 09e311497f74cdd3",
-   "cell:office 160f56e08b4b65a7",
-   "judge1 e2e5ddad70515522",
-   "judge-next a224a7549e0ffaa7",
-   "judge2 522cb723512de11d",
-   "judge-next 9cbee6e1e2907521",
-   "judge3 709a23397e00c9a5",
-   "notebook 7a6cbf8eae8f63be",
-   "close-notebook 7e9d55da9bb19f67",
+   "cell:office e952101bf82ee015",
+   "judge1 cd2caa02fb567aec",
+   "judge-next 2c5024550c266932",
+   "judge2 fa10fcaedfda8bb8",
+   "judge-next e4ea482315fc4a9f",
+   "judge3 b322d90696c574b1",
+   "notebook 5cdb3d7342bff3fd",
+   "close-notebook ecf269b1525b8704",
    "next c637d45fed9eb3cf",
    "choose:accurate 882cc976d86bf8ac",
    "notebook 2eefec10ae514259",
@@ -927,7 +927,7 @@
    "close-notebook e9d679071f309ce7"
   ],
   "modals": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "click-nothing bc78f9d99c9af5b9",
    "notebook ed441db56236ae7b",
@@ -950,28 +950,28 @@
    "afterprint 955f609508f2b718"
   ],
   "title": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "settings f9807465359b6d26",
-   "title 4c53947ebcde468a",
+   "title ce9691aa0deaaa6e",
    "start 9b3be5d6ddb52502",
    "next 658867137dfdfe4b",
    "next 9924327419dd8435",
    "item:photo-original 4dcdef1b5a19982f",
    "settings 691459cde1adae69",
-   "title d04b86b4e07c0500",
-   "reset-ask ad69206ca5c89c1e",
-   "cancel d3cecb04da998c45",
+   "title 053df3afcfd32285",
+   "reset-ask a1df155555172cfa",
+   "cancel f5f7c657a7dc8d20",
    "start 768a6b9364803a89",
    "settings 9cea63e29c38a987",
-   "title d04b86b4e07c0500",
-   "reset-ask ad69206ca5c89c1e",
+   "title 053df3afcfd32285",
+   "reset-ask a1df155555172cfa",
    "reset 3a167b26353f88b8",
    "settings f9807465359b6d26",
-   "title 4c53947ebcde468a"
+   "title ce9691aa0deaaa6e"
   ],
   "view-state": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "next 577db9057fbeb530",
    "next f75226da4c81a621",
@@ -1063,7 +1063,7 @@
    "ask:who 4ed2048402382269",
    "next e8c548d3539a79cd",
    "item:camp-criteria 5688472ae1540574",
-   "crit:essay b8ad3c4f3ed185dd",
+   "crit:essay 72e75f74a44c4f74",
    "item:camp-page f6c404b35bdbce06",
    "cell:use 4c53746bed9f11fa",
    "cell-one-of-two eba6b1f2e1458a35",
@@ -1074,19 +1074,19 @@
    "item:camp-page f6c404b35bdbce06",
    "cell:office eed064fa1ac42695",
    "cell:appeal 3b9ced135e5b8a5e",
-   "item:camp-results b3c6f633f35d1d79",
-   "village:pine 5738229496dfb264",
+   "item:camp-results e78788bca7724310",
+   "village:pine a5929e10c3e5a12b",
    "item:camp-criteria 4512443e3f24850f",
-   "crit:join c790a2441fb69c24",
-   "crit:essay 1b864c07d74f897c",
-   "crit:order 94d39edf4f0d056e",
-   "crit:secret 5f4e1db81c37d603",
-   "item:camp-bus 39163f7d19b8cf8c",
-   "judge1 5d5b043e822774b1",
-   "judge-next ed777c506bdecdd1",
-   "judge2 ae35179df84f7403",
-   "judge-next db62be7cd9fae1b3",
-   "judge3 c07ad786c8264be4",
+   "crit:join b9c763d79d6b86c3",
+   "crit:essay 237058c747704a13",
+   "crit:order 2755f784e3500007",
+   "crit:secret 630ad5eb087a6f40",
+   "item:camp-bus d67e54e71f2b56e0",
+   "judge1 44daa8c2ff368e3d",
+   "judge-next 8477a258bbbc5455",
+   "judge2 d4eef0a636cdb457",
+   "judge-next 56a6c4522ed6da03",
+   "judge3 2c9d3739911eb85e",
    "next 34a7b00e36cf05bf",
    "choose:loud 89ced92206ac29b5",
    "next c5c125ca019077ff",
@@ -1138,7 +1138,7 @@
    "next 2e2cbb3c336cf4fd"
   ],
   "resume check:photo": [
-   "boot 00fbd9180fd25b4a",
+   "boot 8c0339454a05d35b",
    "start 23bf9c7e1cf3e36e",
    "reset-ask-banner f870aecfda50cddb",
    "cancel 987268c2aa1da80d",
@@ -1150,7 +1150,7 @@
    "reset 3a167b26353f88b8"
   ],
   "art-webp check:photo": [
-   "boot 00fbd9180fd25b4a",
+   "boot 8c0339454a05d35b",
    "start 23bf9c7e1cf3e36e",
    "images-settled 928708f04bbb4193",
    "notebook 8abdfe5b1b30a9a7",
@@ -1161,7 +1161,7 @@
    "region:1 5de2299bbb4d7e16"
   ],
   "art-mixed check:photo": [
-   "boot 00fbd9180fd25b4a",
+   "boot 8c0339454a05d35b",
    "start 23bf9c7e1cf3e36e",
    "images-settled e27dd2828ef54515",
    "notebook 5b13afc60bf5a17b",
@@ -1172,7 +1172,7 @@
    "region:1 708b6bf1494289f1"
   ],
   "resume reflect:photo": [
-   "boot 40635f26c65dac23",
+   "boot 0825f71a81fbba9b",
    "start aaa5c44fdf266399",
    "notebook fd8ebf8c58e46ce9",
    "close-notebook 0ff7f9d1a45a009b",
@@ -1180,7 +1180,7 @@
    "back c1af156246576813"
   ],
   "resume reflect:writing": [
-   "boot f8f7c840feb49095",
+   "boot 1bbf85ce8b360a78",
    "start f7f747b6bba6e191",
    "notebook 72027fb9bcdfa6b8",
    "close-notebook 8a27fb6dcb211b3d",
@@ -1188,7 +1188,7 @@
    "back 88a91417682ed83b"
   ],
   "resume reflect:face": [
-   "boot 3de88f0ab2d676ea",
+   "boot f0ffddaf62ee279b",
    "start aa3a57fff629d84e",
    "notebook 5a22701fa111f2d1",
    "close-notebook e9b9746ed2d7d6e4",
@@ -1196,7 +1196,7 @@
    "back cf0bb736ed9f74d7"
   ],
   "resume reflect:camp": [
-   "boot f8bc5187b4b71014",
+   "boot ffbb4161519b2f76",
    "start 7c3670c94aa9f0a5",
    "notebook 60e2fdeaae677c33",
    "close-notebook abe8fe0721be5a8a",
@@ -1204,7 +1204,7 @@
    "back 5d2d8d88773a83e9"
   ],
   "art-webp reflect:camp": [
-   "boot f8bc5187b4b71014",
+   "boot ffbb4161519b2f76",
    "start 7c3670c94aa9f0a5",
    "images-settled db6824e9430d8a96",
    "notebook 85a8ac972a90e7cd",
@@ -1213,8 +1213,8 @@
    "revisit:24 61789934350725f2",
    "back 6415349943b898d9",
    "item:camp-page 461900e3036f4a91",
-   "item:camp-results 05dddfd88423aafa",
-   "item:camp-criteria c532ee76d4e6e728",
+   "item:camp-results 14ccbfb6b1e061f7",
+   "item:camp-criteria b86ef491b10bb890",
    "item:camp-bus fbcdcdacbe213819",
    "back 200c97ce97755dc3",
    "next 6415349943b898d9",
@@ -1227,7 +1227,7 @@
    "rechoose 409304febc7387c3"
   ],
   "art-mixed reflect:camp": [
-   "boot f8bc5187b4b71014",
+   "boot ffbb4161519b2f76",
    "start 7c3670c94aa9f0a5",
    "images-settled 8b98c49e1af276cc",
    "notebook a1f70b98da6f7197",
@@ -1236,8 +1236,8 @@
    "revisit:24 8c6f87bbce019845",
    "back 25b84f947724fd8c",
    "item:camp-page 15cef7a6aec29455",
-   "item:camp-results b3ff4bb0d8331c59",
-   "item:camp-criteria fa0c370246bf1143",
+   "item:camp-results 72b2d4659c46a62a",
+   "item:camp-criteria 48ea478a6c931165",
    "item:camp-bus d6e518029e58dcc3",
    "back 4b05013f2dfb0c37",
    "next 25b84f947724fd8c",
@@ -1250,7 +1250,7 @@
    "rechoose d12c0217601d3a79"
   ],
   "art-none reflect:camp": [
-   "boot f8bc5187b4b71014",
+   "boot ffbb4161519b2f76",
    "start 7c3670c94aa9f0a5",
    "images-settled f5ea0481f28e8279",
    "notebook 60e2fdeaae677c33",
@@ -1259,8 +1259,8 @@
    "revisit:24 2f66e0929148f0c5",
    "back c5c1f960aedcd016",
    "item:camp-page 96921c0263a9d7c2",
-   "item:camp-results 98224a454d6b8bf7",
-   "item:camp-criteria 1eed70b1aa474977",
+   "item:camp-results 42b8fbd487e39f6d",
+   "item:camp-criteria fc0327020c549b5b",
    "item:camp-bus 7900417df5431bbb",
    "back 78857380a71c6125",
    "next c5c1f960aedcd016",
@@ -1273,7 +1273,7 @@
    "rechoose cf0e52abe88ad720"
   ],
   "resume reflect:share": [
-   "boot 49f0182e0445a61d",
+   "boot 0f7402ee22a469ee",
    "start b3cd2233daa04e18",
    "reset-ask-banner d8af9c323cf50787",
    "cancel a995526d3c4ef20c",
@@ -1286,7 +1286,7 @@
    "reset 3a167b26353f88b8"
   ],
   "art-webp reflect:share": [
-   "boot 49f0182e0445a61d",
+   "boot 0f7402ee22a469ee",
    "start b3cd2233daa04e18",
    "images-settled e66d7af35480519c",
    "notebook 2dc1b539340f49b8",
@@ -1308,7 +1308,7 @@
    "rechoose 0f2fd50cf9591d31"
   ],
   "art-mixed reflect:share": [
-   "boot 49f0182e0445a61d",
+   "boot 0f7402ee22a469ee",
    "start b3cd2233daa04e18",
    "images-settled 4fef418044f6f667",
    "notebook 253445fa3ab7ecf7",
@@ -1330,7 +1330,7 @@
    "rechoose 42f3a8dc0e40b321"
   ],
   "resume end": [
-   "boot 1d3d68ac5b2ac131",
+   "boot c699214b3ab412ef",
    "start 08d50ab85db7237a",
    "notebook 26f83ef379dad530",
    "close-notebook 7e7c202010d2ff17",
@@ -1338,7 +1338,7 @@
    "back 7b9dcdb7b2863047"
   ],
   "resume report": [
-   "boot 1901285f46dedece",
+   "boot dd84762d4ce26b3e",
    "start 7ed16a82cc189254",
    "reset-ask-banner 0a56e95443163e7a",
    "cancel 6e623972377cdb22",
@@ -1350,7 +1350,7 @@
    "reset 3a167b26353f88b8"
   ],
   "art-webp report": [
-   "boot 1901285f46dedece",
+   "boot dd84762d4ce26b3e",
    "start 7ed16a82cc189254",
    "images-settled 3692ad1bf75b654e",
    "notebook 671f558b70803cf3",
@@ -1372,7 +1372,7 @@
    "rechoose d5906cc964e440df"
   ],
   "art-mixed report": [
-   "boot 1901285f46dedece",
+   "boot dd84762d4ce26b3e",
    "start 7ed16a82cc189254",
    "images-settled 9f067082b1adcb25",
    "notebook c0e18ef04d03fbf1",
@@ -1394,7 +1394,7 @@
    "rechoose 526717b4de2a919a"
   ],
   "resume wrong:photo": [
-   "boot f8cdc8edae45501d",
+   "boot cb977944e4ad8a73",
    "start 3ad14fc713daa9b4",
    "notebook a30a094c3fb5d429",
    "close-notebook e693d4f6e2e49326",
@@ -1402,7 +1402,7 @@
    "back e0f0b830aa026c76"
   ],
   "resume wrong:writing": [
-   "boot 1480702d76138380",
+   "boot c3d97b2b187ae9d3",
    "start 205b77c924ad7558",
    "notebook 9ca0e8d76aab7b70",
    "close-notebook bb75558fea8da8b5",
@@ -1410,7 +1410,7 @@
    "back bb6db9de49abcbe2"
   ],
   "resume wrong:face": [
-   "boot 13a82259cde99055",
+   "boot 4b1591a9dec20f13",
    "start b770c5462c4072e7",
    "notebook 064d0ed1d48513a2",
    "close-notebook a9a906b57412ff63",
@@ -1418,7 +1418,7 @@
    "back 7b0e27156efce280"
   ],
   "resume wrong:camp": [
-   "boot e156f151579d53c6",
+   "boot 439570abf14cb6a0",
    "start 9daaa7b9edfec226",
    "notebook 4f7985060e262407",
    "close-notebook 456a09bb05256572",
@@ -1426,7 +1426,7 @@
    "back 2cfbc809fd8009a0"
   ],
   "art-webp wrong:camp": [
-   "boot e156f151579d53c6",
+   "boot 439570abf14cb6a0",
    "start 9daaa7b9edfec226",
    "images-settled 84f6a7c28fdcae7d",
    "notebook 82da20217d968624",
@@ -1435,8 +1435,8 @@
    "revisit:24 f778b6fbfb3a3170",
    "back 284179a9b990689d",
    "item:camp-page c78170d8f6e3ff95",
-   "item:camp-results 470faae826fc5c8b",
-   "item:camp-criteria c28a7fff53b50881",
+   "item:camp-results 5b0644627374614d",
+   "item:camp-criteria fce5d74e138bb399",
    "item:camp-bus 7295cb8e6dec269b",
    "back 72fbab275996ff48",
    "next 284179a9b990689d",
@@ -1449,7 +1449,7 @@
    "rechoose 3b67a9b4d06c114c"
   ],
   "art-mixed wrong:camp": [
-   "boot e156f151579d53c6",
+   "boot 439570abf14cb6a0",
    "start 9daaa7b9edfec226",
    "images-settled d8a095c495c30223",
    "notebook 5934254ab57c7087",
@@ -1458,8 +1458,8 @@
    "revisit:24 d13c21c2a4301cde",
    "back 258a338d135178cf",
    "item:camp-page 09a969dec625c290",
-   "item:camp-results 8b0f11db98f23427",
-   "item:camp-criteria 1615c00ce6677a44",
+   "item:camp-results 53ede952327236fc",
+   "item:camp-criteria 72a7dcde0ad512ce",
    "item:camp-bus c03b43c1724f0abd",
    "back ee969380e7fa5999",
    "next 258a338d135178cf",
@@ -1472,7 +1472,7 @@
    "rechoose 57e303809a1d91a1"
   ],
   "resume wrong:share": [
-   "boot 7e22e9ec968f7447",
+   "boot 81f69f26ce5c9501",
    "start 409bee7893d3c306",
    "notebook f2213ed20864a77b",
    "close-notebook 2e56f81f6d3f8afa",
@@ -1480,7 +1480,7 @@
    "back cac2a33b517deda2"
   ],
   "art-webp wrong:share": [
-   "boot 7e22e9ec968f7447",
+   "boot 81f69f26ce5c9501",
    "start 409bee7893d3c306",
    "images-settled 786d09852b87390b",
    "notebook a685a14bdf080f26",
@@ -1502,7 +1502,7 @@
    "rechoose 9c583a0f3da4640c"
   ],
   "art-mixed wrong:share": [
-   "boot 7e22e9ec968f7447",
+   "boot 81f69f26ce5c9501",
    "start 409bee7893d3c306",
    "images-settled 7889d8fcd2130139",
    "notebook 1db9a48f945ce434",
@@ -1524,7 +1524,7 @@
    "rechoose ef0233a1d9892e6a"
   ],
   "art-photo-walk": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "images-settled 8b4dbc865eea93b3",
    "next 7aac2265dcb8e22f",
@@ -1576,12 +1576,12 @@
    "reset 28cd4978601fe538"
   ],
   "no-preview-param": [
-   "boot 00fbd9180fd25b4a",
+   "boot 8c0339454a05d35b",
    "start 23bf9c7e1cf3e36e",
    "next bfa852a9bc34345d"
   ],
   "storage-blocked": [
-   "boot 9efc4a1046e3b00a",
+   "boot 94ad61a4348c2aa5",
    "start 5a046d8eaadc8fd4",
    "next dfeb538520b479e4",
    "next fa57edccbd53fbcb",
@@ -1589,7 +1589,7 @@
    "close 90b98e581d03fbcb"
   ],
   "storage-write-fails": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "next 577db9057fbeb530",
    "next fe064ee7bcc22ffd",
@@ -1598,37 +1598,37 @@
    "spot:2 4fa3fa282491f7fd"
   ],
   "player ok": [
-   "boot d7fea6d98f1b2e9b",
+   "boot 0e543215f09c2b4f",
    "start f2e4ddb1e8fe950c",
    "next 4abba63be53a6230"
   ],
   "player long": [
-   "boot f0f57e85bfa6ddb5",
+   "boot 333c3978c4d89f34",
    "start 35fae16184bd0639",
    "next 5fdf9b97173006eb"
   ],
   "player blank": [
-   "boot 00fbd9180fd25b4a",
+   "boot 8c0339454a05d35b",
    "start 23bf9c7e1cf3e36e",
    "next bfa852a9bc34345d"
   ],
   "player notString": [
-   "boot 00fbd9180fd25b4a",
+   "boot 8c0339454a05d35b",
    "start 23bf9c7e1cf3e36e",
    "next bfa852a9bc34345d"
   ],
   "player nullValue": [
-   "boot 00fbd9180fd25b4a",
+   "boot 8c0339454a05d35b",
    "start 23bf9c7e1cf3e36e",
    "next bfa852a9bc34345d"
   ],
   "player broken": [
-   "boot 00fbd9180fd25b4a",
+   "boot 8c0339454a05d35b",
    "start 23bf9c7e1cf3e36e",
    "next bfa852a9bc34345d"
   ],
   "legacy v1r4": [
-   "boot 83e242c0d49d8d9a",
+   "boot bc2844e54b44d8d7",
    "start cd03048686d883dc",
    "notebook 070c496648c55374",
    "close-notebook 3193eafc8bb1a40a",
@@ -1703,7 +1703,7 @@
    "legacy-done 8e06dd785c998920"
   ],
   "legacy v1 old": [
-   "boot fd4ec6dfb4056a14",
+   "boot 3e4f5521b1f42bea",
    "start aa191a146108dce9",
    "notebook 368227f754c4485e",
    "close-notebook b3c6e2082c71e9ed",
@@ -1784,7 +1784,7 @@
    "legacy-done 2ad600494bf6d741"
   ],
   "legacy v2": [
-   "boot 6e66e466632945de",
+   "boot 17e6efe7c632c04c",
    "start 802b8c16e5b8ef7f",
    "notebook 8eae21c5d0f936a1",
    "close-notebook ec6bd61f2a6154f2",
@@ -1815,7 +1815,7 @@
    "legacy-done e6c0c948f07eb073"
   ],
   "broken-save": [
-   "boot ec140e3c0af2c9cd",
+   "boot 8a37bb7d0f807e6d",
    "start b5c53c2e579fea20",
    "notebook ed441db56236ae7b"
   ]

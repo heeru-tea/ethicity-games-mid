@@ -172,7 +172,7 @@ const T=require('./dom-stub.cjs').createGame({}).D.title;
 // 화면 코드는 다른 실행 환경(vm)에서 돌므로 상태는 JSON으로 옮겨 견준다.
 const plain=g=>JSON.parse(JSON.stringify(g.state()));
 const titleParts=g=>{const html=g.app.innerHTML,buttons=parseTags(html,'button');
- return {html,text:textOf(html),buttons,acts:buttons.map(b=>b['data-act']),h1:[...html.matchAll(/<h1[^>]*>([^<]*)<\/h1>/g)].map(m=>unesc(m[1])),imgs:parseTags(html,'img'),
+ return {html,text:textOf(html),buttons,acts:buttons.map(b=>b['data-act']),h1:[...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/g)].map(m=>unesc(m[1].replace(/<[^>]*>/g,''))),/* 2026-11-12 제목 글자 그림: h1 안에 span·img가 들어간다 — 글자만 모아 견준다 */imgs:parseTags(html,'img'),
   main:textOf((/<button class="primary" data-act="start" >([\s\S]*?)<\/button>/.exec(html)||[,''])[1])};};
 test('title: opening the game shows the start screen first; 게임 시작하기 enters the prologue and the save is untouched',()=>{
  const g=createGame({}),boot=g.snap(),t=titleParts(g),D=g.D;
@@ -184,7 +184,8 @@ test('title: opening the game shows the start screen first; 게임 시작하기 
  // 그림: SVG 묶음(맞춤이 다른 두 벌 — 화면에는 CSS가 하나만 보인다)마다 설명 글 하나, 안에 든 그림은 기존 그림 세 장뿐
  const scenes=parseTags(t.html,'svg').filter(s=>/title-scene/.test(s.class||''));
  assert.deepEqual(scenes.map(s=>[s.class,s.role,s['aria-label'],s.preserveAspectRatio]),[['title-scene fit-tall','img',T.art,'xMaxYMax slice'],['title-scene fit-wide','img',T.art,'xMaxYMid slice']]);
- assert.deepEqual([...new Set(parseTags(t.html,'image').map(i=>i.href))].sort(),[D.art.backgrounds[0],D.art.moa,D.art.props].sort(),'기존 그림만 쓴다');assert.equal(t.imgs.length,0);
+ assert.deepEqual([...new Set(parseTags(t.html,'image').map(i=>i.href))].sort(),[D.art.backgrounds[0],D.art.moa,D.art.props].sort(),'기존 그림만 쓴다');
+ assert.deepEqual(t.imgs.map(i=>[i.src,i.alt,i['aria-hidden']]),[['assets/title-type/blackbox.png','','true']],'img는 제목 글자 그림 하나뿐 — 글자는 HTML에 있고 그림은 화면 읽기에서 뺀다(2026-11-12)');
  // 게임 속 한 장면: 사진 사건의 판단 문장과 세 갈래를 그대로(새 문장 아님), 누를 수 없는 그림
  const j=D.cases[T.peek.case].judges[T.peek.judge];
  assert.ok(t.text.includes('“'+j.text+'”'));for(const s of Object.values(D.stamps))assert.ok(t.html.includes('<span>'+s+'</span>'));
@@ -382,4 +383,39 @@ test('old saves: a version 6 save from before this change resumes on screen — 
  g.click('judge',{id:'confirmed'});assert.deepEqual(st(g).judgments.camp,['unknown','different','confirmed']);
  g.click('notebook');g.click('revisit',{scene:E.sceneOf('share','follow')});g.click('follow-judge',{id:'confirmed'});assert.equal(g.state().follows.share.judgment,'confirmed');
  assert.deepEqual(E.restore(g.stored()),st(g));
+});
+
+// ── 2026-11-12 외부 검토: 사건 4 표의 접근성 이름 ──
+// 표 머리(‘마을·신청·합격’, ‘항목·비중’)는 aria-hidden이라, 줄마다 열 이름이 든 이름을 준다.
+// 누르는 줄(버튼) = aria-label(버튼 안 글을 대신하므로 두 번 읽히지 않는다). 읽기만 하는 줄(div) = 숫자 앞 화면 읽기 전용 글자(.sr).
+// 보이는 글은 그대로. 모든 줄이 같은 형식이고 찾기 전후로 같아 정답이 드러나지 않는다. 브라우저가 계산한 이름은 tests/a11y-camp-browser.cjs가 본다.
+const label=b=>(/aria-label="([^"]*)"/.exec(b.attrs)||[])[1];
+const visible=h=>h.replace(/<span class="sr">[^<]*<\/span>/g,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+const inner=(html,act)=>[...html.matchAll(new RegExp('<button ([^>]*data-act="'+act+'"[^>]*)>([^]*?)</button>','g'))].map(m=>({attrs:m[1],html:m[2]}));
+test('a11y: every village button is named “마을, 신청 N명, 합격 N명”; the same form for all rows, before and after the find; criteria rows say 비중',()=>{
+ const C=D.cases.camp,g=open('camp','check');g.click('item',{id:'camp-results'});
+ const check=()=>{const rows=inner(g.app.innerHTML,'village');assert.equal(rows.length,4);
+  rows.forEach((b,i)=>{const r=C.results.rows[i];
+   assert.equal(label(b),r.name+', 신청 '+r.apply+'명, 합격 '+r.pass+'명');
+   assert.equal(visible(b.html),r.name+' '+r.apply+'명 '+r.pass+'명','what is seen is unchanged');
+   assert.doesNotMatch(b.html,/class="sr"/,'the label is the name; no extra hidden text inside (nothing is read twice)');
+   for(const part of [r.name,r.apply+'명',r.pass+'명'])assert.ok(label(b).includes(part),'the name contains what is seen: '+part);});
+  return rows;};
+ let rows=check();assert.ok(rows.every(b=>!/<mark>/.test(b.html)),'no row is singled out before the find');
+ assert.equal(new Set(rows.map(b=>b.attrs.replace(/data-id="[^"]*"/,'').replace(/aria-label="[^"]*"/,''))).size,1,'all four buttons carry the same attributes apart from the id and the name');
+ const before=rows.map(label);
+ g.click('village',{id:'city'});check();assert.equal(g.state().evidence.includes('camp-results'),false);
+ g.click('village',{id:'pine'});assert.deepEqual(check().map(label),before,'names do not change after the find');assert.equal(g.state().evidence.includes('camp-results'),true,'the find still works');
+ assert.match(g.app.innerHTML,/class="score-headrow" aria-hidden="true"/,'the visual header stays hidden from screen readers (the rows carry the column names)');
+ // 선발 기준표: 안 연 줄 ‘… 비중 열기’, 연 줄 ‘항목, 비중 0.5’(둘 다 aria-label), 다 연 뒤의 읽기 줄은 글 안에 ‘비중’
+ g.click('item',{id:'camp-criteria'});
+ let crit=inner(g.app.innerHTML,'crit');assert.equal(crit.length,4);
+ crit.forEach((b,i)=>{const r=C.criteria.rows[i];assert.equal(label(b),(r.hidden?'가린 항목':r.name)+' 비중 열기');assert.doesNotMatch(b.html+label(b),/0\.\d/,'weight neither shown nor read before opening');});
+ assert.doesNotMatch(crit.map(label).join(' '),/영업비밀/,'the hidden row is not named before opening');
+ g.click('crit',{id:'join'});crit=inner(g.app.innerHTML,'crit');
+ assert.equal(label(crit[0]),'지난 구청 프로그램 참여 횟수, 비중 0.5');assert.equal(visible(crit[0].html),'지난 구청 프로그램 참여 횟수 0.5');assert.doesNotMatch(crit[0].html,/class="sr"/);
+ for(const id of ['essay','order','secret'])g.click('crit',{id});
+ const done=[...g.app.innerHTML.matchAll(/<div class="score-row[^"]*">([^]*?)<\/div>/g)].map(m=>m[1]);
+ assert.deepEqual(done.map(h=>h.replace(/<span class="num">/g,' ').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim()),C.criteria.rows.map(r=>r.name+' 비중 '+r.w.toFixed(1)));
+ assert.deepEqual(done.map(visible),C.criteria.rows.map(r=>r.name+' '+r.w.toFixed(1)));
 });

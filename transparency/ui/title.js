@@ -61,7 +61,7 @@
   const facts=T.facts.map(x=>`<li>${esc(x)}</li>`).join('');
   return `<div class="title${hasProgress()?' has-save':''}">${art()}`
    +`<div class="title-panel" id="work" tabindex="-1">`
-   +`<div class="title-head"><p class="title-kind">${esc(T.kind)}</p><h1 tabindex="-1">${esc(D.report.game)}</h1>`
+   +`<div class="title-head"><p class="title-kind">${esc(T.kind)}</p><h1 tabindex="-1" class="series-title"><span class="cat-title-first"><span class="cat-title-box"><span class="cat-box-border" aria-hidden="true"></span><span class="title-ink blackbox-word"><span class="title-text">블랙박스</span><img src="assets/title-type/blackbox.png" alt="" aria-hidden="true" onload="this.parentElement.classList.add('is-ready')" onerror="this.parentElement.classList.remove('is-ready')"></span></span><span class="cat-title-object">를</span></span> <span class="cat-title-rest">열어보는 고양이</span></h1>`
    +`<p class="title-hook">${esc(T.hook)}</p><p class="title-lead">${esc(T.lead)}</p>`
    +`<ul class="title-facts" aria-label="${esc(T.factsLabel)}">${facts}</ul></div>`
    +peek()
