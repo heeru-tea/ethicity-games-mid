@@ -775,7 +775,7 @@ h2 .event-topic { display: block; margin-top: 2px; }
 /* 인쇄(= PDF로 저장): A4 세로 한 장, 흰 바탕 검은 글자. 카드만 남기고 버튼·안내·지도·메뉴는 숨긴다.
    textarea 대신 같은 글을 문단(.rcard-answer)으로 찍는다(비우면 '작성 안 함'). 세 칸을 200자씩 다 채워도 한 장(tests/ai-privacy-browser.mjs c). */
 @media print {
-  @page { size: A4 portrait; margin: 14mm; }
+  @page { size: A4 portrait; margin: 12mm; }
   html, body { background: #fff !important; color: #000 !important; }
   body { font-size: 9.5pt; line-height: 1.45; }
   * { box-shadow: none !important; text-shadow: none !important; }
@@ -790,13 +790,13 @@ h2 .event-topic { display: block; margin-top: 2px; }
   .rcard-field, .rcard-fact { min-height: 0; gap: 4pt; }
   .rcard-field > span, .rcard-fact > span { width: auto; font-size: 8.5pt; color: #333; }
   .rcard-field input { min-height: 0; padding: 0 2pt; border: 0; border-bottom: 1px solid #000; border-radius: 0; font-weight: 700; }
-  .rcard-topic { padding: 7pt 0 2pt; break-inside: avoid; page-break-inside: avoid; }
-  .rcard-topic + .rcard-topic { margin-top: 5pt; border-top: 1px solid #999; }
+  .rcard-topic { padding: 5pt 0 2pt; break-inside: avoid; page-break-inside: avoid; }
+  .rcard-topic + .rcard-topic { margin-top: 4pt; border-top: 1px solid #999; }
   .rcard-topic h2 { margin: 0 0 4pt; font-size: 11pt; }
   .rcard-num { color: #000; }
   .rcard-auto { padding: 4pt 7pt; background: none; border: 1px solid #999; border-radius: 4pt; }
   .rcard-auto-label { margin: 0 0 1pt; font-size: 8pt; color: #333; }
-  .rcard-auto ul { gap: 1pt; font-size: 8.5pt; }
+  .rcard-auto ul { gap: .5pt; font-size: 8pt; line-height: 1.35; } /* 2026-11-12: ①이 사건당 2~3줄(최대 17줄)로 늘어 한 장에 들어가게 */
   .rcard-auto li { grid-template-columns: 9.5em minmax(0, 1fr); gap: 0 6pt; }
   .rcard-out { grid-column: 2; }
   .rcard-ev, .rcard-empty { font-size: 8pt; color: #333; }

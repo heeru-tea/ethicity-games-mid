@@ -69,7 +69,7 @@ try {
       await p.click('#btn-chapter-go'); await p.waitForTimeout(1500);
       const w0 = await p.evaluate(() => ({ v: document.body.getAttribute('data-view'), area: PrivacyMap.debug.me().area }));
       const yox = WORLD.SCENES.find((x) => x.id === 'yard').ox;
-      await p.evaluate((x) => PrivacyMap.debug.place(x, 5, 'up'), yox + 7); await p.waitForTimeout(300);
+      await p.evaluate((x) => PrivacyMap.debug.place(x, 6, 'up'), yox + 7); await p.waitForTimeout(300);
       await p.keyboard.down('ArrowUp'); await p.waitForTimeout(250); await p.keyboard.up('ArrowUp'); await p.waitForTimeout(1200);
       const w1 = await p.evaluate(() => ({ area: PrivacyMap.debug.me().area, mission: document.getElementById('m-mission').textContent }));
       rec(size, 'walk 마당에서 시작 → 교실 문 = 특별실', w0.v === 'v-map' && /현관|마당/.test(w0.area) && w1.area === 'AI 실습실' && /선생님/.test(w1.mission), JSON.stringify([w0, w1]));
