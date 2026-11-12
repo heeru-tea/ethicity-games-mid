@@ -140,7 +140,7 @@ try {
         await toEnding(q);
         const r1 = await q.evaluate(() => ({ code: document.getElementById('e-eyebrow').textContent, body: [...document.querySelectorAll('#e-body p')].map((x) => x.textContent),
           rows: [...document.querySelectorAll('#e-stats .stat-row')].map((x) => x.querySelector('dt').textContent), odds: window.PRIVACY_ODDS.A }));
-        rec(size, 'A ENDING_V2=false → 이전 그대로(엔딩 A·지표 6줄·선택별 줄 없음·확률 V1)', r1.code === '엔딩 A' && r1.rows.length === 6 && r1.rows.includes('현실의 안전이 위협받거나 위협한 상황') && !r1.body.some((t) => /AI 도우미에 반 친구/.test(t)) && r1.odds === 8.5 /* js/odds.js V1의 A — 2026-11-10 플레이테스트 뒤 다시 계산(전 8.9) */, JSON.stringify(r1).slice(0, 300));
+        rec(size, 'A ENDING_V2=false → 이전 그대로(엔딩 A·지표 6줄·선택별 줄 없음·확률 V1)', r1.code === '엔딩 A' && r1.rows.length === 6 && r1.rows.includes('현실의 안전이 위협받거나 위협한 상황') && !r1.body.some((t) => /AI 도우미에 반 친구/.test(t)) && r1.odds === 6.9 /* js/odds.js V1의 A — 2026-11-12 새 난수로 다시 계산(전 8.5 ← 8.9) */, JSON.stringify(r1).slice(0, 300));
         await close(q);
       }
     }
