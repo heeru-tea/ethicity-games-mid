@@ -165,7 +165,7 @@ async function noticeFix(p,k,plan){
  assert.equal(E.stepOf((await state(p)).scene),'notice');assert.equal(await p.locator('h1').innerText(),X.title);
  const lines=await p.locator('.body .line').allInnerTexts();assert.ok(lines[0].includes(nt.principle||D.notice.principle),'fixed line');assert.equal(await p.locator('.notice-intro .who').count(),solo?0:1);
  assert.equal(await p.locator('.body .task').innerText(),NF.task);assert.equal(await p.locator('.fix-slot').count(),slots.length);assert.equal(await p.locator('[data-act="notice-pick"]').count(),0);
- assert.equal(await p.locator('[data-act="notice-slot"][aria-pressed="true"]').count(),0,'nothing chosen yet');
+ assert.equal(await p.locator('[data-act="notice-slot"][aria-checked="true"]').count(),0,'nothing chosen yet');
  assert.equal(await p.locator('[data-act="notice-post"]').isDisabled(),true,'every slot first');assert.equal(await p.locator('.step-nav [data-act="next"]').isDisabled(),true,'post once before moving on');
  const choose=(x,o)=>click(p,`[data-act="notice-slot"][data-id="${x.id}"][data-value="${o}"]`),wrong=x=>x.options.find(o=>!x.ok.includes(o));
  const slotTag=async x=>(await p.locator('#fb-slot-'+x.id+' .fb-tag').innerText()).replace(/\s+/g,' ');

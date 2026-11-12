@@ -95,7 +95,7 @@ function build(key, step, v6) {
         ok(tag_ + ' camp: no sideways scroll after feedback', !L2.over);
         await p.evaluate(() => scrollTo(0, 0)); await shot(p, 'camp-done-' + tag_, phone);
         await p.reload();
-        ok(tag_ + ' camp: reload keeps the choices and the posted notice', (await opt(p, 'claim', 'drop').getAttribute('aria-pressed')) === 'true' && (await p.locator('.card-fb').count()) === 4 && (await state(p)).notices.camp.posted.claim === 'drop');
+        ok(tag_ + ' camp: reload keeps the choices and the posted notice', (await opt(p, 'claim', 'drop').getAttribute('aria-checked')) === 'true' && (await p.locator('.card-fb').count()) === 4 && (await state(p)).notices.camp.posted.claim === 'drop');
         await click(p, '.step-nav [data-act="next"]'); ok(tag_ + ' camp: moves on to 생각 정리', E.stepOf((await state(p)).scene) === 'reflect');
         ok(tag_ + ' camp: no page errors', errs.length === 0, errs); await ctx.close();
       }
@@ -105,13 +105,13 @@ function build(key, step, v6) {
         const X = D.cases.share.notice.fix;
         ok(tag_ + ' share: title', (await p.locator('h1').innerText()) === X.title);
         const snap = await p.locator('.fix-slots').ariaSnapshot();
-        ok(tag_ + ' share: a11y tree — slot groups named with the draft, option buttons', /group "칸 2\. 실제 하늘, 초안: “토요일에 이 그림처럼 보일 거예요\.”"/.test(snap) && snap.includes('button "#AI그림"') && snap.includes('button "덧붙이지 않기"'), snap);
+        ok(tag_ + ' share: a11y tree — slot groups named with the draft, option radios(2026-11-12 라디오로)', /radiogroup "칸 2\. 실제 하늘, 초안: “토요일에 이 그림처럼 보일 거예요\.”"/.test(snap) && snap.includes('radio "#AI그림"') && snap.includes('radio "덧붙이지 않기"') && !/button "(#AI그림|덧붙이지 않기)"/.test(snap), snap);
         await p.locator('h1').focus(); let n = 0; while (n++ < 40 && (await p.evaluate(() => document.activeElement.dataset.act)) !== 'notice-slot') await p.keyboard.press('Tab');
         ok(tag_ + ' share: Tab reaches the first option', (await p.evaluate(() => document.activeElement.dataset.value)) === 'blank', n);
         await p.keyboard.press('Tab'); await p.keyboard.press('Tab');
         ok(tag_ + ' share: Tab order inside the slot', (await p.evaluate(() => document.activeElement.dataset.value)) === 'share-tag');
         await p.keyboard.press('Space');
-        ok(tag_ + ' share: Space chooses, focus stays', (await opt(p, 'ai', 'share-tag').getAttribute('aria-pressed')) === 'true' && (await p.evaluate(() => document.activeElement.dataset.value)) === 'share-tag');
+        ok(tag_ + ' share: Space chooses, focus stays', (await opt(p, 'ai', 'share-tag').getAttribute('aria-checked')) === 'true' && (await p.evaluate(() => document.activeElement.dataset.value)) === 'share-tag');
         await opt(p, 'sky', 'keep').focus(); await p.keyboard.press('Enter'); await opt(p, 'more', 'blank').focus(); await p.keyboard.press('Enter');
         await p.locator('[data-act="notice-post"]').focus(); await p.keyboard.press('Enter');
         const v = await p.locator('.notice-verdict').innerText();

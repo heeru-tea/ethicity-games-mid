@@ -103,18 +103,19 @@
   const label=fixOf(k).slots[slot.id].label;
   return `<p class="card-fb ${good?'fb-ok':'fb-again'}" id="fb-slot-${slot.id}"><span class="fb-tag">${good?'✓':'!'} ${esc(label)}${good?'':' · '+esc(F.slotAgain)}</span>${say?' '+esc(say):''}</p>`;
  }
- // 칸 하나: 칸 이름 + 초안 문장, 선택지 버튼(aria-pressed). 묶음 이름 = ‘칸 1. AI가 하는 일, 초안: (비어 있음)’
+ // 칸 하나: 칸 이름 + 초안 문장, 선택지 버튼(role=radio, aria-checked — 칸 묶음은 radiogroup). 묶음 이름 = ‘칸 1. AI가 하는 일, 초안: (비어 있음)’
  function fixSlot(k,slot,i,choice,posted,fresh){
   const label=fixOf(k).slots[slot.id].label;
   const draft=draftText(k,slot);
   const fb=fresh?slotFeedback(k,slot,posted[slot.id]):'';
   const opts=slot.options.map(opt=>{
    const on=choice[slot.id]===opt;
-   const text=`<span class="pick-box" aria-hidden="true">${on?'✓':''}</span><span>${esc(optionText(k,slot,opt))}</span>`;
-   return btn(text,'notice-slot',`data-id="${slot.id}" data-value="${opt}" aria-pressed="${on}"${fb?` aria-describedby="fb-slot-${slot.id}"`:''}`,'notice-card slot-option');
+   // 칸마다 하나만 고른다 → 라디오(2026-11-12 사용자: 네모 체크 모양이면 여러 개 고를 수 있다고 오해) — 동그라미 + 고른 것엔 점, role=radio·aria-checked
+   const text=`<span class="pick-dot" aria-hidden="true"></span><span>${esc(optionText(k,slot,opt))}</span>`;
+   return btn(text,'notice-slot',`data-id="${slot.id}" data-value="${opt}" role="radio" aria-checked="${on}"${fb?` aria-describedby="fb-slot-${slot.id}"`:''}`,'notice-card slot-option');
   }).join('');
   const name=`칸 ${i+1}. ${label}, ${F.draft}: ${draft}`;
-  return `<div class="fix-slot" role="group" aria-label="${esc(name)}"><p class="slot-head"><span class="slot-label">${esc(label)}</span> <span class="slot-draft">${esc(F.draft)}: ${esc(draft)}</span></p>`
+  return `<div class="fix-slot" role="radiogroup" aria-label="${esc(name)}"><p class="slot-head"><span class="slot-label">${esc(label)}</span> <span class="slot-draft">${esc(F.draft)}: ${esc(draft)}</span></p>`
    +`<div class="slot-options">${opts}</div>${fb}</div>`;
  }
  function fixVerdict(k,posted){

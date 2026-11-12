@@ -424,7 +424,7 @@ test('a11y: every village button is named “마을, 신청 N명, 합격 N명”
 
 
 // ── 2026-11-12 수정 요청 10·후속 6: 사건 4·5 미리 알리기 ‘고치기’ 화면 ──
-// 칸마다 이름·초안 한 줄·선택지 버튼(aria-pressed), 모든 칸을 골라야 붙이기, 붙이면 칸마다 ✓/! 태그와 한 줄, 판정은 다시 볼 칸 이름.
+// 칸마다 이름·초안 한 줄·선택지 라디오(role=radio·aria-checked, 2026-11-12), 모든 칸을 골라야 붙이기, 붙이면 칸마다 ✓/! 태그와 한 줄, 판정은 다시 볼 칸 이름.
 // 보고서·수첩: ‘고친 안내문’ + 최종 문장 + 다시 볼 칸 + 판정. 이 기능 전에 카드로 붙인 사건 4·5 안내문은 ‘이전 방식으로 작성한 안내문’.
 const NF=D.notice.fix;
 const fbOf=(html,id)=>{const m=new RegExp('<p class="card-fb ([^"]*)" id="fb-slot-'+id+'"><span class="fb-tag">([^<]*)</span>([^<]*)</p>').exec(html);return m?{cls:m[1],tag:unesc(m[2]),say:unesc(m[3]).trim()}:null;};
@@ -435,16 +435,16 @@ test('request 6: case 4 — a short 구청 notice with three blanks and an overs
  const C=D.cases.camp,X=C.notice.fix,g=open('camp','notice');let h=g.app.innerHTML;
  assert.ok(h.includes('<h1 tabindex="-1">구청 안내문 초안, 어디를 고칠까?</h1>'));assert.ok(textOf(h).includes(NF.task));
  assert.deepEqual(paperOf(h),{cls:'notice-paper draft',text:'처음 초안 · 구청 안내문 · 청소년 겨울 캠프 AI가 하는 일: (비어 있음) 담당 부서: (비어 있음) 재검토 방법: (비어 있음) AI가 뽑으니 절대 차별이 없어요.'});
- const groups=[...h.matchAll(/<div class="fix-slot" role="group" aria-label="([^"]*)">/g)].map(m=>unesc(m[1]));
+ const groups=[...h.matchAll(/<div class="fix-slot" role="radiogroup" aria-label="([^"]*)">/g)].map(m=>unesc(m[1]));
  assert.deepEqual(groups,['칸 1. AI가 하는 일, 초안: (비어 있음)','칸 2. 담당 부서, 초안: (비어 있음)','칸 3. 재검토 방법, 초안: (비어 있음)','칸 4. 마지막 문장, 초안: “AI가 뽑으니 절대 차별이 없어요.”']);
- const labels=slot=>[...h.matchAll(new RegExp('data-id="'+slot+'" data-value="[^"]*" aria-pressed="false"><span class="pick-box" aria-hidden="true"></span><span>([^<]*)</span>','g'))].map(m=>unesc(m[1]));
+ const labels=slot=>[...h.matchAll(new RegExp('data-id="'+slot+'" data-value="[^"]*" role="radio" aria-checked="false"><span class="pick-dot" aria-hidden="true"></span><span>([^<]*)</span>','g'))].map(m=>unesc(m[1]));
  assert.deepEqual(labels('role'),['비워 두기','AI가 알아서 명단을 정해요.','AI가 점수를 매기고, 담당자가 최종 확인해요.']);
  assert.deepEqual(labels('appeal'),['비워 두기','이의가 있으면 14일 안에 재검토를 신청해요.','신청자 모두의 이름과 점수를 공개해요.']);
  assert.deepEqual(labels('claim'),['그대로 두기','이 문장 빼기','점수에 쓰는 항목과 비중을 알려 드려요.']);
  assert.ok('disabled' in postBtn(h));assert.match(h,/<p class="hint">모든 칸을 골라야 붙일 수 있어\. 남은 칸 4개\.<\/p>/);
  // 세 칸만 고르면 아직
  g.click('notice-slot',{id:'role',value:'camp-auto'});g.click('notice-slot',{id:'office',value:'camp-office'});g.click('notice-slot',{id:'appeal',value:'camp-everyone'});h=g.app.innerHTML;
- assert.equal(opt(h,'role','camp-auto')['aria-pressed'],'true');assert.ok('disabled' in postBtn(h));assert.match(h,/남은 칸 1개\./);
+ assert.equal(opt(h,'role','camp-auto')['aria-checked'],'true');assert.ok('disabled' in postBtn(h));assert.match(h,/남은 칸 1개\./);
  g.click('notice-slot',{id:'claim',value:'keep'});h=g.app.innerHTML;assert.equal('disabled' in postBtn(h),false);assert.match(h,/안내문을 한 번 붙이면 다음으로 갈 수 있어\./);
  g.click('notice-post');h=g.app.innerHTML;
  assert.deepEqual(fbOf(h,'role'),{cls:'fb-again',tag:'! AI가 하는 일 · 다시 보기',say:X.say['camp-auto']});
@@ -465,13 +465,13 @@ test('request 6: case 4 — a short 구청 notice with three blanks and an overs
  assert.match(nb,/<div class="notice-sum"><p class="n-kind">고친 안내문<\/p><ul class="notice-list"><li>AI가 점수를 매기고, 담당자가 최종 확인해요\.<\/li><li>담당 부서는 구청 청소년과예요\.<\/li><li>이의가 있으면 14일 안에 재검토를 신청해요\.<\/li><li>점수에 쓰는 항목과 비중을 알려 드려요\.<\/li><\/ul><p class="v-pick">판정: <span class="v-tag v-ok">다 맞음<\/span><\/p><\/div>/);
  g.click('close');assert.deepEqual(E.restore(g.stored()),st(g));
  // 새로고침: 고른 칸과 붙인 안내문 그대로
- const again=createGame({storage:{[KEY]:g.stored()}});again.click('start');h=again.app.innerHTML;assert.equal(opt(h,'claim','camp-items')['aria-pressed'],'true');assert.match(h,/다 맞았어\./);
+ const again=createGame({storage:{[KEY]:g.stored()}});again.click('start');h=again.app.innerHTML;assert.equal(opt(h,'claim','camp-items')['aria-checked'],'true');assert.match(h,/다 맞았어\./);
 });
 test('request 6: case 5 (alone) — the 냥스타 notice; ‘#AI그림’ alone is not enough without the real sky; tags only, the clash reason stays, one-line verdict',()=>{
  const C=D.cases.share,g=open('share','notice');let h=g.app.innerHTML;
  assert.ok(h.includes('<h1 tabindex="-1">냥스타 홍보문 초안, 어디를 고칠까?</h1>'));assert.match(h,/<p class="line plain">알리는 건 벌이 아니야\./);
  assert.equal(paperOf(h).text,'처음 초안 · 냥스타 홍보문 · 루루 이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임 AI로 만든 부분: (비어 있음) 토요일에 이 그림처럼 보일 거예요. 덧붙일 것: (비어 있음)');
- assert.ok(opt(h,'more','blank'));assert.match(h,/data-value="blank" aria-pressed="false"><span class="pick-box" aria-hidden="true"><\/span><span>덧붙이지 않기<\/span>/);
+ assert.ok(opt(h,'more','blank'));assert.match(h,/data-value="blank" role="radio" aria-checked="false"><span class="pick-dot" aria-hidden="true"><\/span><span>덧붙이지 않기<\/span>/);
  for(const [id,o] of [['ai','share-tag'],['sky','keep'],['more','share-settings']])g.click('notice-slot',{id,value:o});g.click('notice-post');h=g.app.innerHTML;
  assert.deepEqual(fbOf(h,'ai'),{cls:'fb-ok',tag:'✓ AI로 만든 부분',say:''},'alone: tag only');
  assert.deepEqual(fbOf(h,'sky'),{cls:'fb-again',tag:'! 실제 하늘 · 다시 보기',say:''});
