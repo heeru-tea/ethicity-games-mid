@@ -243,7 +243,9 @@
 
 ## 교사 검수 대기 (2026-11-08 미리 알리기)
 
-- 카드 문장 16장(story.js `cases.*.notice.cards`), 상충 카드의 이유 문장 3개(`clash`), 화면 제목 3개(`notice.title`).
+- 카드 문장 **5사건 28장**(story.js `cases.*.notice.cards`), 상충 카드의 이유 문장 5개(`clash`), 화면 제목 5개(`notice.title`). (2026-11-14 갱신 — 옛 표기 '3사건 16장·이유 3·제목 3'은 사건 1~3만 있던 때의 숫자)
+  - 사건 1~3(사진·글·얼굴) 16장·이유 3·제목 3: 2026-11-08 작성분.
+  - **사건 4·5(캠프·공유) 12장·이유 2·제목 2 + 고치기 칸 문장(`notice.fix`): 2026-11-12 새로 씀 — 교사 검수 대기.** 카드 id: `camp-role`·`camp-never`·`camp-office`·`camp-everyone`·`camp-appeal`·`camp-items`·`share-same`·`share-ai`·`share-photo`·`share-settings`·`share-real`·`share-spell`.
 - 피드백 문장(story.js `notice`): 종류 이름, 카드별 한 줄(`fb`), 다 맞음·고칠 점 있음 판정, 다시 붙이기 안내.
 - 고정 한 줄과 빵집 도입 대사(설계에서 정한 문장 그대로).
 - 마지막 장면 넷째 질문의 앱 대답(설계 초안 그대로), afterAsk ‘네 질문 모두 상자를 여는 질문이야.’(숫자만 고침).

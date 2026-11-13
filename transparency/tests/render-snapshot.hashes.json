@@ -27,7 +27,7 @@
  "steps": 1734,
  "scenarios": {
   "walk-correct": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "next 03a9762a365cc170",
    "next e24527d00f3a95af",
@@ -311,7 +311,7 @@
    "next 0e595dfd60d4c62b"
   ],
   "walk-wrong": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "next 03a9762a365cc170",
    "next e24527d00f3a95af",
@@ -732,7 +732,7 @@
    "reset 0c01d215df14627c"
   ],
   "walk-mixed": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "next 03a9762a365cc170",
    "next e24527d00f3a95af",
@@ -957,7 +957,7 @@
    "close-notebook 47d62cc79d376fb8"
   ],
   "modals": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "click-nothing d13b7ca6599acf09",
    "notebook 36857471aee42312",
@@ -980,28 +980,28 @@
    "afterprint 45cf0f102fc3e4cc"
   ],
   "title": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "settings 3c4bd5499dcec7dc",
-   "title 82bda56cdea9093d",
+   "title 6d87a4d714fe7c51",
    "start 4bc823a236dc5ce7",
    "next bdf75553dbaff96d",
    "next d6c5640ba7774c39",
    "item:photo-original d8fc07e78e0b71e3",
    "settings 8ab14c4c14a70ae0",
-   "title 423932bb801fb8d4",
-   "reset-ask 6ad5f0fe8ef29541",
-   "cancel b99061d51ad1f4ae",
+   "title 9232447ef57610a3",
+   "reset-ask af29a0cc8de1a229",
+   "cancel 61c71c6dbfb97717",
    "start e51150bc1b954ca8",
    "settings 5dd65d783fea83b6",
-   "title 423932bb801fb8d4",
-   "reset-ask 6ad5f0fe8ef29541",
+   "title 9232447ef57610a3",
+   "reset-ask af29a0cc8de1a229",
    "reset 0c01d215df14627c",
    "settings 3c4bd5499dcec7dc",
-   "title 82bda56cdea9093d"
+   "title 6d87a4d714fe7c51"
   ],
   "view-state": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "next 03a9762a365cc170",
    "next e24527d00f3a95af",
@@ -1173,7 +1173,7 @@
    "next 2b47a37529aa1547"
   ],
   "resume check:photo": [
-   "boot 4308404ec34e1c82",
+   "boot e9de082e617b26f1",
    "start 4b8403222a69dcbe",
    "reset-ask-banner 471432b0442b9d75",
    "cancel c1a3709b096788c4",
@@ -1185,7 +1185,7 @@
    "reset 0c01d215df14627c"
   ],
   "art-webp check:photo": [
-   "boot 4308404ec34e1c82",
+   "boot e9de082e617b26f1",
    "start 4b8403222a69dcbe",
    "images-settled 571cb50ccdd31a4e",
    "notebook 14d95ef7ddad3c83",
@@ -1196,7 +1196,7 @@
    "region:1 9dc1e98996917abb"
   ],
   "art-mixed check:photo": [
-   "boot 4308404ec34e1c82",
+   "boot e9de082e617b26f1",
    "start 4b8403222a69dcbe",
    "images-settled bef3357eba4651c2",
    "notebook b7ce39ceb8969245",
@@ -1207,7 +1207,7 @@
    "region:1 09a201e110e9db2e"
   ],
   "resume reflect:photo": [
-   "boot cac4e340c6cddd66",
+   "boot 96163b908d7dacdb",
    "start e56e6d6f7a612fc2",
    "notebook 34fb2ae3abcae273",
    "close-notebook 5023f7840b8407d0",
@@ -1215,7 +1215,7 @@
    "back 1cc2e7855f899efc"
   ],
   "resume reflect:writing": [
-   "boot 9280b3f4435f69af",
+   "boot 95af01e1cf3d27df",
    "start 2e7dfdee4e45ba9f",
    "notebook a5425b4e98000fcc",
    "close-notebook f00b1b13f5b72309",
@@ -1223,7 +1223,7 @@
    "back 9281b3b003705c90"
   ],
   "resume reflect:face": [
-   "boot a9bd15c762096986",
+   "boot b0368b1a144f9c3d",
    "start a22995d5ace54431",
    "notebook d73f4f83c1f493a6",
    "close-notebook 42d24a26a211abf1",
@@ -1231,7 +1231,7 @@
    "back 52164cd263eacd89"
   ],
   "resume reflect:camp": [
-   "boot 2a84abfaf6e40c0e",
+   "boot f2540155f68d3611",
    "start 26dda412a902a49d",
    "notebook 10ff38d9b2b39b74",
    "close-notebook 04d26ab1db1b4b36",
@@ -1239,7 +1239,7 @@
    "back 3e0a9fcfb3f7c781"
   ],
   "art-webp reflect:camp": [
-   "boot 2a84abfaf6e40c0e",
+   "boot f2540155f68d3611",
    "start 26dda412a902a49d",
    "images-settled 5dfd89ce17359aa5",
    "notebook bb31afedd7851ba4",
@@ -1262,7 +1262,7 @@
    "rechoose 1a5d3d6a5f31b4db"
   ],
   "art-mixed reflect:camp": [
-   "boot 2a84abfaf6e40c0e",
+   "boot f2540155f68d3611",
    "start 26dda412a902a49d",
    "images-settled 558f15dc2e2c6c4e",
    "notebook f4b94e66a171cb6c",
@@ -1285,7 +1285,7 @@
    "rechoose 9fb5cc3317abdc7b"
   ],
   "art-none reflect:camp": [
-   "boot 2a84abfaf6e40c0e",
+   "boot f2540155f68d3611",
    "start 26dda412a902a49d",
    "images-settled db732efa21c307df",
    "notebook 10ff38d9b2b39b74",
@@ -1308,7 +1308,7 @@
    "rechoose a811e05f243d31f8"
   ],
   "resume reflect:share": [
-   "boot d0461b6565c33d92",
+   "boot 06a4998084b05f5a",
    "start c6c5329a89883cd4",
    "reset-ask-banner 0aa195342573978e",
    "cancel 3306d7432780ab99",
@@ -1321,7 +1321,7 @@
    "reset 0c01d215df14627c"
   ],
   "art-webp reflect:share": [
-   "boot d0461b6565c33d92",
+   "boot 06a4998084b05f5a",
    "start c6c5329a89883cd4",
    "images-settled c900c9958c148993",
    "notebook e7a14ae140c9e1f8",
@@ -1343,7 +1343,7 @@
    "rechoose 928d1eea7ab5ff9e"
   ],
   "art-mixed reflect:share": [
-   "boot d0461b6565c33d92",
+   "boot 06a4998084b05f5a",
    "start c6c5329a89883cd4",
    "images-settled 6b4d6a69af258565",
    "notebook 828b77ea0ed29b76",
@@ -1365,7 +1365,7 @@
    "rechoose ac9652e10da3e4d2"
   ],
   "resume end": [
-   "boot 87f99d48c6343190",
+   "boot 05f2380b87a81e58",
    "start ebea567f9d435adb",
    "notebook b260565f3777c6d6",
    "close-notebook afbd4e8580d290fb",
@@ -1373,7 +1373,7 @@
    "back 5efe058cda90dda5"
   ],
   "resume report": [
-   "boot 801140995d35a048",
+   "boot 0ade77c2f2df26be",
    "start b9544107b014009c",
    "reset-ask-banner 9d550dc5e72ca9a3",
    "cancel 1f9e6557e3c52201",
@@ -1385,7 +1385,7 @@
    "reset 0c01d215df14627c"
   ],
   "art-webp report": [
-   "boot 801140995d35a048",
+   "boot 0ade77c2f2df26be",
    "start b9544107b014009c",
    "images-settled c22770399fd1a79d",
    "notebook fb852f4c7b8092a5",
@@ -1407,7 +1407,7 @@
    "rechoose 8a45d823ac5ef3f2"
   ],
   "art-mixed report": [
-   "boot 801140995d35a048",
+   "boot 0ade77c2f2df26be",
    "start b9544107b014009c",
    "images-settled ac75181c3121d992",
    "notebook 09ececd3087bb152",
@@ -1429,7 +1429,7 @@
    "rechoose c2653b1e273f7e82"
   ],
   "resume wrong:photo": [
-   "boot 867825b50c655cfb",
+   "boot adffb3372838ba49",
    "start 6cbbd3ffd1c7ec2b",
    "notebook 32ff09d88b66be96",
    "close-notebook 324809593255f48a",
@@ -1437,7 +1437,7 @@
    "back 14ed249dae9936b6"
   ],
   "resume wrong:writing": [
-   "boot b7e927c8634b68eb",
+   "boot c5356e72a508bcdf",
    "start dae2bb289db53bda",
    "notebook c760779024344f12",
    "close-notebook b993da21c3b88110",
@@ -1445,7 +1445,7 @@
    "back c90a2f2c874038ed"
   ],
   "resume wrong:face": [
-   "boot 0e7409d3422e5b5a",
+   "boot 75fbb9620141309b",
    "start aa32b75b9da97a0d",
    "notebook e21dc26098babe39",
    "close-notebook 4615795399f42168",
@@ -1453,7 +1453,7 @@
    "back f1109afc042813cd"
   ],
   "resume wrong:camp": [
-   "boot d1f98a5e1efe6a76",
+   "boot 825845cf71429623",
    "start b6a6222c838ee4bc",
    "notebook d79849b06227a734",
    "close-notebook d8c1cf851c940e5d",
@@ -1461,7 +1461,7 @@
    "back f6ea95a863888e74"
   ],
   "art-webp wrong:camp": [
-   "boot d1f98a5e1efe6a76",
+   "boot 825845cf71429623",
    "start b6a6222c838ee4bc",
    "images-settled c91f1f9140c1bd73",
    "notebook f0f58f16399b237a",
@@ -1484,7 +1484,7 @@
    "rechoose f17223c195c7f3fc"
   ],
   "art-mixed wrong:camp": [
-   "boot d1f98a5e1efe6a76",
+   "boot 825845cf71429623",
    "start b6a6222c838ee4bc",
    "images-settled 01502fddfb956328",
    "notebook d0935325bc857092",
@@ -1507,7 +1507,7 @@
    "rechoose 5e67ba5959494970"
   ],
   "resume wrong:share": [
-   "boot 47acb91d097ac18c",
+   "boot a45c41cb827ba636",
    "start beb4090dc0788237",
    "notebook 1a19a63dd2297b01",
    "close-notebook 366b0cccd2834d93",
@@ -1515,7 +1515,7 @@
    "back 36c5a131ff5ea350"
   ],
   "art-webp wrong:share": [
-   "boot 47acb91d097ac18c",
+   "boot a45c41cb827ba636",
    "start beb4090dc0788237",
    "images-settled 927401c3d188ed01",
    "notebook 5fd5b4ecf3d3a956",
@@ -1537,7 +1537,7 @@
    "rechoose 80f2db5fa93892f2"
   ],
   "art-mixed wrong:share": [
-   "boot 47acb91d097ac18c",
+   "boot a45c41cb827ba636",
    "start beb4090dc0788237",
    "images-settled 5e32ec7b88f31963",
    "notebook 79bb199e17190031",
@@ -1559,7 +1559,7 @@
    "rechoose ded10a3edfcaba8e"
   ],
   "art-photo-walk": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "images-settled 1cf8841e520567f0",
    "next 79154cd9e6e49fce",
@@ -1611,12 +1611,12 @@
    "reset c084c2297c27b84b"
   ],
   "no-preview-param": [
-   "boot 4308404ec34e1c82",
+   "boot e9de082e617b26f1",
    "start 4b8403222a69dcbe",
    "next c17d247b2ae0016d"
   ],
   "storage-blocked": [
-   "boot 63465db331e26d0e",
+   "boot 8abd4ab41b282d93",
    "start b2c96c6c36a94164",
    "next 7c47c6ba67bed8cd",
    "next 24068b51b263afda",
@@ -1624,7 +1624,7 @@
    "close 8e95749a4aa542e7"
   ],
   "storage-write-fails": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "next 03a9762a365cc170",
    "next 306b92e01a355b17",
@@ -1633,37 +1633,37 @@
    "spot:2 8fe6858e221de958"
   ],
   "player ok": [
-   "boot 13c7e2ec87268c6b",
+   "boot 5019aec14584301d",
    "start 089eff5fcb2ba99d",
    "next badb2c1c8c61fd3a"
   ],
   "player long": [
-   "boot fd02b4eca787557b",
+   "boot 2eb1512f7a3dc684",
    "start c34730c65275cb83",
    "next a0e8129dfe2d99f3"
   ],
   "player blank": [
-   "boot 4308404ec34e1c82",
+   "boot e9de082e617b26f1",
    "start 4b8403222a69dcbe",
    "next c17d247b2ae0016d"
   ],
   "player notString": [
-   "boot 4308404ec34e1c82",
+   "boot e9de082e617b26f1",
    "start 4b8403222a69dcbe",
    "next c17d247b2ae0016d"
   ],
   "player nullValue": [
-   "boot 4308404ec34e1c82",
+   "boot e9de082e617b26f1",
    "start 4b8403222a69dcbe",
    "next c17d247b2ae0016d"
   ],
   "player broken": [
-   "boot 4308404ec34e1c82",
+   "boot e9de082e617b26f1",
    "start 4b8403222a69dcbe",
    "next c17d247b2ae0016d"
   ],
   "legacy v1r4": [
-   "boot 375b5726afb241b7",
+   "boot 62ad739ff76198d9",
    "start fa791221c21b3262",
    "notebook 98a9d86a9f9a6c59",
    "close-notebook b39d3a1a3bd7ead3",
@@ -1738,7 +1738,7 @@
    "legacy-done c1563d5cebe7f2ae"
   ],
   "legacy v1 old": [
-   "boot 8fb3d5854f828a27",
+   "boot 2739008112e5e1f7",
    "start 1f34f1aa930fb355",
    "notebook 64b5f1a6b12c6a93",
    "close-notebook 59d1e73f7c0d59c1",
@@ -1819,7 +1819,7 @@
    "legacy-done 78c06e16ee10c69b"
   ],
   "legacy v2": [
-   "boot 31874f88e3788785",
+   "boot 535726abdfae817f",
    "start e0ba730bcfb2c056",
    "notebook 382f5d80b84cc121",
    "close-notebook c1b233c7a9b50926",
@@ -1850,7 +1850,7 @@
    "legacy-done 0314e76ef5bbc322"
   ],
   "broken-save": [
-   "boot 40f2f22b69574b22",
+   "boot e109e5af1b74c6b6",
    "start 6b64ef58ab0d3ea2",
    "notebook 36857471aee42312"
   ]
