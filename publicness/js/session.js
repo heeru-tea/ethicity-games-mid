@@ -664,6 +664,11 @@
    *   모아 둔 흑자로 적자 노선(외곽·병원)을 유지하는 운영은 계속할 수 있다. 예전 ‘적자 3회’ 규칙은 흑자가 쌓여 있어도 끝나 이 전략을 막았다. */
   var DEFICIT_LIMIT = 3, NEGATIVE_LIMIT = 2;
   function financeRule(s) { return s.mode === 'default' ? 'final-balance' : 'balance-streak'; }
+  /* 계약 종료가 어느 규칙으로 났나(2026-11-13 검토) — 제목·총평·재정 돌아보기·결과 알림이 모두 이 한 곳으로 고른다(따로 판단하면 서로 어긋남).
+   * 지금 규칙 'balance-streak' = 끝날 때 누적 잔액 < 0. 잔액이 남은 채 끝났으면 예전 ‘적자 3회’ 규칙 저장본 'deficit-count'. 계약 종료가 아니면 null */
+  function contractRule(end) { return !end || end.cause !== 'contract' ? null : end.balance >= 0 ? 'deficit-count' : 'balance-streak'; }
+  /* 지금 규칙으로 끝났을 때 누적 잔액이 마이너스였던 연속 단계(NEGATIVE_LIMIT 2 → [끝난 단계 − 1, 끝난 단계]). 단계를 모르면 [] */
+  function contractPhases(end) { var out = []; if (!end || typeof end.phase !== 'number') return out; for (var p = Math.max(1, end.phase - NEGATIVE_LIMIT + 1); p <= end.phase; p++) out.push(p); return out; }
   function balance(s) { return s.history.reduce(function (a, h) { return a + h.metrics.costs.total; }, 0); }
   function ledgerRow(k, phase, before) {
     var c = Metrics.costParts(k); // 예전 저장본(move)·새 항목(임차료·연료비) 모두
@@ -811,7 +816,7 @@
     checkSave: checkSave, safeRestore: safeRestore,
     elderChoice: elderChoice, petitionAt: petitionAt, petitionZoneAt: petitionZoneAt, rideRequests: rideRequests, aiView: aiView,
     departChecks:departChecks,residentTransfers:residentTransfers,routeGaps:routeGaps,routeCycle:routeCycle,routeHeadway:routeHeadway,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
-    serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
+    serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, contractRule: contractRule, contractPhases: contractPhases, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
     assign: assign, lease: lease, unlease: unlease, leaseLimit: leaseLimit, leasedBuses: leasedBuses, LEASE_BASE: LEASE_BASE, restingFor: restingFor, autoPlace: autoPlace, busCost: busCost, typicalBusCost: typicalBusCost, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,

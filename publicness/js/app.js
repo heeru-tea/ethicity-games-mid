@@ -18,7 +18,7 @@
   };
   // 운행 재생 배속(1·2 — 고른 값, ‘다음 결정까지’는 저장하지 않음). 재생 속도만 바꾸며 이 브라우저에 기억한다
   // 계약 종료 제목: 지금 규칙(누적 잔액 2번 연속 마이너스)이면 잔액 부족. 예전 저장본(적자 3회 규칙, 잔액이 남은 채 종료)은 그때 이유 그대로
-  App.contractTitle = function (end) { return end && end.balance >= 0 ? '적자 누적으로 운영 계약 종료(이전 규칙)' : '잔액 부족으로 운영 계약 종료'; };
+  App.contractTitle = function (end) { return S.contractRule(end) === 'deficit-count' ? '적자 누적으로 운영 계약 종료(이전 규칙)' : '잔액 부족으로 운영 계약 종료'; };
   App.setSpeed = function (v) { if (PB.Storage.SPEEDS.indexOf(v) < 0) return; App.speed = v; PB.Storage.writeSpeed(v); };
   // 자동 저장 — 화면을 그릴 때마다(계획 편집·출발·결과·다음 단계). 운행 결과는 저장하지 않고 다시 계산한다
   // 저장 결과를 돌려준다(2026-11-10 검토 3번): true = 저장됨, false = 저장 안 됨(접근 차단·용량 초과), null = 저장할 것이 없음(첫 화면).
