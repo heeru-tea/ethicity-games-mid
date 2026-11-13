@@ -432,6 +432,10 @@ button.score-row:not(.open) .num:nth-child(n+3){color:#8c4008;font-weight:800}
 .record.kv{display:grid;grid-template-columns:7.5em minmax(0,1fr) auto;gap:8px;align-items:center;min-height:44px;padding:6px 12px;text-align:left}
 .kv-k{font-weight:800}
 .record.kv.is-empty .kv-v{color:var(--muted)}
+/* 2026-11-14: 사건 4 공개 페이지 칸(data-act=cell)은 값 뒤에 붙는 것이 없다(셋째 열은 사건 5 작업 기록의 ‘아님’ 표시용) — 비어 있는 셋째 열 앞 간격 8px을 값에 돌려준다.
+   좁은 화면은 아래 @media에서 열쇠 열도 6em → 5em(가장 긴 ‘담당 부서’·‘이의 신청’ 굵은 글자 = 맑은 고딕 73px · Pretendard 63px). 누른 빈 칸 ‘(적혀 있지 않음) [확인함]’이
+   390px에서 맑은 고딕(Pretendard 없는 PC)이면 6px, 375px에서는 Pretendard도 1px 모자라 ‘확인함’만 둘째 줄로 떨어지던 것 */
+.record.kv[data-act="cell"]{grid-template-columns:7.5em minmax(0,1fr)}
 /* 누른 빈 칸에만 붙는 글자 표시(색만으로 구분하지 않는다) */
 .cell-tag{display:inline-block;font-size:.8rem;font-weight:800;color:#4a463f;border:1.5px solid #6d675c;border-radius:6px;padding:0 5px;margin-left:4px;line-height:1.4;vertical-align:1px;white-space:nowrap}
 /* 버스 쪽지: 본문 크기의 자료 카드 */
@@ -466,7 +470,7 @@ div.sky-art.hillReal{background:radial-gradient(1.5px 1.5px at 25% 20%,#fff 60%,
 .place{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:6px 10px 8px}
 .place dt{font-weight:800;font-size:.9rem;color:var(--muted)}
 .place dd{margin:0}
-@media(max-width:520px){.compare-pair{grid-template-columns:1fr}.record.kv{grid-template-columns:6em minmax(0,1fr) auto;padding:6px 10px}}
+@media(max-width:520px){.compare-pair{grid-template-columns:1fr}.record.kv{grid-template-columns:6em minmax(0,1fr) auto;padding:6px 10px}.record.kv[data-act="cell"]{grid-template-columns:5em minmax(0,1fr)}}
 
 /* 시작 화면(2026-11-11, ui/title.js). 대표 그림 = 수리점 배경(16:9) 위에 모아와 검은 상자 셋을 얹은 것(모두 기존 그림).
    그림 속 자리(배경 그림 기준): 왼쪽 0~35% 골목(빈 자리), 36~94% 수리점, 작업대 윗면 세로 52~57%. 모아는 41~58%, 상자는 61~85%(좌표는 ui/title.js).

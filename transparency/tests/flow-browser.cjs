@@ -22,6 +22,8 @@ function noticeShown(text,k,s,where){const n=s.notices[k],posted=n.posted;assert
  // 사건 4·5를 이 기능 전에 카드로 붙인 저장은 ‘이전 방식으로 작성한 안내문’, 사건 1~3에는 없다
  assert.equal(part.includes(D.notice.fix.old),!!E.noticeSlots[k],where+' old label '+k);}
 const DESKTOP={width:1366,height:768},WIDE={width:1280,height:800},PHONE={width:390,height:844};
+// Pretendard가 깔리지 않은 PC의 글꼴(style.css :root 글꼴 목록에서 Pretendard만 뺀 것) — 게임은 웹 글꼴을 싣지 않는다
+const NOPRET_FONT=":root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif !important}";
 // 모든 사건을 정답으로 마치고 보고서까지 간 저장(서술은 비어 있음)
 function finishedState(){let s=E.initial();
  for(let n=0;n<E.REPORT;n++){const k=E.caseKey(n),st=E.stepOf(n);
@@ -75,8 +77,13 @@ async function discover(p,k,id,wrongFirst){
   await click(p,'[data-act="cell"][data-id="office"]');assert.equal(await p.locator('.visual mark').count(),1,'only the pressed cell is marked');assert.ok(!(await state(p)).evidence.includes('camp-page'),'one cell is not enough');
   assert.match(await p.locator('.tap-hint').innerText(),/하나 더 있어/);
   await click(p,'[data-act="cell"][data-id="appeal"]');assert.equal(await p.locator('.visual mark').count(),2,'both blank cells marked');
-  {const cells=await p.locator('[data-act="cell"]').evaluateAll(a=>a.map(b=>({h:b.getBoundingClientRect().height,w:b.getBoundingClientRect().width,pw:b.parentElement.getBoundingClientRect().width,blank:b.classList.contains('blank'),vh:b.querySelector('.kv-v').getBoundingClientRect().height})));
-   for(const c of cells){assert.equal(c.blank,false);assert.ok(Math.abs(c.w-c.pw)<2,'cell is full width '+JSON.stringify(c));assert.ok(c.h<60&&c.vh<40,'cell value on one line '+JSON.stringify(c));}}}
+  // 2026-11-14: 글꼴만 Pretendard가 없는 PC(학교 Windows = 맑은 고딕)로 바꿔 한 번 더 — 그때 390px에서 ‘확인함’이 둘째 줄로 떨어졌다(값 칸 184px < 글 190px). 칸 이름 한 줄·글이 버튼 안(넘침 없음, 표시 글자 온전)도 본다
+  for(const font of ['page','nopret']){
+   if(font==='nopret')await p.evaluate(css=>{const st=document.createElement('style');st.id='flow-nopret';st.textContent=css;document.head.appendChild(st);},NOPRET_FONT);
+   const cells=await p.locator('[data-act="cell"]').evaluateAll(a=>a.map(b=>{const r=b.getBoundingClientRect(),t=b.querySelector('.cell-tag'),tr=t&&t.getBoundingClientRect();
+    return {id:b.dataset.id,h:r.height,w:r.width,pw:b.parentElement.getBoundingClientRect().width,blank:b.classList.contains('blank'),vh:b.querySelector('.kv-v').getBoundingClientRect().height,kh:b.querySelector('.kv-k').getBoundingClientRect().height,over:b.scrollWidth>b.clientWidth+1,tagIn:!tr||(tr.left>=r.left&&tr.right<=r.right&&tr.top>=r.top&&tr.bottom<=r.bottom)};}));
+   for(const c of cells){const tag=font+' '+JSON.stringify(c);assert.equal(c.blank,false);assert.ok(Math.abs(c.w-c.pw)<2,'cell is full width '+tag);assert.ok(c.h<60&&c.vh<40,'cell value on one line '+tag);assert.ok(c.kh<40,'cell name on one line '+tag);assert.ok(!c.over&&c.tagIn,'cell text inside the button '+tag);}
+   if(font==='nopret')await p.evaluate(()=>document.getElementById('flow-nopret').remove());}}
  if(id==='camp-results'){assert.equal(await p.locator('[data-act="village"]').count(),4);
   if(wrongFirst){await click(p,'[data-act="village"][data-id="city"]');assert.match(await p.locator('.tap-hint').innerText(),/절반 넘게/);}
   await click(p,'[data-act="village"][data-id="pine"]');assert.equal(await p.locator('.visual mark').innerText(),'솔숲마을');}
@@ -284,9 +291,12 @@ async function playCase(p,k,{tag,viewport,pick,judge,wrongFirst,shots,write={},n
   await click(p,'.step-nav [data-act="next"]');
   return judgments;}
 // 휴대폰 미리 알리기: 글자 16px 이상, 누르는 곳 44px 이상(붙이기 전)
-async function noticeReadable(p,k){const r=await p.evaluate(()=>{const vis=e=>e.offsetParent&&e.textContent.trim();
-  return {font:Math.min(...[...document.querySelectorAll('.body p,.body button,.body button span')].filter(vis).map(e=>parseFloat(getComputedStyle(e).fontSize))),tap:Math.min(...[...document.querySelectorAll('.body button')].filter(vis).map(b=>b.getBoundingClientRect().height))};});
- assert.ok(r.font>=16,'notice text 16px+ '+k+' '+r.font);assert.ok(r.tap>=44,'notice tap 44px+ '+k+' '+r.tap);}
+// 휴대폰 미리 알리기 붙이기 전 첫 화면(measure가 맨 위로 올린 뒤): 질문 제목·카드 전부·‘안내문 붙이기’ 버튼의 자리(아래 한 화면 검사가 쓴다)
+const noticeScreen={};
+async function noticeReadable(p,k){const r=await p.evaluate(()=>{const vis=e=>e.offsetParent&&e.textContent.trim(),R=s=>{const e=document.querySelector(s);return e?e.getBoundingClientRect():null;},cards=[...document.querySelectorAll('[data-act="notice-pick"]')].map(e=>e.getBoundingClientRect()),h1=R('h1'),post=R('[data-act="notice-post"]');
+  return {font:Math.min(...[...document.querySelectorAll('.body p,.body button,.body button span')].filter(vis).map(e=>parseFloat(getComputedStyle(e).fontSize))),tap:Math.min(...[...document.querySelectorAll('.body button')].filter(vis).map(b=>b.getBoundingClientRect().height)),
+   vh:innerHeight,h1:h1&&[Math.round(h1.top),Math.round(h1.bottom)],cards:cards.length,cardsBottom:cards.length?Math.round(Math.max(...cards.map(c=>c.bottom))):null,post:post&&Math.round(post.bottom),over:document.documentElement.scrollWidth>innerWidth};});
+ assert.ok(r.font>=16,'notice text 16px+ '+k+' '+r.font);assert.ok(r.tap>=44,'notice tap 44px+ '+k+' '+r.tap);noticeScreen[k]=r;}
 async function withPage(viewport,fn,init){const ctx=await browser.newContext({viewport,reducedMotion:'reduce'});if(init)await ctx.addInitScript(init);const p=throughTitle(await ctx.newPage());p.setDefaultTimeout(30000);try{return await fn(p);}finally{await ctx.close();}}
 async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>localStorage.setItem(KEY,JSON.stringify(obj)),{KEY,obj});await p.reload();}
 (async()=>{
@@ -302,8 +312,11 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
   // 휴대폰 390: 미리 알리기 화면(카드가 가장 많은 빵집, 이어하기 안내 없음)이 붙이기 전 한 화면 안팎
   {const hs=E.CASES.map(k=>[k,results.readability.find(x=>x.viewport==='390x844'&&x.screen===k+'-notice-start').pageHeight,results.readability.find(x=>x.viewport==='390x844'&&x.screen===k+'-notice-done').pageHeight]);
    // 카드 고르기(사건 1~3)는 한 화면 안팎. 사건 4·5 고치기(2026-11-12)는 칸 넷·셋이라 더 길다 — 잰 값만 남긴다(README).
-   for(const [k,h] of hs)if(!E.noticeSlots[k])assert.ok(h<=Math.round(844*1.05),'phone '+k+' notice before posting fits about one screen: '+h);
-   results.checks.push({phoneNotice:'before posting / after: '+hs.map(([k,h,d])=>k+' '+h+'/'+d+'px').join(', ')+' (viewport 844)'});}
+   // 2026-11-14: ‘한 화면 안팎’을 페이지 전체 높이(≤ 844×1.05, 맨 아래 꼬리말·아직 꺼진 이전/다음 줄까지 셈)로 재던 것을, 붙이기 전 첫 화면(스크롤 없이)에
+   // 질문 제목·카드 전부·‘안내문 붙이기’ 버튼이 다 보이는지로 바꿨다. Pretendard가 없는 PC(학교 Windows = 맑은 고딕)에서는 같은 화면이 도입 글 줄바꿈만으로
+   // 55px 길어져(빵집 875 → 930px) 1.05배를 넘었지만, 학생이 할 일(카드 고르기·붙이기)은 그대로 첫 화면 안이었다. 글자 16px·누르는 곳 44px 검사는 그대로(noticeReadable)
+   for(const [k] of hs)if(!E.noticeSlots[k]){const v=noticeScreen[k];assert.ok(v&&v.cards>0&&v.h1&&v.h1[0]>=0&&v.cardsBottom<=v.vh&&v.post!=null&&v.post<=v.vh&&!v.over,'phone '+k+' notice before posting: question, all cards and the post button on the first screen '+JSON.stringify(v));}
+   results.checks.push({phoneNotice:'before posting / after: '+hs.map(([k,h,d])=>k+' '+h+'/'+d+'px').join(', ')+' (viewport 844) · first screen (cards bottom / post button bottom): '+hs.filter(([k])=>!E.noticeSlots[k]).map(([k])=>k+' '+noticeScreen[k].cardsBottom+'/'+noticeScreen[k].post+'px').join(', ')});}
   // 저장·이어하기·다시 선택·처음부터
   await withPage(PHONE,async p=>{
    await p.goto(url,{waitUntil:'domcontentloaded'});await p.evaluate(()=>localStorage.setItem('ethicity.player',JSON.stringify({nickname:'테스트<b>'})));
