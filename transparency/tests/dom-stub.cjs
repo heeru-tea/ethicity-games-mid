@@ -32,7 +32,8 @@ function createGame(opts={}){
  const env={blocked:!!opts.blocked,failSet:false,visualTop:opts.visualTop||0,resetChecked:true};
  const listeners={document:{},window:{},modal:{}},pending=[];
  const on=where=>(type,fn)=>{(listeners[where][type]||(listeners[where][type]=[])).push(fn);};
- const headerHtml=fs.readFileSync(path.join(ROOT,'index.html'),'utf8').replace(/<main[\s\S]*?<\/main>/,'').replace(/<script[\s\S]*$/,'');
+ // 첫 <script src>부터 끝까지 뺀다 — 2026-11-14 머리에 글꼴 미리 받기 인라인 <script>가 생겨, 아무 <script에서나 자르면 머리말·창까지 잘린다
+ const headerHtml=fs.readFileSync(path.join(ROOT,'index.html'),'utf8').replace(/<main[\s\S]*?<\/main>/,'').replace(/<script\s+src[\s\S]*$/,'');
 
  let active=null;
  // 화면 조각 하나(초점을 받을 수 있는 것). live()가 false면 다시 그려져 사라진 요소.

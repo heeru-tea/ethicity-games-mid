@@ -253,6 +253,10 @@
 실제 크롬 인쇄 창(사람이 여는 미리보기)과 학생 기기별 PDF 저장, 실제 학생 대상 교육 효과, 실제 15~20분 플레이 시간, 스크린리더 실사용(‘사진을 글로 살펴보기’·사진 이름·서술 칸 상한 안내가 실제로 어떻게 읽히는지 포함 — 접근성 이름·역할·초점까지만 Edge에서 확인), 한글 입력기로 서술 칸 상한에서 치는 실기, 외부 검토 문서의 사람 확인 항목(학생 면담), 다른 기기의 Safari/Firefox 동작은 검증하지 않았습니다. 공개 배포나 원격 push는 하지 않았습니다.
 
 
+## 본문 글꼴 Pretendard (2026-11-14)
+
+본문 글꼴 [Pretendard](https://github.com/orioncactus/pretendard)(길형진) — SIL OFL 1.1, 라이선스 전문 `assets/fonts/OFL-Pretendard.txt`. npm `pretendard@1.3.9` 공식 서브셋(KS X 1001 한글 2,350자 + 라틴) woff2 4개(Regular·SemiBold·Bold·ExtraBold, 합 1.03MB)를 고치지 않고 `assets/fonts/`에 실어 `pretendard.css`로 읽습니다(Pretendard가 깔리지 않은 학교 PC에서도 같은 글꼴·글자 폭). 500은 Regular로, 2,350자 밖 글자는 `style.css` 글꼴 목록의 다음 글꼴(맑은 고딕 등)로 그려집니다. 본문 굵기만 http(s)에서 미리 받습니다(file://에서는 미리 받기가 CORS 오류라 안 함, 글꼴은 그대로 읽힘). 검사: `ui.test`(파일·연결) · `flow-browser`(첫 화면 글자가 웹 글꼴로 그려지는지).
+
 ## 첫 화면 제목 글꼴 (2026-11-12)
 
 리틱체(REATIC)는 동봉 라이선스의 이미지 제작 허용 범위로 사용했습니다. `assets/title-type/`의 PNG는 제목 글자만 포함하며, 리틱체 폰트 파일은 배포하지 않습니다. 실제 제목 텍스트는 HTML에 유지하고, 이미지 로딩 실패 시 기존 글꼴로 표시합니다. 장식 SVG·테두리는 화면 읽기에서 제외됩니다. 본문·버튼·다른 화면은 변경하지 않습니다.

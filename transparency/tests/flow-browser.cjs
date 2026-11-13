@@ -22,8 +22,18 @@ function noticeShown(text,k,s,where){const n=s.notices[k],posted=n.posted;assert
  // 사건 4·5를 이 기능 전에 카드로 붙인 저장은 ‘이전 방식으로 작성한 안내문’, 사건 1~3에는 없다
  assert.equal(part.includes(D.notice.fix.old),!!E.noticeSlots[k],where+' old label '+k);}
 const DESKTOP={width:1366,height:768},WIDE={width:1280,height:800},PHONE={width:390,height:844};
-// Pretendard가 깔리지 않은 PC의 글꼴(style.css :root 글꼴 목록에서 Pretendard만 뺀 것) — 게임은 웹 글꼴을 싣지 않는다
+// Pretendard를 뺀 글꼴(style.css :root 글꼴 목록에서 Pretendard만 뺀 것 = 맑은 고딕). 2026-11-14 웹 글꼴을 싣기 전엔 Pretendard가 깔리지 않은 PC의 글꼴이었고,
+// 웹 글꼴을 실은 뒤로는(pretendard.css) 웹 글꼴을 못 읽었을 때를 흉내 낸다
 const NOPRET_FONT=":root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif !important}";
+// 2026-11-14: 화면 글자가 게임이 실은 웹 글꼴 Pretendard로 그려졌나(PC에 깔린 Pretendard·맑은 고딕이 아니라) — 그려진 글자의 실제 글꼴을 브라우저(CDP getPlatformFontsForNode)에 묻는다.
+// document.fonts.check('16px Pretendard')는 쓰지 않는다 — 웹 글꼴이 없어도 true(정의된 face가 없으면 '쓸 수 있음'으로 셈)
+async function webFont(p,sels){await p.evaluate(()=>document.fonts.ready);const cdp=await p.context().newCDPSession(p);
+ try{await cdp.send('DOM.enable');await cdp.send('CSS.enable');const {root}=await cdp.send('DOM.getDocument',{depth:0}),out=[];
+  for(const sel of sels){const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector:sel});const {fonts}=nodeId?await cdp.send('CSS.getPlatformFontsForNode',{nodeId}):{fonts:[]};
+   const main=fonts.slice().sort((a,b)=>b.glyphCount-a.glyphCount)[0],weight=await p.evaluate(s=>{const e=document.querySelector(s);return e?getComputedStyle(e).fontWeight:null;},sel);
+   out.push({sel,weight,font:main?(main.postScriptName||main.familyName)+(main.isCustomFont?' (웹 글꼴)':' (PC 글꼴)'):null,web:!!main&&/^Pretendard( |$)/.test(main.familyName)&&main.isCustomFont});}
+  const faces=await p.evaluate(()=>[...document.fonts].filter(f=>f.family.replace(/["']/g,'')==='Pretendard'&&f.status==='loaded').map(f=>f.weight));
+  return {ok:out.every(x=>x.web)&&faces.includes('400'),faces,out};}finally{await cdp.detach();}}
 // 모든 사건을 정답으로 마치고 보고서까지 간 저장(서술은 비어 있음)
 function finishedState(){let s=E.initial();
  for(let n=0;n<E.REPORT;n++){const k=E.caseKey(n),st=E.stepOf(n);
@@ -304,6 +314,9 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
  browser=await chromium.launch({channel:'msedge',headless:true});
  const right=(k,i)=>i==='follow'?E.followAnswers[k]:E.answers[k][i];
  try{
+  // 2026-11-14: 첫 화면 글자 = 게임이 실은 웹 글꼴 Pretendard(PC에 Pretendard가 없어도 — 'Pretendard 없음' 래퍼로 한 번 더 돌림)
+  await withPage(DESKTOP,async p=>{await p.goto(url,{waitUntil:'domcontentloaded'});await assets(p);const f=await webFont(p,['.body','header .brand']);
+   assert.ok(f.ok,'text drawn with the bundled Pretendard web font '+JSON.stringify(f));results.checks.push({webFont:f.out.map(x=>`${x.sel} ${x.weight} ${x.font}`).join(' · ')+' · loaded '+f.faces.join(',')});console.log('ok web font',JSON.stringify(f.out));});
   await withPage(DESKTOP,p=>play(p,{tag:'desktop',viewport:DESKTOP,pick:{photo:'all',writing:'review',face:'release',camp:'accurate',share:'explain'},judge:right,wrongFirst:false,
    shots:['photo-check','photo-follow','writing-check-records','writing-follow','face-follow','camp-hook','camp-check-records','camp-check','camp-result','camp-follow','camp-notice','share-hook','share-check-records','share-check','share-result','share-follow','share-notice','end','notebook'],
    write:{photo:{q1:'나는 AI의 자르기 기준 자료를 보고, 이 AI가 눈길이 모일 곳을 중심으로 잘랐다고 판단했다.'},face:{q2:'아직 확인하지 못한 것은 점검이 끝났는지이고, 그것을 알려면 점검 기록이 필요하다.'},camp:{q1:'나는 선발 기준표를 보고, 구청이 가려진 항목의 영향을 더 설명해야 한다고 판단했다.'},share:{q2:'내가 AI로 만든 것을 나눈다면, 공개 게시물에는 AI로 만들었고 실제와 다르다고 알리겠다.'}},note:'어떤 정보를 썼는지 먼저 물어볼래.'}));

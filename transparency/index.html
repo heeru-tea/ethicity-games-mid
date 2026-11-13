@@ -1,6 +1,10 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>블랙박스를 열어보는 고양이</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="title-type.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>블랙박스를 열어보는 고양이</title>
+<!-- 본문 글꼴 Pretendard는 게임 폴더에 싣는다(pretendard.css, assets/fonts — 2026-11-14). 본문 굵기(400)만 미리 받는다.
+     http(s)일 때만: file://(더블클릭)에서는 미리 받기가 CORS 오류를 내고 쓰이지도 않는다(@font-face는 file://에서도 읽힌다) -->
+<script>if(location.protocol!=='file:'){const l=document.createElement('link');l.rel='preload';l.as='font';l.type='font/woff2';l.crossOrigin='';l.href='assets/fonts/Pretendard-Regular.subset.woff2';document.head.appendChild(l);}</script>
+<link rel="stylesheet" href="pretendard.css"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="title-type.css"></head>
 <body>
 <a class="skip" href="#work">본문으로 건너뛰기</a>
 <header><a class="brand" href="index.html">블랙박스를 열어보는 고양이</a><nav aria-label="게임 메뉴"><button data-act="notebook">수첩</button><button data-act="settings">설정</button></nav></header>

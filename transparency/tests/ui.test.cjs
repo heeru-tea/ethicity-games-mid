@@ -627,3 +627,17 @@ test('bgm setting: the settings window has a 배경음악 checkbox, on by defaul
  const off=createGame({storage:{[KEY]:JSON.stringify(stateAt('photo','hook')),'ethicity.transparency.settings.v1':'{"bgm":false}'}});off.click('start');off.click('settings');
  assert.ok(off.snap().modalBody.includes('<input type="checkbox" id="opt-bgm"> 배경음악'));assert.equal(JSON.parse(off.stored()).bgm,undefined,'progress save has no bgm field');
 });
+
+// 본문 글꼴 Pretendard를 게임 폴더에 싣는다(2026-11-14) — Pretendard가 깔리지 않은 PC(학교 Windows = 맑은 고딕)에서 글자가 넓어지던 것의 근본 대책.
+// 파일은 npm pretendard@1.3.9 공식 서브셋 그대로(SIL OFL 1.1). 배포 사본에 파일이 빠지면 여기서 걸린다. 실제로 웹 글꼴로 그려지는지는 flow-browser(webFont)가 본다.
+test('pretendard.css: four faces → woff2 in assets/fonts, linked before style.css, body weight preloaded on http(s) only, OFL',()=>{
+ const fs=require('node:fs'),path=require('node:path'),ROOT=path.join(__dirname,'..'),read=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+ const faces=[...read('pretendard.css').matchAll(/@font-face\s*\{[^}]*font-family:\s*'Pretendard';\s*src:\s*url\('(assets\/fonts\/[^']+\.woff2)'\)\s*format\('woff2'\);\s*font-weight:\s*(\d+);[^}]*font-display:\s*swap/g)];
+ assert.deepEqual(faces.map(f=>f[2]),['400','600','700','800']);
+ for(const [,file] of faces)assert.equal(fs.readFileSync(path.join(ROOT,file)).subarray(0,4).toString('latin1'),'wOF2',file);
+ const html=read('index.html'),at=html.indexOf('<link rel="stylesheet" href="pretendard.css">');
+ assert.ok(at>0&&at<html.indexOf('href="style.css"'),'pretendard.css before style.css');
+ assert.match(html,/location\.protocol!=='file:'[^<]*l\.as='font'[^<]*l\.href='assets\/fonts\/Pretendard-Regular\.subset\.woff2'/);
+ const ofl=read('assets/fonts/OFL-Pretendard.txt');assert.match(ofl,/Reserved Font Name Pretendard/);assert.match(ofl,/SIL OPEN FONT LICENSE Version 1\.1/i);
+ assert.match(read('README.md'),/Pretendard[^\n]*OFL/);
+});
