@@ -89,6 +89,9 @@ AI 학습 데이터를 직접 골라 모으며, 데이터를 "목적에 맞게" 
 - 이름표 고치기·"?" 카드 버튼 = 낱말 넷(375px 한 줄). 옛 숫자판 4 임무 도중 저장은 4 임무 브리핑부터 다시(임무 기록은 그대로).
 - 4 임무 카드 썸네일(`assets/title/mission-m4.webp`)·결판 배경(`assets/story/showdown-senior.webp`)은 아직 숫자판 그림(새 그림 대기).
 
+## 본문 글꼴 Pretendard (2026-11-14)
+- 본문 글꼴 Pretendard(길형진, https://github.com/orioncactus/pretendard) — SIL OFL 1.1, 라이선스 전문 `assets/fonts/OFL-Pretendard.txt`. npm `pretendard@1.3.9` 공식 서브셋(KS X 1001 한글 2,350자 + 라틴) woff2 4개(Regular·SemiBold·Bold·ExtraBold, 합 1.03MB)를 고치지 않고 `assets/fonts/`에 실어 `css/pretendard.css`의 `@font-face`로 읽는다(Pretendard가 깔리지 않은 학교 PC에서도 같은 글꼴). 900은 ExtraBold로, 2,350자 밖 글자는 `--font`의 다음 글꼴(맑은 고딕 등)로 그려진다. 본문 굵기(Regular)만 http(s)에서 미리 받는다(`index.html` — file:// 더블클릭에선 미리 받기가 CORS 오류라 안 함, 글꼴은 그대로 읽힘). 검사: 단위 `fonts.test` · 브라우저 `playtest2-browser` F.
+
 ## 글꼴(4 임무 손글씨)
 4 임무 답안 카드의 손글씨는 무료 한글 손글씨 글꼴 4종을 **필요한 글자만 남겨**(데이터·알고리즘·인공지능·머신러닝·영문 d·a·t·A·I) `css/hw-fonts.css`에 base64로 넣고, Canvas로 기울기·떨림·굵기·크기를 바꿔 그린다(이미지 생성은 한글이 깨져 쓰지 않음).
 
