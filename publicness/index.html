@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>이번 정류장은… — AI 마을버스 운영단</title>
 <meta name="description" content="AI 자율주행 마을버스를 운영하며 누구의 이동을 챙길지 고르는 공정성·포용성 시뮬레이션 게임">
+<!-- 본문 글꼴 Pretendard는 게임 폴더에 싣는다(css/pretendard.css, assets/fonts — 2026-11-14). 본문 굵기(400)만 미리 받는다.
+     http(s)일 때만: file://(더블클릭)에서는 미리 받기가 CORS 오류를 내고 쓰이지도 않는다(@font-face는 file://에서도 읽힌다) -->
+<script>if (location.protocol !== 'file:') { const l = document.createElement('link'); l.rel = 'preload'; l.as = 'font'; l.type = 'font/woff2'; l.crossOrigin = ''; l.href = 'assets/fonts/Pretendard-Regular.subset.woff2'; document.head.appendChild(l); }</script>
+<link rel="stylesheet" href="css/pretendard.css">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/scores.css">

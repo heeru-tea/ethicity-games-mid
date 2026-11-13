@@ -2,7 +2,7 @@
 //  결과 화면마다: 1번(못 간 이동 0건인 곳을 살펴볼 곳으로 안 짚음 · 같은 질문 한 번) · 2번(추천 노선의 정류장 ⊂ 그 단계에 보이는 정류장 · 화살표 앞 숫자가 기준과 무관하게 같음 · 표시 이름) · 10·11번
 //  3·4단계 계획 화면: 답 고르기 전·후 × 1280×800 · 1148×977 × (페이지 글꼴 · Pretendard 없음)에서 노선 탭 위쪽 ≥ 지도 캔버스 아래쪽(3번), 카드 안 스크롤·가로 넘침 없음, ‘왜냐하면’ 한 줄·마침표 없음(12번)
 //  운행: 1단계 운행에서 2×를 실제로 눌러 고르고, 3·4단계 운행이 그 2×로 시작해 11:00에 한 번 서는지 본다(6번)
-//  그 밖에: 4번 유나·다은 칩 · 5번 파랑 · 6번 운행 시작 문장과 11:00 한 번 멈춤 · 7번 노선 탭 간격·출발 확인 요약 · 8번 청원 그 뒤 · 9번 AI 패널 표·닫기 · 13번 엔딩 · 버전 표시
+//  그 밖에: 4번 유나·다은 칩 · 5번 파랑 · 6번 운행 시작 문장과 11:00 한 번 멈춤 · 7번 노선 탭 간격·출발 확인 요약 · 8번 청원 그 뒤 · 9번 AI 패널 표·닫기 · 13번 엔딩 · 버전 표시 · 첫 화면 글자 = 게임이 실은 웹 글꼴 Pretendard(2026-11-14)
 // 실행: PLAYWRIGHT_MODULE=… node publicness/tests/playtest-1111-browser.mjs   (브라우저는 한 번에 하나: D:/Works/.browser-test.lock) · 스크린샷 = SHOT_DIR(기본 publicness/tests)/_shot-pt1111-*.png
 import { createRequire } from 'node:module'; import assert from 'node:assert/strict'; import { startServer } from './serve.mjs';
 const require = createRequire(import.meta.url), { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright'), server = await startServer(0);
@@ -11,15 +11,40 @@ const browser = await chromium.launch({ channel: 'msedge', headless: true, args:
 const base = `http://127.0.0.1:${server.address().port}/publicness/`, SHOT = process.env.SHOT_DIR || 'publicness/tests', shot = (n) => `${SHOT}/_shot-pt1111-${n}.png`;
 const SIZES = [[1280, 800], [1148, 977]], log = (m) => console.log('  ok ' + m), report = { finance: [], sentences: {} };
 const batchim = (w) => { const c = w.charCodeAt(w.length - 1); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0; };
-/* 2026-11-14: 게임은 웹 글꼴을 싣지 않는다(본문 = Pretendard가 깔려 있으면 Pretendard, 없으면 맑은 고딕 등). Pretendard가 없는 PC(학교 Windows, 샌드박스 실행)에서는 글자가 넓어
- * 4단계 정책 카드가 칸보다 63px 길었다(카드 안 스크롤, 맨 아래 고정이라 질문 제목·사실 줄이 가려짐). 그래서 3·4단계 카드 검사는 페이지 글꼴 한 번 + Pretendard를 뺀 글꼴 한 번 */
-const FALLBACK_FONT = ':root{--font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif !important}', FONTS = ['page', 'fallback'], FONT_TAG = { page: '', fallback: ' · Pretendard 없음' };
+/* 2026-11-14: 웹 글꼴을 싣기 전에는 본문이 'PC에 깔린 Pretendard, 없으면 맑은 고딕'이라 Pretendard가 없는 PC(학교 Windows, 샌드박스 실행)에서 글자가 넓어
+ * 4단계 정책 카드가 칸보다 63px 길었다(카드 안 스크롤, 맨 아래 고정이라 질문 제목·사실 줄이 가려짐). 그래서 3·4단계 카드 검사는 페이지 글꼴 한 번 + Pretendard를 뺀 글꼴 한 번.
+ * 같은 날 Pretendard 웹 글꼴을 게임에 실었다(css/pretendard.css) — 이제 'fallback'은 웹 글꼴을 못 읽었을 때(맑은 고딕)를 흉내 낸다. 웹 글꼴로 그려지는지는 begin의 webFont */
+const FALLBACK_FONT = ':root{--font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif !important}', FONTS = ['page', 'fallback'], FONT_TAG = { page: '', fallback: ' · Pretendard 없음(맑은 고딕)' };
+// 화면 글자가 게임이 실은 웹 글꼴 Pretendard로 그려졌나(PC에 깔린 Pretendard·맑은 고딕이 아니라) — 그려진 글자의 실제 글꼴을 브라우저(CDP getPlatformFontsForNode)에 묻는다.
+// document.fonts.check('16px Pretendard')는 쓰지 않는다 — 웹 글꼴이 없어도 true(정의된 face가 없으면 '쓸 수 있음'으로 셈)
+async function webFont(page, sels) {
+  await page.evaluate(() => document.fonts.ready);
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
+    const { root } = await cdp.send('DOM.getDocument', { depth: 0 }), out = [];
+    for (const sel of sels) {
+      const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector: sel });
+      const { fonts } = nodeId ? await cdp.send('CSS.getPlatformFontsForNode', { nodeId }) : { fonts: [] };
+      const main = fonts.slice().sort((a, b) => b.glyphCount - a.glyphCount)[0];
+      const weight = await page.evaluate((s) => { const e = document.querySelector(s); return e ? getComputedStyle(e).fontWeight : null; }, sel);
+      out.push({ sel, weight, font: main ? (main.postScriptName || main.familyName) + (main.isCustomFont ? ' (웹 글꼴)' : ' (PC 글꼴)') : null, web: !!main && /^Pretendard( |$)/.test(main.familyName) && main.isCustomFont });
+    }
+    const faces = await page.evaluate(() => [...document.fonts].filter((f) => f.family.replace(/["']/g, '') === 'Pretendard' && f.status === 'loaded').map((f) => f.weight));
+    return { ok: out.every((x) => x.web) && faces.includes('400'), faces, out };
+  } finally { await cdp.detach(); }
+}
 const useFont = (page, font) => page.evaluate(([on, css]) => { let st = document.getElementById('pt1111-font'); if (on && !st) { st = document.createElement('style'); st.id = 'pt1111-font'; st.textContent = css; document.head.appendChild(st); } if (!on && st) st.remove(); }, [font === 'fallback', FALLBACK_FONT]);
 async function begin(page) {
   await page.goto(base + '?no3d=1'); await page.evaluate(() => localStorage.clear()); await page.reload();
   assert.equal(await page.locator('#title-version').innerText(), '버전 ' + await page.evaluate(() => PB.config.SCENARIO_VERSION), '첫 화면에 버전');
   assert.ok(await page.locator('#title-version').isVisible(), '간단 화면에서도 버전이 보임');
-  if (begin.shot) { await page.screenshot({ path: shot('title') }); begin.shot = false; }
+  if (begin.shot) {
+    const f = await webFont(page, ['#title-version', '#btn-start']);
+    assert.ok(f.ok, '첫 화면 글자가 실은 웹 글꼴 Pretendard ' + JSON.stringify(f));
+    log('글꼴: ' + f.out.map((x) => `${x.sel} ${x.weight} ${x.font}`).join(' · ') + ' · 읽은 굵기 ' + f.faces.join(','));
+    await page.screenshot({ path: shot('title') }); begin.shot = false;
+  }
   await page.locator('#btn-start').click();
   while (await page.locator('#goal-intro').evaluate((d) => d.open)) { if (await page.locator('#goal-intro').getAttribute('data-stage') === 'true') await page.keyboard.press('Enter'); else await page.locator('#btn-goal-start').click(); }
 }

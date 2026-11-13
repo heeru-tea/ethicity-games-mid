@@ -262,6 +262,7 @@ Playwright가 별도 폴더에 설치되어 있으면 `PLAYWRIGHT_MODULE` 환경
 ## 크레딧
 
 - 3D: [three.js](https://threejs.org/) r149 — MIT License (`vendor/THREE_LICENSE`)
+- 본문 글꼴: [Pretendard](https://github.com/orioncactus/pretendard)(길형진) — SIL OFL 1.1 (`assets/fonts/OFL-Pretendard.txt`). npm `pretendard@1.3.9` 공식 서브셋(KS X 1001 한글 2,350자 + 라틴) woff2 4개(Regular·SemiBold·Bold·ExtraBold, 합 1.03MB)를 고치지 않고 `assets/fonts/`에 실어 `css/pretendard.css`로 읽는다(2026-11-14 — Pretendard가 깔리지 않은 학교 PC에서도 같은 글꼴·글자 폭). 500은 Regular로, 2,350자 밖 글자는 `--font`의 다음 글꼴(맑은 고딕 등)로 그려진다. 본문 굵기만 http(s)에서 미리 받는다(file://에선 안 함). 검사: 단위 `pretendard.test` · 브라우저 `playtest-1111-browser`(첫 화면 글꼴)
 - 3D 버스: 팀 2D 버스 그림(`sheet-bus.png`)을 [fal.ai](https://fal.ai/)의 TRELLIS(image-to-3D)로 변환한 모델(2026-10-23)
 - 3D 구역 건물·정류장 시설: fal.ai의 nano-banana로 그린 미니어처 그림을 Tripo(image-to-3D)로 변환한 모델(2026-10-23)
 - 3D 마을 바탕(하늘·잔디·생활권 땅 타일): fal.ai의 nano-banana로 시작 화면 마을 그림 화풍을 따라 그린 뒤 이음매 없이 다듬은 그림(2026-10-26)
