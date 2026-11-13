@@ -506,6 +506,55 @@ test('request 6 and old saves: a case 4/5 notice posted by card picking before t
  const g3=createGame({storage:{[KEY]:JSON.stringify(mid)}});g3.click('start');h=g3.app.innerHTML;
  assert.ok(h.includes(D.cases.camp.notice.title));assert.equal(h.includes('fix-slot'),false);assert.equal(parseTags(h,'button').find(b=>b['data-id']==='camp-office')['aria-pressed'],'true');
 });
+// 2026-11-13 검토 [P2]: 칸 선택지는 라디오처럼 보이고 읽히므로 라디오처럼 움직인다(APG radio group).
+// Tab은 칸마다 한 번(고른 것, 없으면 첫 선택지), 방향키는 같은 칸 안에서 초점과 선택을 함께 옮기고 끝에서 돈다, 다시 그린 뒤에도 초점은 고른 선택지에.
+const radioCheck=(g,k)=>{const h=g.app.innerHTML,choice=g.state().notices[k].choice,all=parseTags(h,'button').filter(b=>b['data-act']==='notice-slot');
+ for(const x of E.noticeSlots[k]){const os=all.filter(b=>b['data-id']===x.id);
+  assert.deepEqual(os.map(b=>b['data-value']),x.options,x.id+': options in engine order');
+  assert.deepEqual(os.filter(b=>b['aria-checked']==='true').map(b=>b['data-value']),x.id in choice?[choice[x.id]]:[],x.id+': aria-checked = state');
+  assert.deepEqual(os.filter(b=>b.tabindex==='0').map(b=>b['data-value']),[x.id in choice?choice[x.id]:x.options[0]],x.id+': one Tab stop = chosen or first');
+  assert.ok(os.every(b=>b.tabindex==='0'||b.tabindex==='-1'),x.id+': others -1');}
+ return all.filter(b=>b.tabindex==='0').length;};
+for(const k of ['camp','share'])test(`review 2026-11-13: case ${k==='camp'?4:5} fix slots act as radio groups — one Tab stop per slot, arrows move and choose with wrap, Home/End, focus kept after re-render`,()=>{
+ const g=open(k,'notice'),slots=E.noticeSlots[k];
+ assert.equal(radioCheck(g,k),slots.length,'Tab stops = one per slot');
+ for(const x of slots){const n=x.options.length,other=()=>JSON.stringify(Object.fromEntries(Object.entries(g.state().notices[k].choice).filter(([id])=>id!==x.id)));
+  const before=other();
+  g.focusButton('notice-slot',{id:x.id,value:x.options[0]});
+  // → / ↓ : 다음, 끝에서 처음으로
+  for(let i=1;i<=n+1;i++){const e=g.key(i%2?'ArrowRight':'ArrowDown'),want=x.options[i%n];
+   assert.equal(e.defaultPrevented,true,'no page scroll');
+   assert.equal(g.state().notices[k].choice[x.id],want,x.id+' next '+i);
+   assert.deepEqual(g.focused(),{tag:'BUTTON',act:'notice-slot',id:x.id,value:want},'focus on the chosen option after re-render');
+   assert.match(g.snap().fx,new RegExp('^focus button\\[notice-slot\\|'+x.id+'\\|'+want+'\\]$','m'));
+   radioCheck(g,k);}
+  // ← / ↑ : 앞, 처음에서 끝으로
+  g.key('Home');assert.equal(g.state().notices[k].choice[x.id],x.options[0]);
+  g.key('ArrowLeft');assert.equal(g.state().notices[k].choice[x.id],x.options[n-1],'wraps to the last');
+  g.key('ArrowUp');assert.equal(g.state().notices[k].choice[x.id],x.options[n-2]);
+  g.key('End');assert.deepEqual(g.focused(),{tag:'BUTTON',act:'notice-slot',id:x.id,value:x.options[n-1]});radioCheck(g,k);
+  assert.equal(other(),before,'other slots untouched');
+  // 다른 키·수식키는 건드리지 않는다
+  const st0=JSON.stringify(g.state());
+  for(const [key,m] of [['Tab',{}],['a',{}],['ArrowRight',{ctrlKey:true}],['ArrowDown',{altKey:true}]]){const e=g.key(key,m);assert.equal(e.defaultPrevented,false,key);}
+  assert.equal(JSON.stringify(g.state()),st0);}
+ assert.equal(radioCheck(g,k),slots.length,'still one Tab stop per slot (now the chosen option)');
+ // 마우스(누르기)도 그대로: 누른 것이 고른 것·Tab 자리·초점
+ const x=slots[0];g.click('notice-slot',{id:x.id,value:x.options[1]});radioCheck(g,k);assert.deepEqual(g.focused(),{tag:'BUTTON',act:'notice-slot',id:x.id,value:x.options[1]});
+ // 붙인 뒤 방향키로 바꾸면 다시 붙이기 안내 → 다시 붙이기
+ for(const y of slots)g.click('notice-slot',{id:y.id,value:y.ok[0]});g.click('notice-post');
+ assert.match(g.app.innerHTML,/다 맞았어\./);const posted=JSON.stringify(g.state().notices[k].posted);
+ g.focusButton('notice-slot',{id:x.id,value:x.ok[0]});g.key('ArrowRight');let h=g.app.innerHTML;
+ assert.equal(h.includes('card-fb'),false);assert.match(h,/class="hint repost" role="status"/);assert.equal(JSON.stringify(g.state().notices[k].posted),posted,'posted notice kept until re-posted');radioCheck(g,k);
+ g.key('ArrowLeft');g.click('notice-post');assert.match(g.app.innerHTML,/다 맞았어\./);
+ assert.deepEqual(E.restore(g.stored()).notices[k],JSON.parse(JSON.stringify(g.state().notices[k])),'saved');
+});
+test('review 2026-11-13 repro: case 4 — after choosing 비워 두기, ArrowRight chooses ‘AI가 알아서 명단을 정해요.’ and focus follows',()=>{
+ const g=open('camp','notice');g.click('notice-slot',{id:'role',value:'blank'});
+ const e=g.key('ArrowRight');assert.equal(e.defaultPrevented,true);
+ assert.equal(g.state().notices.camp.choice.role,'camp-auto');assert.deepEqual(g.focused(),{tag:'BUTTON',act:'notice-slot',id:'role',value:'camp-auto'});
+ assert.equal(D.cases.camp.notice.cards.find(c=>c.id==='camp-auto')?.text??D.cases.camp.notice.fix.texts['camp-auto'],'AI가 알아서 명단을 정해요.');
+});
 
 // ── 2026-11-12 후속 요청 1~5 ──
 test('follow-up 1: case 4 village results carry the average participation and its score; the numbers, the rule, judgment 3 and its feedback agree; the bus stays a question',()=>{

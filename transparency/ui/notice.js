@@ -5,7 +5,7 @@
 (function(){
  'use strict';
  const UI=window.TransparencyUI;
- const {E,D,S,esc,btn,send,actions,line,caseStage}=UI;
+ const {E,D,S,$,esc,btn,send,actions,line,caseStage}=UI;
  const N=D.notice;
  const F=N.fix;
  const sameSet=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
@@ -104,15 +104,17 @@
   return `<p class="card-fb ${good?'fb-ok':'fb-again'}" id="fb-slot-${slot.id}"><span class="fb-tag">${good?'✓':'!'} ${esc(label)}${good?'':' · '+esc(F.slotAgain)}</span>${say?' '+esc(say):''}</p>`;
  }
  // 칸 하나: 칸 이름 + 초안 문장, 선택지 버튼(role=radio, aria-checked — 칸 묶음은 radiogroup). 묶음 이름 = ‘칸 1. AI가 하는 일, 초안: (비어 있음)’
+ // Tab은 칸마다 한 번(2026-11-13 검토: 라디오처럼 보이고 읽히는데 선택지마다 Tab이 멈췄다): 고른 선택지, 아직 안 골랐으면 첫 선택지만 tabindex=0, 나머지는 -1. 칸 안에서는 방향키(아래 keydown).
  function fixSlot(k,slot,i,choice,posted,fresh){
   const label=fixOf(k).slots[slot.id].label;
   const draft=draftText(k,slot);
   const fb=fresh?slotFeedback(k,slot,posted[slot.id]):'';
+  const stop=slot.options.includes(choice[slot.id])?choice[slot.id]:slot.options[0];
   const opts=slot.options.map(opt=>{
    const on=choice[slot.id]===opt;
    // 칸마다 하나만 고른다 → 라디오(2026-11-12 사용자: 네모 체크 모양이면 여러 개 고를 수 있다고 오해) — 동그라미 + 고른 것엔 점, role=radio·aria-checked
    const text=`<span class="pick-dot" aria-hidden="true"></span><span>${esc(optionText(k,slot,opt))}</span>`;
-   return btn(text,'notice-slot',`data-id="${slot.id}" data-value="${opt}" role="radio" aria-checked="${on}"${fb?` aria-describedby="fb-slot-${slot.id}"`:''}`,'notice-card slot-option');
+   return btn(text,'notice-slot',`tabindex="${opt===stop?0:-1}" data-id="${slot.id}" data-value="${opt}" role="radio" aria-checked="${on}"${fb?` aria-describedby="fb-slot-${slot.id}"`:''}`,'notice-card slot-option');
   }).join('');
   const name=`칸 ${i+1}. ${label}, ${F.draft}: ${draft}`;
   return `<div class="fix-slot" role="radiogroup" aria-label="${esc(name)}"><p class="slot-head"><span class="slot-label">${esc(label)}</span> <span class="slot-draft">${esc(F.draft)}: ${esc(draft)}</span></p>`
@@ -204,6 +206,27 @@
  actions['notice-pick']=b=>send({type:'notice-pick',id:b.dataset.id});
  actions['notice-slot']=b=>send({type:'notice-slot',slot:b.dataset.id,opt:b.dataset.value});
  actions['notice-post']=()=>send({type:'notice-post'});
+
+ // 칸 안 방향키(라디오 묶음, 2026-11-13 검토): ←/↑ 앞, →/↓ 다음(끝에서 처음으로 돈다), Home·End = 처음·끝 — 초점을 옮기고 그 선택지를 바로 고른다.
+ // 초점을 먼저 옮긴 뒤 누르므로, 다시 그린 화면에서도 screens.js focusSelector가 새로 고른 선택지에 초점을 돌려준다. Space·Enter는 버튼 기본 동작(누르기) 그대로.
+ // 선택지 차례는 화면이 아니라 engine noticeSlots에서 읽는다(화면 순서와 같다).
+ const MOVES=Object.assign(Object.create(null),{ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1});
+ document.addEventListener('keydown',e=>{
+  if(e.defaultPrevented||e.altKey||e.ctrlKey||e.metaKey)return;
+  const b=e.target&&typeof e.target.closest==='function'?e.target.closest('button[data-act="notice-slot"]'):null;
+  if(!b)return;
+  const k=E.caseKey(S.state.scene);
+  const slot=k&&isFix(k)?slotsOf(k).find(x=>x.id===b.dataset.id):null;
+  const opts=slot?slot.options:[],i=opts.indexOf(b.dataset.value);
+  if(i<0)return;
+  const j=MOVES[e.key]?(i+MOVES[e.key]+opts.length)%opts.length:e.key==='Home'?0:e.key==='End'?opts.length-1:-1;
+  if(j<0)return;
+  e.preventDefault();
+  const t=$('#app').querySelector(`button[data-act="notice-slot"][data-id="${CSS.escape(slot.id)}"][data-value="${CSS.escape(opts[j])}"]`);
+  if(!t)return;
+  t.focus();
+  UI.press(t);
+ });
 
  Object.assign(UI,{noticeBody,noticeStage,noticeSummary,noticeTitle});
 })();

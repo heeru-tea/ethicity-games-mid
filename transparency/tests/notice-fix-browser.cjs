@@ -3,6 +3,8 @@
 //  ② 사건 5 키보드: Tab·Space·Enter만으로 칸 고르기·붙이기, 초점 유지, 접근성 트리(칸 묶음 이름·눌림), ‘#AI그림’만으로는 실제 하늘 칸이 남음
 //  ③ 글자 16px·누르는 곳 44px·가로 넘침 없음·붙이기 전 높이(잰 값)
 //  ④ version 6 저장: 카드로 붙인 안내문은 ‘이전 방식으로 작성한 안내문’, 미리 알리기에 선 저장은 고치기로 시작해 보고서까지
+//  ⑤ 2026-11-13 검토: 칸 = 라디오 묶음(사건 4·5) — Tab은 칸마다 한 번(고른 것, 없으면 첫 선택지), 방향키는 초점+선택(끝에서 돈다)·Home/End, Space,
+//     다시 그린 뒤 초점, aria-checked = 점 = Tab 자리 = 상태, 마우스, 붙인 뒤 바꾸기 → 다시 붙이기, 새로고침
 // 쓰기: node tests/notice-fix-browser.cjs  (캡처 tests/screens/noticefix-*.png) — 브라우저 검사는 한 번에 하나(D:\Works\.browser-test.lock).
 'use strict';
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
@@ -108,10 +110,11 @@ function build(key, step, v6) {
         ok(tag_ + ' share: a11y tree — slot groups named with the draft, option radios(2026-11-12 라디오로)', /radiogroup "칸 2\. 실제 하늘, 초안: “토요일에 이 그림처럼 보일 거예요\.”"/.test(snap) && snap.includes('radio "#AI그림"') && snap.includes('radio "덧붙이지 않기"') && !/button "(#AI그림|덧붙이지 않기)"/.test(snap), snap);
         await p.locator('h1').focus(); let n = 0; while (n++ < 40 && (await p.evaluate(() => document.activeElement.dataset.act)) !== 'notice-slot') await p.keyboard.press('Tab');
         ok(tag_ + ' share: Tab reaches the first option', (await p.evaluate(() => document.activeElement.dataset.value)) === 'blank', n);
-        await p.keyboard.press('Tab'); await p.keyboard.press('Tab');
-        ok(tag_ + ' share: Tab order inside the slot', (await p.evaluate(() => document.activeElement.dataset.value)) === 'share-tag');
+        // 2026-11-13: 칸 안에서는 Tab이 아니라 방향키(라디오) — 방향키가 초점과 선택을 함께 옮긴다
+        await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowRight');
+        ok(tag_ + ' share: arrows inside the slot choose, focus follows', (await opt(p, 'ai', 'share-tag').getAttribute('aria-checked')) === 'true' && (await p.evaluate(() => document.activeElement.dataset.value)) === 'share-tag');
         await p.keyboard.press('Space');
-        ok(tag_ + ' share: Space chooses, focus stays', (await opt(p, 'ai', 'share-tag').getAttribute('aria-checked')) === 'true' && (await p.evaluate(() => document.activeElement.dataset.value)) === 'share-tag');
+        ok(tag_ + ' share: Space keeps it chosen, focus stays', (await opt(p, 'ai', 'share-tag').getAttribute('aria-checked')) === 'true' && (await p.evaluate(() => document.activeElement.dataset.value)) === 'share-tag');
         await opt(p, 'sky', 'keep').focus(); await p.keyboard.press('Enter'); await opt(p, 'more', 'blank').focus(); await p.keyboard.press('Enter');
         await p.locator('[data-act="notice-post"]').focus(); await p.keyboard.press('Enter');
         const v = await p.locator('.notice-verdict').innerText();
@@ -123,6 +126,74 @@ function build(key, step, v6) {
         ok(tag_ + ' share: option described by its slot feedback', (await opt(p, 'sky', 'share-real').getAttribute('aria-describedby')) === 'fb-slot-sky');
         await shot(p, 'share-done-' + tag_, true);
         ok(tag_ + ' share: no page errors', errs.length === 0, errs); await ctx.close();
+      }
+      // ---- ⑤ 2026-11-13 검토: 칸 = 라디오 묶음(사건 4·5). Tab은 칸마다 한 번, 방향키는 초점+선택(끝에서 돈다), Space, 다시 그린 뒤 초점, aria-checked = 점, 마우스, 다시 붙이기 ----
+      for (const k of ['camp', 'share']) {
+        const { ctx, p, errs } = await open(vp, build(k, 'notice'));
+        const slots = E.noticeSlots[k], T = tag_ + ' radio ' + k + ': ';
+        await p.evaluate(() => { window.__kd = []; window.addEventListener('keydown', e => window.__kd.push({ key: e.key, prevented: e.defaultPrevented })); });
+        // 화면 처음부터 Tab으로 끝까지: 멈추는 곳(선택지만)
+        const tabStops = async () => {
+          await p.locator('h1').focus(); const seen = [];
+          for (let i = 0; i < 120; i++) { await p.keyboard.press('Tab');
+            const a = await p.evaluate(() => { const x = document.activeElement; return x && x !== document.body ? (x.dataset.act || x.tagName) + ':' + (x.dataset.id || '') + ':' + (x.dataset.value || '') : null; });
+            if (!a || seen.includes(a)) break; seen.push(a); }
+          return seen.filter(a => a.startsWith('notice-slot:'));
+        };
+        const want0 = slots.map(x => 'notice-slot:' + x.id + ':' + x.options[0]);
+        const s0 = await tabStops();
+        ok(T + 'Tab stops one per slot (first option when nothing chosen)', JSON.stringify(s0) === JSON.stringify(want0), s0);
+        const read = slot => p.evaluate(([k, slot]) => {
+          const os = [...document.querySelectorAll(`[data-act="notice-slot"][data-id="${slot}"]`)];
+          return { choice: window.TransparencyGame.getState().notices[k].choice[slot] ?? null, active: document.activeElement.dataset.id + ':' + document.activeElement.dataset.value,
+            checked: os.filter(o => o.getAttribute('aria-checked') === 'true').map(o => o.dataset.value),
+            dot: os.filter(o => getComputedStyle(o.querySelector('.pick-dot'), '::after').content !== 'none').map(o => o.dataset.value),
+            stop: os.filter(o => o.tabIndex === 0).map(o => o.dataset.value),
+            tap: Math.min(...os.map(o => o.getBoundingClientRect().height)) };
+        }, [k, slot]);
+        const agree = (r, slot, v) => r.choice === v && r.active === slot + ':' + v && JSON.stringify(r.checked) === JSON.stringify([v]) && JSON.stringify(r.dot) === JSON.stringify([v]) && JSON.stringify(r.stop) === JSON.stringify([v]) && r.tap >= 44;
+        // Space: 첫 칸의 Tab 자리(첫 선택지)에서 Space → 고름, 초점 그대로
+        const x0 = slots[0];
+        await p.locator(`[data-act="notice-slot"][data-id="${x0.id}"][tabindex="0"]`).focus(); await p.keyboard.press('Space');
+        { const r = await read(x0.id); ok(T + 'Space chooses the focused option; focus, aria-checked, dot, Tab stop agree', agree(r, x0.id, x0.options[0]), r); }
+        // 칸마다 방향키: →·↓ 다음(끝 → 처음), ←·↑ 앞(처음 → 끝), Home·End
+        let arrowsOk = true; const bad = [];
+        for (const x of slots) {
+          const n = x.options.length;
+          await p.locator(`[data-act="notice-slot"][data-id="${x.id}"][tabindex="0"]`).focus();
+          const start = x.options.indexOf(await p.evaluate(() => document.activeElement.dataset.value));
+          const seq = [];
+          for (let i = 1; i <= n + 1; i++) seq.push([i % 2 ? 'ArrowRight' : 'ArrowDown', x.options[(start + i) % n]]);
+          const last = (start + n + 1) % n;
+          seq.push(['ArrowLeft', x.options[(last - 1 + n) % n]], ['Home', x.options[0]], ['ArrowUp', x.options[n - 1]], ['ArrowLeft', x.options[n - 2]], ['End', x.options[n - 1]], ['ArrowDown', x.options[0]]);
+          for (const [key, v] of seq) { await p.keyboard.press(key); const r = await read(x.id); if (!agree(r, x.id, v)) { arrowsOk = false; bad.push({ slot: x.id, key, v, r }); } }
+        }
+        ok(T + 'arrows move focus and choose within each slot, wrapping; Home/End; aria-checked = dot = Tab stop = state; focus kept after re-render', arrowsOk, bad.slice(0, 3));
+        const kd = await p.evaluate(() => window.__kd);
+        const moveKeys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'];
+        ok(T + 'arrow/Home/End keys do not scroll the page (default prevented); Tab and Space untouched', kd.filter(e => moveKeys.includes(e.key)).length >= 10 && kd.filter(e => moveKeys.includes(e.key)).every(e => e.prevented) && kd.filter(e => !moveKeys.includes(e.key)).every(e => !e.prevented), kd.filter(e => moveKeys.includes(e.key) !== e.prevented).slice(0, 3));
+        const s1 = await tabStops(), choice1 = (await state(p)).notices[k].choice;
+        ok(T + 'after choosing, Tab still stops once per slot — on the chosen option', JSON.stringify(s1) === JSON.stringify(slots.map(x => 'notice-slot:' + x.id + ':' + choice1[x.id])), s1);
+        // 마우스도 그대로
+        const xl = slots[slots.length - 1], mv = xl.options.find(o => o !== choice1[xl.id]);
+        await choose(p, xl.id, mv);
+        { const r = await read(xl.id); ok(T + 'mouse click still chooses; focus/aria-checked/dot/Tab stop move with it', agree(r, xl.id, mv), r); }
+        // 붙이기 → 방향키로 바꾸면 다시 붙이기 안내 → 키보드로 다시 붙이기
+        for (const x of slots) await choose(p, x.id, x.ok[0]);
+        await p.locator('[data-act="notice-post"]').focus(); await p.keyboard.press('Enter');
+        ok(T + 'posted all right', /다 맞았어/.test(await p.locator('.notice-verdict').innerText()));
+        const posted = JSON.stringify((await state(p)).notices[k].posted);
+        await opt(p, x0.id, x0.ok[0]).focus(); await p.keyboard.press('ArrowRight');
+        ok(T + 'after posting, an arrow change hides the feedback and asks to post again; the posted notice is kept', (await p.locator('.card-fb').count()) === 0 && (await p.locator('.body .repost').count()) === 1 && JSON.stringify((await state(p)).notices[k].posted) === posted && (await p.evaluate(() => document.activeElement.dataset.act)) === 'notice-slot');
+        await p.keyboard.press('ArrowLeft');
+        await p.locator('[data-act="notice-post"]').focus(); await p.keyboard.press('Enter');
+        ok(T + 're-posted with the keyboard', /다 맞았어/.test(await p.locator('.notice-verdict').innerText()) && (await p.locator('.card-fb').count()) === slots.length);
+        { const r = await read(x0.id); ok(T + 'posted state: option still a radio with one Tab stop on the chosen', agree({ ...r, active: x0.id + ':' + x0.ok[0] }, x0.id, x0.ok[0]) && (await opt(p, x0.id, x0.ok[0]).getAttribute('aria-describedby')) === 'fb-slot-' + x0.id, r); }
+        await p.reload();
+        const s2 = await tabStops();
+        ok(T + 'reload: Tab stops on the chosen options', JSON.stringify(s2) === JSON.stringify(slots.map(x => 'notice-slot:' + x.id + ':' + x.ok[0])), s2);
+        ok(T + 'no sideways scroll', !(await layout(p)).over);
+        ok(T + 'no page errors', errs.length === 0, errs); await ctx.close();
       }
     }
     // ---- ④ version 6 저장 ----

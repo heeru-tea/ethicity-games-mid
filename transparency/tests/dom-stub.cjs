@@ -129,6 +129,14 @@ function createGame(opts={}){
    fire('document','click',e);settle();
   },
   clickNothing(){fire('document','click',{target:{closest:()=>null}});},
+  // 지금 초점이 있는 요소에서 키 하나(keydown). target.closest는 ‘button[data-act="…"]’만 푼다. 돌려주는 값: 이벤트(defaultPrevented)
+  key(k,mods={}){
+   const b=active,e={key:k,altKey:false,ctrlKey:false,metaKey:false,shiftKey:false,...mods,defaultPrevented:false,preventDefault(){e.defaultPrevented=true;},
+    target:{closest:sel=>{const m=/^button\[data-act="([^"]*)"\]$/.exec(sel);if(!m)throw new Error('흉내 못 내는 선택자(closest): '+sel);return b&&b.tagName==='BUTTON'&&b.isConnected&&b.dataset.act===m[1]?b:null;}}};
+   fire('document','keydown',e);settle();return e;
+  },
+  // 지금 초점이 있는 요소를 바꾼다(Tab으로 거기까지 간 것처럼). 화면에 없는 버튼이면 멈춘다.
+  focusButton(act,data){const b=findButton(act,data);if(!b)throw new Error(`화면에 없는 버튼: ${act} ${JSON.stringify(data||{})}`);active=b;},
   // 창 바깥(어두운 곳) 누르기 / 창 안 빈 곳 누르기
   clickBackdrop(inside){const e={target:modal,clientX:inside?300:10,clientY:inside?200:10};e.target.closest=()=>null;fire('modal','click',e);fire('document','click',e);delete modal.closest;settle();},
   // 글 칸에 입력. kind: reflect(q1·q2) · note · reporter(name·number) · other(관계없는 칸) · none(입력칸 아님) · fake(입력칸이 아닌데 data-reflect만 있음)

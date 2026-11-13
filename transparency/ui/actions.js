@@ -17,12 +17,14 @@
   send({type:'ask',id:b.dataset.id});
  };
 
- document.addEventListener('click',e=>{
-  const b=e.target.closest('button[data-act]');
+ // 버튼 하나 누르기: 마우스·Space·Enter(click 이벤트)와 라디오 방향키(notice.js)가 함께 쓴다.
+ function press(b){
   if(!b||b.disabled)return;
   S.revealCue=false;
   S.fresh=false;
   const run=actions[b.dataset.act];
   if(run)run(b,E.caseKey(S.state.scene));
- });
+ }
+ UI.press=press;
+ document.addEventListener('click',e=>press(e.target.closest('button[data-act]')));
 })();
