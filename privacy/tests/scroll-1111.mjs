@@ -1,5 +1,5 @@
 // 2026-11-11 플레이테스트: 화면을 열 때 늘 맨 위부터(장 카드 안 스크롤 상자 포함). node privacy/tests/scroll-1111.mjs
-//   a 장 카드(특별 수업)를 끝까지 내리고 '계속하기' → 특별 수업을 지나 다음 장 카드(2장)가 맨 위에서 열림 (1280×800 · 1280×560 · 390×844)
+//   a 장 카드(1장 완료 → 특별 수업)의 「내 선택 자세히 보기」를 펼쳐 끝까지 내리고 시작 버튼 → 특별 수업을 지나 다음 장 카드(2장)가 맨 위·자세히 닫힌 채 열림 (1280×800 · 1280×560 · 390×844)
 //   b 엔딩 화면을 내린 채 '선택 경로 돌아보기' → 맨 위, 돌아가기 → 엔딩 화면 맨 위
 //   c 채팅(폰) 창은 예전처럼 새 메시지 쪽(맨 아래)을 따라감
 //   ONLY=a,b,c. PLAYWRIGHT_PATH = playwright 모듈 경로(기본 token_economy). 브라우저 검사는 한 번에 하나(D:/Works/.browser-test.lock)
@@ -80,15 +80,19 @@ try {
     ok(await view(p) === 'v-chapter', `${sz.name} 장 카드(특별 수업)가 열림`);
     const top0 = await scrolled(p, 'v-chapter');
     ok(top0.win === 0 && top0.inner.length === 0, `${sz.name} 첫 장 카드는 맨 위 ${JSON.stringify(top0)}`);
+    // 2026-11-13 장 카드 재구성: 첫 화면은 넘치지 않게 줄었다 → 「내 선택 자세히 보기」를 펼쳐 카드를 넘치게 한 뒤 끝까지 내린다
+    await p.evaluate(() => document.querySelector('#c-more > summary').click()); await p.waitForTimeout(200);
     const moved = await scrollDown(p, 'v-chapter');
-    console.log(`  ${sz.name} 장 카드를 내린 양 ${moved}px`);
-    if (sz.name !== '1280x800') ok(moved > 0, `${sz.name} 장 카드가 넘쳐 실제로 내려감(${moved}px) — 검사가 의미 있음`);
+    console.log(`  ${sz.name} 장 카드(자세히 펼침)를 내린 양 ${moved}px`);
+    ok(moved > 0, `${sz.name} 장 카드가 넘쳐 실제로 내려감(${moved}px) — 검사가 의미 있음`);
     await p.click('#btn-chapter-go'); await p.waitForTimeout(400);
     const reached = await drive(p, async () => (await view(p)) === 'v-chapter' && (await p.evaluate(() => PrivacyApp.state().nextChapter)) === 2);
     ok(reached, `${sz.name} 특별 수업을 지나 2장 카드에 닿음 ${reached ? '' : JSON.stringify(await p.evaluate(() => { const s = PrivacyApp.state(); return { view: document.body.getAttribute('data-view'), screen: s.screen, scene: s.scene, mapTarget: s.mapTarget, next: s.nextChapter, reaction: s.reaction, talk: PrivacyTalk.isOpen(), skipHidden: document.getElementById('btn-map-skip').hidden, dock: document.getElementById('g-dock').textContent.slice(0, 60), staging: PrivacyApp.staging() }; }))}`);
     await p.waitForTimeout(300);
     const top1 = await scrolled(p, 'v-chapter');
     ok(top1.win === 0 && top1.inner.length === 0, `${sz.name} 다음 장 카드가 맨 위에서 열림 ${JSON.stringify(top1)}`);
+    const more1 = await p.evaluate(() => { const m = document.getElementById('c-more'), c = document.querySelector('#v-chapter .chapter-card'); return { open: m.open, pinned: c.classList.contains('pinned') }; });
+    ok(!more1.open && !more1.pinned, `${sz.name} 다음 장 카드는 자세히가 닫힌 채·가운데 정렬로 ${JSON.stringify(more1)}`);
     const head = await p.evaluate(() => { const e = document.getElementById('c-eyebrow').getBoundingClientRect(), t = document.getElementById('c-title').getBoundingClientRect(), c = document.querySelector('.chapter-card').getBoundingClientRect(); return { eyebrowIn: e.top >= c.top - 1 && e.bottom <= innerHeight, titleIn: t.top >= c.top - 1 && t.bottom <= innerHeight, text: document.getElementById('c-eyebrow').textContent }; });
     ok(head.eyebrowIn && head.titleIn, `${sz.name} 'N장' 표시와 제목이 보임 ${JSON.stringify(head)}`);
     ok(p.errors.length === 0, `${sz.name} a 오류 ${p.errors}`);

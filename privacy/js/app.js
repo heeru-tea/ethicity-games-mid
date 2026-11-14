@@ -137,11 +137,14 @@
       return;
     }
     warnedRemove = false;
+    if (S.status.readable) warnedUnread = false; // 다시 읽히게 됐으면, 나중에 또 막혔을 때 다시 말한다
     if (byUser && !S.status.readable && !warnedUnread) {
       warnedUnread = true;
       showNotice('이 브라우저가 저장 공간을 막고 있어서, 이 기기에 남은 기록이 있는지 확인하지 못했어요. 이 화면의 기록은 지웠어요.');
     }
   }
+  // 2026-11-13: 막혔던 저장소가 창 초점·보임 때 되살아나 밀린 지우기를 다시 해 본 뒤 — 읽히는데도 못 지웠으면 그때 '지우지 못했어요'를 알린다
+  S.onRetry = function () { checkRemoveFailure(); };
   function showNotice(msg) {
     var n = $('notice');
     n.textContent = '';
@@ -1014,21 +1017,44 @@
     return box;
   }
 
+  /* 장 카드(2026-11-13 교사 피드백 "1장을 마쳤다가 아니라 중간 활동 보고서처럼 읽힌다 — 다음 버튼이 안 보였다"):
+   *   첫 화면 = '{끝낸 장} 완료' → 끝낸 장 제목 → 이번 장에서 달라진 것(사건마다 첫 결과 문장 한 줄 — 엔딩 화면 사건 카드의 첫 줄과 같은 문장)
+   *     → 다음은 {장} · {제목} + 예고 한 줄(story.chapters[n].teaser가 있을 때만, 없으면 아무것도) → 「{장} 시작하기 →」.
+   *   사건 카드(모든 결과 문장)·이번 장의 흐름·친구들의 믿음은 「내 선택 자세히 보기」(<details>, 늘 닫힌 채 시작)에.
+   *   특별 수업 뒤 = 우리 반이 정한 안(줄만) / 자세히 = 안 전체 + 선생님이 짚은 질문. 맨 처음 카드(프롤로그 뒤) = 소개 + 다음은 1장.
+   *   요약 줄 강조: [[ ]]가 두 줄까지면 굵게(rich), 세 줄 모두에 있으면 맨 글자(한 화면 강조 2개 규칙 — 지금 outcomes에는 강조가 없다) */
+  function stageName(n) { return n === 0 ? '프롤로그' : n === 'sc' ? '특별 수업' : n === 4 ? '에필로그' : n + '장'; }
   function renderChapter() {
     sfx('collect');
     var run = progress.run;
     var n = run.nextChapter, ch = story.chapters[n];
-    var prev = run.chapter;
-    $('c-eyebrow').textContent = n === 4 ? '마지막' : n === 'sc' ? '특별 수업' : (n + '장');
-    $('c-title').textContent = n === 4 ? '에필로그' : ch.title;
-    $('c-sub').textContent = ch.sub;
-    var sum = $('c-summary');
-    sum.textContent = '';
-    var plan = prev === 'sc' ? classPlanBlock(run) : null;
-    if (plan) sum.appendChild(plan); // 특별 수업 뒤 2장 카드: 수치 변화 대신 '우리 반이 정한 AI CCTV 안'
-    else if (prev >= 1 && story.chapters[prev]) {
-      sum.appendChild(el('h2', null, chapterLabel(prev) + ' — 지금까지 생긴 변화'));
-      story.chapters[prev].events.forEach(function (e) { sum.appendChild(eventBlock(e, run)); });
+    var prev = run.chapter, done = prev !== 0 ? story.chapters[prev] : null;
+    var sum = $('c-summary'), next = $('c-next'), more = $('c-more'), detail = $('c-detail');
+    sum.textContent = ''; next.textContent = ''; detail.textContent = '';
+    more.open = false; more.hidden = true;
+    chapterUnpin();
+    $('c-eyebrow').textContent = stageName(prev) + ' 완료';
+    $('c-title').textContent = done ? done.title : '학급 축제 ‘레트로 사진관’을 준비하는 나흘';
+    if (prev === 'sc') {
+      // 특별 수업 뒤 2장 카드: 수치 변화 대신 '우리 반이 정한 AI CCTV 안'(특별 수업 플래그가 없는 옛 진행이면 비움)
+      var rows = E.specialClassRows(story, run), plan = classPlanBlock(run);
+      if (rows.length) {
+        sum.appendChild(el('h2', 'c-label', '우리 반이 정한 AI CCTV 안'));
+        var dl = el('dl', 'class-rows c-plan');
+        rows.forEach(function (r) { var row = el('div', 'class-row'); row.appendChild(el('dt', null, r.label)); row.appendChild(el('dd', null, r.text)); dl.appendChild(row); });
+        sum.appendChild(dl);
+      }
+      if (plan) { detail.appendChild(plan); more.hidden = false; }
+    } else if (done) {
+      var lines = done.events.map(function (e) { return E.eventOutcomes(story, e, run)[0]; }).filter(Boolean);
+      if (lines.length) {
+        sum.appendChild(el('h2', 'c-label', '이번 장에서 달라진 것'));
+        var flat = lines.filter(function (t) { return window.PrivacyEmph.has(t); }).length > 2;
+        var ul = el('ul', 'c-recap');
+        lines.forEach(function (t) { ul.appendChild(flat ? el('li', null, plain(fill(t))) : rich('li', null, fill(t))); });
+        sum.appendChild(ul);
+      }
+      done.events.forEach(function (e) { detail.appendChild(eventBlock(e, run)); });
       var mark = run.chapterMarks[prev] || { stats: {}, trust: {} };
       var grid = el('div', 'change-grid');
       var a = el('div');
@@ -1038,15 +1064,42 @@
       b.appendChild(el('h3', null, '친구들의 믿음'));
       b.appendChild(trustRows(mark.trust, run.trust));
       grid.appendChild(a); grid.appendChild(b);
-      sum.appendChild(grid);
+      detail.appendChild(grid);
+      more.hidden = false;
     } else {
-      sum.appendChild(el('p', 'lead-sub', '학급 축제 ‘레트로 사진관’을 준비하는 나흘. 단톡방, SNS, AI 도우미, 공용 컴퓨터에서 여러 번 선택하게 돼요. 지나간 선택은 뒤에서 다시 돌아와요.'));
+      sum.appendChild(el('p', 'c-intro', '단톡방, SNS, AI 도우미, 공용 컴퓨터에서 여러 번 선택하게 돼요. 지나간 선택은 뒤에서 다시 돌아와요.'));
     }
-    $('btn-chapter-go').textContent = n === 4 ? '에필로그 보기' : n === 'sc' ? '특별 수업 시작' : n + '장 시작';
+    // 다음은 … (에필로그는 제목이 '에필로그'라 때를 붙인다) + 예고 한 줄
+    var nl = el('p', 'c-next-line');
+    nl.appendChild(el('span', 'c-next-pre', '다음은 '));
+    nl.appendChild(document.createTextNode(stageName(n) + (n === 4 ? (ch.sub ? ' · ' + ch.sub : '') : ' · ' + ch.title)));
+    next.appendChild(nl);
+    if (ch.teaser) next.appendChild(rich('p', 'c-teaser', fill(ch.teaser)));
+    var go = $('btn-chapter-go'), arrow = el('span', 'c-arrow', '→');
+    go.textContent = (n === 4 ? '에필로그 보기' : stageName(n) + ' 시작하기') + ' ';
+    arrow.setAttribute('aria-hidden', 'true');
+    go.appendChild(arrow);
     show('v-chapter');
     // 장 카드 뒤로 직전 장면의 무대를 어둡게 깐다
     $('stage').classList.add('dim');
     if (stagedScene !== run.scene) { stagedScene = run.scene; window.PrivacyMap.stage(WD.STAGES[run.scene] || { place: 'classroom', tint: 'day', cast: [] }); }
+  }
+  /* 「내 선택 자세히 보기」를 열 때: 카드는 무대 가운데 정렬이라 내용이 늘면 위로도 밀려 올라간다(누른 줄이 손가락 밑에서 도망감) →
+   *   열기 직전(summary click — 기본 동작으로 열리기 전)에 지금 위쪽 자리를 고정(.pinned + --c-top)해 아래로만 늘어나게. 닫아도 그 자리 유지,
+   *   다음 장 카드를 그릴 때·창 크기가 바뀔 때 풀어 다시 가운데로. 카드 안 스크롤은 건드리지 않는다(맨 위 시작은 show()의 scrollTop) */
+  function chapterCard() { return document.querySelector('#v-chapter .chapter-card'); }
+  function chapterPin() {
+    var card = chapterCard(), box = $('v-chapter');
+    if (!card || card.classList.contains('pinned')) return;
+    var top = Math.max(0, Math.round(card.getBoundingClientRect().top - box.getBoundingClientRect().top));
+    card.style.setProperty('--c-top', top + 'px');
+    card.classList.add('pinned');
+  }
+  function chapterUnpin() {
+    var card = chapterCard();
+    if (!card) return;
+    card.classList.remove('pinned');
+    card.style.removeProperty('--c-top');
   }
 
   /* 특별 수업 「우리 교실에 AI CCTV를 단다면」(2026-11-10): 우리 반이 정한 안(설치 여부·알림 범위·보관 기간·열람·삭제) + 선생님이 짚은 질문(앞 2줄). 정답 표시 없음.
@@ -1402,9 +1455,16 @@
   }
 
   /* ── 메뉴·확인 창 ─────────────────── */
-  var lastFocus = null;
-  function openOverlay(id) {
-    lastFocus = document.activeElement;
+  /* 창을 닫으면 그 창을 연 곳으로 초점을 돌린다 — 창마다 따로 기억한다(2026-11-13 로컬 검토 P2).
+   *   예전에는 돌아갈 곳이 하나(lastFocus)뿐이라, 메뉴의 「이 게임 기록 지우기」·「처음부터 다시 하기」가 메뉴를 숨기고 확인 창을 열면
+   *   돌아갈 곳이 숨은 메뉴 안의 버튼으로 덮였다 → 취소하면 초점이 BODY로 빠졌다(메뉴 버튼으로 돌아갈 기억도 잃었다).
+   *   메뉴에서 연 확인 창을 취소(버튼·Escape)하면 메뉴를 다시 열고 그 확인 창을 연 메뉴 항목에 초점 — 취소 = 한 걸음 물러나기(메뉴를 고르던 자리로).
+   *     메뉴 버튼으로 바로 보내지 않는 까닭: 메뉴는 설정을 고르는 창이라 취소한 뒤에도 메뉴 안에서 다른 것을 고르거나 「닫기」·Escape로 나가는 것이 자연스럽고,
+   *     거기서 Escape를 한 번 더 누르면 원래대로 메뉴 버튼으로 돌아간다(창을 연 곳으로 돌아가기 — WAI-ARIA 대화 상자 규칙). */
+  var focusBack = {}; // focusBack[창 id] = 닫을 때 돌아갈 요소
+  function visibleEl(n) { return !!(n && n.focus && document.body.contains(n) && n.getClientRects().length && !n.disabled); }
+  function openOverlay(id, back) {
+    focusBack[id] = back || document.activeElement;
     $(id).hidden = false;
     var sheet = $(id).querySelector('.sheet'); if (sheet) sheet.scrollTop = 0; // 창은 열 때마다 맨 위부터(내려 본 채 닫았다 다시 열어도) — 2026-11-12 사용자 결정
     var f = tabStops(id)[0]; // Tab으로 처음 닿는 곳 — 메뉴는 지금 고른 속도(라디오 묶음은 고른 것 하나만 Tab에 걸린다)
@@ -1412,16 +1472,40 @@
   }
   function closeOverlay(id) {
     $(id).hidden = true;
-    if (lastFocus && document.body.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+    var back = focusBack[id]; focusBack[id] = null;
+    if (visibleEl(back)) back.focus({ preventScroll: true });
+    else if (visibleEl($('btn-menu'))) $('btn-menu').focus({ preventScroll: true }); // 돌아갈 곳이 사라졌으면(숨었으면) 보이는 메뉴 버튼으로 — BODY에 두지 않는다
   }
-  var confirmCb = null;
-  function ask(title, text, yesLabel, cb) {
+  /* 확인 창. from = 메뉴처럼 확인 창을 열면서 숨긴 창 { reopen: 'menu', back: 연 버튼 } — 취소하면 그 창을 다시 열고 그 버튼으로.
+   *   확인을 눌렀는데 이어서 또 묻는 경우(처음부터 → 성찰 카드도 지울까요?)는 앞 확인 창의 돌아갈 곳을 그대로 물려받는다(숨은 '확인' 버튼으로 돌아가지 않게) */
+  var confirmCb = null, confirmFrom = null, confirmChain = null;
+  function ask(title, text, yesLabel, cb, from) {
     $('confirm-title').textContent = title;
     $('confirm-text').textContent = text;
     $('confirm-yes').textContent = yesLabel || '확인';
     confirmCb = cb;
-    openOverlay('confirm');
+    confirmFrom = from || (confirmChain && confirmChain.from) || null;
+    openOverlay('confirm', confirmFrom ? confirmFrom.back : (confirmChain && confirmChain.back) || null);
     $('confirm-no').focus();
+  }
+  function confirmCancel() {
+    var from = confirmFrom;
+    confirmCb = null; confirmFrom = null;
+    if (from && from.reopen && $(from.reopen).hidden) $(from.reopen).hidden = false; // 메뉴를 그대로 다시 보인다(설정 값은 그대로 — 닫힌 동안 바뀌지 않았다)
+    closeOverlay('confirm');
+  }
+  function confirmYes() {
+    var cb = confirmCb, chain = { from: confirmFrom, back: focusBack.confirm };
+    confirmCb = null; confirmFrom = null; focusBack.confirm = null;
+    $('confirm').hidden = true;
+    if (!cb) return;
+    confirmChain = chain;
+    try { cb(); } finally { confirmChain = null; }
+  }
+  // 메뉴 항목에서 확인 창: 메뉴는 숨기고(확인 창만 보이게), 취소하면 메뉴를 다시 열고 그 항목으로
+  function askFromMenu(btn, title, text, yesLabel, cb) {
+    $('menu').hidden = true;
+    ask(title, text, yesLabel, cb, { reopen: 'menu', back: btn });
   }
   /* 창 안에서 Tab이 실제로 멈추는 곳(2026-11-12 추가 검토: 메뉴에서 '빠르게'·'한 번에'를 고르고 Shift+Tab을 누르면 초점이 뒤 화면으로 빠졌다).
    *   못 누르는 것·화면에 없는 것(휴대폰에서 숨기는 설정 줄 등)은 빼고, 라디오 묶음은 고른 것 하나만(고른 것이 없으면 첫째) — 브라우저의 Tab 순서와 같게 */
@@ -1490,6 +1574,13 @@
     $('btn-start-path').addEventListener('click', function () { renderPath('v-start'); });
     $('btn-start-reflect').addEventListener('click', function () { renderReflect('v-start'); });
     $('btn-chapter-go').addEventListener('click', function () { setRun(E.advance(story, progress.run)); routeRun(true); });
+    $('c-more').querySelector('summary').addEventListener('click', function () { if (!$('c-more').open) chapterPin(); }); // 열기 직전에 카드 위쪽 고정
+    var chapterW = window.innerWidth; // 폭이 바뀌면(회전 등) 고정을 풀어 다시 가운데로. 높이만 조금 바뀌는 것(휴대폰 주소창)은 그대로 — 단, 고정한 위쪽이 화면 절반을 넘으면 풀기
+    window.addEventListener('resize', function () {
+      var card = chapterCard(), w = window.innerWidth, wide = w !== chapterW;
+      chapterW = w;
+      if (current === 'v-chapter' && card && card.classList.contains('pinned') && (wide || parseFloat(card.style.getPropertyValue('--c-top')) > $('v-chapter').clientHeight / 2)) chapterUnpin();
+    });
     $('btn-end-path').addEventListener('click', function () { renderPath('v-ending'); });
     $('btn-end-reflect').addEventListener('click', function () { renderReflect('v-ending'); });
     $('btn-end-replay').addEventListener('click', function () { guardCard(startNew); });
@@ -1532,12 +1623,10 @@
     $('btn-menu-home').addEventListener('click', function () { $('menu').hidden = true; renderStart(); });
     $('btn-menu-help').addEventListener('click', function () { settings.helpFold = false; settings.helpPlaces = []; applyHelp(); saveSettings(); closeOverlay('menu'); }); // 다시 두 장소 동안 보임
     $('btn-menu-restart').addEventListener('click', function () {
-      $('menu').hidden = true;
-      ask('처음부터 다시 할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', function () { guardCard(startNew); });
+      askFromMenu($('btn-menu-restart'), '처음부터 다시 할까요?', '지금까지의 진행은 지워져요. 완료한 결과와 지난 선택 기록은 남아요.', '처음부터', function () { guardCard(startNew); });
     });
     $('btn-menu-wipe').addEventListener('click', function () {
-      $('menu').hidden = true;
-      ask('이 게임 기록을 모두 지울까요?', '‘공유한 순간’의 진행, 지난 선택 기록, 완료 결과, 성찰 카드에 쓴 글과 이름·학번, 시작 화면에서 적은 이름이 지워져요. 공통 캐릭터와 다른 게임 기록은 지우지 않아요.', '지우기', function () {
+      askFromMenu($('btn-menu-wipe'), '이 게임 기록을 모두 지울까요?', '‘공유한 순간’의 진행, 지난 선택 기록, 완료 결과, 성찰 카드에 쓴 글과 이름·학번, 시작 화면에서 적은 이름이 지워져요. 공통 캐릭터와 다른 게임 기록은 지우지 않아요.', '지우기', function () {
         cardWipe();
         S.remove(S.KEYS.progress);
         S.remove(S.KEYS.result);
@@ -1551,8 +1640,8 @@
         renderStart();
       });
     });
-    $('confirm-no').addEventListener('click', function () { confirmCb = null; closeOverlay('confirm'); });
-    $('confirm-yes').addEventListener('click', function () { var cb = confirmCb; confirmCb = null; $('confirm').hidden = true; if (cb) cb(); });
+    $('confirm-no').addEventListener('click', confirmCancel);
+    $('confirm-yes').addEventListener('click', confirmYes);
 
     document.addEventListener('keydown', function (e) {
       var fin = $('finale');
@@ -1562,7 +1651,7 @@
         return;
       }
       if (!$('warning').hidden) { trapFocus(e, 'warning'); return; } // 주의 화면(aria-modal): Tab이 뒤 화면으로 나가지 않는다 — 2026-11-12 외부 검토 7번
-      if (!$('confirm').hidden) { if (e.key === 'Escape') { confirmCb = null; closeOverlay('confirm'); } trapFocus(e, 'confirm'); return; }
+      if (!$('confirm').hidden) { if (e.key === 'Escape') confirmCancel(); else trapFocus(e, 'confirm'); return; }
       if (!$('menu').hidden) { if (e.key === 'Escape') closeOverlay('menu'); trapFocus(e, 'menu'); return; }
       if (current !== 'v-game' || e.altKey || e.ctrlKey || e.metaKey) return;
       var tag = (e.target && e.target.tagName) || '';

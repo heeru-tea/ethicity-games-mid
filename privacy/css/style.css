@@ -238,6 +238,7 @@ strong.em { font-weight: 800; color: inherit; }
 
 .dock { padding-top: 12px; min-height: 64px; }
 .prompt { font-weight: 700; margin: 0 0 8px; }
+.prompt-note { margin: -4px 0 8px; font-size: .85rem; color: var(--text-mute); } /* 2026-11-13 질문 아래 작은 안내(에이전트 장면 '엔딩에 영향 없음') — 강조색·띠 없이 */
 .choices { display: grid; gap: 8px; }
 .choice {
   font: inherit; text-align: left; cursor: pointer;
@@ -497,21 +498,82 @@ body[data-view="v-map"] .talk { bottom: 64px; }
   #v-game .dock, #v-game[data-device="none"] .dock { grid-column: 1; grid-row: 3; max-height: 40cqw; max-height: 46vh; }
 }
 
-/* 장 전환 카드 */
+/* 장 전환 카드(2026-11-13 재구성 — 교사 피드백 "중간 활동 보고서처럼 읽힌다, 다음 버튼이 안 보였다"):
+   'n장 완료'(작은 윗줄) → 끝낸 장 제목 → 이번 장에서 달라진 것(한 줄씩) → 가는 줄 → 다음은 … → 시작 버튼 → 「내 선택 자세히 보기」(접힘).
+   접힌 상태에서 버튼이 스크롤 없이 보이게: 폭은 읽기 좋은 38rem, 제목은 예전 2.1rem → 1.55rem, 사건 카드는 자세히 안으로.
+   .pinned = 자세히를 열 때 app.js가 지금 위쪽 자리(--c-top)에 고정 → 아래로만 늘어남(가운데 정렬로 위로 밀리지 않게).
+   카드 안에는 둥근 상자를 두지 않는다(겉 18px 둥근 틀 안에 또 둥근 상자 → 가는 줄로 나눔) */
 #v-chapter { background: rgba(22, 32, 31, .45); }
 .chapter-card {
-  position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); margin: 0 auto; width: min(46rem, calc(100% - 32px));
-  max-height: calc(100% - 32px); overflow-y: auto; padding: 20px 24px; border: 3px solid var(--text);
+  --c-gap: 16px;
+  position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); margin: 0 auto; width: min(38rem, calc(100% - 2 * var(--c-gap)));
+  max-height: calc(100% - 2 * var(--c-gap)); overflow-y: auto; padding: 22px 28px 14px; border: 3px solid var(--text);
   background: var(--card); border-radius: 18px;
 }
-.chapter-card h1 { margin-top: 0; }
+.chapter-card.pinned { top: var(--c-top, var(--c-gap)); transform: none; max-height: calc(100% - var(--c-top, var(--c-gap)) - var(--c-gap)); }
+/* 'n장 완료' = 작은 윗줄이지만 한눈에 '끝났다'가 보이게 옅은 청록 바탕의 작은 딱지(글자 색은 그대로 청록 — 강조색은 이것·시작 버튼·자세히 보기만) */
+.chapter-card .eyebrow {
+  display: inline-block; margin: 0 0 8px; padding: 1px 10px; border-radius: 999px; background: var(--accent-soft);
+  font-family: var(--pixel); font-weight: 400; font-size: .85rem; line-height: 1.7; letter-spacing: .02em;
+}
+.chapter-card h1 { margin: 0; font-size: 1.55rem; line-height: 1.35; }
+.c-label { margin: 18px 0 6px; font-size: .9rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-mute); }
+.c-recap { margin: 0; padding-left: 1.25em; display: grid; gap: 4px; }
+.c-recap li { line-height: 1.6; }
+.c-recap li::marker { color: var(--text-mute); }
+.c-intro { margin: 10px 0 0; color: var(--text-mute); }
+.c-plan { font-size: .95rem; line-height: 1.6; }
+.c-side { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.c-next-line { margin: 0; font-weight: 700; line-height: 1.5; }
+.c-next-pre { color: var(--text-mute); font-weight: 600; }
+.c-teaser { margin: 4px 0 0; color: var(--text-mute); line-height: 1.6; }
+.chapter-card .actions { margin-top: 14px; }
+#btn-chapter-go { min-width: 14rem; min-height: 52px; font-size: 1.05rem; }
+.c-arrow { margin-left: 2px; }
+.c-more { margin-top: 6px; }
+.c-more > summary { display: list-item; width: fit-content; cursor: pointer; padding: 10px 2px; font-size: .95rem; font-weight: 600; color: var(--accent); }
+.c-more > summary:hover { text-decoration: underline; text-underline-offset: 3px; }
+.c-detail { padding-bottom: 8px; }
+/* 자세히 안: 엔딩 화면과 같은 사건 카드·흐름·믿음이지만 둥근 상자 대신 가는 줄로 나눔 */
+.c-detail .event-card, .c-detail .class-plan { margin: 0; padding: 12px 0; background: none; border: 0; border-top: 1px solid var(--border); border-radius: 0; }
+.c-detail .change-grid { margin-top: 0; padding-top: 12px; border-top: 1px solid var(--border); }
+.c-detail .change-grid > div { padding: 0; background: none; border-radius: 0; }
 
 @media (max-width: 480px) {
   body[data-view="v-map"] .app, body[data-view="v-game"] .app, body[data-view="v-chapter"] .app { padding: 6px; }
   .stage { height: calc(100dvh - 12px); border-radius: 16px; }
   .hud-left { max-width: 62%; }
   #v-map .map-help { display: none; }
-  .chapter-card { width: calc(100% - 16px); max-height: calc(100% - 16px); padding: 16px; }
+  .chapter-card { --c-gap: 8px; padding: 18px 16px 10px; }
+  .chapter-card h1 { font-size: 1.35rem; }
+  .c-plan .class-row { grid-template-columns: 5.5em 1fr; }
+  #btn-chapter-go { width: 100%; min-width: 0; }
+}
+/* 키가 작은 휴대폰(세로 720 이하, 예: 360×640): 줄 간격·여백을 조금 줄여 접힌 상태에서 버튼이 첫 화면에 남게 */
+@media (max-width: 480px) and (max-height: 720px) {
+  .chapter-card { padding: 14px 14px 8px; }
+  .chapter-card h1 { font-size: 1.25rem; }
+  .c-label { margin-top: 12px; }
+  .c-recap, .c-plan, .c-teaser, .c-intro { font-size: .95rem; }
+  .c-recap li, .c-teaser { line-height: 1.5; }
+  .c-side { margin-top: 12px; padding-top: 12px; }
+  .chapter-card .actions { margin-top: 10px; }
+  #btn-chapter-go { min-height: 48px; }
+}
+/* 가로로 눕힌 휴대폰처럼 낮은 화면: 두 칸 — 왼쪽 = 완료·달라진 것, 오른쪽 = 다음은·시작 버튼(요약이 길어도 버튼은 위쪽에 남는다), 자세히는 아래 전체 폭 */
+@media (max-height: 500px) and (min-width: 600px) {
+  .chapter-card {
+    --c-gap: 8px; width: min(54rem, calc(100% - 2 * var(--c-gap))); padding: 14px 20px 6px;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem); column-gap: 20px; align-items: start;
+  }
+  .chapter-card h1 { font-size: 1.25rem; }
+  .c-label { margin-top: 10px; }
+  .c-recap li { line-height: 1.5; }
+  .c-side { margin-top: 0; padding: 2px 0 0 20px; border-top: 0; border-left: 1px solid var(--border); }
+  .chapter-card .actions { margin-top: 10px; }
+  #btn-chapter-go { width: 100%; min-width: 0; min-height: 46px; }
+  .c-more { grid-column: 1 / -1; margin-top: 2px; }
+  .c-more > summary { padding: 8px 2px; }
 }
 
 /* ── 장 전환·엔딩 ───────────── */
@@ -759,6 +821,7 @@ h2 .event-topic { display: block; margin-top: 2px; }
 .rcard-ev { font-size: .85rem; color: var(--text-mute); padding-top: .1em; }
 .rcard-out { grid-column: 2; }
 .rcard-empty { margin: 0; font-size: .95rem; color: var(--text-mute); }
+.rcard-explain { margin: 10px 0 0; font-size: .92rem; line-height: 1.6; color: var(--text-mute); } /* 2026-11-13 둘째 주제 설명(AI 에이전트란) */
 .rcard-q { display: block; margin: 12px 0 6px; font-weight: 700; }
 .rcard-input { display: block; width: 100%; min-height: 7.8em; box-sizing: border-box; font: inherit; line-height: 1.6; padding: 10px 12px; border: 1px solid #7C8B89; border-radius: var(--radius-in); background: #fff; color: var(--text); resize: vertical; }
 .rcard-count { margin: 4px 0 0; text-align: right; font-size: .8rem; color: var(--text-mute); }
@@ -775,7 +838,7 @@ h2 .event-topic { display: block; margin-top: 2px; }
 /* 인쇄(= PDF로 저장): A4 세로 한 장, 흰 바탕 검은 글자. 카드만 남기고 버튼·안내·지도·메뉴는 숨긴다.
    textarea 대신 같은 글을 문단(.rcard-answer)으로 찍는다(비우면 '작성 안 함'). 세 칸을 200자씩 다 채워도 한 장(tests/ai-privacy-browser.mjs c). */
 @media print {
-  @page { size: A4 portrait; margin: 12mm; }
+  @page { size: A4 portrait; margin: 10mm 12mm; } /* 2026-11-13 둘째 칸(AI 에이전트 설명·맡긴 것 줄)이 늘어 위아래만 2mm씩 줄임 */
   html, body { background: #fff !important; color: #000 !important; }
   body { font-size: 9.5pt; line-height: 1.45; }
   * { box-shadow: none !important; text-shadow: none !important; }
@@ -790,7 +853,7 @@ h2 .event-topic { display: block; margin-top: 2px; }
   .rcard-field, .rcard-fact { min-height: 0; gap: 4pt; }
   .rcard-field > span, .rcard-fact > span { width: auto; font-size: 8.5pt; color: #333; }
   .rcard-field input { min-height: 0; padding: 0 2pt; border: 0; border-bottom: 1px solid #000; border-radius: 0; font-weight: 700; }
-  .rcard-topic { padding: 5pt 0 2pt; break-inside: avoid; page-break-inside: avoid; }
+  .rcard-topic { padding: 4pt 0 1pt; break-inside: avoid; page-break-inside: avoid; }
   .rcard-topic + .rcard-topic { margin-top: 4pt; border-top: 1px solid #999; }
   .rcard-topic h2 { margin: 0 0 4pt; font-size: 11pt; }
   .rcard-num { color: #000; }
@@ -800,8 +863,9 @@ h2 .event-topic { display: block; margin-top: 2px; }
   .rcard-auto li { grid-template-columns: 9.5em minmax(0, 1fr); gap: 0 6pt; }
   .rcard-out { grid-column: 2; }
   .rcard-ev, .rcard-empty { font-size: 8pt; color: #333; }
-  .rcard-q { margin: 6pt 0 3pt; }
-  .rcard-answer { margin: 0; min-height: 3.1em; padding: 4pt 7pt; border: 1px solid #000; border-radius: 4pt; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .rcard-explain { margin: 2pt 0 0; font-size: 7.5pt; line-height: 1.3; color: #333; }
+  .rcard-q { margin: 4pt 0 2pt; }
+  .rcard-answer { margin: 0; min-height: 2.8em; padding: 4pt 7pt; border: 1px solid #000; border-radius: 4pt; white-space: pre-wrap; overflow-wrap: anywhere; }
   .rcard-answer.none { color: #555; }
 }
 

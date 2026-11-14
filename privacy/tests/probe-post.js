@@ -595,13 +595,14 @@
       $('#btn-new').click();
       var ci = await play(R.A, { stopAtChapter: 6 });
       ok(ci === 6 && view() === 'v-chapter' && !$('#stage').hidden, '1장 끝: 장 카드가 맵 무대 위에');
-      var lis = $$('#c-summary .trust-list li');
+      $('#c-more > summary').click(); await wait(); // 2026-11-13: 믿음 줄은 「내 선택 자세히 보기」 안
+      var lis = $$('#c-detail .trust-list li');
       ok(lis.length >= 4 && lis.every(function (li) { return li.lastElementChild && li.lastElementChild.matches('.spr.face'); }), '관계 줄마다 오른쪽 끝에 얼굴 (' + lis.length + '줄)');
       ok(lis.every(function (li) { return !!li.querySelector('.trust-mark'); }), '믿음 생김·그대로·줄어듦 표식');
-      var mj = $('#c-summary .trust-list li[data-who="minjun"] .spr.face');
+      var mj = $('#c-detail .trust-list li[data-who="minjun"] .spr.face');
       var gl = 0; while (mj && !mj.classList.contains('loaded') && gl++ < 100) await wait(30);
       ok(!!mj && mj.getAttribute('data-who') === 'minjun' && /characters-official\/minjun-portraits\.(png|webp)/.test(mj.style.backgroundImage), '민준 줄엔 공통 규격 민준 초상화');
-      ok(!!mj && mj.getBoundingClientRect().width >= 60 && mj.getBoundingClientRect().right <= $('#c-summary .trust-list').getBoundingClientRect().right + 1, '얼굴 2배 크기, 줄 안에 들어감');
+      ok(!!mj && mj.getBoundingClientRect().width >= 60 && mj.getBoundingClientRect().right <= $('#c-detail .trust-list').getBoundingClientRect().right + 1, '얼굴 2배 크기, 줄 안에 들어감');
       $('#btn-chapter-go').click();
       await play(R.A, { from: 6 });
       ok($$('#e-stats .trust-list li .spr.face').length >= 4, '엔딩 관계 줄에도 얼굴');
@@ -1210,7 +1211,7 @@
     else if (s === 'emphasis') {
       // 2026-11-02 강조 표시 [[…]] → <strong class="em">(굵게만): 화면 어디에도 [[ ]] 기호가 안 보이고, 쳐지는 중에도 굵게, 화면 읽기에는 맨 글자 한 번
       var EMx = window.PrivacyEmph, STx = window.PRIVACY_STORY, Ex = window.PrivacyEngine;
-      var BOXES = ['#g-log', '#g-live', '#g-head', '#g-dock', '#talk', '#cut', '#m-say', '#c-summary', '#e-summary', '#e-body', '#e-events', '#finale', '#p-list', '#v-reflect'];
+      var BOXES = ['#g-log', '#g-live', '#g-head', '#g-dock', '#talk', '#cut', '#m-say', '#c-summary', '#c-next', '#c-detail', '#e-summary', '#e-body', '#e-events', '#finale', '#p-list', '#v-reflect'];
       var raw = [], seenStrong = {}, noStrong = [], badStyle = [], talkStrong = 0, scans = 0;
       var MARK = /\[\[|\]\]/;
       function scan() {
@@ -1462,7 +1463,7 @@
         for (var q = 0; q < rr.length; q++) { key(ARROW[rr[q]]); key(ARROW[rr[q]], 'keyup'); await wait(16); while (PrivacyMap.debug.me().moving) await wait(16); }
         await wait(500); return;
       }
-      if (s === 'shot-chapter') { $('#btn-new').click(); await play(R.A, { stopAtChapter: 6 }); await wait(500); $('#c-summary .change-grid').scrollIntoView({ block: 'center' }); return; }
+      if (s === 'shot-chapter') { $('#btn-new').click(); await play(R.A, { stopAtChapter: 6 }); await wait(500); $('#c-more > summary').click(); await wait(); $('#c-detail .change-grid').scrollIntoView({ block: 'center' }); return; }
       var stop = { 'shot-start': -1, 'shot-game': 9, 'shot-react': 9, 'shot-ending': null, 'shot-path': null }[s];
       if (stop === -1) return;
       $('#btn-new').click();

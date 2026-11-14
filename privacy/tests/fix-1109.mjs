@@ -141,7 +141,7 @@ try {
         const r1 = await q.evaluate(() => ({ code: document.getElementById('e-eyebrow').textContent, body: [...document.querySelectorAll('#e-body p')].map((x) => x.textContent),
           rows: [...document.querySelectorAll('#e-stats .stat-row')].map((x) => x.querySelector('dt').textContent), odds: window.PRIVACY_ODDS.A }));
         // 2026-11-12 오후: A에 해친 친구 없음(harm_count=0)이 들어가 이 재현 경로(친구를 해친 경로)는 옛 판정에서도 B — 엔딩 글자 대신 옛 판정 화면 모양(지표 6줄·선택별 줄 없음·V1 확률)을 본다
-        rec(size, 'A ENDING_V2=false → 이전 화면 그대로(엔딩 B·지표 6줄·선택별 줄 없음·확률 V1)', r1.code === '엔딩 B' && r1.rows.length === 6 && r1.rows.includes('현실의 안전이 위협받거나 위협한 상황') && !r1.body.some((t) => /AI 도우미에 반 친구/.test(t)) && r1.odds === 1.2 /* js/odds.js V1의 A — 2026-11-12 오후 A에 해친 친구 없음(전 6.9 ← 8.5 ← 8.9) */, JSON.stringify(r1).slice(0, 300));
+        rec(size, 'A ENDING_V2=false → 이전 화면 그대로(엔딩 B·지표 6줄·선택별 줄 없음·확률 V1)', r1.code === '엔딩 B' && r1.rows.length === 6 && r1.rows.includes('현실의 안전이 위협받거나 위협한 상황') && !r1.body.some((t) => /AI 도우미에 반 친구/.test(t)) && r1.odds === 0.8 /* js/odds.js V1의 A — 2026-11-13 A에서 동의 횟수 대신 뜻을 무시한 행동 없음(전 1.2 ← 6.9 ← 8.5 ← 8.9) */, JSON.stringify(r1).slice(0, 300));
         await close(q);
       }
     }

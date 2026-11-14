@@ -62,8 +62,10 @@ try {
     {
       const p = await open(dev, runTo({}, (s) => s.screen === 'chapter' && s.nextChapter === 'sc'));
       const c = await p.evaluate(() => ({ v: document.body.getAttribute('data-view'), eb: document.getElementById('c-eyebrow').textContent, t: document.getElementById('c-title').textContent,
-        btn: document.getElementById('btn-chapter-go').textContent, sum: document.getElementById('c-summary').textContent }));
-      rec(size, 'card 장 카드 = 특별 수업', c.v === 'v-chapter' && c.eb === '특별 수업' && c.t === story.chapters.sc.title && c.btn === '특별 수업 시작' && /1장/.test(c.sum), JSON.stringify(c).slice(0, 220));
+        btn: document.getElementById('btn-chapter-go').textContent, sum: document.getElementById('c-summary').textContent, next: document.getElementById('c-next').textContent }));
+      // 2026-11-13 장 카드 재구성: 윗줄 = 끝낸 장('1장 완료'), 제목 = 1장 제목, 다음은 특별 수업 · …, 버튼 '특별 수업 시작하기 →'(자세한 검사는 chapter-card-1113.mjs)
+      rec(size, 'card 장 카드 = 1장 완료 → 다음은 특별 수업', c.v === 'v-chapter' && c.eb === '1장 완료' && c.t === story.chapters[1].title && c.btn === '특별 수업 시작하기 →'
+        && c.next.indexOf('다음은 특별 수업 · ' + story.chapters.sc.title) === 0 && /이번 장에서 달라진 것/.test(c.sum), JSON.stringify(c).slice(0, 260));
       await p.screenshot({ path: shot(`card-${size}`) });
       // walk: 걷기 시작(마당) → 교실 문으로 들어가면 특별실
       await p.click('#btn-chapter-go'); await p.waitForTimeout(1500);
@@ -112,8 +114,8 @@ try {
       const want = E.specialClassNotes(story, Object.assign({}, await st(p), { flags: { ccx: 'on', ccxPurpose: 'all', ccxKeep: 'open', ccxAccess: 'open' } }));
       const all = lines.join('\n');
       rec(size, 'wrap 선생님 반문 3줄 + 마무리', want.length === 3 && want.every((t) => all.includes(t)) && all.includes(story.specialClass.closing), lines.length + '줄');
-      const c2 = await p.evaluate(() => ({ eb: document.getElementById('c-eyebrow').textContent, sum: document.getElementById('c-summary').textContent }));
-      rec(size, 'wrap 다음 = 2장 카드, 요약 = 우리 반 안', c2.eb === '2장' && /우리 반이 정한 AI CCTV 안/.test(c2.sum) && /알림 범위/.test(c2.sum) && /수업 태도까지/.test(c2.sum), JSON.stringify(c2).slice(0, 200));
+      const c2 = await p.evaluate(() => ({ eb: document.getElementById('c-eyebrow').textContent, sum: document.getElementById('c-summary').textContent, next: document.getElementById('c-next').textContent }));
+      rec(size, 'wrap 다음 = 2장 카드(특별 수업 완료), 요약 = 우리 반 안', c2.eb === '특별 수업 완료' && /^다음은 2장 · /.test(c2.next) && /우리 반이 정한 AI CCTV 안/.test(c2.sum) && /알림 범위/.test(c2.sum) && /수업 태도까지/.test(c2.sum), JSON.stringify(c2).slice(0, 200));
       await p.screenshot({ path: shot(`ch2card-${size}`) });
       ok2(p);
       await close(p);

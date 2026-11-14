@@ -110,5 +110,88 @@ const othersKept = (d) => d.data['ethicity.player'] === OTHER['ethicity.player']
   ok(S.writeJSON(K.card, a) === false && !S.status.writeFailed, '4 문자열로 못 바꾸는 값은 저장소 문제가 아니다');
 }
 
+// ── 5. 2026-11-13 로컬 검토 P1: 막힌 동안 지운 기록이 저장소가 되살아난 뒤 다시 나타나면 안 된다
+//   실패 방식 3가지(통째로 막힘 · 쓰기만 실패 · 지우기만 실패) × 되살아나는 계기 4가지(읽기 · 쓰기 · 창 이벤트 · 창을 떠난 뒤 새로 열기)
+//   창 이벤트는 가짜 window.addEventListener로 모아 두었다가 직접 부른다
+const bootEv = (d) => {
+  const ev = {}, on = (t, f) => { (ev[t] = ev[t] || []).push(f); };
+  const ctx = { window: { localStorage: d.ls, addEventListener: on, document: { addEventListener: on } } };
+  vm.runInNewContext(SRC, ctx);
+  const S = ctx.window.PrivacyStorage; S.fire = (t) => (ev[t] || []).forEach((f) => f({ type: t })); S.events = Object.keys(ev);
+  return S;
+};
+const MODES = { all: { read: true, write: true, remove: true }, write: { write: true }, remove: { remove: true } };
+const WIPE = ['ethicity.privacy.card.v1', 'ethicity.privacy.progress.v2', 'ethicity.result.privacy'];
+const pend = (S) => typeof S.pending === 'function' ? S.pending() : '(없음)';
+const gone = (d) => WIPE.every((k) => !(k in d.data));
+{
+  const S = bootEv(disk(seed()));
+  ok(['focus', 'pageshow', 'pagehide', 'visibilitychange'].every((t) => S.events.includes(t)), '5 창 초점·보임·떠남 때 다시 해 본다(이벤트 등록)', S.events.join(','));
+}
+for (const [mode, fail] of Object.entries(MODES)) {
+  for (const how of ['read', 'write', 'event', 'reload']) {
+    const tag = `5 ${mode}/${how}`;
+    const d = disk(seed()); const S = bootEv(d), K = S.KEYS;
+    ok(S.readJSON(K.card).value.name === '검사용 가상 이름', tag + ' (준비) 처음엔 가상 이름이 읽힘');
+    d.fail = { ...fail };
+    const r = WIPE.map((k) => S.remove(k));
+    const sc = S.scrub(K.settings, { speed: 'normal', look: 'm', nickname: '' });
+    const expectOk = mode === 'write'; // 쓰기만 실패면 지우기는 실제로 된다
+    ok(r.every((x) => x === expectOk), tag + ' 지우기 결과 = ' + expectOk + (expectOk ? '(실제로 지워짐)' : '(확인 못 했으니 성공이라 하지 않음)'), JSON.stringify(r));
+    ok(sc === (mode !== 'all'), tag + ' scrub(이름 지우기) 결과 = ' + (mode !== 'all') + (mode === 'all' ? '(확인 못 함)' : '(새 값을 썼거나 옛 값을 지움)'), String(sc));
+    ok(WIPE.every((k) => S.readJSON(k).value === null) && S.readJSON(K.settings).value.nickname === '', tag + ' 막힌 동안 이 탭은 지운 것으로 읽음(이름도 빔)');
+    if (mode === 'all') ok(S.status.readable === false && S.status.removeFailed === false, tag + ' 통째로 막힘: readable=false, removeFailed=false(알 수 없음 — "확인하지 못했어요" 안내 조건)', JSON.stringify(S.status));
+    if (mode === 'remove') ok(S.status.readable === true && S.status.removeFailed === true, tag + ' 지우기만 실패: removeFailed=true(남은 것이 확인됨)', JSON.stringify(S.status));
+    if (mode === 'write') ok(S.status.removeFailed === false && gone(d), tag + ' 쓰기만 실패: 지우기는 실제로 됨');
+    ok(pend(S) === true, tag + ' 밀린 것이 남아 있음(다시 해 볼 표시)');
+    // 되살아남
+    d.fail = {};
+    let retried = 0; S.onRetry = () => { retried++; };
+    if (how === 'read') S.readJSON(K.progress);
+    else if (how === 'write') S.writeJSON(K.settings, { speed: 'normal', look: 'f', nickname: '' });
+    else if (how === 'event') S.fire('focus');
+    else S.fire('pagehide');
+    ok(gone(d), tag + ' 되살아난 뒤 저장소에서 성찰 카드·진행·결과가 실제로 지워짐', JSON.stringify(WIPE.map((k) => d.data[k] ? k : '')));
+    ok(!(K.settings in d.data) || !JSON.parse(d.data[K.settings]).nickname, tag + ' 저장소의 옛 이름도 남지 않음', d.data[K.settings]);
+    ok(WIPE.every((k) => S.readJSON(k).value === null), tag + ' 같은 탭에서 옛 이름·학번·답을 다시 읽지 않음');
+    ok(!S.status.removeFailed && !S.status.writeFailed && S.status.readable && pend(S) === false, tag + ' 표시가 모두 풀림(readable=true)', JSON.stringify(S.status));
+    if (how === 'event' || how === 'reload') ok(retried === 1, tag + ' 다시 해 본 뒤 app에 알림(onRetry)', String(retried));
+    ok(othersKept(d), tag + ' 공통 플레이어 정보·다른 게임 기록은 그대로');
+    const S2 = boot(d); // 새로 열기
+    ok(WIPE.every((k) => S2.readJSON(k).value === null) && !(S2.readJSON(K.settings).value || {}).nickname, tag + ' 새로 열어도 되살아나지 않음');
+  }
+}
+// 5x 통째로 막힘 → 읽기만 되살아남(지우기는 여전히 안 됨): 이제는 "남은 것이 확인됨" → removeFailed. 지우기도 되면 풀림
+{
+  const d = disk(seed()); const S = bootEv(d), K = S.KEYS;
+  d.fail = { ...MODES.all };
+  ok(S.remove(K.card) === false && S.status.removeFailed === false && S.status.readable === false, '5x 통째로 막힘: 알 수 없음');
+  d.fail = { remove: true, write: true }; let retried = 0; S.onRetry = () => { retried++; };
+  S.fire('visibilitychange');
+  ok(S.status.readable === true && S.status.removeFailed === true && retried === 1 && d.data[K.card] === CARD, '5x 읽기만 되살아나면: 남은 것이 확인됨 → removeFailed=true, app에 알림', JSON.stringify(S.status));
+  ok(S.readJSON(K.card).value === null, '5x 그래도 이 탭은 지운 것으로 읽음');
+  d.fail = {};
+  ok(S.readJSON(K.result).value !== undefined && !(K.card in d.data) && S.status.removeFailed === false, '5x 지우기도 되살아나면 다음 읽기 때 마저 지움');
+  ok(othersKept(d), '5x 공통 키 그대로');
+}
+// 5y 지운 뒤 막힌 채 다시 쓰면(새 성찰 카드) — 새 값을 못 쓰는 동안 옛 값이 남았을 수 있다(stale) → 되살아나면 새 값으로 덮인다
+{
+  const d = disk(seed()); const S = bootEv(d), K = S.KEYS;
+  d.fail = { ...MODES.all };
+  S.remove(K.card); S.writeJSON(K.card, { v: 1, name: '', sid: '', answers: ['', '', ''] });
+  ok(S.readJSON(K.card).value.name === '', '5y 막힌 동안 이 탭은 새 값을 읽음');
+  d.fail = { write: true }; S.fire('focus');
+  ok(!(K.card in d.data), '5y 쓰기는 아직 안 되고 지우기는 되면 — 옛 값이라도 먼저 지움');
+  d.fail = {}; S.fire('focus');
+  ok(JSON.parse(d.data[K.card]).name === '' && pend(S) === false, '5y 쓰기도 되면 새 값을 씀');
+}
+// 5z 정상일 때는 창 이벤트가 아무것도 하지 않는다(부작용 없음)
+{
+  const d = disk(seed()); const S = bootEv(d); let retried = 0; S.onRetry = () => { retried++; };
+  const before = JSON.stringify(d.data), calls = { ...d.calls };
+  S.fire('focus'); S.fire('pagehide'); S.fire('visibilitychange');
+  ok(JSON.stringify(d.data) === before && d.calls.set === calls.set && d.calls.remove === calls.remove && retried === 0, '5z 밀린 것이 없으면 창 이벤트는 저장소를 건드리지 않음');
+}
+
 console.log(`\nstorage-1112: 통과 ${pass} · 실패 ${fails.length}`);
 process.exit(fails.length ? 1 : 0);

@@ -14,6 +14,13 @@
    *   hurt.<인물>  내가 그 친구를 해친 적이 있음(사진·번호·캡처·가짜 영상·계정) — 피해자가 나를 위로·사과하지 않게 대사를 가른다
    *   harmed_others 내가 다른 사람의 정보를 퍼뜨린 적이 있음 — 엔딩 C·D와 에필로그에서 책임을 다룬다
    *   harm_count   내가 해친 친구 수(0~4, hurt.* 가운데 참인 개수) — 엔딩 B 판정에 쓴다(2026-11-10 플레이테스트: 여럿을 해치고 수습만 해서는 B가 아님)
+   *   overrode_wish 당사자의 뜻을 무시한 행동을 한 적이 있음 — 엔딩 A 판정에 쓴다(2026-11-13 교사 요청: A에서 '동의 2번 이상'을 빼고 이것으로).
+   *     "묻지 않았다"만으로는 해당하지 않는다(안 찍기·안 올리기·필요한 것만 전하기는 묻지 않아도 무시가 아님). 실제로 한 행동만 센다:
+   *     ㉠ 거절·비밀·삭제 요청을 어김: e2post=group|story(민준 "올리진 마" 뒤 포함) · e2fix=no(삭제 요청 넘김) · e3=capture(지호 "아무한테도 말하지 마") · e5=jiho(그 대화를 AI 도우미에)
+   *     ㉡ 허락이 필요한 촬영·공유·사용을 묻지 않고 함: e2shot=nocheck(자는 얼굴 촬영) · e4=forward(새봄 가짜 영상 전달) · e5=all(하늘 번호·계좌 든 단톡 통째 입력)
+   *        · e6=peek|post(하늘 계정 DM 열람·글 올리기) · e6b=cap(DM 캡처 전달) · e7=join(민준 번호를 낯선 사람에게) · e9=share(남의 이름·학교·동네·얼굴 공유)
+   *     넣지 않은 것: e1=public(내 정보) · e1b=pass(하늘이 스스로 올림) · e7=silent·e7b=none·e4b=blame·e6b=deny(행동이 아니라 방관·말 — harm_count가 맡음)
+   *       · e8=meet|crew(내 정보) · e8_response=expose(상대가 공개 게시판에 직접 쓴 계정·댓글 — 확산 수치가 맡음). 표는 README 「엔딩 A 기준(2026-11-13)」
    *   값이 { count: [조건…] }이면 참인 조건의 개수(숫자), 문자열이면 참/거짓 */
   var COMPUTED = {
     'hurt.minjun': 'e2post=story|group || e2fix=no || e7=join|silent || e7b=none',
@@ -22,7 +29,8 @@
     'hurt.haneul': 'e6=post || e6b=deny|cap',
     // 2026-11-02: 지호 대화 캡처 전달·하늘 DM 캡처 전달 추가 · 2026-11-10: 28명 단톡방에 올린 사진(e2post=group)도 퍼뜨린 것(엔딩 판정과 무관, 책임 문단만)
     harmed_others: 'e4=forward || e6=post || e7=join || e9=share || e2post=story|group || e3=capture || e6b=cap',
-    harm_count: { count: ['hurt.minjun', 'hurt.saebom', 'hurt.jiho', 'hurt.haneul'] }
+    harm_count: { count: ['hurt.minjun', 'hurt.saebom', 'hurt.jiho', 'hurt.haneul'] },
+    overrode_wish: 'e2shot=nocheck || e2post=group|story || e2fix=no || e3=capture || e4=forward || e5=all|jiho || e6=peek|post || e6b=cap || e7=join || e9=share'
   };
   function computed(key, state) {
     var c = COMPUTED[key];
