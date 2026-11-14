@@ -1,5 +1,5 @@
 // 2026-11-13 사건 5 「AI 도우미 루미」 확장 — 브라우저 확인: node privacy/tests/ai-agent-1113-browser.mjs
-//   a 에이전트 장면: 선택 4개 · 「이 선택은 엔딩에 영향을 주지 않습니다.」가 선택 상자 안에 보임 · 가로 넘침 없음 (1280×800 · 390×844)
+//   a 에이전트 장면: 선택 4개 · 「이 선택으로 엔딩이 바뀌지는 않아요.」가 선택 상자 안에 보임 · 가로 넘침 없음 (1280×800 · 390×844)
 //   b give → 루미가 볼 수 있는 것 4줄 → 설정 화면 '연결된 계정' → 정리하면 "비밀번호를 바꿨습니다"
 //   c 안내문(all) → 지호(anon) → 에이전트, 클릭으로 이어짐
 //   e 성찰 카드 둘째 주제: 제목·설명·질문·'루미에게 맡긴 것' 줄
@@ -18,7 +18,7 @@ const ALL_SIZES = { d: { name: '1280x800', dev: { viewport: { width: 1280, heigh
   m: { name: '390x844', dev: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } } };
 const SIZES = (process.env.SIZE || 'd,m').split(',').map((k) => ALL_SIZES[k]);
 const shot = (n) => path.join(HERE, `_shot-1113-agent-${n}.png`);
-const NOTE = '이 선택은 엔딩에 영향을 주지 않습니다.';
+const NOTE = '이 선택으로 엔딩이 바뀌지는 않아요.';
 
 // 노드에서 이야기를 걸어 상태 만들기: prefs[장면] 우선, 없으면 첫 선택. stop(s)가 참이면 거기서(기록 그대로)
 function walk(prefs, stop) {

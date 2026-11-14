@@ -15,9 +15,9 @@ const N = Number(process.argv[2] || 20000);
 //   SEED=숫자 로 씨앗을 바꿔 다시 돌려 볼 수 있다(엔딩 비율이 씨앗에 따라 얼마나 흔들리는지 확인용)
 const mulberry32 = (a) => () => { a = (a + 0x6D2B79F5) | 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const SEED = Number(process.env.SEED || 20261109);
-const rnd = mulberry32(SEED);
-const rndSc = mulberry32(7); // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
-const rndAg = mulberry32(11); // 사건 5 AI 에이전트(c2_e5_agent) 선택 전용 — 엔딩과 무관(2026-11-13), 같은 까닭으로 따로
+let rnd = mulberry32(SEED); // let: 판정(V1·V2)마다 같은 표본으로 다시 시작한다(아래 반복문)
+let rndSc = mulberry32(7); // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
+let rndAg = mulberry32(11); // 사건 5 AI 에이전트(c2_e5_agent) 선택 전용 — 엔딩과 무관(2026-11-13), 같은 까닭으로 따로
 
 function play(pick) {
   let s = E.createState(story);
@@ -37,7 +37,7 @@ const log = (t = '') => { out.push(t); console.log(t); };
 const pct = (n) => (n / N * 100).toFixed(1);
 let splitErr = 0;
 for (const v2 of [false, true]) {
-  story.endingV2 = v2; seed = 20261109;
+  story.endingV2 = v2; rnd = mulberry32(SEED); rndSc = mulberry32(7); rndAg = mulberry32(11); // 2026-11-14 검토: 옛 `seed = 20261109`는 없는 변수라 실행 즉시 죽었다
   const count = {};
   for (let i = 0; i < N; i++) {
     const s = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : st.scene === 'c2_e5_agent' ? rndAg() : rnd()) * cs.length)]);

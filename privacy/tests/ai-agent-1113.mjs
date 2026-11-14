@@ -165,7 +165,7 @@ if (on('outcomes') && story.scenes.c2_e5_j) {
 
 /* ── 에이전트 장면 ── */
 const AGENTS = ['give', 'draft', 'scoped', 'ask'];
-const NOTE = '이 선택은 엔딩에 영향을 주지 않습니다.';
+const NOTE = '이 선택으로 엔딩이 바뀌지는 않아요.';
 const BRANDS = ['카카오', '네이버', '코레일', '토스', '쿠팡', '구글', '애플', '삼성', '배민', '당근', '피클', 'pickle', 'naver', 'kakao', 'korail', 'google'];
 const ag = story.scenes.c2_e5_agent;
 if (on('agentScene')) {
@@ -226,7 +226,9 @@ if (on('agentFlagsUnused')) {
   story.endings.forEach((e) => { if (has(e.if)) bad.push('엔딩 ' + e.code); });
   Object.keys(E.COMPUTED).forEach((k) => { if (has(E.COMPUTED[k])) bad.push('COMPUTED ' + k); });
   if (has(story.seriousSplit)) bad.push('seriousSplit');
-  if (has(story.endingNotes)) bad.push('endingNotes');
+  // 2026-11-14 교사 결정: 계정을 통째로 준 경로(e5agent=give)는 엔딩 덧붙임 한 줄만 나온다(엔딩 종류·수치·믿음과는 여전히 무관) — endingNotes는 give 줄 둘(e5link cut / 그 밖)만 허용
+  { const agentNotes = story.endingNotes.lines.filter((n) => has(n.if)).map((n) => n.if);
+    if (agentNotes.join(' | ') !== 'e5agent=give && e5link=cut | e5agent=give && e5link!=cut') bad.push('endingNotes ' + agentNotes.join(' | ')); }
   Object.entries(story.scenes).forEach(([id, sc]) => {
     if (has(sc.next)) bad.push(id + ' next');
     (sc.choices || []).forEach((c) => {

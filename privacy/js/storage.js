@@ -51,7 +51,12 @@
   function ls() { return root.localStorage; }
   function canRead() { try { ls().getItem(PROBE); return true; } catch (e) { return false; } }
   // 저장소에서 그 키를 지우고, 정말 없어졌는지 읽어서 확인한다
-  function erase(key) { ls().removeItem(key); if (ls().getItem(key) != null) throw new Error('still stored'); status.readable = true; }
+  //   지우기가 막혔어도 그 키가 처음부터 없으면 지울 것이 없다 — 실패가 아니다(2026-11-14 검토: 저장한 적 없는 카드를 지우다 "지우지 못했어요"가 떴다)
+  function erase(key) {
+    try { ls().removeItem(key); } catch (e) { if (ls().getItem(key) == null) { status.readable = true; return; } throw e; }
+    if (ls().getItem(key) != null) throw new Error('still stored');
+    status.readable = true;
+  }
   (function probe() {
     status.readable = canRead();
     try { ls().setItem(PROBE, '1'); status.available = true; } catch (e) { status.available = false; }

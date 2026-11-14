@@ -1212,7 +1212,8 @@
     inner.appendChild(add(el('p', 'finale-end', '엔딩 ' + end.code + ' · ' + end.title)));
     // 아무거나 골랐다면 이 엔딩에 닿을 확률(미리 계산한 값 — 플레이어 기록은 모으지 않는다)
     var odds = (window.PRIVACY_ODDS || {})[end.code];
-    if (typeof odds === 'number') inner.appendChild(add(el('p', 'finale-odds', '아무거나 골랐다면 이 엔딩에 닿을 확률은 ' + odds + '%예요.')));
+    // 2026-11-14 사용자 결정: 엔딩 A는 숫자(0.5%) 대신 문장으로 — 숫자만 보면 '거의 불가능한 엔딩'처럼 읽혔다(무작위 선택 비율일 뿐 실제 달성률이 아니다)
+    if (typeof odds === 'number') inner.appendChild(add(el('p', 'finale-odds', end.code === 'A' ? '아무렇게나 골라서는 거의 나오지 않는 엔딩이에요.' : '아무거나 골랐다면 이 엔딩에 닿을 확률은 ' + odds + '%예요.')));
     var actions = add(el('div', 'finale-actions'));
     var go = el('button', 'btn primary', '결과 보기');
     go.id = 'finale-go';

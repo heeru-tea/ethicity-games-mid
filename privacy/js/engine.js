@@ -53,7 +53,7 @@
     'fix.e7': 'e7b=help',
     slip_count: { count: ['slip.e2', 'slip.e5', 'slip.e6', 'slip.e7'] },
     slip_fixed: 'slip.e2 && fix.e2 || slip.e5 && fix.e5 || slip.e6 && fix.e6 || slip.e7 && fix.e7',
-    grave_harm: 'e2shot=asked && e2post=group || e2post=story || e2fix=no || e3=capture || e4=forward || e4b=blame || e5j=jiho || e6=post || e6b=cap|deny || e7=join || e7b=none || e9=share',
+    grave_harm: 'e2shot=asked && e2post=group || e2post=story || e2fix=no || e3=capture || e4=forward || e4b=blame || e5j=jiho || e6=post || e6b=cap|deny || e7=join || e7b=none || e8=crew || e9=share', // e8=crew(2026-11-14 교사 결정): 친구들을 모아 같이 나가자고 한 것 = 남을 위험하게 한 일 → A 불가(예방 A는 story.js 엔딩 A 조건의 e8!=crew)
     recovered: 'slip_count=1 && slip_fixed && !grave_harm'
   };
   function computed(key, state) {

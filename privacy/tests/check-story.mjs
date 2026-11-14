@@ -307,7 +307,9 @@ function linesOnRoute(route) {
   story.endings.forEach((e) => { if (has(e.if)) where.push('엔딩 ' + e.code); });
   Object.keys(E.COMPUTED).forEach((k) => { if (has(E.COMPUTED[k])) where.push('COMPUTED ' + k); });
   if (has(story.seriousSplit)) where.push('seriousSplit');
-  if (has(story.endingNotes)) where.push('endingNotes');
+  // 2026-11-14 교사 결정: 계정을 통째로 준 경로(e5agent=give)는 엔딩 덧붙임 한 줄만 허용(엔딩 종류·수치·믿음과는 여전히 무관) — 그 두 줄 말고 다른 줄이 에이전트 플래그를 쓰면 오류
+  { const ag2 = story.endingNotes.lines.filter((n) => has(n.if)).map((n) => n.if).join(' | ');
+    if (ag2 !== 'e5agent=give && e5link=cut | e5agent=give && e5link!=cut') where.push('endingNotes ' + ag2); }
   for (const [id, sc] of Object.entries(story.scenes)) {
     if (has(sc.next)) where.push(id + ' next');
     for (const c of sc.choices || []) {

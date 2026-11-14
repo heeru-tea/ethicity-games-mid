@@ -16,7 +16,7 @@ const V = story.endingV2 === true ? 'V2' : 'V1';
 let pass = 0, fail = 0;
 const ok = (name, cond, extra) => { if (cond) pass++; else { fail++; console.log('FAIL ' + name + (extra === undefined ? '' : ' :: ' + JSON.stringify(extra))); } };
 const A = story.endings.find((e) => e.code === 'A');
-const PREVENT = 'spread<=2 && minimize>=2 && harm_count=0 && !overrode_wish';
+const PREVENT = 'spread<=2 && minimize>=2 && harm_count=0 && !overrode_wish && e8!=crew'; // 2026-11-14 교사 결정: 친구들을 모아 같이 나가자고 한 경로(e8=crew)는 A가 아니다
 const RECOVER = 'spread<=2 && minimize>=2 && recovered';
 const condOf = (code) => story.endings.find((e) => e.code === code).if;
 
@@ -108,13 +108,21 @@ expect('회복 e2 + 정문 약속에 나가 싸우고 알림 끔(위협이 남�
 // B·C 정상 분기(대표 경로)
 for (const code of ['B', 'C', 'D']) { let i = 0; const s = play(Object.fromEntries(routes[code].map((p) => p.split('#')))); ok('대표 경로 ' + code + ' 그대로', s.ending === code, s.ending); }
 
+// 2026-11-14 교사 결정: 사건 8 '친구들 모아 같이 나가자'(e8=crew)는 뒤에 도움을 청해도 A가 아니다(예방·회복 모두)
+{
+  const crewHelp = { c3_e8_a: 'crew', c3_e8_b: 'help' };
+  const pc = play(crewHelp), rc = play({ ...SLIP.e5, ...crewHelp });
+  ok('신중한 경로 + e8 crew → help: A 아님', pc.ending !== 'A' && E.evalCond('e8=crew', pc), pc.ending);
+  ok('회복 e5 + e8 crew → help: A 아님(grave_harm)', rc.ending !== 'A' && E.evalCond('grave_harm', rc) && !E.evalCond('recovered', rc), rc.ending);
+}
+
 /* ── 3. 문장 ── */
 const endOf = (s) => story.endings.find((e) => e.code === s.ending);
 const text = (s) => [E.endingSummary(story, endOf(s), s), ...E.endingBody(story, endOf(s), s)].join(' / ');
 const LINE = { e2: /민준이의 사진/, e5: /AI 도우미/, e6: /하늘이의 DM/, e7: /민준이의 번호/ };
 for (const [ev, s] of Object.entries(recov)) {
   const t = text(s);
-  ok(`회복 A 문장(${ev}): 바로잡은 경로 요약 · 그 사건 줄 · 없던 일이 되지 않음`, /바로잡/.test(E.endingSummary(story, endOf(s), s)) && LINE[ev].test(t) && /없던 일이 되지는 않는다/.test(t), t);
+  ok(`회복 A 문장(${ev}): 바로잡은 경로 요약 · 그 사건 줄 · 없던 일이 되지 않음`, /수습을 했다/.test(E.endingSummary(story, endOf(s), s)) && LINE[ev].test(t) && /없던 일이 되지는 않는다/.test(t), t);
   ok(`회복 A 문장(${ev}): 예방 A 문장이 섞이지 않음`, !/매번|필요할 때 상대에게 물으며|함부로 꺼내지 않는 데서|모든 일을 막을 수 있었던/.test(t), t);
   for (const [ev2, re] of Object.entries(LINE)) if (ev2 !== ev && ev2 !== 'e2' && ev2 !== 'e7') ok(`회복 A(${ev}) 문장에 다른 사건(${ev2}) 줄 없음`, !(re.test(t) && /바로잡|지웠|로그아웃|알렸/.test(t.split(' / ').filter((x) => re.test(x)).join())), t);
 }

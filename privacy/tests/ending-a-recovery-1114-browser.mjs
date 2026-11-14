@@ -41,6 +41,7 @@ async function endingText(run, dev, shotName) {
     const st = await page.evaluate(() => PrivacyApp.state().screen);
     if (st === 'ending' && await page.evaluate(() => { const v = document.getElementById('v-ending'); return !!(v && !v.hidden && v.offsetParent !== null); })) break;
     await page.evaluate(() => {
+      const od = document.querySelector('.finale-odds'); if (od) window.__oddsSeen = od.textContent; // 엔딩 연출 안의 확률 문장(엔딩 화면 글에는 없다)
       if (window.PrivacyTalk && PrivacyTalk.isOpen()) { PrivacyTalk.next(); return; }
       const fin = document.querySelector('.finale'); if (fin && fin.offsetParent !== null) { fin.click(); const b = fin.querySelector('button'); if (b) b.click(); return; }
       const b = [...document.querySelectorAll('#g-next button, #g-dock button')].filter((x) => !x.disabled && x.offsetParent !== null).pop(); if (b) b.click();
@@ -48,18 +49,21 @@ async function endingText(run, dev, shotName) {
     await page.waitForTimeout(250);
   }
   const txt = await page.evaluate(() => (document.getElementById('v-ending') || document.body).innerText);
+  const odds = await page.evaluate(() => (document.querySelector('.finale-odds') || {}).textContent || window.__oddsSeen || ''); // 엔딩에 닿으면 연출이 엔딩 화면 위에 떠 있다
   await page.screenshot({ path: path.join(HERE, `_shot-1114-recovery-${shotName}.png`), fullPage: true });
   await ctx.close();
-  return { txt, errors };
+  return { txt, errors, odds };
 }
 try {
   for (const sz of SIZES) {
     const rec = await endingText(beforeEnding({ ...BASE, c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'all' }), sz.dev, 'e2-' + sz.name);
-    ok(/함께 세운 경계/.test(rec.txt) && /그 자리에 맞게 끝까지 바로잡았다/.test(rec.txt) && /민준이의 사진을 묻지 않고 찍어/.test(rec.txt) && /없던 일이 되지는 않는다/.test(rec.txt), `${sz.name} 회복 A 엔딩 문장 ${rec.txt.slice(0, 200)}`);
+    ok(/함께 세운 경계/.test(rec.txt) && /할 수 있는 수습을 했다/.test(rec.txt) && /민준이의 사진을 묻지 않고 찍어/.test(rec.txt) && /없던 일이 되지는 않는다/.test(rec.txt), `${sz.name} 회복 A 엔딩 문장 ${rec.txt.slice(0, 200)}`);
     ok(!/매번 상대에게|필요할 때 상대에게 물으며|함부로 꺼내지 않는 데서|\[\[/.test(rec.txt), `${sz.name} 회복 A에 예방 A 문장·강조 기호 없음`);
     ok(rec.errors.length === 0, `${sz.name} 회복 A 오류 ${rec.errors}`);
+    // 2026-11-14 사용자 결정: 엔딩 A는 확률 숫자 대신 문장
+    ok(rec.odds === '아무렇게나 골라서는 거의 나오지 않는 엔딩이에요.', `${sz.name} 엔딩 A 연출의 확률 문장(숫자 없음) “${rec.odds}”`);
     const pre = await endingText(beforeEnding(BASE), sz.dev, 'prevent-' + sz.name);
-    ok(/함께 세운 경계/.test(pre.txt) && /매번 상대에게 물으며/.test(pre.txt) && !/바로잡았다|없던 일이 되지는/.test(pre.txt), `${sz.name} 예방 A 문장 그대로 ${pre.txt.slice(0, 160)}`);
+    ok(/함께 세운 경계/.test(pre.txt) && /매번 상대에게 물으며/.test(pre.txt) && !/수습을 했다|없던 일이 되지는/.test(pre.txt), `${sz.name} 예방 A 문장 그대로 ${pre.txt.slice(0, 160)}`);
     ok(pre.errors.length === 0, `${sz.name} 예방 A 오류 ${pre.errors}`);
   }
 } finally { await browser.close(); server.close(); }
