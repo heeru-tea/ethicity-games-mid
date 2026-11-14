@@ -6,6 +6,8 @@
 // 브라우저는 첫 누르기·키 입력 전에는 소리를 막으므로 그때 처음 불러온다(preload none, 첫 화면 로딩을 막지 않음). 소리를 못 읽거나 재생이 막혀도 조용히 넘어간다.
 // 켜고 끄기는 설정 창의 ‘배경음악’(기본 켜짐). 값은 진행 저장과 따로 ethicity.transparency.settings.v1 {bgm:true|false} — 저장이 막혀도 이 창에서는 그대로 쓴다.
 // 움직임 줄이기와는 상관없다. 인쇄에는 영향이 없다(소리만).
+// 소리 크기를 바꿀 수 없는 기기(iOS Safari는 audio.volume에 값을 넣어도 그대로 1이라고 알려져 있다 — 실기 미확인): 0을 넣고 다시 읽어 0이 아니면 fixed로 보고,
+// 겹쳐 넘기지 않고 옛 곡을 바로 멈춘 뒤 새 곡을 튼다(두 곡이 함께 나지 않게). 이때 소리 크기는 기기 크기 그대로다(0.14로 줄일 수 없다).
 (function(){
  'use strict';
  const KEY='ethicity.transparency.settings.v1',VOL=0.14,FADE=1000,STEP=50,DIR='assets/bgm/';
@@ -22,21 +24,25 @@
  function writeOn(v){
   try{let o={};try{o=JSON.parse(localStorage.getItem(KEY)||'null')||{};}catch{o={};}o.bgm=v;localStorage.setItem(KEY,JSON.stringify(o));return true;}catch{return false;}
  }
- let on=readOn(),started=false,cur=null;
+ let on=readOn(),started=false,cur=null,fixed=false;
  const players={};
  const app=()=>document.getElementById?document.getElementById('app'):null;
  function player(name){
   if(players[name])return players[name];
   let a;
   try{a=new Audio();}catch{return null;}
-  a.preload='none';a.loop=true;a.volume=0;a.src=DIR+TRACKS[name];
+  a.preload='none';a.loop=true;a.src=DIR+TRACKS[name];
+  try{a.volume=0;}catch{}
+  if(a.volume!==0)fixed=true;
   try{a.addEventListener('error',()=>{});}catch{}
   players[name]=a;
   return a;
  }
  // 소리 크기를 to까지 FADE 동안 천천히 바꾼다. 끝나면 done.
  function fade(a,to,done){
-  clearInterval(a._fade);
+  clearInterval(a._fade);a._fade=null;
+  // 크기를 바꿀 수 없으면 천천히 바꿀 것도 없다 — 바로 끝낸다.
+  if(fixed){if(done)done();return;}
   const from=a.volume,t0=Date.now();
   if(typeof setInterval!=='function'){a.volume=to;if(done)done();return;}
   a._fade=setInterval(()=>{
@@ -54,18 +60,29 @@
   if(!on||document.hidden||cur!==name){a.pause();return;}
   fade(a,VOL);
  }
+ // 멈춰 있던 곡을 0에서부터 올린다.
+ function start(a,name){
+  try{a.volume=0;}catch{}
+  safePlay(a,()=>rise(name));
+ }
  function play(name){
   if(!on||!started||document.hidden)return;
   if(cur===name){
    const a=players[name];if(!a)return;
-   if(a.paused){a.volume=0;safePlay(a,()=>rise(name));}
+   if(a.paused)start(a,name);
    else fade(a,VOL);
    return;
   }
   const old=cur&&players[cur];
   cur=name;
   const a=player(name);
-  if(a){a.volume=0;safePlay(a,()=>rise(name));}
+  // 크기를 바꿀 수 없는 기기: 두 곡이 함께 나지 않게 옛 곡을 먼저 멈춘다.
+  if(fixed&&old&&!old.paused){clearInterval(old._fade);old._fade=null;old.pause();}
+  if(a){
+   // 겹쳐 넘기는 중(작아지며 아직 재생 중)에 그 곡으로 되돌아오면 지금 크기에서 이어서 올린다 — 0으로 떨어뜨리면 뚝 끊겼다 올라온다(2026-11-14 검토).
+   if(a.paused)start(a,name);
+   else fade(a,VOL);
+  }
   if(old&&!old.paused)fade(old,0,()=>{if(players[cur]!==old)old.pause();});
  }
  function pauseAll(){for(const a of Object.values(players)){clearInterval(a._fade);a._fade=null;try{a.pause();}catch{}}}
@@ -88,5 +105,5 @@
  }catch{}
  if(typeof MutationObserver==='function'&&app())new MutationObserver(update).observe(app(),{attributes:true,attributeFilter:['class']});
  window.TransparencyBgm={trackFor,set,update,isOn:()=>on,
-  state:()=>({on,started,cur,tracks:Object.fromEntries(Object.entries(players).map(([k,a])=>[k,{src:a.src,paused:a.paused,volume:a.volume,loop:a.loop,preload:a.preload,time:a.currentTime}]))})};
+  state:()=>({on,started,cur,fixed,tracks:Object.fromEntries(Object.entries(players).map(([k,a])=>[k,{src:a.src,paused:a.paused,volume:a.volume,loop:a.loop,preload:a.preload,time:a.currentTime}]))})};
 })();

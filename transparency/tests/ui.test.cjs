@@ -250,7 +250,7 @@ const cls=(g,c)=>parseTags(g.app.innerHTML,'button').filter(b=>(b.class||'').spl
 test('request 1·8: public-page cells never carry the .blank class; one blank cell marks only itself, both are needed to confirm the record',()=>{
  const g=open('camp','check');g.click('item',{id:'camp-page'});
  const cells=()=>parseTags(g.app.innerHTML,'button').filter(b=>b['data-act']==='cell');
- assert.equal(cells().length,4);assert.ok(cells().every(b=>!b.class.split(' ').includes('blank')),'no .blank on buttons');
+ assert.equal(cells().length,5);assert.ok(cells().every(b=>!b.class.split(' ').includes('blank')),'no .blank on buttons');
  assert.deepEqual(cells().filter(b=>b.class.includes('is-empty')).map(b=>b['data-id']),['office','appeal']);
  const marks=()=>(g.app.innerHTML.match(/<mark>/g)||[]).length,tags=()=>(g.app.innerHTML.match(/class="cell-tag"/g)||[]).length;
  g.click('cell',{id:'use'});assert.match(text(g.app.innerHTML),/이 칸은 적혀 있어\./);assert.equal(marks(),0);
@@ -366,7 +366,7 @@ test('request 9: in cases 4 and 5 the three options are about the same length an
 });
 // 11·13. 사건 5 후속 조사 판단은 사실 문장, 사건 3 점검표 ‘완료’ 근거에 실행 기록
 test('request 11·13: the case 5 follow-up judgment is a statement of fact (confirmed); the finished checklist row cites what was actually done',()=>{
- const j=D.cases.share.follow.judge;assert.equal(j.text,'게시물과 게시판을 본 사람은 DM을 보지 못했어.');assert.equal(E.followAnswers.share,'confirmed');
+ const j=D.cases.share.follow.judge;assert.equal(j.text,'세 곳 가운데, 보는 사람이 AI로 만든 걸 안다고 적힌 곳은 DM뿐이야.');assert.equal(E.followAnswers.share,'confirmed');
  for(const c of Object.values(D.cases))for(const x of [...c.judges,c.follow.judge])assert.doesNotMatch(x.text,/(해도|안 해도|안 알려도|막아도|올려도) (돼|된다|괜찮)/,'no “may/need not” sentence among the judgments: '+x.text);
  assert.equal(D.cases.share.follow.places.find(p=>p.id==='dm').who,'모아 한 명');
  const r1=D.cases.face.follow.rows[0];assert.equal(r1.status,'완료');assert.match(r1.proof,/공지문/);assert.match(r1.proof,/알림 기록 세 건/);assert.match(r1.proof,/담당자 확인/);
@@ -479,8 +479,8 @@ test('request 6: case 5 (alone) — the 냥스타 notice; ‘#AI그림’ alone 
  assert.match(h,/<div class="finding again notice-verdict" role="status"><p><strong>고칠 점이 있어<\/strong> · 다시 볼 칸: 실제 하늘, 덧붙일 것\.<\/p><\/div>/);
  assert.equal((h.match(/class="line moa"/g)||[]).length,0,'still no 모아 lines');
  g.click('notice-slot',{id:'sky',value:'share-real'});g.click('notice-slot',{id:'more',value:'blank'});g.click('notice-post');h=g.app.innerHTML;
- assert.match(h,/<p><strong>다 맞았어\.<\/strong><\/p>/);assert.equal(paperOf(h).text,'냥스타 홍보문 · 루루 이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임 #AI그림 실제 뒷산에서는 은하수가 거의 안 보여요.');
- g.click('next');g.click('notebook');assert.match(textOf(g.snap().modalBody),/고친 안내문 이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임 #AI그림 실제 뒷산에서는 은하수가 거의 안 보여요\. 판정: 다 맞음/);
+ assert.match(h,/<p><strong>다 맞았어\.<\/strong><\/p>/);assert.equal(paperOf(h).text,'냥스타 홍보문 · 루루 이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임 #AI그림 지난 모임 때 뒷산에서는 은하수가 거의 안 보였어요.');
+ g.click('next');g.click('notebook');assert.match(textOf(g.snap().modalBody),/고친 안내문 이번 주 토요일, 뒷산에서 만나요! 밤하늘 관찰 모임 #AI그림 지난 모임 때 뒷산에서는 은하수가 거의 안 보였어요\. 판정: 다 맞음/);
 });
 test('request 6 and old saves: a case 4/5 notice posted by card picking before this change shows as ‘이전 방식으로 작성한 안내문’ and stays card-style on its screen',()=>{
  const fin=JSON.parse(JSON.stringify(E.reduce(E.reduce(stateAt('share','reflect'),{type:'next'}),{type:'next'})));
@@ -490,7 +490,7 @@ test('request 6 and old saves: a case 4/5 notice posted by card picking before t
  assert.deepEqual(s.notices.camp,v6.notices.camp);assert.deepEqual(s.notices.share,v6.notices.share,'never rewritten');
  const rep=g.app.innerHTML,card=k=>textOf([...rep.matchAll(/<section class="case-card" id="report-(\w+)"[\s\S]*?<\/section>/g)].find(m=>m[1]===k)[0]);
  assert.match(card('camp'),/미리 알리기 이전 방식으로 작성한 안내문 AI가 점수를 매기고, 담당자가 최종 확인해요\. 담당 부서는 구청 청소년과예요\. 이의가 있으면 14일 안에 재검토를 신청해요\. 판정: 다 맞음/);
- assert.match(card('share'),/미리 알리기 이전 방식으로 작성한 안내문 토요일에 이 그림처럼 보일 거예요\. \(지킬 수 없는 약속\) 은하수 그림은 AI로 만들었어요\. 빠짐: 실제 뒷산에서는 은하수가 거의 안 보여요\. 판정: 고칠 점 있음/);
+ assert.match(card('share'),/미리 알리기 이전 방식으로 작성한 안내문 토요일에 이 그림처럼 보일 거예요\. \(지킬 수 없는 약속\) 은하수 그림은 AI로 만들었어요\. 빠짐: 지난 모임 때 뒷산에서는 은하수가 거의 안 보였어요\. 판정: 고칠 점 있음/);
  assert.equal(textOf(rep).includes('고친 안내문'),false);
  for(const k of ['photo','writing','face'])assert.equal(card(k).includes('이전 방식'),false,'cases 1~3 have no label');
  g.click('notebook');g.click('revisit',{scene:E.sceneOf('camp','choose')});g.click('next');g.click('next');g.click('next');assert.equal(g.state().scene,E.sceneOf('camp','notice'));let h=g.app.innerHTML;
@@ -536,7 +536,7 @@ for(const k of ['camp','share'])test(`review 2026-11-13: case ${k==='camp'?4:5} 
   assert.equal(other(),before,'other slots untouched');
   // 다른 키·수식키는 건드리지 않는다
   const st0=JSON.stringify(g.state());
-  for(const [key,m] of [['Tab',{}],['a',{}],['ArrowRight',{ctrlKey:true}],['ArrowDown',{altKey:true}]]){const e=g.key(key,m);assert.equal(e.defaultPrevented,false,key);}
+  for(const [key,m] of [['Tab',{}],['a',{}],['ArrowRight',{ctrlKey:true}],['ArrowDown',{altKey:true}],['ArrowLeft',{metaKey:true}],['ArrowRight',{shiftKey:true}],['ArrowUp',{shiftKey:true}],['Home',{shiftKey:true}],['End',{shiftKey:true}]]){const e=g.key(key,m);assert.equal(e.defaultPrevented,false,key);}
   assert.equal(JSON.stringify(g.state()),st0);}
  assert.equal(radioCheck(g,k),slots.length,'still one Tab stop per slot (now the chosen option)');
  // 마우스(누르기)도 그대로: 누른 것이 고른 것·Tab 자리·초점
@@ -640,4 +640,65 @@ test('pretendard.css: four faces → woff2 in assets/fonts, linked before style.
  assert.match(html,/location\.protocol!=='file:'[^<]*l\.as='font'[^<]*l\.href='assets\/fonts\/Pretendard-Regular\.subset\.woff2'/);
  const ofl=read('assets/fonts/OFL-Pretendard.txt');assert.match(ofl,/Reserved Font Name Pretendard/);assert.match(ofl,/SIL OPEN FONT LICENSE Version 1\.1/i);
  assert.match(read('README.md'),/Pretendard[^\n]*OFL/);
+});
+
+// ── 2026-11-14 검토 반영 ──
+// [1] 사건 5 후속 조사 판단: 자료(세 곳의 ‘보는 사람’·‘아는 것’)에 적힌 글자 그대로 확인되는 문장. 옛 문장은 DM을 받은 모아가 게시판을 보는 ‘학교 학생’에 들어가 글자 그대로는 맞지 않았다.
+test('review 2026-11-14 [1]: the case 5 follow-up judgment and its one-line explanation only say what the three place records literally say',()=>{
+ const F=D.cases.share.follow,P=Object.fromEntries(F.places.map(p=>[p.id,p]));
+ assert.equal(E.followAnswers.share,'confirmed','answer unchanged');
+ // ‘안다’고 적힌 곳은 DM 하나뿐
+ assert.deepEqual(F.places.filter(p=>/안다/.test(p.know)).map(p=>p.id),['dm']);assert.match(F.judge.text,/안다고 적힌 곳은 DM뿐/);
+ assert.match(P.dm.who,/모아 한 명/);assert.match(P.post.know,/만든 방법을 모른다/);assert.match(P.board.know,/그대로 믿는다/);
+ for(const t of [F.judge.text,F.judge.sum,F.fact])assert.doesNotMatch(t,/보지 못했|따로 있어|알 수 없다|모아만/,'no claim beyond the records: '+t);
+ assert.match(F.judge.sum,/^기록과 맞춰 보면: /);assert.match(F.judge.sum,/만든 방법을 모른다고/);assert.match(F.judge.sum,/그대로 믿는다고/);
+ assert.match(F.fact,/만든 방법을 모르며/);assert.match(F.fact,/동아리 공식 홍보라서 그대로 믿는다\./);
+ // 화면: 세 곳을 다 열면 판단 카드에 새 문장, 정답을 누르면 한 줄
+ const g=open('share','follow');for(const id of E.followMarks.share.ids)g.click('list',{id});
+ assert.ok(text(g.app.innerHTML).includes(F.judge.text));g.click('follow-judge',{id:'confirmed'});assert.ok(text(g.app.innerHTML).includes(F.judge.sum));
+});
+// [2] 사건 4 고치기 칸 1의 정답 근거(‘담당자가 최종 확인’)가 선택 질문(AI를 어디에 썼어요?)의 답에만 있었다 → 모든 학생이 꼭 보는 공개 페이지(직접 확인·후속 조사의 예전/새 페이지)에.
+test('review 2026-11-14 [2]: the ground for slot 1 of the case 4 fix is on the public page every student must check, whichever question was asked',()=>{
+ const C=D.cases.camp,row=C.page.rows.find(r=>r.id==='final'),seg=C.follow.segments.find(x=>x.id==='final');
+ assert.equal(row.k+': '+row.text,'최종 명단: 담당자가 확인');assert.equal(seg.text,row.k+': '+row.text+'.','old and new page say the same');assert.ok(!seg.changed&&!row.blank);assert.ok(seg.hint);
+ assert.equal(C.page.rows.filter(r=>r.blank).length,2);assert.equal(C.follow.segments.filter(x=>x.changed).length,2,'still two blanks and two changed lines');
+ assert.match(C.asks.find(a=>a[0]==='purpose')[2],/최종 명단은 담당자가 확인/);assert.equal(C.asks.find(a=>a[0]==='purpose')[3],'camp-page');
+ // ‘누가 책임지는 부서예요?’ 하나만 묻고 간 학생
+ const s=stateAt('camp','check');assert.deepEqual(s.asked,['who']);
+ const g=enter(createGame({storage:{[KEY]:JSON.stringify(s)}}));g.click('item',{id:'camp-page'});
+ assert.match(text(g.app.innerHTML),/AI 활용\s*신청서 점수 매기기\s*최종 명단\s*담당자가 확인/,'on the page while checking');
+ g.click('cell',{id:'final'});assert.match(text(g.app.innerHTML),/이 칸은 적혀 있어\./);assert.equal(st(g).evidence.includes('camp-page'),false,'a filled cell is not a blank');
+ const f=open('camp','follow');assert.deepEqual(st(f).asked,['who']);
+ assert.equal(text(f.app.innerHTML).split('최종 명단: 담당자가 확인').length-1,2,'old page + new page, right before the fix screen');
+ f.click('change',{id:'final'});assert.ok(f.app.innerHTML.includes(seg.hint));assert.deepEqual(st(f).follows.camp.marks,{},'not a changed line');
+ // 다른 칸의 정답 근거도 꼭 보는 자료에 있다: 담당 부서·재검토 방법 = 새 공개 페이지(후속 조사), 사건 5 = 작업 기록·지난 모임 기록
+ assert.match(C.follow.segments.find(x=>x.id==='office').text,/구청 청소년과/);assert.match(C.follow.segments.find(x=>x.id==='appeal').text,/14일 안에 재검토/);
+ const SH=D.cases.share;assert.match(SH.log.find(r=>r.id==='pic').how,/AI 그림 도구/);assert.match(SH.photos.lines.find(r=>r.id==='sky').text,/은하수는 거의 안 보임/);
+ // 틀린 선택지의 한 줄이 가리키는 ‘기록’이 이제 그 페이지
+ const n=open('camp','notice');for(const x of E.noticeSlots.camp)n.click('notice-slot',{id:x.id,value:x.id==='role'?'camp-auto':x.ok[0]});n.click('notice-post');
+ assert.deepEqual(fbOf(n.app.innerHTML,'role'),{cls:'fb-again',tag:'! AI가 하는 일 · 다시 보기',say:'기록과 달라. AI는 점수를 매기고, 최종 확인은 담당자가 해.'});
+});
+// [3] 고치기 화면의 키보드 안내(방향키), [11] 수식키를 누른 방향키는 무시
+test('review 2026-11-14 [3][11]: the fix screens tell keyboard users to use the arrow keys inside a slot; arrows with Shift/Ctrl/Alt/Meta do nothing',()=>{
+ assert.match(NF.keys,/키보드/);assert.match(NF.keys,/방향키/);
+ for(const k of ['camp','share']){const g=open(k,'notice'),h=g.app.innerHTML;
+  assert.ok(h.includes('<p class="hint fix-keys">'+NF.keys+'</p><div class="fix-slots"'),'hint sits between the task line and the slots');
+  const x=E.noticeSlots[k][0];g.click('notice-slot',{id:x.id,value:x.options[1]});const st0=JSON.stringify(g.state()),at={tag:'BUTTON',act:'notice-slot',id:x.id,value:x.options[1]};
+  for(const m of [{shiftKey:true},{ctrlKey:true},{altKey:true},{metaKey:true},{shiftKey:true,ctrlKey:true}])for(const key of ['ArrowRight','ArrowLeft','ArrowUp','ArrowDown','Home','End']){
+   const e=g.key(key,m);assert.equal(e.defaultPrevented,false,key+JSON.stringify(m));assert.equal(JSON.stringify(g.state()),st0);assert.deepEqual(g.focused(),at);}
+  const e=g.key('ArrowRight');assert.equal(e.defaultPrevented,true,'plain arrow still works');assert.equal(g.state().notices[k].choice[x.id],x.options[2%x.options.length]);
+  assert.ok(g.app.innerHTML.includes('class="hint fix-keys"'),'hint stays after re-render');}
+ // 카드 고르기(사건 1~3)는 버튼마다 Tab이 멈추므로 안내가 없다
+ for(const k of ['photo','writing','face'])assert.equal(open(k,'notice').app.innerHTML.includes('fix-keys'),false,k);
+});
+// [12] 사건 5 판단 1과 ‘실제 하늘’ 문장은 지난 모임 한 번(10월 11일)의 기록이 말하는 만큼만
+test('review 2026-11-14 [12]: case 5 judgment 1 and the ‘실제 하늘’ option speak only of the last meeting the record covers; answers unchanged',()=>{
+ const SH=D.cases.share;assert.deepEqual(E.answers.share,['different','confirmed','unknown']);assert.deepEqual(E.noticeSlots.share[1].ok,['share-real']);
+ assert.match(SH.judges[0].text,/^지난 모임 때도 /);assert.match(SH.notice.cards.find(c=>c.id==='share-real').text,/^지난 모임 때 .*안 보였어요\.$/);
+ assert.equal(SH.photos.lines.filter(l=>/월 \d+일/.test(l.text)).length,1,'the record is one meeting');
+});
+// [10] 서브셋에 없는 ‘▸’ 대신 서브셋에 있는 ‘›’
+test('review 2026-11-14 [10]: the open-row marks use a glyph the bundled font has',()=>{
+ const a=open('face','follow').app.innerHTML,b=open('share','follow').app.innerHTML;
+ assert.ok(a.includes('<span class="row-open">근거 보기 ›</span>'));assert.ok(b.includes('<span class="row-open">누가 보는지 ›</span>'));assert.equal((a+b).includes('▸'),false);
 });

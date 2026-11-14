@@ -326,6 +326,11 @@ dialog .case-card{margin:12px 0}
 .slot-option{flex:1 1 auto}
 .step-notice .slot-option{min-height:44px}
 .fix-slot .card-fb{margin:4px 4px 2px}
+/* 고치기 화면의 키보드 안내 한 줄(2026-11-14 검토 — 칸 안에서는 방향키): 마우스가 있는 화면(hover·fine pointer)에서는 작게 늘 보이고,
+   터치 화면에서는 키보드 초점이 칸 안에 들어왔을 때만 보인다(초점 테두리가 보일 때와 같은 조건) */
+.step-notice .fix-keys{display:none;margin:0 0 2px}
+@media(hover:hover) and (pointer:fine){.step-notice .fix-keys{display:block}}
+.step-notice .body:has(.fix-slots :focus-visible) .fix-keys{display:block}
 @media(max-width:860px){
  .step-notice h1{margin-bottom:8px}
 }
@@ -471,6 +476,9 @@ div.sky-art.hillReal{background:radial-gradient(1.5px 1.5px at 25% 20%,#fff 60%,
 .place dt{font-weight:800;font-size:.9rem;color:var(--muted)}
 .place dd{margin:0}
 @media(max-width:520px){.compare-pair{grid-template-columns:1fr}.record.kv{grid-template-columns:6em minmax(0,1fr) auto;padding:6px 10px}.record.kv[data-act="cell"]{grid-template-columns:5em minmax(0,1fr)}}
+/* 2026-11-14 검토: 아주 좁은 화면(320px 등)에서는 누른 빈 칸 ‘(적혀 있지 않음) [확인함]’이 한 줄에 들어갈 수 없다(320px에서 값 칸 141px, 필요한 너비 172px — 356px부터 들어간다).
+   ‘확인함’이 4px 들여쓰인 채 둘째 줄로 떨어지던 것 → 이 폭에서는 늘 둘째 줄 맨 앞에 둔다(360·375·390px은 한 줄 그대로) */
+@media(max-width:355px){.record.kv[data-act="cell"] .cell-tag{display:block;width:max-content;margin:2px 0 0}}
 
 /* 시작 화면(2026-11-11, ui/title.js). 대표 그림 = 수리점 배경(16:9) 위에 모아와 검은 상자 셋을 얹은 것(모두 기존 그림).
    그림 속 자리(배경 그림 기준): 왼쪽 0~35% 골목(빈 자리), 36~94% 수리점, 작업대 윗면 세로 52~57%. 모아는 41~58%, 상자는 61~85%(좌표는 ui/title.js).

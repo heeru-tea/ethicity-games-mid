@@ -133,10 +133,13 @@
  ],
  "checks": [
   {
-   "phoneNotice": "before posting / after: photo 844/1301px, writing 844/1386px, face 875/1564px, camp 1267/1776px, share 1129/1513px (viewport 844) · first screen (cards bottom / post button bottom): photo 546/604px, writing 546/604px, face 646/704px"
+   "webFont": ".body 400 Pretendard-Regular (웹 글꼴) · header .brand 800 Pretendard-ExtraBold (웹 글꼴) · loaded 400,700,800"
   },
   {
-   "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 7)"
+   "phoneNotice": "before posting / after: photo 844/1301px, writing 844/1386px, face 875/1564px, camp 1299/1808px, share 1183/1596px (viewport 844) · first screen (cards bottom / post button bottom): photo 546/604px, writing 546/604px, face 646/704px"
+  },
+  {
+   "saveResume": "mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 8)"
   },
   {
    "resetReporter": "reset dialog checkbox 이름과 학번도 지우기 checked by default → erased; unchecked → name/number kept, progress cleared, survives reload"
@@ -640,8 +643,8 @@
   {
    "viewport": "1366x768",
    "screen": "camp-follow-start",
-   "chars": 226,
-   "buttons": 5,
+   "chars": 250,
+   "buttons": 6,
    "overflow": false,
    "pageHeight": 768,
    "questionInView": true,
@@ -651,7 +654,7 @@
   {
    "viewport": "1366x768",
    "screen": "camp-follow-done",
-   "chars": 393,
+   "chars": 417,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1016,
@@ -662,10 +665,10 @@
   {
    "viewport": "1366x768",
    "screen": "camp-notice-start",
-   "chars": 450,
+   "chars": 470,
    "buttons": 12,
    "overflow": false,
-   "pageHeight": 1221,
+   "pageHeight": 1253,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -673,10 +676,10 @@
   {
    "viewport": "1366x768",
    "screen": "camp-notice-done",
-   "chars": 600,
+   "chars": 620,
    "buttons": 14,
    "overflow": false,
-   "pageHeight": 1440,
+   "pageHeight": 1472,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -717,7 +720,7 @@
   {
    "viewport": "1366x768",
    "screen": "share-check-records",
-   "chars": 248,
+   "chars": 254,
    "buttons": 10,
    "overflow": false,
    "pageHeight": 791,
@@ -772,10 +775,10 @@
   {
    "viewport": "1366x768",
    "screen": "share-follow-done",
-   "chars": 401,
+   "chars": 459,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 969,
+   "pageHeight": 1061,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -783,10 +786,10 @@
   {
    "viewport": "1366x768",
    "screen": "share-notice-start",
-   "chars": 432,
+   "chars": 456,
    "buttons": 11,
    "overflow": false,
-   "pageHeight": 1098,
+   "pageHeight": 1131,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -794,10 +797,10 @@
   {
    "viewport": "1366x768",
    "screen": "share-notice-done",
-   "chars": 442,
+   "chars": 470,
    "buttons": 13,
    "overflow": false,
-   "pageHeight": 1256,
+   "pageHeight": 1289,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -805,7 +808,7 @@
   {
    "viewport": "1366x768",
    "screen": "share-reflect",
-   "chars": 383,
+   "chars": 389,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 858,
@@ -838,10 +841,10 @@
   {
    "viewport": "1366x768",
    "screen": "report",
-   "chars": 2670,
+   "chars": 2712,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 6599,
+   "pageHeight": 6629,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1289,10 +1292,10 @@
   {
    "viewport": "390x844",
    "screen": "camp-follow-start",
-   "chars": 226,
-   "buttons": 5,
+   "chars": 250,
+   "buttons": 6,
    "overflow": false,
-   "pageHeight": 929,
+   "pageHeight": 965,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1300,10 +1303,10 @@
   {
    "viewport": "390x844",
    "screen": "camp-follow-done",
-   "chars": 406,
+   "chars": 430,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1639,
+   "pageHeight": 1675,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1311,10 +1314,10 @@
   {
    "viewport": "390x844",
    "screen": "camp-notice-start",
-   "chars": 345,
+   "chars": 365,
    "buttons": 12,
    "overflow": false,
-   "pageHeight": 1267,
+   "pageHeight": 1299,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1322,10 +1325,10 @@
   {
    "viewport": "390x844",
    "screen": "camp-notice-done",
-   "chars": 564,
+   "chars": 584,
    "buttons": 14,
    "overflow": false,
-   "pageHeight": 1776,
+   "pageHeight": 1808,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1336,7 +1339,7 @@
    "chars": 460,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1484,
+   "pageHeight": 1456,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1366,7 +1369,7 @@
   {
    "viewport": "390x844",
    "screen": "share-check-records",
-   "chars": 250,
+   "chars": 256,
    "buttons": 10,
    "overflow": false,
    "pageHeight": 1345,
@@ -1421,10 +1424,10 @@
   {
    "viewport": "390x844",
    "screen": "share-follow-done",
-   "chars": 401,
+   "chars": 459,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 1726,
+   "pageHeight": 1786,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1432,10 +1435,10 @@
   {
    "viewport": "390x844",
    "screen": "share-notice-start",
-   "chars": 309,
+   "chars": 333,
    "buttons": 11,
    "overflow": false,
-   "pageHeight": 1129,
+   "pageHeight": 1183,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1443,10 +1446,10 @@
   {
    "viewport": "390x844",
    "screen": "share-notice-done",
-   "chars": 395,
+   "chars": 423,
    "buttons": 13,
    "overflow": false,
-   "pageHeight": 1513,
+   "pageHeight": 1596,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1454,10 +1457,10 @@
   {
    "viewport": "390x844",
    "screen": "share-reflect",
-   "chars": 429,
+   "chars": 435,
    "buttons": 2,
    "overflow": false,
-   "pageHeight": 1456,
+   "pageHeight": 1484,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1487,10 +1490,10 @@
   {
    "viewport": "390x844",
    "screen": "report",
-   "chars": 2743,
+   "chars": 2785,
    "buttons": 8,
    "overflow": false,
-   "pageHeight": 8575,
+   "pageHeight": 8635,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1564,8 +1567,8 @@
   {
    "viewport": "1280x800",
    "screen": "camp-follow-start",
-   "chars": 226,
-   "buttons": 5,
+   "chars": 250,
+   "buttons": 6,
    "overflow": false,
    "pageHeight": 800,
    "questionInView": true,
@@ -1575,7 +1578,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-follow-done",
-   "chars": 393,
+   "chars": 417,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1016,
@@ -1586,10 +1589,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-notice-start",
-   "chars": 439,
+   "chars": 459,
    "buttons": 12,
    "overflow": false,
-   "pageHeight": 1221,
+   "pageHeight": 1253,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1597,10 +1600,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-notice-done",
-   "chars": 589,
+   "chars": 609,
    "buttons": 14,
    "overflow": false,
-   "pageHeight": 1440,
+   "pageHeight": 1472,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1641,7 +1644,7 @@
   {
    "viewport": "1280x800",
    "screen": "share-check-records",
-   "chars": 248,
+   "chars": 254,
    "buttons": 10,
    "overflow": false,
    "pageHeight": 800,
@@ -1696,10 +1699,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-follow-done",
-   "chars": 401,
+   "chars": 459,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 969,
+   "pageHeight": 1061,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1707,10 +1710,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-notice-start",
-   "chars": 422,
+   "chars": 446,
    "buttons": 11,
    "overflow": false,
-   "pageHeight": 1098,
+   "pageHeight": 1131,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1718,10 +1721,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-notice-done",
-   "chars": 432,
+   "chars": 460,
    "buttons": 13,
    "overflow": false,
-   "pageHeight": 1256,
+   "pageHeight": 1289,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1729,7 +1732,7 @@
   {
    "viewport": "1280x800",
    "screen": "share-reflect",
-   "chars": 405,
+   "chars": 411,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 885,
@@ -1806,8 +1809,8 @@
   {
    "viewport": "1280x800",
    "screen": "camp-follow-start",
-   "chars": 226,
-   "buttons": 5,
+   "chars": 250,
+   "buttons": 6,
    "overflow": false,
    "pageHeight": 800,
    "questionInView": true,
@@ -1817,7 +1820,7 @@
   {
    "viewport": "1280x800",
    "screen": "camp-follow-done",
-   "chars": 393,
+   "chars": 417,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 1016,
@@ -1828,10 +1831,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-notice-start",
-   "chars": 439,
+   "chars": 459,
    "buttons": 12,
    "overflow": false,
-   "pageHeight": 1221,
+   "pageHeight": 1253,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1839,10 +1842,10 @@
   {
    "viewport": "1280x800",
    "screen": "camp-notice-done",
-   "chars": 589,
+   "chars": 609,
    "buttons": 14,
    "overflow": false,
-   "pageHeight": 1440,
+   "pageHeight": 1472,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1883,7 +1886,7 @@
   {
    "viewport": "1280x800",
    "screen": "share-check-records",
-   "chars": 248,
+   "chars": 254,
    "buttons": 10,
    "overflow": false,
    "pageHeight": 800,
@@ -1938,10 +1941,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-follow-done",
-   "chars": 401,
+   "chars": 459,
    "buttons": 5,
    "overflow": false,
-   "pageHeight": 969,
+   "pageHeight": 1061,
    "questionInView": true,
    "firstActionInView": false,
    "codes": []
@@ -1949,10 +1952,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-notice-start",
-   "chars": 422,
+   "chars": 446,
    "buttons": 11,
    "overflow": false,
-   "pageHeight": 1098,
+   "pageHeight": 1131,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1960,10 +1963,10 @@
   {
    "viewport": "1280x800",
    "screen": "share-notice-done",
-   "chars": 432,
+   "chars": 460,
    "buttons": 13,
    "overflow": false,
-   "pageHeight": 1256,
+   "pageHeight": 1289,
    "questionInView": true,
    "firstActionInView": true,
    "codes": []
@@ -1971,7 +1974,7 @@
   {
    "viewport": "1280x800",
    "screen": "share-reflect",
-   "chars": 405,
+   "chars": 411,
    "buttons": 2,
    "overflow": false,
    "pageHeight": 885,
@@ -1983,8 +1986,8 @@
  "summary": {
   "after1366": {
    "screens": 59,
-   "avgChars": 310,
-   "maxChars": 2670,
+   "avgChars": 315,
+   "maxChars": 2712,
    "maxButtons": 14
   },
   "originalBefore1366": {
@@ -1994,11 +1997,11 @@
    "maxButtons": 32
   },
   "desktopQuestionAndFirstActionInView": "52/59",
-  "phoneMaxPageHeight": 8575,
+  "phoneMaxPageHeight": 8635,
   "desktopPath": {
    "judgments": 20,
    "clicks": 139,
-   "readChars": 16578
+   "readChars": 16806
   }
  }
 }

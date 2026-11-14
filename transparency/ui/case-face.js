@@ -21,6 +21,7 @@
  }
 
  // 후속 조사: 가게가 붙인 점검표. 항목을 누르면 근거가 열린다.
+ // ‘◐’는 게임 폴더에 실은 Pretendard 서브셋에 없어 다른 글꼴(맑은 고딕 등)로 그려진다 — 서브셋에는 반쯤 찬 동그라미가 없고, ●·○로 바꾸면 ‘완료’·‘예정’과 헷갈려 그대로 둔다(2026-11-14).
  const CHIPS={'완료':['done','✓'],'진행 중':['doing','◐'],'예정':['plan','○']};
  function chip(s){
   const [cls,mark]=CHIPS[s];
@@ -28,7 +29,7 @@
  }
  function checklistRow(r,fs){
   const open=fs.marks[r.id]==='open';
-  const label=`<span class="row-top">${chip(r.status)}${open?'':'<span class="row-open">근거 보기 ▸</span>'}</span>`
+  const label=`<span class="row-top">${chip(r.status)}${open?'':'<span class="row-open">근거 보기 ›</span>'}</span>`
    +`<span class="row-item">${esc(r.item)}</span>`
    +(open?`<span class="proof">근거: ${esc(r.proof)}</span>`:'');
   return btn(label,'row',`data-id="${r.id}" aria-expanded="${open}"`,'record');

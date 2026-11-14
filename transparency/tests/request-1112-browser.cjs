@@ -72,7 +72,8 @@ const CELLS = `() => [...document.querySelectorAll('[data-act="cell"]')].map(b =
         out.push(`INFO ${tag} 공개 페이지 칸 — 고치기 전(재현): ` + JSON.stringify(before.filter(c => c.id === 'office' || c.id === 'appeal')));
         out.push(`INFO ${tag} 공개 페이지 칸 — 지금: ` + JSON.stringify(now));
         ok(`${tag} 고치기 전 재현: 빈 칸 버튼이 좁아지고 여러 줄`, before.filter(c => c.id === 'office' || c.id === 'appeal').every(c => c.w < 80 && c.lines > 1), before);
-        ok(`${tag} 공개 페이지 칸 넷 모두 가득 찬 너비·값 한 줄`, now.length === 4 && now.every(c => Math.abs(c.w - c.parent) <= 1 && c.lines === 1 && c.h <= 60), now);
+        // 2026-11-14: 칸 다섯(‘최종 명단: 담당자가 확인’ 줄이 생김)
+        ok(`${tag} 공개 페이지 칸 다섯 모두 가득 찬 너비·값 한 줄`, now.length === 5 && now.every(c => Math.abs(c.w - c.parent) <= 1 && c.lines === 1 && c.h <= 60), now);
         await click(p, '[data-act="cell"][data-id="office"]');
         const one = { marks: await p.locator('.visual mark').count(), tags: await p.locator('.cell-tag').count(), done: (await state(p)).evidence.includes('camp-page'), hint: await hint(p) };
         ok(`${tag} 빈 칸 하나: 그 칸만 확인 표시, 자료는 아직`, one.marks === 1 && one.tags === 1 && !one.done && /하나 더 있어/.test(one.hint), one);
@@ -120,11 +121,11 @@ const CELLS = `() => [...document.querySelectorAll('[data-act="cell"]')].map(b =
         const { ctx, p, errs } = await open(vp, ['report']);
         const camp = await p.locator('#report-camp').innerText(), share = await p.locator('#report-share').innerText(), face = await p.locator('#report-face').innerText();
         ok(`${tag} 보고서: 사건 4 판단 3 새 문장 + 정답`, /3\. “솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어, 이 항목에서 받은 점수도 낮았어\.”\s*내 판단: 자료로 확인돼 · 정답/.test(camp), camp.slice(0, 600));
-        ok(`${tag} 보고서: 사건 5 후속 조사 새 문장 + 정답, 옛 문장 없음`, /“게시물과 게시판을 본 사람은 DM을 보지 못했어\.”\s*내 판단: 자료로 확인돼 · 정답/.test(share) && !/따로 안 알려도 돼/.test(share) && !/참여 횟수가 가장 크게 들어가\.”/.test(camp));
+        ok(`${tag} 보고서: 사건 5 후속 조사 새 문장 + 정답, 옛 문장 없음`, /“세 곳 가운데, 보는 사람이 AI로 만든 걸 안다고 적힌 곳은 DM뿐이야\.”\s*내 판단: 자료로 확인돼 · 정답/.test(share) && !/따로 안 알려도 돼/.test(share) && !/DM을 보지 못했어/.test(share) && !/참여 횟수가 가장 크게 들어가\.”/.test(camp));
         ok(`${tag} 보고서: 확인한 자료에 버스 쪽지, 조치는 새 선택지 글`, /버스 쪽지/.test(camp) && /기준 공개와 재검토 요청하기/.test(camp) && /게시물 끝에 ‘#AI그림’/.test(share), camp.slice(0, 300));
         await p.locator('header [data-act="notebook"]').click();
         const nb = await p.locator('#modal-body').innerText();
-        ok(`${tag} 수첩: 새 판단 문장(후속 요청 1)과 버스 쪽지 사실 문장`, /솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어/.test(nb) && /버스는 하루 네 번이고/.test(nb) && /DM을 보지 못했어/.test(nb));
+        ok(`${tag} 수첩: 새 판단 문장(후속 요청 1)과 버스 쪽지 사실 문장`, /솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어/.test(nb) && /버스는 하루 네 번이고/.test(nb) && /안다고 적힌 곳은 DM뿐이야/.test(nb) && !/DM을 보지 못했어/.test(nb));
         if (tag === '1280') await shot(p, 'notebook-' + tag);
         ok(`${tag} 보고서 오류 없음`, errs.length === 0, errs); void face;
         await ctx.close();

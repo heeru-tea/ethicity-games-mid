@@ -136,7 +136,9 @@
   const slots=slotsOf(k);
   const posted=ns.posted;
   const fresh=!!posted&&sameChoice(posted,ns.choice);
-  let b=`<div class="notice-intro">${noticeIntro(k)}</div><p class="task">${esc(F.task)}</p>`;
+  // 키보드 안내 한 줄(2026-11-14 검토): 칸 선택지는 라디오라 Tab이 칸마다 하나에만 멈춘다 — 방향키를 모르면 다른 선택지에 닿지 못한다.
+  // 마우스가 있는 화면에서는 작게 늘 보이고, 터치 화면에서는 키보드 초점이 칸 안에 들어왔을 때만 보인다(style.css .fix-keys).
+  let b=`<div class="notice-intro">${noticeIntro(k)}</div><p class="task">${esc(F.task)}</p><p class="hint fix-keys">${esc(F.keys)}</p>`;
   b+=`<div class="fix-slots" role="group" aria-label="${esc(F.group)}">${slots.map((x,i)=>fixSlot(k,x,i,ns.choice,posted,fresh)).join('')}</div>`;
   const left=slots.filter(x=>!(x.id in ns.choice)).length;
   // 아직 다 안 골랐으면 남은 칸 수, 다 골랐고 한 번도 안 붙였으면 ‘한 번 붙이면 다음으로’.
@@ -210,9 +212,10 @@
  // 칸 안 방향키(라디오 묶음, 2026-11-13 검토): ←/↑ 앞, →/↓ 다음(끝에서 처음으로 돈다), Home·End = 처음·끝 — 초점을 옮기고 그 선택지를 바로 고른다.
  // 초점을 먼저 옮긴 뒤 누르므로, 다시 그린 화면에서도 screens.js focusSelector가 새로 고른 선택지에 초점을 돌려준다. Space·Enter는 버튼 기본 동작(누르기) 그대로.
  // 선택지 차례는 화면이 아니라 engine noticeSlots에서 읽는다(화면 순서와 같다).
+ // 수식키(Shift·Ctrl·Alt·Meta)를 함께 누른 방향키는 건드리지 않는다(2026-11-14 검토: Shift+방향키로도 선택이 옮겨졌다).
  const MOVES=Object.assign(Object.create(null),{ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1});
  document.addEventListener('keydown',e=>{
-  if(e.defaultPrevented||e.altKey||e.ctrlKey||e.metaKey)return;
+  if(e.defaultPrevented||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey)return;
   const b=e.target&&typeof e.target.closest==='function'?e.target.closest('button[data-act="notice-slot"]'):null;
   if(!b)return;
   const k=E.caseKey(S.state.scene);

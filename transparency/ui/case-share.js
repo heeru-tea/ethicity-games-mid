@@ -45,7 +45,7 @@
  // 사건 5: 그림을 올린 세 곳. 모두 열면 마무리 줄.
  function place(l,fs){
   const open=fs.marks[l.id]==='open';
-  const label=`<span class="rec-name">${esc(l.name)}</span>${open?'':' <span class="row-open">누가 보는지 ▸</span>'}`;
+  const label=`<span class="rec-name">${esc(l.name)}</span>${open?'':' <span class="row-open">누가 보는지 ›</span>'}`;
   const detail=open?`<dl class="place"><dt>보는 사람</dt><dd>${esc(l.who)}</dd><dt>아는 것</dt><dd>${esc(l.know)}</dd></dl>`:'';
   return `<div class="rec-list">${btn(label,'list',`data-id="${l.id}" aria-expanded="${open}"`,'record')}${detail}</div>`;
  }

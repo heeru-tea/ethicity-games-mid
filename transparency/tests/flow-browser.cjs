@@ -81,7 +81,7 @@ async function discover(p,k,id,wrongFirst){
   await click(p,'[data-act="segment"][data-id="rule"]');assert.match(await p.locator('.tap-hint').innerText(),/가게 규칙이야. 알림의 말을 바꿔 말한 문장은 따로 있어/);assert.ok(!(await state(p)).evidence.includes('face-clerk'),'shop-rule sentence does not confirm');
   await click(p,'[data-act="segment"][data-id="person"]');assert.match(await p.locator('.tap-hint').innerText(),/‘그 손님’이라고 정한 건 점원이야/);assert.equal(await p.locator('.visual .segments mark').count(),1);}
  // 사건 4: 공개 페이지 빈 칸, 마을별 결과(솔숲마을), 기준표 네 줄을 모두 열면 마무리 줄
- if(id==='camp-page'){assert.equal(await p.locator('[data-act="cell"]').count(),4);
+ if(id==='camp-page'){assert.equal(await p.locator('[data-act="cell"]').count(),5);
   if(wrongFirst){await click(p,'[data-act="cell"][data-id="use"]');assert.match(await p.locator('.tap-hint').innerText(),/적혀 있어/);}
   // 빈 칸은 누른 칸만 표시, 둘 다 눌러야 확인(2026-11-12). 칸 버튼은 한 줄(높이 60px 아래)이고 .blank class가 없다.
   await click(p,'[data-act="cell"][data-id="office"]');assert.equal(await p.locator('.visual mark').count(),1,'only the pressed cell is marked');assert.ok(!(await state(p)).evidence.includes('camp-page'),'one cell is not enough');
@@ -350,7 +350,7 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    await click(p,'header [data-act="settings"]');await click(p,'#modal-body [data-act="reset-ask"]');await click(p,'[data-act="reset"]');
    const saved=JSON.parse(await p.evaluate(k=>localStorage.getItem(k),KEY));assert.equal((await state(p)).scene,0);assert.equal(saved.scene,0);assert.equal(saved.version,8);
    assert.equal(await p.evaluate(()=>localStorage.getItem('ethicity.player')),JSON.stringify({nickname:'테스트<b>'}),'shared player data untouched');
-   results.checks.push({saveResume:'mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 7)'});
+   results.checks.push({saveResume:'mid-check and mid-judgment and mid-follow reload keep progress; rechoose keeps first; notebook lists judgments; reset clears only this game (version 8)'});
   });
   // 처음부터 다시 하기: '이름과 학번도 지우기'(기본 체크) — 체크면 함께 지우고, 풀면 이름·학번만 남긴다
   await withPage(PHONE,async p=>{const done=finishedState();done.reporter={name:'하늘',number:'10203'};
@@ -421,7 +421,7 @@ async function seedPage(p,obj){await p.goto(url);await p.evaluate(({KEY,obj})=>l
    s=await state(p);assert.equal(s.scene,E.END);assert.equal(s.completed,true);assert.deepEqual(s.asked,['appeal','who']);
    await click(p,'.step-nav [data-act="next"]');assert.equal((await state(p)).scene,E.REPORT);
    await reportCheck(p,{writing:{q1:'작성 기록',q2:'검사 이유'}},'먼저 물어볼래');
-   assert.match(await p.locator('#report-camp').innerText(),/구청 발표를 그대로 받아/);assert.match(await p.locator('#report-camp').innerText(),/3. “솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어, 이 항목에서 받은 점수도 낮았어.”/);assert.match(await p.locator('#report-share').innerText(),/“게시물과 게시판을 본 사람은 DM을 보지 못했어.”/);assert.match(await p.locator('#report-writing').innerText(),/검사 이유/);assert.equal(await p.locator('[data-reporter="name"]').inputValue(),'하늘');
+   assert.match(await p.locator('#report-camp').innerText(),/구청 발표를 그대로 받아/);assert.match(await p.locator('#report-camp').innerText(),/3. “솔숲마을 신청자들은 지난 프로그램 참여 횟수가 적어, 이 항목에서 받은 점수도 낮았어.”/);assert.match(await p.locator('#report-share').innerText(),/“세 곳 가운데, 보는 사람이 AI로 만든 걸 안다고 적힌 곳은 DM뿐이야.”/);assert.match(await p.locator('#report-writing').innerText(),/검사 이유/);assert.equal(await p.locator('[data-reporter="name"]').inputValue(),'하늘');
    assert.deepEqual(errors,[]);results.checks.push({['v'+ver+'Migration']:'version '+ver+' completed save → new case 4 hook (resume notice, old question dropped), cases 1~3 kept; play case 4 (quiet) and case 5 (tag) → ending → report with 5 cases'});});
   // 서술 자동 저장·이어하기, 보고서 → 서술 고치기 → 보고서, 인쇄 제목, PDF 쪽수, 캡처(1280×800·390×844)
   const done=finishedState();

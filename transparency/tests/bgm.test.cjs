@@ -5,10 +5,11 @@ const SRC=fs.readFileSync(path.join(__dirname,'..','ui','bgm.js'),'utf8');
 const KEY='ethicity.transparency.settings.v1',PROGRESS='ethicity.transparency.progress.v1';
 
 // 가짜 환경: Audio(만든 순서 기록, play는 약속을 돌려줌), document(이벤트·hidden), #app(class), localStorage, 손으로 돌리는 시계.
-function env({store={},blocked=false,reject=false,noAudio=false}={}){
+function env({store={},blocked=false,reject=false,noAudio=false,lockVolume=false}={}){
  let now=0,seq=0;const timers=new Map(),audios=[],listeners={},observers=[];
  const app={className:'at-title'};
- class Audio{constructor(){this.paused=true;this.volume=1;this.loop=false;this.preload='auto';this.src='';this.currentTime=0;this.plays=0;audios.push(this);}
+ // lockVolume = 소리 크기를 바꿀 수 없는 기기 흉내(iOS Safari라고 알려진 동작: 값을 넣어도 읽으면 늘 1)
+ class Audio{constructor(){this.paused=true;if(lockVolume)Object.defineProperty(this,'volume',{get:()=>1,set(){}});else this.volume=1;this.loop=false;this.preload='auto';this.src='';this.currentTime=0;this.plays=0;audios.push(this);}
   play(){this.plays++;if(reject)return Promise.reject(new Error('NotAllowedError'));this.paused=false;return Promise.resolve();}
   pause(){this.paused=true;}addEventListener(){}}
  const localStorage={getItem:k=>{if(blocked)throw new Error('blocked');return k in store?store[k]:null;},setItem:(k,v)=>{if(blocked)throw new Error('blocked');store[k]=String(v);}};
@@ -69,4 +70,25 @@ test('bgm: blocked storage, refused playback and no Audio at all never throw',as
  const r=env({reject:true});r.fire('pointerdown');await r.flush();r.tick(2000);assert.equal(r.audios[0].paused,true,'refused: stays quiet');r.goTo('step-check');await r.flush();
  const n=env({noAudio:true});n.fire('pointerdown');await n.flush();n.goTo('step-check');await n.flush();assert.equal(n.B.state().cur,'search');
  const bad=env({store:{[KEY]:'{oops'}});assert.equal(bad.B.isOn(),true,'broken setting → default on');
+});
+// 2026-11-14 검토: 겹쳐 넘기는 1초 안에 되돌아오면(메인곡 → 직접 확인 → 0.3초 뒤 다시 메인곡 화면) 메인곡이 0.098에서 0으로 뚝 떨어졌다 올라왔다.
+test('bgm: coming back within the crossfade continues from the current volume — no drop to 0, no restart, the other song still fades out and stops',async()=>{
+ const e=env();e.fire('pointerdown');await e.flush();e.tick(1100);const m=byName(e,'main');m.currentTime=42;assert.equal(e.B.state().fixed,false);
+ e.goTo('step-check');await e.flush();e.tick(300);const s=byName(e,'search'),mid=m.volume;assert.ok(mid>0.09&&mid<0.11,'main is on its way down '+mid);
+ e.goTo('step-choose');assert.equal(m.volume,mid,'back to main: volume kept, not 0');await e.flush();assert.equal(m.volume,mid);assert.equal(m.plays,1,'not restarted');assert.equal(m.currentTime,42);
+ let low=m.volume,top=s.volume;for(let i=0;i<22;i++){e.tick(50);low=Math.min(low,m.volume);top=Math.max(top,s.volume);}
+ assert.ok(low>=mid,'main only rises from there '+low);assert.equal(m.volume,0.14);assert.equal(m.paused,false);
+ assert.ok(top<0.05,'search never gets louder after turning back '+top);assert.equal(s.paused,true);assert.equal(e.timers.size,0,'no timer left');
+ // 반대쪽: 조사곡 → 메인곡 → 0.3초 뒤 다시 조사곡
+ e.goTo('step-follow');await e.flush();e.tick(1100);assert.equal(s.volume,0.14);const plays=s.plays;
+ e.goTo('step-notice');await e.flush();e.tick(300);const mid2=s.volume;e.goTo('step-follow');assert.equal(s.volume,mid2);await e.flush();assert.equal(s.plays,plays);
+ e.tick(1100);assert.equal(s.volume,0.14);assert.equal(s.paused,false);assert.equal(m.paused,true);assert.equal(e.timers.size,0);
+});
+// 2026-11-14 검토: 소리 크기를 바꿀 수 없는 기기(iOS Safari로 알려짐)에서는 0.14도 겹쳐 넘기기도 먹지 않아 1초 동안 두 곡이 함께 날 수 있다 → 겹치지 않게 바로 바꾼다.
+test('bgm: where the volume cannot be changed, songs switch at once and never play together',async()=>{
+ const e=env({lockVolume:true});e.fire('pointerdown');await e.flush();const m=byName(e,'main');assert.equal(e.B.state().fixed,true);assert.equal(m.paused,false);assert.equal(e.timers.size,0);
+ m.currentTime=42;e.goTo('step-check');assert.equal(m.paused,true,'old song stops at once');await e.flush();const s=byName(e,'search');assert.equal(s.paused,false);assert.equal(e.timers.size,0);
+ e.goTo('step-choose');assert.equal(s.paused,true);await e.flush();assert.equal(m.paused,false);assert.equal(m.currentTime,42,'resumes where it was');assert.equal(e.audios.filter(a=>!a.paused).length,1);
+ e.goTo('step-result');e.goTo('step-notice');await e.flush();assert.equal(m.plays,2,'same song is not restarted');
+ e.fire('change',{target:{id:'opt-bgm',checked:false}});assert.equal(e.audios.every(a=>a.paused),true);
 });
