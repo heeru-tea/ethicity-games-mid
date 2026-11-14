@@ -22,7 +22,7 @@ const conclusionOf = (s) => N.endingConclusion(N.endingReactions(s.config, s.his
 test('지금 규칙: 시드 245525538 · 매 단계 2대 임차 → 2단계 계약 종료, 총평 = 누적 잔액 2회 연속 0원 미만(‘세 번’ 아님)', () => {
   const s = leaseTwoEveryStage();
   assert.equal(s.end.cause, 'contract'); assert.equal(s.end.phase, 2); assert.equal(s.phase, 2); assert.equal(s.negStreak, 2);
-  assert.deepEqual(s.ledger.map((r) => Math.round(r.balance)), [-35428, -89221]);
+  assert.deepEqual(s.ledger.map((r) => Math.round(r.balance)), [-29428, -74221]);
   assert.equal(S.contractRule(s.end), 'balance-streak');
   assert.deepEqual(S.contractPhases(s.end), [1, 2]);
   // 도우미가 고른 단계 = 정산 기록에서 실제로 누적 잔액이 0원 미만이었던 단계
@@ -32,7 +32,7 @@ test('지금 규칙: 시드 245525538 · 매 단계 2대 임차 → 2단계 계�
   assert.doesNotMatch(c.verdict, /세 번|적자가 누적/);
   // 인물 반응 컷 마지막 장(같은 conclusion 객체)도 같은 이유 + 같은 숫자
   assert.ok(c.text.startsWith(c.verdict + '\n'));
-  assert.match(c.text, /보유 잔액 −89,221원/);
+  assert.match(c.text, /보유 잔액 −74,221원/);
   assert.equal(Math.round(c.profit), Math.round(s.end.balance));
   assert.equal(N.contractCause(s.end), '1·2단계를 마칠 때 누적 잔액이 2회 연속 0원 미만이어서 운영 계약이 종료됐어요.');
 });

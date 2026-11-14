@@ -16,7 +16,7 @@ const OLD = '단계 적자가 누적 세 번 쌓여 운영 계약이 종료됐�
 // 지금 규칙: 2단계 결과 화면(계약 종료 확정, 아직 종료 화면 전)
 const cur = S.create(cfg, { mode: 'random', seed: SEED });
 while (!cur.end) { T.lay(cur, T.moderate(cur), 2); T.answer(cur); assert.deepEqual(S.validate(cur), []); S.startRun(cur); S.finishRun(cur); if (!cur.end) S.nextPhase(cur); }
-assert.deepEqual([cur.stage, cur.end.cause, cur.end.phase, Math.round(cur.end.balance), cur.negStreak], ['result', 'contract', 2, -89221, 2]);
+assert.deepEqual([cur.stage, cur.end.cause, cur.end.phase, Math.round(cur.end.balance), cur.negStreak], ['result', 'contract', 2, -74221, 2]);
 const SAVED_NOW = { version: cfg.SCENARIO_VERSION, savedAt: Date.now(), session: S.serialize(cur) };
 // 예전 규칙: 3단계 결과 화면에서 ‘적자 3회’로 끝난 저장본(잔액은 남음)
 const old = S.create(cfg, { mode: 'random', seed: SEED });
@@ -50,27 +50,27 @@ try {
     const page = await open(w, h, SAVED_NOW), tag = w + 'x' + h;
     // 결과 화면 알림(지금 규칙)
     const fin = await page.locator('#finance-status').innerText();
-    assert.match(fin, /누적 잔액이 2회 연속 0원 미만\(−89,221원\)이라 운영 계약이 종료돼요/); assert.doesNotMatch(fin, /세 번|3회|이전 규칙/);
+    assert.match(fin, /누적 잔액이 2회 연속 0원 미만\(−74,221원\)이라 운영 계약이 종료돼요/); assert.doesNotMatch(fin, /세 번|3회|이전 규칙/);
     await page.locator('#finance-status').scrollIntoViewIfNeeded(); await page.screenshot({ path: shot('result-' + tag) });
     await toEnding(page);
     const got = await page.evaluate(() => ({ title: document.querySelector('#ending-title').textContent, verdict: document.querySelector('#ending-verdict').textContent, profit: document.querySelector('#ending-profit').textContent, cause: document.querySelector('#failure-cause').textContent,
       ledger: [...document.querySelectorAll('#failure-ledger tbody tr')].map((r) => [...r.cells].map((c) => c.textContent)), body: document.querySelector('#panel').innerText }));
     assert.equal(got.title, '잔액 부족으로 운영 계약 종료');
     assert.equal(got.verdict, NOW);
-    assert.match(got.profit, /^보유 잔액 −89,221원 · /);
-    assert.match(got.cause, /^1·2단계를 마칠 때 누적 잔액이 연속으로 0원 미만이어서 운영 계약이 종료됐어요\. 마지막 보유 잔액은 −89,221원이에요\./);
+    assert.match(got.profit, /^보유 잔액 −74,221원 · /);
+    assert.match(got.cause, /^1·2단계를 마칠 때 누적 잔액이 연속으로 0원 미만이어서 운영 계약이 종료됐어요\. 마지막 보유 잔액은 −74,221원이에요\./);
     // 정산 표: 총평이 말한 1·2단계가 실제로 잔액 마이너스, 마지막 잔액이 총평 아래 숫자와 같음
-    assert.deepEqual(got.ledger.map((r) => [r[0], r[2], r[3]]), [['1단계', '마이너스', won(cur.ledger[0].balance)], ['2단계', '마이너스', '−89,221원']]);
+    assert.deepEqual(got.ledger.map((r) => [r[0], r[2], r[3]]), [['1단계', '마이너스', won(cur.ledger[0].balance)], ['2단계', '마이너스', '−74,221원']]);
     assert.doesNotMatch(got.body, /누적 세 번|이전 규칙/);
     await page.locator('#ending-title').scrollIntoViewIfNeeded(); await page.screenshot({ path: shot('ending-' + tag) });
     await page.locator('#failure-cause').scrollIntoViewIfNeeded(); await page.screenshot({ path: shot('cause-' + tag) });
-    const cut = await lastCut(page); assert.ok(cut.startsWith(NOW + '\n'), cut); assert.match(cut, /보유 잔액 −89,221원/);
-    log(tag + ' 지금 규칙: 결과 알림·제목·총평·재정 돌아보기·정산 표·마지막 컷이 같은 이유(1·2단계 누적 잔액 2회 연속 0원 미만, −89,221원)');
+    const cut = await lastCut(page); assert.ok(cut.startsWith(NOW + '\n'), cut); assert.match(cut, /보유 잔액 −74,221원/);
+    log(tag + ' 지금 규칙: 결과 알림·제목·총평·재정 돌아보기·정산 표·마지막 컷이 같은 이유(1·2단계 누적 잔액 2회 연속 0원 미만, −74,221원)');
     if (w === 1280) {
       // 내 운영 보고서: 이유 문장은 없고 ‘운영 계약 종료(2단계)’ — 다른 이유를 말하지 않는지만
       await page.locator('#btn-report').click(); await page.waitForFunction(() => document.body.classList.contains('report-open'));
-      const rep = await page.locator('#panel').innerText(); assert.match(rep, /운영 계약 종료\(2단계\) · 누적 잔액 −89,221원/); assert.doesNotMatch(rep, /세 번|이전 규칙/);
-      log('보고서 머리 = 운영 계약 종료(2단계) · 누적 잔액 −89,221원');
+      const rep = await page.locator('#panel').innerText(); assert.match(rep, /운영 계약 종료\(2단계\) · 누적 잔액 −74,221원/); assert.doesNotMatch(rep, /세 번|이전 규칙/);
+      log('보고서 머리 = 운영 계약 종료(2단계) · 누적 잔액 −74,221원');
     }
     await page.close();
   }

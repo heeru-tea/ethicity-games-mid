@@ -45,7 +45,7 @@
     <button type="button" class="btn btn-primary btn-lg" id="btn-start">첫 운행 계획하기</button>
     <p class="note" id="save-note">진행은 이 브라우저에 자동으로 저장돼요. 새로고침하거나 창을 닫았다가 열어도 ‘이어하기’로 계속할 수 있어요.</p>
     <button type="button" class="btn" id="title-text-toggle" aria-pressed="false">설명 보기</button>
-    <p class="app-version" id="title-version"></p>
+    <p class="app-version" id="title-version">&nbsp;</p><!-- 빈 칸을 미리 잡아 둔다(2026-11-14): 초기화 뒤 버전 글자가 들어오면서 시작 버튼이 10px 밀렸다 -->
   </div>
   <figure class="title-art" aria-hidden="true">
     <img id="title-img" src="assets/art/title-two-stops.webp" alt="" onerror="this.parentNode.classList.add('placeholder'); this.remove();">
@@ -103,7 +103,7 @@
 
 <dialog id="goal-intro" class="story-dialog" aria-labelledby="goal-intro-h" aria-describedby="story-full" tabindex="-1">
   <div id="story-stage" class="story-stage"><p id="story-stage-title" class="stage-title"></p><p id="story-stage-sub" class="stage-sub"></p></div>
-  <img id="story-image" class="story-image" alt="">
+  <img id="story-image" class="story-image" alt="" data-own-fallback>
   <div class="story-tools"><p id="story-phase" class="story-phase" hidden></p><span id="story-count"></span><button type="button" class="btn" id="btn-goal-start">건너뛰고 시작</button></div>
   <div class="story-dialogue">
     <h2 id="goal-intro-h"></h2>
