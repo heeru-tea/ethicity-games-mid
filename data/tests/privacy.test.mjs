@@ -89,6 +89,10 @@ test('check: untouched → unhandled, masked a must-remove card → mustRemove, 
     // 남은 장 수 + 어느 종류인지({kind} = 남은 카드에 붙은 이름표, 플레이테스트 2026-11-12) — 어느 카드인지는 말하지 않는다
     assert.equal(Privacy.text(m4, 'blockMore'), '잘 가린 답안지도 있어. 학생 이름이 적힌 답안지가 {kind} 답안지 중에 아직 {n}장 더 있어.');
     assert.equal(Privacy.text(m1, 'blockMore'), '잘 가린 사진도 있어. 개인정보가 담긴 사진이 {kind} 사진 중에 아직 {n}장 더 있어.');
+    // 빼서 줄였을 때(2026-11-14): 칭찬 말머리('잘 가린') 없이 남은 장 수와 종류만
+    assert.equal(Privacy.text(m1, 'blockMoreRemoved'), '개인정보가 담긴 사진이 {kind} 사진 중에 아직 {n}장 더 있어.');
+    assert.equal(Privacy.text(m4, 'blockMoreRemoved'), '학생 이름이 적힌 답안지가 {kind} 답안지 중에 아직 {n}장 더 있어.');
+    assert.equal(Privacy.left(m4, two), 2);
     assert.match(Privacy.text(m1, 'blockLook'), /{kind} 사진 테두리를 잠깐 밝혀 둘게/);
     assert.match(Privacy.text(m4, 'blockLook'), /{kind} 답안지 테두리/);
     // openCards = check의 open과 같은 카드(가방 항목 그대로)

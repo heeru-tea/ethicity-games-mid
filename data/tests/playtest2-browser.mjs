@@ -485,7 +485,7 @@ if (want('E')) {
     for (const l of a4) assert.ok(l.hasBg && /assets\/story\/senior-after\.webp$/.test(l.bg), 'm4 closing line has the after scene ' + JSON.stringify(l));
     await outroBg(/senior-after\.webp$/, 'm4 outro screen');
     assert.equal(await page.locator('#screen-outro h2').innerText(), '도시가 다시 이어졌다');
-    assert.equal(await page.locator('#outro-questions li').count(), 2);
+    assert.equal(await page.locator('#outro-questions li').count(), 3); // 2026-11-14 토론 질문 3개(9407ab9에서 m4-browser만 고치고 이 줄을 빠뜨렸다)
     await page.screenshot({ path: shotPath('playtest2-m4-outro-1280') });
     assert.deepEqual(errors, []);
     console.log('ok E m3·m4 closing dialogues keep a scene picture, outro screens get the darkened backdrop, m3 intro stays picture-less');
