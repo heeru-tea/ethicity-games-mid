@@ -125,7 +125,7 @@ function countPaths(s, depth) {
 }
 const totalPaths = countPaths(E.createState(story), 0);
 // 무대·맵 개편은 이야기 분기를 바꾸지 않는다
-if (totalPaths !== 104727168000) /* 2026-11-13 사건 5를 두 일 + AI 에이전트로: 4×2 → 2×2×4×2 = 4배(26,181,792,000 → 104,727,168,000). 특별 수업 28가지(설치 안 함 1 + 3×3×3) 포함. 2026-11-10 플레이테스트: 사과 장면 c3_e9_j(선택 2개)·믿음 상한으로 24,766,560,000 → 26,181,792,000 */ err('완주 경로 수가 바뀜: ' + totalPaths);
+if (totalPaths !== 111708979200) /* 2026-11-14 사건 2 찍어 둔 사진 장면(c1_e2_k, 올리기 전에 물어본 경로에 선택 2개): ×16/15(104,727,168,000 → 111,708,979,200). 2026-11-13 사건 5를 두 일 + AI 에이전트로: 4×2 → 2×2×4×2 = 4배(26,181,792,000 → 104,727,168,000). 특별 수업 28가지(설치 안 함 1 + 3×3×3) 포함. 2026-11-10 플레이테스트: 사과 장면 c3_e9_j(선택 2개)·믿음 상한으로 24,766,560,000 → 26,181,792,000 */ err('완주 경로 수가 바뀜: ' + totalPaths);
 
 // ── 4. 무작위 완주 표본(실제 상태 그대로) ──────
 const seenScene = new Set(), seenChoice = new Set(), seenLine = new Set(), seenOutcome = new Set();
@@ -346,7 +346,7 @@ function linesOnRoute(route) {
   // 대표 경로 A(가장 신중한 선택)에서 한두 군데만 실수로 바꾼 경로 — 장면 순서대로 다시 늘어놓는다. 나머지가 모두 신중하면 A, 아니면 B(둘 다 C·D는 아님)
   // 대표 경로 B(routes.js: 계좌 공개·사진 단톡 뒤 수습)는 위 5절에서 B 도착을 확인한다
   const A = byScene(ROUTES.A);
-  const order = ['pro_1', 'c1_e1_a', 'c1_e1_b', 'c1_e2_a', 'c1_e2_b', 'c1_e2_d', 'c1_e3_b', 'c1_e3_cap', 'sc_1', 'sc_2', 'sc_3', 'sc_4', 'c2_e4_a', 'c2_e4_b', 'c2_e5_a', 'c2_e5_j', 'c2_e5_agent', 'c2_e5_b', 'c2_e6_a', 'c2_e6_b', 'c3_e7_a', 'c3_e7_b', 'c3_e8_a', 'c3_e9_a', 'c3_e9_j', 'c3_e9_b'];
+  const order = ['pro_1', 'c1_e1_a', 'c1_e1_b', 'c1_e2_a', 'c1_e2_b', 'c1_e2_k', 'c1_e2_d', 'c1_e3_b', 'c1_e3_cap', 'sc_1', 'sc_2', 'sc_3', 'sc_4', 'c2_e4_a', 'c2_e4_b', 'c2_e5_a', 'c2_e5_j', 'c2_e5_agent', 'c2_e5_b', 'c2_e6_a', 'c2_e6_b', 'c3_e7_a', 'c3_e7_b', 'c3_e8_a', 'c3_e9_a', 'c3_e9_j', 'c3_e9_b'];
   const mk = (over) => { const m = Object.assign({}, A, over); return order.filter((k) => m[k]).map((k) => k + '#' + m[k]); };
   for (const [name, over] of [['사진을 단톡에 올렸다가 지우고 부탁', { c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'all' }],
     ['사진 단톡 + 캡처 전달 뒤 둘 다 수습', { c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'all', c1_e3_b: 'capture', c1_e3_cap: 'full' }]]) {

@@ -82,7 +82,29 @@ for (const [ev, over] of Object.entries(SLIP)) recov[ev] = expect(`회복 ${ev}:
 // 같은 실수 + 수습 거절 · 부분 수습
 expect('e2 묻지 않고 올림 + 삭제 요청 넘김', { ...SLIP.e2, c1_e2_d: 'no' }, 'B');
 expect('e2 묻지 않고 올림 + 내리고 사과만(사본 회수 요청 없음)', { ...SLIP.e2, c1_e2_d: 'sorry' }, 'B');
-expect('e2 묻지 않고 찍음 + 올리기 전에 물음(사진을 지우는 선택이 없음 — 수습 확인 불가)', { c1_e2_a: 'shoot', c1_e2_b: 'ask' }, 'B');
+// 2026-11-14 최종 검토(평가 역전): 묻지 않고 찍은 사진 — 올리기 전에 멈춘 쪽이 올린 뒤 수습한 쪽보다 낮은 엔딩을 받지 않는다.
+//   게시 전 수습(c1_e2_k del: 찍어 둔 사진을 실제로 지움) / 게시 후 수습(c1_e2_d all) / 수습 거절(사진을 그대로 둠 · 삭제 요청을 넘김)
+{
+  const pre = expect('e2 묻지 않고 찍음 + 올리기 전에 물음 + 찍어 둔 사진 지움(게시 전 수습)', { c1_e2_a: 'shoot', c1_e2_b: 'ask', c1_e2_k: 'del' }, 'A(회복)');
+  const post = expect('e2 묻지 않고 찍음 + 단톡에 올림 + 내리고 저장한 사람에게도 부탁(게시 후 수습)', { c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'all' }, 'A(회복)');
+  const kept = expect('e2 묻지 않고 찍음 + 올리기 전에 물음 + 사진은 그대로 둠(수습 안 함)', { c1_e2_a: 'shoot', c1_e2_b: 'ask', c1_e2_k: 'kept' }, 'B');
+  const refuse = expect('e2 묻지 않고 찍음 + 단톡에 올림 + 삭제 요청을 넘김(수습 거절)', { c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'no' }, 'B'); // 나머지가 모두 신중한 경로라 B(A는 아님 — 삭제 요청을 넘긴 것은 회복 불가)
+  const rank = { 'A': 3, 'B': 2, 'C': 1, 'D': 0 };
+  ok('게시 전 수습은 게시 후 수습보다 낮은 엔딩이 아니다', rank[pre.ending] >= rank[post.ending], [pre.ending, post.ending]);
+  ok('게시 전에 멈춘 경로는 확산이 더 적다', pre.stats.spread < post.stats.spread, [pre.stats.spread, post.stats.spread]);
+  ok('수습하지 않은 경로(사진을 둠·삭제 요청을 넘김)는 A가 아니다', kept.ending !== 'A' && refuse.ending !== 'A', [kept.ending, refuse.ending]);
+  ok('사진을 지운 것은 실제로 고른 행동(e2photo=del)일 때만 수습', E.evalCond('fix.e2', pre) && !E.evalCond('fix.e2', kept) && !E.evalCond('fix.e2', { stats: {}, trust: {}, flags: { e2shot: 'nocheck', e2post: 'ask' } }), '옛 저장(e2photo 없음)은 수습 아님');
+  const endOfS = (s) => story.endings.find((e) => e.code === s.ending), bodyOf = (s) => E.endingBody(story, endOfS(s), s).join(' / ');
+  ok('게시 전 수습 문장: 올렸다고 하지 않고 한 일 그대로', /묻지 않고 찍었다/.test(bodyOf(pre)) && /올리지 않았다/.test(bodyOf(pre)) && /찍어 둔 사진도 지우고/.test(bodyOf(pre)) && !/단톡방에 올렸다/.test(bodyOf(pre)), bodyOf(pre));
+  ok('게시 후 수습 문장: 단톡방에 올렸다 · 내리고 지워 달라고 부탁', /반 단톡방에 올렸다/.test(bodyOf(post)) && /저장한 사람에게도 지워 달라고/.test(bodyOf(post)) && !/올리지 않았다/.test(bodyOf(post)), bodyOf(post));
+  ok('피해 기록은 그대로: 게시 전 경로는 해친 친구 0 · 게시 후 경로는 민준 1', E.evalCond('harm_count=0', pre) && E.evalCond('hurt.minjun', post) && E.evalCond('overrode_wish', pre));
+  const out = (s) => E.eventOutcomes(story, 'e2', s).join(' / ');
+  ok('사건 2 결과 줄: 지움 / 그대로 남음', /사진을 지우고, 하늘이에게도 지워 달라고 했다/.test(out(pre)) && /휴대폰에 그대로 남았다/.test(out(kept)), [out(pre), out(kept)]);
+  // 심각한 침해·반복은 여전히 A 불가: 게시 전 수습 + 다른 사건의 회복 불가 행동 / 실수 둘
+  expect('게시 전 수습 + 지호 비밀 캡처(회복 불가)', { c1_e2_a: 'shoot', c1_e2_b: 'ask', c1_e2_k: 'del', c1_e3_b: 'capture', c1_e3_cap: 'full' }, 'B');
+  const two = run({ c1_e2_a: 'shoot', c1_e2_b: 'ask', c1_e2_k: 'del', c2_e6_a: 'peek', c2_e6_b: 'stop' });
+  ok('게시 전 수습 + DM 열람(실수 둘)은 회복 A가 아니다', !(two.ending === 'A' && E.evalCond('recovered', two)) && !E.evalCond('recovered', two), two.ending);
+}
 expect('e5 통째로 + 그냥 닫기', { ...SLIP.e5, c2_e5_b: 'close' }, 'B');
 expect('e6 DM 열람 + 캡처 전달(같은 사건에서 거듭 침해)', { c2_e6_a: 'peek', c2_e6_b: 'cap' }, 'B');
 expect('e7 가만히 + 그냥 둠', { ...SLIP.e7, c3_e7_b: 'none' }, 'B');

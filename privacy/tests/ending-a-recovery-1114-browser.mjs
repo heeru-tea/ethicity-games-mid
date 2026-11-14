@@ -65,6 +65,12 @@ try {
     const pre = await endingText(beforeEnding(BASE), sz.dev, 'prevent-' + sz.name);
     ok(/함께 세운 경계/.test(pre.txt) && /매번 상대에게 물으며/.test(pre.txt) && !/수습을 했다|없던 일이 되지는/.test(pre.txt), `${sz.name} 예방 A 문장 그대로 ${pre.txt.slice(0, 160)}`);
     ok(pre.errors.length === 0, `${sz.name} 예방 A 오류 ${pre.errors}`);
+    // 2026-11-14 최종 검토: 올리기 전에 멈추고 찍어 둔 사진을 지운 경로(c1_e2_k del)도 회복 A — 문장은 "단톡방에 올렸다"가 아니라 한 일 그대로
+    const early = await endingText(beforeEnding({ ...BASE, c1_e2_a: 'shoot', c1_e2_b: 'ask', c1_e2_k: 'del' }), sz.dev, 'e2-early-' + sz.name);
+    ok(/함께 세운 경계/.test(early.txt) && /올리기 전에 민준이에게 물었고/.test(early.txt) && /찍어 둔 사진도 지우고/.test(early.txt) && !/단톡방에 올렸다/.test(early.txt), `${sz.name} 게시 전 수습 회복 A 문장 ${early.txt.slice(0, 220)}`);
+    ok(early.errors.length === 0, `${sz.name} 게시 전 수습 오류 ${early.errors}`);
+    const left = await endingText(beforeEnding({ ...BASE, c1_e2_a: 'shoot', c1_e2_b: 'ask', c1_e2_k: 'kept' }), sz.dev, 'e2-kept-' + sz.name);
+    ok(!/함께 세운 경계/.test(left.txt) && /멈춘 확산, 남은 과제/.test(left.txt), `${sz.name} 사진을 그대로 둔 경로는 A가 아니다(B) ${left.txt.slice(0, 120)}`);
   }
 } finally { await browser.close(); server.close(); }
 console.log(`\nending-a-recovery-1114-browser: 통과 ${pass} · 실패 ${fails.length}`);

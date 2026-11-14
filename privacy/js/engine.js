@@ -38,7 +38,8 @@
      *   fix.<사건> = 그 사건에 맞는 수습(다른 사건의 수습·도움 점수로 대신할 수 없다)
      *     e2 내리고 저장한 사람에게도 지워 달라고 부탁(e2fix=all — 사과만 하고 내린 sorry는 사본 회수 요청이 없어 부족)
      *     e5 대화 지우고 기록 설정 확인(e5fix=del) · e6 캡처 없이 로그아웃하고 하늘이에게 알림(e6b=stop) · e7 글을 지우게 하고 민준이와 선생님께(e7b=help — 지우라고만 한 del은 부족)
-     *     게임에 없는 행동은 수습으로 치지 않는다: 묻지 않고 찍은 뒤 올리기 전에 물어본 경로(e2post=ask)는 사진을 지우는 선택이 없어 수습 완료로 볼 수 없다
+     *     게임에 없는 행동은 수습으로 치지 않는다. 묻지 않고 찍은 뒤 올리기 전에 물어본 경로(e2post=ask)는 2026-11-14부터 사진을 지우는 장면(c1_e2_k)이 생겼고,
+     *       거기서 실제로 지웠을 때만(e2photo=del) 수습 — 전에는 그 행동이 없어 올린 뒤 지운 경로보다 낮은 엔딩이 나왔다(평가 역전)
      *   grave_harm = 회복 A로 올라갈 수 없는 일: 거절·비밀·삭제 요청을 어김(e2 "올리진 마" 뒤 올림·e2fix=no·e3 capture·e5j jiho) · 학교 밖 공개(e2post=story)
      *     · 남을 위험하게 함(e4 forward·e6 post·e7 join·e9 share — seriousSplit '다른 사람을 위험하게 한 일') · 같은 사건에서 거듭 침해(e6b=cap) · 수습 거절·피해자 탓(e6b=deny·e7b=none·e4b=blame)
      *   recovered = 실수한 사건이 정확히 하나(같은 친구라도 사건이 둘이면 둘 — 민준 사진 + 번호 방관) + 그 사건 수습 완료 + grave_harm 없음
@@ -47,7 +48,7 @@
     'slip.e5': 'e5=all',
     'slip.e6': 'e6=peek',
     'slip.e7': 'e7=silent',
-    'fix.e2': 'e2fix=all',
+    'fix.e2': 'e2fix=all || e2post=ask && e2photo=del', // 2026-11-14: 올리기 전에 물어본 경로도 찍어 둔 사진을 실제로 지우면(c1_e2_k del) 수습 — 지우지 않으면(kept·옛 저장) 그대로 수습 아님
     'fix.e5': 'e5fix=del',
     'fix.e6': 'e6b=stop',
     'fix.e7': 'e7b=help',
