@@ -183,7 +183,8 @@ run('cardTopics', () => {
     if (tt[0].items.length < 7 || tt[0].items.length > 17) bad++;
   }
   ok(bad === 0, '무작위 600회: 토픽 만들기 실패·① 줄 수 어긋남 0 (' + bad + ')');
-  ok(max[0] >= 7 && max[0] <= 17 && max[1] <= 5 && max[2] <= 4, '자동 칸 줄 수 최대 ' + max.join('·') + '(① 7~17 · ② ≤5 · ③ ≤4)');
+  // 2026-11-13: ②에 사건 5 지호 일·루미에게 맡긴 것 줄이 더해져 최대 6(사건 4 ≤2 + 사건 5 ≤4) — A4 한 장은 ai-privacy-browser c가 잰다
+  ok(max[0] >= 7 && max[0] <= 17 && max[1] <= 6 && max[2] <= 4, '자동 칸 줄 수 최대 ' + max.join('·') + '(① 7~17 · ② ≤6 · ③ ≤4)');
   ok(marks === 0 && praise === 0, '자동 칸 글자에 강조 기호·평가 낱말 없음');
   ok(longest <= 70, '자동 칸 한 줄 최대 ' + longest + '자(≤ 70 — 인쇄 한 장 계산의 바탕)');
 });
@@ -194,7 +195,7 @@ run('cardText', () => {
   ok(c.deviceNote === '이 카드는 이 기기에만 저장돼요. 제출은 PDF로 저장해서 선생님이 알려 준 곳에 올려요.', '이 기기에만 저장 안내(설계 7.4)');
   ok(c.pdfNote.startsWith('PDF 저장은 컴퓨터의 크롬·엣지에서 가장 잘 돼요'), 'PDF 안내(설계 11.1)');
   ok(c.fileBase === '공유한순간_성찰카드' && c.none === '작성 안 함', '파일 이름 머리·빈 칸 문구');
-  ok(same(c.topics.map((t) => t.title), ['내가 공유한 순간', 'AI가 만든 것, AI에 넘긴 것', 'AI가 지켜보는 교실']), '토픽 이름 셋');
+  ok(same(c.topics.map((t) => t.title), ['내가 공유한 순간', 'AI에 넘긴 것, AI에 맡긴 것', 'AI가 지켜보는 교실']), '토픽 이름 셋');
   ok(same(c.topics[0].events, ['e1', 'e2', 'e3', 'e6', 'e7', 'e8', 'e9']) && c.topics[0].pick && c.topics[0].pick.e2 === 3 && !c.topics[0].first && same(c.topics[1].events, ['e4', 'e5']) && c.topics[2].plan === true, '토픽이 묶는 사건');
   ok(c.topics.flatMap((t) => t.events || []).slice().sort().join() === Object.keys(story.events).sort().join(), '아홉 사건이 빠짐없이 한 번씩');
   const all = [c.title, c.heading, c.intro, c.autoLabel, c.none, c.deviceNote, c.pdfNote, c.needNote, c.wipeAsk].concat(c.topics.flatMap((t) => [t.title, t.q, t.empty || '', t.label || '']));

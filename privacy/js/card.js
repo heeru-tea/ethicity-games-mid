@@ -64,6 +64,15 @@
     if (Array.isArray(raw.answers)) for (var i = 0; i < ANSWERS; i++) c.answers[i] = cleanText(raw.answers[i]);
     return { card: c, stale: false, found: true };
   }
+  /* 옛 진행을 옮겨(engine.js migrate) 지문이 바뀌었을 때(2026-11-13 사건 5): 저장된 카드가 옛 진행의 것이면 새 지문으로 바꾼 사본, 아니면 null.
+   *   같은 진행인데 기록 장면 이름만 바뀐 것이라 답·이름·학번은 그대로 둔다 */
+  function carrySig(raw, oldRun, newRun) {
+    if (!raw || typeof raw !== 'object' || raw.v !== 1 || !finished(oldRun) || !finished(newRun)) return null;
+    var a = sig(oldRun), b = sig(newRun);
+    if (a === b || raw.sig !== a) return null;
+    var c = JSON.parse(JSON.stringify(raw)); c.sig = b;
+    return c;
+  }
   // 새로 시작하기 전에 물어볼지: 답 칸에 쓴 글이 하나라도 있나(이름·학번만 있으면 묻지 않고 지운다)
   function hasText(raw) {
     return !!(raw && typeof raw === 'object' && Array.isArray(raw.answers) && raw.answers.some(function (a) { return typeof a === 'string' && a.trim().length > 0; }));
@@ -94,13 +103,13 @@
           (t.pick ? pickLines(outs, t.pick[e] || 1) : t.first ? outs.slice(0, 1) : outs).forEach(function (text, k) { items.push({ head: k === 0 ? story.events[e].title : '', text: plainText(text) }); });
         });
       }
-      return { n: i + 1, id: t.id, title: t.title, label: t.label || story.card.autoLabel, items: items, empty: items.length ? '' : (t.empty || ''), q: t.q };
+      return { n: i + 1, id: t.id, title: t.title, label: t.label || story.card.autoLabel, items: items, empty: items.length ? '' : (t.empty || ''), explain: t.explain || '', q: t.q };
     });
   }
 
   var api = { KEY: KEY, ANSWERS: ANSWERS, MAX_TEXT: MAX_TEXT, MAX_SID: MAX_SID, MAX_NAME: MAX_NAME,
     cleanLine: cleanLine, cleanText: cleanText, printText: printText, safePart: safePart, fileName: fileName, sig: sig, finished: finished,
-    blank: blank, read: read, hasText: hasText, topics: topics };
+    blank: blank, read: read, hasText: hasText, topics: topics, carrySig: carrySig };
   root.PrivacyCard = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

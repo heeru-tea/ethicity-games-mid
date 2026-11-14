@@ -388,6 +388,8 @@
       bubbles: [{ on: '누가 만든 거래', who: 'haneul', text: '신기하지?' }, { on: '나 보낸 거 지울게', who: 'haneul', text: '…' }] },
     c2_e4_b: { place: 'road', tint: 'evening', card: '그날 저녁 · 집에 가는 길', cast: [] },
     c2_e5_a: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
+    c2_e5_j: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] }, // 2026-11-13 사건 5 일 2(지호 고민)
+    c2_e5_agent: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] }, // 2026-11-13 사건 5 AI 에이전트 제안
     c2_e5_b: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, cast: [] },
     c2_e6_a: { place: 'library', tint: 'day', cast: [who('friend', 'library', 23, 8, 'right')] },
     c2_e6_b: { place: 'library', tint: 'day', cast: [who('friend', 'library', 23, 8, 'right')] },

@@ -17,6 +17,7 @@ const mulberry32 = (a) => () => { a = (a + 0x6D2B79F5) | 0; let t = a; t = Math.
 const SEED = Number(process.env.SEED || 20261109);
 const rnd = mulberry32(SEED);
 const rndSc = mulberry32(7); // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
+const rndAg = mulberry32(11); // 사건 5 AI 에이전트(c2_e5_agent) 선택 전용 — 엔딩과 무관(2026-11-13), 같은 까닭으로 따로
 
 function play(pick) {
   let s = E.createState(story);
@@ -39,7 +40,7 @@ for (const v2 of [false, true]) {
   story.endingV2 = v2; seed = 20261109;
   const count = {};
   for (let i = 0; i < N; i++) {
-    const s = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : rnd()) * cs.length)]);
+    const s = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : st.scene === 'c2_e5_agent' ? rndAg() : rnd()) * cs.length)]);
     count[s.ending] = (count[s.ending] || 0) + 1;
     if (v2) {
       const sp = E.seriousSplit(story, s), dup = E.evalCond('e8=crew', s) ? 1 : 0;
@@ -55,14 +56,14 @@ log(`seriousSplit 합 검사(ENDING_V2=true, ${N.toLocaleString()}회): ${splitE
 
 const ROUTES = {
   '모범 선택': { pro_1: ['photo'], c1_e1_a: ['propose'], c1_e1_b: ['fix'], c1_e2_a: ['ask'], c1_e2_b: ['keep', 'ask'], c1_e3_b: ['ask'],
-    c2_e4_a: ['refuse'], c2_e4_b: ['ask'], c2_e5_a: ['min'], c2_e5_b: ['check'], c2_e6_a: ['logout'],
+    c2_e4_a: ['refuse'], c2_e4_b: ['ask'], c2_e5_a: ['min'], c2_e5_j: ['anon'], c2_e5_agent: ['draft'], c2_e5_b: ['check'], c2_e6_a: ['logout'],
     c3_e7_a: ['stop'], c3_e7_small: ['help'], c3_e7_b: ['help'], c3_e8_a: ['tell'], c3_e9_a: ['ask'], c3_e9_b: ['calm'] },
   // 지시서 Phase A 재현 경로: 1장 개인톡 제안·번호 넘어감·안 찍음·지호에게 물음 / 2장 합성 거절·새봄 위로·AI 통째·별일 없겠지·계정 장난→자백 / 3장 신고·보호자
   '섞은 선택(재현 경로)': { pro_1: ['photo'], c1_e1_a: ['propose'], c1_e1_b: ['pass'], c1_e2_a: ['no'], c1_e3_b: ['ask'],
-    c2_e4_a: ['refuse'], c2_e4_b: ['ask'], c2_e5_a: ['all'], c2_e5_b: ['close'], c2_e6_a: ['post'], c2_e6_b: ['own'],
+    c2_e4_a: ['refuse'], c2_e4_b: ['ask'], c2_e5_a: ['all'], c2_e5_j: ['anon'], c2_e5_agent: ['give'], c2_e5_b: ['close'], c2_e6_a: ['post'], c2_e6_b: ['own'],
     c3_e7_a: ['stop'], c3_e7_small: ['help'], c3_e7_b: ['help'], c3_e8_a: ['tell'], c3_e9_a: ['report'], c3_e9_b: ['calm'] },
   '위험 선택': { pro_1: ['sns'], c1_e1_a: ['public'], c1_e1_b: ['pass'], c1_e2_a: ['shoot'], c1_e2_b: ['story'], c1_e2_d: ['no'], c1_e3_b: ['capture'], c1_e3_cap: ['none'],
-    c2_e4_a: ['forward'], c2_e4_b: ['blame'], c2_e5_a: ['all'], c2_e5_b: ['close'], c2_e6_a: ['post'], c2_e6_b: ['deny'],
+    c2_e4_a: ['forward'], c2_e4_b: ['blame'], c2_e5_a: ['all'], c2_e5_j: ['jiho'], c2_e5_agent: ['give'], c2_e5_b: ['close'], c2_e6_a: ['post'], c2_e6_b: ['deny'],
     c3_e7_a: ['join'], c3_e7_b: ['hide'], c3_e8_a: ['meet'], c3_e8_b: ['go'], c3_e8_c: ['fight'], c3_e8_f: ['expose'], c3_e8_g: ['keep'], c3_e8_i: ['fine'], c3_e9_a: ['share'], c3_e9_b: ['keep'] }
 };
 for (const [name, prefs] of Object.entries(ROUTES)) {

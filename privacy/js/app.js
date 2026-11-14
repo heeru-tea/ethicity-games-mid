@@ -72,9 +72,16 @@
       // 맵 위치는 지금 지도 판(world VERSION)에서 저장한 것만 — 지도를 줄인 뒤 옛 좌표면 버리고 장면 시작점에서 다시(진행은 그대로)
       if (p.pos && typeof p.pos === 'object' && p.pos.v === window.PRIVACY_WORLD.VERSION && p.pos.x === (p.pos.x | 0) && p.pos.y === (p.pos.y | 0) &&
         p.pos.x >= 0 && p.pos.y >= 0 && p.pos.x < window.PRIVACY_WORLD.W && p.pos.y < window.PRIVACY_WORLD.H) progress.pos = p.pos;
+      migrateExplored();
       if (p.run) {
-        if (E.isValidState(story, p.run)) progress.run = p.run;
-        else noticeMsgs.push('이전 진행을 이어 할 수 없어 처음부터 시작해요.');
+        // 2026-11-13 사건 5를 두 일로 나눔: 옛 진행(e5=jiho|anon, c2_e5_a#jiho|anon)을 새 흐름으로 옮긴 뒤 판정(engine.js migrate)
+        var run2 = p.run;
+        try { run2 = E.migrate(story, p.run); } catch (e) { run2 = p.run; }
+        if (E.isValidState(story, run2)) {
+          progress.run = run2;
+          // 엔딩을 본 옛 진행: 기록 장면 이름이 바뀌어 성찰 카드 지문이 달라졌으면 카드를 새 지문으로 옮긴다(쓴 답을 지키려고)
+          if (run2 !== p.run) { var carried = Card.carrySig(cardRaw(), p.run, run2); if (carried) { S.writeJSON(S.KEYS.card, carried); checkWriteFailure(); } }
+        } else noticeMsgs.push('이전 진행을 이어 할 수 없어 처음부터 시작해요.');
       }
     } else if (p) noticeMsgs.push('저장된 진행 기록 형식이 맞지 않아 새로 시작해요.');
 
@@ -98,6 +105,16 @@
     // 공통 플레이어 정보(ethicity.player)가 있으면 그 별명이 우선. 없을 때만 이 게임에서 적은 이름을 쓴다(공통 키에는 쓰지 않음)
     refreshName();
     if (!S.status.available) noticeMsgs.push('이 브라우저에서는 저장할 수 없어요. 플레이는 되지만, 창을 닫으면 진행이 사라져요.');
+  }
+  // '이전 플레이에서 고른 적 있음' 기록: 옛 c2_e5_a의 지호 선택(jiho·anon)은 새 장면 c2_e5_j로(2026-11-13)
+  function migrateExplored() {
+    var ex = progress.explored.c2_e5_a;
+    if (!Array.isArray(ex)) return;
+    var moved = ex.filter(function (id) { return id === 'jiho' || id === 'anon'; });
+    if (!moved.length) return;
+    progress.explored.c2_e5_a = ex.filter(function (id) { return moved.indexOf(id) < 0; });
+    var j = Array.isArray(progress.explored.c2_e5_j) ? progress.explored.c2_e5_j : (progress.explored.c2_e5_j = []);
+    moved.forEach(function (id) { if (j.indexOf(id) < 0) j.push(id); });
   }
   function saveProgress() {
     S.writeJSON(S.KEYS.progress, progress);
@@ -884,6 +901,13 @@
       var list = el('div', 'choices');
       list.setAttribute('role', 'group');
       list.setAttribute('aria-label', scene.prompt ? fill(scene.prompt) : '선택지');
+      // 질문 아래 작은 안내 한 줄(2026-11-13 사건 5 에이전트 장면: 「이 선택은 엔딩에 영향을 주지 않습니다.」) — 선택 묶음의 설명으로도 읽힌다
+      if (scene.promptNote) {
+        var note = el('p', 'prompt-note', fill(scene.promptNote));
+        note.id = 'g-prompt-note';
+        dock.appendChild(note);
+        list.setAttribute('aria-describedby', 'g-prompt-note');
+      }
       choices.forEach(function (c, i) {
         var b = el('button', 'choice');
         b.type = 'button';
@@ -1409,6 +1433,8 @@
         auto.appendChild(ul);
       } else auto.appendChild(el('p', 'rcard-empty', t.empty));
       sec.appendChild(auto);
+      // 질문 위 설명(2026-11-13 둘째 주제: AI 에이전트가 무엇인지) — 화면·인쇄 모두
+      if (t.explain) sec.appendChild(el('p', 'rcard-explain', t.explain));
       // 학생이 쓰는 칸: 화면에서는 textarea, 인쇄에서는 같은 글을 문단으로(비우면 '작성 안 함')
       var lab = el('label', 'rcard-q', t.q);
       lab.setAttribute('for', id);

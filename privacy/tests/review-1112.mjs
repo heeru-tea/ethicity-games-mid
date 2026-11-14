@@ -63,7 +63,8 @@ let worst = 0;
 ok('무작위 3000번: "내가 공유한 순간" 줄 수 ≤ pick 합(' + pickSum + ')', worst <= pickSum && worst >= 7, worst);
 
 /* ── 4. 지호의 대화를 AI에 넣은 선택 ── */
-const jiho = run({ c2_e5_a: 'jiho', c2_e5_b: 'close' }), all = run({ c2_e5_a: 'all', c2_e5_b: 'close' }), anon = run({ c2_e5_a: 'anon' }), min = run({ c2_e5_a: 'min' });
+// 2026-11-13 사건 5를 두 일로: 지호 일(c2_e5_j)과 안내문 일(c2_e5_a)을 따로 고른다
+const jiho = run({ c2_e5_a: 'min', c2_e5_j: 'jiho', c2_e5_b: 'close' }), all = run({ c2_e5_a: 'all', c2_e5_j: 'anon', c2_e5_b: 'close' }), anon = run({ c2_e5_a: 'min', c2_e5_j: 'anon' }), min = run({ c2_e5_a: 'min', c2_e5_j: 'anon' });
 ok('지호 대화 입력: 필요 이상 공유 +1(단톡방 통째와 같음)', jiho.stats.spread === clean.stats.spread + 1 && all.stats.spread === clean.stats.spread + 1, [clean.stats.spread, jiho.stats.spread, all.stats.spread]);
 ok('이름을 뺀 질문·부스 정보만: 공유 수치 그대로', anon.stats.spread === clean.stats.spread && min.stats.spread === clean.stats.spread, [anon.stats.spread, min.stats.spread]);
 ok('지호 대화 입력: 엔딩 글에 그 일을 짚는 줄', /지호에게 묻지 않고 AI 도우미에 넣은 일/.test(text(jiho)), text(jiho));

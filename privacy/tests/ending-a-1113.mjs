@@ -36,7 +36,7 @@ const IN = [ // [플래그, 이유]
   [{ e3: 'capture' }, '"아무한테도 말하지 마" 대화를 캡처해 보냄'],
   [{ e4: 'forward' }, '새봄이 가짜 영상 전달'],
   [{ e5: 'all' }, '하늘이 번호·계좌가 든 단톡을 AI에 통째로'],
-  [{ e5: 'jiho' }, '지호가 비밀로 한 대화를 AI에'],
+  [{ e5j: 'jiho' }, '지호가 비밀로 한 대화를 AI에'], // 2026-11-13 e5 → e5j
   [{ e6: 'peek' }, '하늘이 계정 DM 열람'],
   [{ e6: 'post' }, '하늘이 계정으로 글 올림'],
   [{ e6: 'peek', e6b: 'cap' }, '하늘이 DM 캡처 전달'],
@@ -54,7 +54,7 @@ const OUT = [
   [{ e4: 'ignore' }, '받은 영상에 반응 안 함'],
   [{ e4: 'refuse', e4b: 'report' }, '거절·신고'],
   [{ e5: 'min' }, '필요한 부스 정보만'],
-  [{ e5: 'anon' }, '이름·사정 빼고 질문'],
+  [{ e5j: 'anon' }, '이름·사정 빼고 질문'],
   [{ e6: 'leave' }, '그냥 떠남'],
   [{ e6: 'logout' }, '로그아웃'],
   [{ e7: 'silent' }, '가만히 있음(방관 — harm_count가 맡음)'],
@@ -67,7 +67,7 @@ const OUT = [
 ];
 for (const [f, why] of OUT) ok('뜻을 무시한 행동 아님: ' + why, E.evalCond('overrode_wish', flagsOnly(f)) === false, f);
 // 모든 선택지의 set을 하나씩 넣어 본다 — IN 목록 밖의 선택이 끼어들지 않았는지
-const expected = new Set(['c1_e2_a#shoot', 'c1_e2_b#group', 'c1_e2_b#story', 'c1_e2_d#no', 'c1_e3_b#capture', 'c2_e4_a#forward', 'c2_e5_a#all', 'c2_e5_a#jiho',
+const expected = new Set(['c1_e2_a#shoot', 'c1_e2_b#group', 'c1_e2_b#story', 'c1_e2_d#no', 'c1_e3_b#capture', 'c2_e4_a#forward', 'c2_e5_a#all', 'c2_e5_j#jiho',
   'c2_e6_a#peek', 'c2_e6_a#post', 'c2_e6_b#cap', 'c3_e7_a#join', 'c3_e9_a#share']);
 const actual = new Set();
 for (const [id, sc] of Object.entries(story.scenes)) for (const c of sc.choices || []) if (E.evalCond('overrode_wish', flagsOnly(Object.assign({}, c.set || {})))) actual.add(id + '#' + c.id);
@@ -130,7 +130,7 @@ ok('② 문장: 묻지 않고 안전하게 피한 길에 맞는 말("함부로 �
 const P3 = {
   '③a "올리진 마" 뒤 단톡방에 올리고 지움(다른 선택 신중)': { c1_e2_a: 'ask', c1_e2_b: 'group', c1_e2_d: 'all' },
   '③b 몰래 찍고 단톡방에 올리고 삭제 요청을 넘김': { c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'no' },
-  '③c 지호가 비밀로 한 대화를 AI 도우미에(다른 선택 신중)': { c2_e5_a: 'jiho', c2_e5_b: 'del' },
+  '③c 지호가 비밀로 한 대화를 AI 도우미에(다른 선택 신중)': { c2_e5_j: 'jiho', c2_e5_b: 'del' },
   '③d 자는 민준이를 묻지 않고 찍음 → 올리기 전엔 물음(안 올림)': { c1_e2_a: 'shoot', c1_e2_b: 'ask' },
   '③e 하늘이 계정 DM을 열어 봄 → 캡처 없이 로그아웃': { c2_e6_a: 'peek', c2_e6_b: 'stop' }
 };

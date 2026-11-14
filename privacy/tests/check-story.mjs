@@ -21,6 +21,7 @@ const sceneIds = Object.keys(story.scenes);
 const setFlags = new Set();
 const knownStats = new Set(E.STAT_KEYS);
 for (const s of Object.values(story.scenes)) for (const c of s.choices || []) Object.keys(c.set || {}).forEach((k) => setFlags.add(k));
+for (const s of Object.values(story.scenes)) for (const c of s.choices || []) (c.when || []).forEach((w) => Object.keys(w.set || {}).forEach((k) => setFlags.add(k))); // 조건부 효과 when(2026-11-13)
 
 function checkTarget(t, where) {
   const list = Array.isArray(t) ? t.map((x) => x.to) : [t];
@@ -124,7 +125,7 @@ function countPaths(s, depth) {
 }
 const totalPaths = countPaths(E.createState(story), 0);
 // 무대·맵 개편은 이야기 분기를 바꾸지 않는다
-if (totalPaths !== 26181792000) /* 특별 수업 28가지(설치 안 함 1 + 3×3×3) 포함. 2026-11-10 플레이테스트: 사과 장면 c3_e9_j(선택 2개)·믿음 상한으로 24,766,560,000 → 26,181,792,000 */ err('완주 경로 수가 바뀜: ' + totalPaths);
+if (totalPaths !== 104727168000) /* 2026-11-13 사건 5를 두 일 + AI 에이전트로: 4×2 → 2×2×4×2 = 4배(26,181,792,000 → 104,727,168,000). 특별 수업 28가지(설치 안 함 1 + 3×3×3) 포함. 2026-11-10 플레이테스트: 사과 장면 c3_e9_j(선택 2개)·믿음 상한으로 24,766,560,000 → 26,181,792,000 */ err('완주 경로 수가 바뀜: ' + totalPaths);
 
 // ── 4. 무작위 완주 표본(실제 상태 그대로) ──────
 const seenScene = new Set(), seenChoice = new Set(), seenLine = new Set(), seenOutcome = new Set();
@@ -143,6 +144,7 @@ const mulberry32 = (a) => () => { a = (a + 0x6D2B79F5) | 0; let t = a; t = Math.
 const SEED = Number(process.env.SEED || 20261017);
 const rnd = mulberry32(SEED);
 const rndSc = mulberry32(7); // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
+const rndAg = mulberry32(11); // 사건 5 AI 에이전트(c2_e5_agent) 선택 전용 — 엔딩과 무관(2026-11-13), 같은 까닭으로 따로
 const SAMPLES = Number(process.env.SAMPLES || 100000);
 const EM_MAX = 2; // 장면당(장면 대사 + 반응) 강조 최대 개수 — 많으면 강조가 아니게 된다
 const emCount = (lines) => lines.reduce((n, l) => n + EM.parts(l.text).filter((p) => p.strong).length + (l.meta ? EM.parts(l.meta).filter((p) => p.strong).length : 0), 0);
@@ -171,7 +173,7 @@ function play(pick) {
   return { s, path };
 }
 for (let i = 0; i < SAMPLES; i++) {
-  const { s, path } = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : rnd()) * cs.length)]);
+  const { s, path } = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : st.scene === 'c2_e5_agent' ? rndAg() : rnd()) * cs.length)]);
   endingCount[s.ending] = (endingCount[s.ending] || 0) + 1;
   // ENDING_V2(2026-11-09): 안전 지표 두 줄(seriousSplit)이 serious와 맞는지 — e8 crew는 두 줄 모두 센다. serious를 올리는 새 선택이 생기면 story.js seriousSplit에 넣을 것
   { const sp = E.seriousSplit(story, s); if (sp && sp[0].value + sp[1].value - (E.evalCond('e8=crew', s) ? 1 : 0) !== s.stats.serious) err('seriousSplit 두 줄이 serious와 다름: ' + path.join(' > ')); }
@@ -271,7 +273,7 @@ function linesOnRoute(route) {
 }
 {
   const BAD = ['pro_1#sns', 'c1_e1_a#public', 'c1_e1_b#pass', 'c1_e2_a#shoot', 'c1_e2_b#story', 'c1_e2_d#no', 'c1_e3_b#capture', 'c1_e3_cap#none',
-    'sc_1#on', 'sc_2#all', 'sc_3#open', 'sc_4#open', 'c2_e4_a#forward', 'c2_e4_b#blame', 'c2_e5_a#all', 'c2_e5_b#close', 'c2_e6_a#post', 'c2_e6_b#deny',
+    'sc_1#on', 'sc_2#all', 'sc_3#open', 'sc_4#open', 'c2_e4_a#forward', 'c2_e4_b#blame', 'c2_e5_a#all', 'c2_e5_j#jiho', 'c2_e5_agent#give', 'c2_e5_b#close', 'c2_e6_a#post', 'c2_e6_b#deny',
     'c3_e7_a#join', 'c3_e7_b#hide', 'c3_e8_a#meet', 'c3_e8_b#go', 'c3_e8_c#fight', 'c3_e8_f#silence', 'c3_e8_i#fine', 'c3_e9_a#share', 'c3_e9_b#keep'];
   const bad = linesOnRoute(BAD);
   if (bad.fail) err('나쁜 경로: ' + bad.fail);
@@ -298,12 +300,32 @@ function linesOnRoute(route) {
   if (!goodA.fail && goodA.seen.some((l) => /각자 마주해야/.test(l.text))) err('대표 경로 A 에필로그에 가해 경로 줄이 나옴');
 }
 
+// ── 5f. 2026-11-13 사건 5 AI 에이전트: e5agent·e5link는 엔딩·계산 플래그·지표·분기·선택 표시·수치에 쓰지 않는다(엔딩과 무관 — tests/ai-agent-1113.mjs가 완주로도 확인) ──
+{
+  const has = (x) => /e5agent|e5link/.test(JSON.stringify(x === undefined ? null : x));
+  const where = [];
+  story.endings.forEach((e) => { if (has(e.if)) where.push('엔딩 ' + e.code); });
+  Object.keys(E.COMPUTED).forEach((k) => { if (has(E.COMPUTED[k])) where.push('COMPUTED ' + k); });
+  if (has(story.seriousSplit)) where.push('seriousSplit');
+  if (has(story.endingNotes)) where.push('endingNotes');
+  for (const [id, sc] of Object.entries(story.scenes)) {
+    if (has(sc.next)) where.push(id + ' next');
+    for (const c of sc.choices || []) {
+      if (has(c.if) || has(c.next)) where.push(id + '#' + c.id);
+      (c.when || []).forEach((w) => { if (has(w.if) && (w.add || w.addV2)) where.push(id + '#' + c.id + ' when 수치'); });
+    }
+  }
+  const ag = story.scenes.c2_e5_agent;
+  if (!ag || ag.choices.some((c) => c.add || c.addV2 || c.when || c.if)) where.push('c2_e5_agent 선택에 수치·조건');
+  if (where.length) err('AI 에이전트 플래그가 엔딩·수치에 닿음: ' + where.join(', '));
+}
+
 // ── 5e. 2026-11-10 플레이테스트: 나쁜 선택을 여럿 한 경로는 B가 아니고, 믿음·에필로그가 피해를 반영한다 / 실수 한두 번 뒤 수습한 경로는 B ──
 {
   const pick = (base, over) => Object.entries(Object.assign({}, base, over)).map(([k, v]) => k + '#' + v);
   const byScene = (route) => Object.fromEntries(route.map((x) => x.split('#')));
   const REPRO = pick({}, { pro_1: 'photo', c1_e1_a: 'public', c1_e1_b: 'fixboth', c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'all', c1_e3_b: 'capture', c1_e3_cap: 'part',
-    sc_1: 'none', c2_e4_a: 'ignore', c2_e4_b: 'report', c2_e5_a: 'jiho', c2_e5_b: 'del', c2_e6_a: 'peek', c2_e6_b: 'stop', c3_e7_a: 'silent', c3_e7_b: 'del',
+    sc_1: 'none', c2_e4_a: 'ignore', c2_e4_b: 'report', c2_e5_a: 'min', c2_e5_j: 'jiho', c2_e5_agent: 'scoped', c2_e5_b: 'del', c2_e6_a: 'peek', c2_e6_b: 'stop', c3_e7_a: 'silent', c3_e7_b: 'del',
     c3_e8_a: 'crew', c3_e8_b: 'go', c3_e8_c: 'leave', c3_e9_a: 'ask', c3_e9_j: 'sorry', c3_e9_b: 'calm' });
   const r = linesOnRoute(REPRO);
   if (r.fail) err('재현 경로(1110): ' + r.fail);
@@ -322,7 +344,7 @@ function linesOnRoute(route) {
   // 대표 경로 A(가장 신중한 선택)에서 한두 군데만 실수로 바꾼 경로 — 장면 순서대로 다시 늘어놓는다. 나머지가 모두 신중하면 A, 아니면 B(둘 다 C·D는 아님)
   // 대표 경로 B(routes.js: 계좌 공개·사진 단톡 뒤 수습)는 위 5절에서 B 도착을 확인한다
   const A = byScene(ROUTES.A);
-  const order = ['pro_1', 'c1_e1_a', 'c1_e1_b', 'c1_e2_a', 'c1_e2_b', 'c1_e2_d', 'c1_e3_b', 'c1_e3_cap', 'sc_1', 'sc_2', 'sc_3', 'sc_4', 'c2_e4_a', 'c2_e4_b', 'c2_e5_a', 'c2_e5_b', 'c2_e6_a', 'c2_e6_b', 'c3_e7_a', 'c3_e7_b', 'c3_e8_a', 'c3_e9_a', 'c3_e9_j', 'c3_e9_b'];
+  const order = ['pro_1', 'c1_e1_a', 'c1_e1_b', 'c1_e2_a', 'c1_e2_b', 'c1_e2_d', 'c1_e3_b', 'c1_e3_cap', 'sc_1', 'sc_2', 'sc_3', 'sc_4', 'c2_e4_a', 'c2_e4_b', 'c2_e5_a', 'c2_e5_j', 'c2_e5_agent', 'c2_e5_b', 'c2_e6_a', 'c2_e6_b', 'c3_e7_a', 'c3_e7_b', 'c3_e8_a', 'c3_e9_a', 'c3_e9_j', 'c3_e9_b'];
   const mk = (over) => { const m = Object.assign({}, A, over); return order.filter((k) => m[k]).map((k) => k + '#' + m[k]); };
   for (const [name, over] of [['사진을 단톡에 올렸다가 지우고 부탁', { c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'all' }],
     ['사진 단톡 + 캡처 전달 뒤 둘 다 수습', { c1_e2_a: 'shoot', c1_e2_b: 'group', c1_e2_d: 'all', c1_e3_b: 'capture', c1_e3_cap: 'full' }]]) {
@@ -530,7 +552,7 @@ for (const id of sceneIds) {
       (c.react || []).forEach((l, i) => lineTexts(l).forEach((t) => { if (bad(t)) err(`강조 표시 짝이 안 맞음: ${id}#${c.id} 반응${i}`); }));
       [c.text, c.say].forEach((t) => { if (t && EM.has(t)) err(`선택지·내 말에 강조 표시(정답 신호): ${id}#${c.id}`); });
     }
-    const titles = [sc.prompt, sc.label, ...[].concat((sc.view || {}).title || []).map((x) => (typeof x === 'string' ? x : x.title)), (sc.view || {}).meta];
+    const titles = [sc.prompt, sc.promptNote, sc.label, ...[].concat((sc.view || {}).title || []).map((x) => (typeof x === 'string' ? x : x.title)), (sc.view || {}).meta];
     titles.forEach((t) => { if (t && /\[\[|\]\]/.test(t)) err('질문·제목에 강조 표시: ' + id); });
   }
   for (const [eid, ev] of Object.entries(story.events)) { if (/\[\[|\]\]/.test(ev.title + ev.topic)) err('사건 제목에 강조 표시: ' + eid); ev.outcomes.forEach((o, i) => { if (bad(o.text)) err(`강조 표시 짝이 안 맞음: 사건 ${eid} 결과${i}`); }); }

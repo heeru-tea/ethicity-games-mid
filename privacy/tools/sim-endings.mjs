@@ -20,6 +20,7 @@ const mulberry32 = (a) => () => { a = (a + 0x6D2B79F5) | 0; let t = a; t = Math.
 const SEED = Number(process.env.SEED || 20261031);
 const rnd = mulberry32(SEED);
 const rndSc = mulberry32(7); // 특별 수업(sc_*) 선택 전용 — 엔딩과 무관한 선택이 다른 장면의 표본 순서를 밀지 않게(2026-11-10)
+const rndAg = mulberry32(11); // 사건 5 AI 에이전트(c2_e5_agent) 선택 전용 — 엔딩과 무관(2026-11-13), 같은 까닭으로 따로
 
 function play(pick) {
   let s = E.createState(story);
@@ -42,7 +43,7 @@ const t0 = Date.now();
 let done = 0;
 for (; done < N && Date.now() - t0 < LIMIT; done++) {
   try {
-    const s = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : rnd()) * cs.length)]);
+    const s = play((st, cs) => cs[Math.floor((/^sc_/.test(st.scene) ? rndSc() : st.scene === 'c2_e5_agent' ? rndAg() : rnd()) * cs.length)]);
     const end = E.resolveEnding(story, s).code;
     count[end] = (count[end] || 0) + 1;
   } catch (e) { errors[e.message] = (errors[e.message] || 0) + 1; }
@@ -58,13 +59,13 @@ function route(prefs) {
 }
 const CAREFUL = {
   c1_e1_a: ['propose'], c1_e1_b: ['fix'], c1_e2_a: ['no'], c1_e3_b: ['ask'],
-  c2_e4_a: ['refuse'], c2_e4_b: ['ask'], c2_e5_a: ['min'], c2_e5_b: ['check'], c2_e6_a: ['logout'],
+  c2_e4_a: ['refuse'], c2_e4_b: ['ask'], c2_e5_a: ['min'], c2_e5_j: ['anon'], c2_e5_agent: ['draft'], c2_e5_b: ['check'], c2_e6_a: ['logout'],
   c3_e7_a: ['stop'], c3_e7_b: ['help'], c3_e8_a: ['tell'], c3_e9_a: ['ask'], c3_e9_b: ['calm']
 };
 // 지시서의 "나쁜 선택 후 수습": 계좌 공개 · 몰래 촬영 · 캡처 전달 · DM 엿보기 · 정문 싸움, 그 뒤 수습은 다 한다
 const BAD_THEN_REPAIR = {
   c1_e1_a: ['public'], c1_e1_b: ['fixboth'], c1_e2_a: ['shoot'], c1_e2_b: ['group'], c1_e2_d: ['all'],
-  c1_e3_b: ['capture'], c1_e3_cap: ['full'], c2_e4_a: ['refuse'], c2_e4_b: ['report'], c2_e5_a: ['min'], c2_e5_b: ['check'],
+  c1_e3_b: ['capture'], c1_e3_cap: ['full'], c2_e4_a: ['refuse'], c2_e4_b: ['report'], c2_e5_a: ['min'], c2_e5_j: ['anon'], c2_e5_agent: ['scoped'], c2_e5_b: ['check'],
   c2_e6_a: ['peek'], c2_e6_b: ['stop'], c3_e7_a: ['stop'], c3_e7_b: ['help'], c3_e7_small: ['help'],
   c3_e8_a: ['meet'], c3_e8_b: ['go'], c3_e8_c: ['fight'], c3_e8_f: ['support'], c3_e9_a: ['report'], c3_e9_b: ['calm']
 };
