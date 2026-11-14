@@ -118,7 +118,7 @@
     ok($$('.path-opts li.other').length > 0, '고르지 않은 선택지도 표시');
     ok($$('.ending-chips li').length === 4, '엔딩 목록 4종');
     $('#btn-path-reflect').click(); await wait();
-    ok(view() === 'v-reflect' && $$('#r-basic li').length === PRIVACY_STORY.reflection.basic.length && $$('#r-basic li').length === 6 && $$('#r-deep li').length === 6, '성찰 질문 6+6');
+    ok(view() === 'v-reflect' && $$('#r-basic li').length === PRIVACY_STORY.reflection.basic.length && $$('#r-basic li').length === 7 /* 2026-11-14 정보 자기결정권 문항 추가 */ && $$('#r-deep li').length === 6, '성찰 질문 6+6');
     $('#btn-reflect-back').click(); await wait();
     ok(view() === 'v-path', '성찰 → 경로로 돌아가기');
     $('#btn-path-back').click(); await wait();

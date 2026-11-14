@@ -60,6 +60,7 @@ if (on('migrate')) {
     ok('① 기록 장면도 c2_e5_j', m1.history[m1.history.length - 1].scene === 'c2_e5_j' && m1.history[m1.history.length - 1].choice === 'jiho');
     ok('① 원본은 그대로(순수)', old1.scene === 'c2_e5_a' && old1.flags.e5 === 'jiho');
     ok('① 옮긴 뒤 유효한 상태', E.isValidState(story, m1));
+    ok('① 지나온 장면에 c2_e5_j(선택 경로 화면이 "지나지 않은 장면"으로 보이지 않게, 최종 검토 2026-11-14)', m1.visited.includes('c2_e5_j') && m1.visited.filter((x) => x === 'c2_e5_j').length === 1, m1.visited.slice(-4));
     if (E.isValidState(story, m1)) {
       const n1 = E.advance(story, m1);
       ok('① 계속 → 에이전트 장면', n1.scene === 'c2_e5_agent' || (n1.screen === 'map' && n1.mapTarget === 'c2_e5_agent'), { screen: n1.screen, scene: n1.scene });

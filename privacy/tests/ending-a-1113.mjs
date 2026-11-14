@@ -20,7 +20,8 @@ const condOf = (code) => story.endings.find((e) => e.code === code).if;
 const oldEnding = (s) => (E.evalCond(condOf('D'), s) ? 'D' : E.evalCond(OLD_A, s) ? 'A' : E.evalCond(condOf('B'), s) ? 'B' : 'C');
 
 /* ── 0. 조건 문자열 ── */
-ok('A 조건 = spread<=2 && minimize>=2 && harm_count=0 && !overrode_wish', A.if === 'spread<=2 && minimize>=2 && harm_count=0 && !overrode_wish', A.if);
+// 2026-11-14: A = 예방 A(이 검사가 보는 11-13 규칙) || 회복 A(tests/ending-a-recovery-1114.mjs) — 아래 표본·경로 검사는 회복 A가 아닌 A(예방 A)만 본다
+ok('A 조건 첫 갈래(예방 A) = spread<=2 && minimize>=2 && harm_count=0 && !overrode_wish', A.if.split(' || ')[0] === 'spread<=2 && minimize>=2 && harm_count=0 && !overrode_wish', A.if);
 ok('A 조건에 consent가 없다', !/consent/.test(A.if), A.if);
 ok('판정 순서 D → A → B → C 그대로', story.endings.map((e) => e.code).join('') === 'DABC');
 ok('D·B 조건 그대로', condOf('D') === 'e8_unresolved_threat || serious>=3' && condOf('B') === 'repair+help>=3 && spread<=4 && harm_count<=2' && condOf('C') == null);
@@ -138,7 +139,7 @@ const p3 = {};
 for (const [name, over] of Object.entries(P3)) {
   const s = run(over); p3[name] = s; note(name, s);
   ok(name + ' → 뜻을 무시한 행동 있음', E.evalCond('overrode_wish', s));
-  ok(name + ' → 엔딩 A 아님', s.ending !== 'A', s.ending);
+  ok(name + ' → 예방 A 아님(회복 A일 수는 있음 — ③e, 2026-11-14)', s.ending !== 'A' || E.evalCond('recovered', s), s.ending);
   ok(name + ' → A의 요약·본문이 나오지 않음', !/함께 세운 것이다|함부로 꺼내지 않/.test(text(s)), text(s));
 }
 // ③c·③d·③e는 옛 규칙(동의 2번 이상)에서는 A였다 — 새 기준이 실제로 막는 경로(③a·③b는 해친 친구 조건이 이미 막음)
@@ -173,9 +174,9 @@ for (const c of [0, 1, 2, 3, 4]) {
       s = E.advance(story, s);
     }
     const o = oldEnding(s);
-    if (s.ending === 'A') { newA++; if (E.evalCond('overrode_wish || harm_count>=1 || spread>=3 || minimize<=1', s)) badA++; if (s.stats.consent === 0 && /물으며|묻고|매번/.test(text(s))) textBad++; }
+    if (s.ending === 'A' && !E.evalCond('recovered', s)) { newA++; if (E.evalCond('overrode_wish || harm_count>=1 || spread>=3 || minimize<=1', s)) badA++; if (s.stats.consent === 0 && /물으며|묻고|매번/.test(text(s))) textBad++; }
     if (o === 'A' && s.ending !== 'A') { lost++; if (!E.evalCond('overrode_wish', s)) lostBad++; }
-    if (o !== 'A' && s.ending === 'A') { gained++; if (s.stats.consent >= 2) gainedBad++; }
+    if (o !== 'A' && s.ending === 'A' && !E.evalCond('recovered', s)) { gained++; if (s.stats.consent >= 2) gainedBad++; }
   }
   ok('표본: 새 A는 모두 확산 ≤2·최소 ≥2·해친 친구 0·뜻 무시 없음', badA === 0, { newA, badA });
   ok('표본: 옛 A였는데 새 A가 아닌 것은 모두 뜻을 무시한 행동 때문', lostBad === 0, { lost, lostBad });
