@@ -95,6 +95,14 @@
    +`<div class="menu">${btn('지우고 처음부터','reset','','primary')}${btn('취소','close')}</div>`);
  }
 
+ // 이름·학번을 지우기로 했는데 저장소가 막혀 이전 기록을 지우지 못했을 때(2026-11-18 검토).
+ function wipeFailed(){
+  open('기록을 지우지 못했어요',
+   '<p>이 기기에 저장된 이전 기록을 지우지 못했어요. 이름과 학번이 이 기기에 남아 있을 수 있어요.</p>'
+   +'<p class="hint">다른 사람이 이 기기를 쓰기 전에 ‘다시 지우기’를 눌러 보세요. 그래도 안 되면 선생님께 알려 주세요.</p>'
+   +`<div class="menu">${btn('다시 지우기','reset-retry','','primary')}${btn('닫기','close')}</div>`);
+ }
+
  actions.close=()=>close();
  actions.sources=()=>sources();
  actions.discussion=()=>discussion();
@@ -104,7 +112,16 @@
  actions.reset=()=>{
   const keep=$('#reset-reporter')?.checked===false;
   close();
-  reset(keep);
+  if(!reset(keep))wipeFailed();
+ };
+ // 창 안에서 내용만 바꾸므로, 닫을 때 초점은 처음 창을 열기 전 자리로 그대로 돌아가게 둔다.
+ actions['reset-retry']=()=>{
+  const back=S.lastFocus;
+  if(!UI.forget())wipeFailed();
+  else open('기록을 지웠어요',
+   '<p>이 기기에 남아 있던 이름과 학번을 지웠어요.</p>'
+   +`<div class="menu">${btn('닫기','close')}</div>`);
+  S.lastFocus=back;
  };
 
  Object.assign(UI,{modal,open,close});

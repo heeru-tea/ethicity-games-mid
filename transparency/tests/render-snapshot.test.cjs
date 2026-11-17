@@ -6,9 +6,9 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {createGame}=require('./dom-stub.cjs');
 const HASHES=path.join(__dirname,'render-snapshot.hashes.json'),FULL=path.join(__dirname,'render-snapshot.full.json.br');
 const UPDATE=process.env.UPDATE_SNAPSHOT==='1';
-// 화면 코드가 처리하는 data-act 전부(2026-11-10 나누기 전 app.js 기준 37개 + 2026-11-11 시작 화면의 start·title). 대본이 하나도 빠짐없이 눌러 봐야 한다.
+// 화면 코드가 처리하는 data-act 전부(2026-11-10 나누기 전 app.js 기준 37개 + 2026-11-11 시작 화면의 start·title + 2026-11-18 이전 기록을 못 지웠을 때의 reset-retry). 대본이 하나도 빠짐없이 눌러 봐야 한다.
 const ALL_ACTS=['close','next','back','source','item','spot','region','record','segment','cell','village','crit','part','skyline','said','change','list','judge','judge-next','notice-pick','notice-slot','notice-post',
- 'mark','run','row','follow-judge','choose','rechoose','ask','notebook','print','to-report','revisit','sources','discussion','settings','reset-ask','reset','start','title'];
+ 'mark','run','row','follow-judge','choose','rechoose','ask','notebook','print','to-report','revisit','sources','discussion','settings','reset-ask','reset','start','title','reset-retry'];
 const FIELDS=['cls','html','modalOpen','modalTitle','modalBody','save','stored','title','state','art','fx'];
 const sha=s=>crypto.createHash('sha256').update(s).digest('hex').slice(0,16);
 const hashOf=rec=>sha(FIELDS.map(f=>f+'\u0000'+String(rec[f])).join('\u0001'));
@@ -215,6 +215,9 @@ function buildAll(){
  out['no-preview-param']=play({search:'?preview=s02&x=1',storage:{[KEY]:saves['check:photo']}},({act})=>{act('next');});
  out['storage-blocked']=play({blocked:true},({act})=>{act('next');act('next');act('notebook');act('close');});
  out['storage-write-fails']=play({},({g,act,rec})=>{act('next');g.env.failSet=true;act('next');act('item',{id:'photo-original'});g.env.failSet=false;g.input('other');rec('input-other-no-save');act('spot',{id:2});});
+ // 2026-11-18 검토 [P1]: 쓰기만 실패하면 이전 기록을 지우고 창 없이 / 지우기도 막히면 알리는 창 → 다시 지우기(아직 막힘 → 풀림) → 닫기
+ out['reset-wipe-fails']=play({storage:{[KEY]:saves.report}},({g,act})=>{g.env.failSet=true;act('settings');act('reset-ask');act('reset');g.env.failSet=false;act('next');
+  g.env.failSet=true;g.env.failRemove=true;act('settings');act('reset-ask');act('reset');act('reset-retry');g.env.failRemove=false;act('reset-retry');act('close');});
  const players={ok:'{"nickname":"  루\\u0007루 <b>&  "}',long:JSON.stringify({nickname:'가'.repeat(60)}),blank:'{"nickname":"   "}',notString:'{"nickname":3}',nullValue:'null',broken:'{nick'};
  for(const [tag,p] of Object.entries(players))out['player '+tag]=play({storage:{'ethicity.player':p,[KEY]:saves['check:photo']}},({act})=>{act('next');});
  // 옛 저장(판단 하나짜리 version 1 · 주장 판정 방식 · version 2)과 망가진 저장

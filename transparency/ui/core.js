@@ -100,21 +100,37 @@
   S.revealCue=false;
   S.fresh=false;
  }
+ // 이름·학번을 지우기로 했을 때: 새 기록으로 덮어쓰고, 덮어쓰지 못하면 이 게임의 저장을 통째로 지운다.
+ // 이 기기에 이전 기록이 남지 않았다고 확인되면 true(2026-11-18 검토 — 쓰기만 실패하면 다시 열 때 이전 이름이 돌아왔다).
+ function forget(){
+  save();
+  if(preview||S.saveOK)return true;
+  try{
+   localStorage.removeItem(KEY);
+   return localStorage.getItem(KEY)===null;
+  }catch{
+   return false;
+  }
+ }
+ // 돌려주는 값: 이전 이름·학번이 기기에 남지 않았는지(남기기로 했으면 늘 true).
  function reset(keepReporter){
   S.state=E.restart(S.state,{keepReporter});
   arrive();
   // 시작 화면에서 ‘처음부터 하기’를 골랐을 때도 지운 뒤 프롤로그로 들어간다.
   S.title=false;
   S.skipFocusReturn=true;
-  save();
+  let gone=true;
+  if(keepReporter)save();
+  else gone=forget();
   UI.render(true);
+  return gone;
  }
  function btn(label,act,attrs='',cls=''){
   return `<button ${cls?`class="${cls}"`:''} data-act="${act}" ${attrs}>${label}</button>`;
  }
 
  const UI=window.TransparencyUI={
-  E,D,KEY,preview,S,$,esc,btn,save,saveStatus,send,arrive,reset,
+  E,D,KEY,preview,S,$,esc,btn,save,saveStatus,send,arrive,reset,forget,
   // views[사건] = 그 사건만의 그림·자료·후속 조사 화면(ui/case-*.js가 채운다).
   views:{},
   // actions[data-act] = 버튼을 눌렀을 때 할 일(각 파일이 자기 몫을 채우고, ui/actions.js가 불러 준다).

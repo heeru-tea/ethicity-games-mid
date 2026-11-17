@@ -24,7 +24,7 @@
   "ui/boot.js",
   "ui/bgm.js"
  ],
- "steps": 1736,
+ "steps": 1748,
  "scenarios": {
   "walk-correct": [
    "boot e109e5af1b74c6b6",
@@ -1633,6 +1633,20 @@
    "item:photo-original 9d5a5bd2cea67a4d",
    "input-other-no-save 8aebfd8bfc7a0f6f",
    "spot:2 8fe6858e221de958"
+  ],
+  "reset-wipe-fails": [
+   "boot 0ade77c2f2df26be",
+   "start 888839d726717805",
+   "settings ddc9240e48c4f7d0",
+   "reset-ask 03ba7399256c8c7c",
+   "reset ddd7502eda717b0c",
+   "next 8481b4f1d9c716dd",
+   "settings da3650b88ade6534",
+   "reset-ask 2a5289f3f4065272",
+   "reset ff3c2230e29ff6c8",
+   "reset-retry 84a2f06edcb25b5b",
+   "reset-retry b9656d227db3af72",
+   "close f2b1456d5aad67f4"
   ],
   "player ok": [
    "boot 5019aec14584301d",

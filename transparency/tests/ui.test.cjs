@@ -702,3 +702,36 @@ test('review 2026-11-14 [10]: the open-row marks use a glyph the bundled font ha
  const a=open('face','follow').app.innerHTML,b=open('share','follow').app.innerHTML;
  assert.ok(a.includes('<span class="row-open">근거 보기 ›</span>'));assert.ok(b.includes('<span class="row-open">누가 보는지 ›</span>'));assert.equal((a+b).includes('▸'),false);
 });
+
+// 2026-11-18 외부 검토 [P1]: ‘이름과 학번도 지우기’를 골라도 저장소 쓰기만 실패하면 이전 기록(이름·학번)이 그대로 남아, 다시 열면 이름이 돌아왔다.
+// 체크했으면 이 게임 저장 키의 이전 기록을 실제로 지우고, 지우기도 막히면 기기에 남을 수 있다고 알리고 다시 지우기를 준다.
+test('review 2026-11-18 [P1]: 이름과 학번도 지우기 really removes the old name and number from this device, or says it could not and offers a retry',()=>{
+ const named=()=>{const s=stateAt('share','reflect');s.reporter={name:'TEST',number:'10203'};return JSON.stringify(s);};
+ const reopen=g=>{const v=g.stored();return enter(createGame({storage:v===null?{}:{[KEY]:v}}));};
+ const resetFrom=(g,{checked=true}={})=>{g.click('settings');g.click('reset-ask');g.env.resetChecked=checked;g.click('reset');return g.snap();};
+ const blank={name:'',number:''},who=g=>JSON.parse(JSON.stringify(g.state().reporter));
+ // (a) 쓰기만 실패(읽기·지우기는 됨): 지운 뒤 다시 열어도 이름·학번이 없다
+ {const g0=createGame({storage:{[KEY]:named()}});enter(g0);assert.deepEqual(who(g0),{name:'TEST',number:'10203'});
+  g0.env.failSet=true;const r=resetFrom(g0);
+  assert.deepEqual(who(g0),blank,'화면은 비워짐');
+  assert.equal(String(g0.stored()).includes('TEST'),false,'저장소에 이전 이름이 남지 않음: '+g0.stored());
+  assert.deepEqual(who(reopen(g0)),blank,'다시 열어도 이름·학번 없음');
+  assert.equal(r.modalOpen,false,'지웠으면 실패 창 없음');assert.match(r.save,/저장할 수 없어/,'쓰기는 여전히 안 되니 이 창에서만 진행 안내');}
+ // (b) 지우기도 막힘: 기록이 남을 수 있다는 창 + 다시 지우기. 막힘이 풀리면 다시 지우기로 지워진다
+ {const g=createGame({storage:{[KEY]:named()}});enter(g);g.env.failSet=true;g.env.failRemove=true;let r=resetFrom(g);
+  assert.equal(r.modalOpen,true,'실패를 알리는 창');assert.match(r.modalBody,/기기에 남아 있을 수 있어요/);
+  assert.deepEqual(parseTags(r.modalBody,'button').map(b=>b['data-act']),['reset-retry','close'],'다시 지우기가 먼저');
+  assert.equal(g.stored().includes('TEST'),true,'(흉내) 정말로 남아 있음');
+  g.click('reset-retry');r=g.snap();assert.equal(r.modalOpen,true);assert.match(r.modalBody,/기기에 남아 있을 수 있어요/,'아직 막혀 있으면 다시 알림');
+  g.env.failRemove=false;g.click('reset-retry');r=g.snap();
+  assert.equal(g.stored(),null,'다시 지우기로 지워짐');assert.match(r.modalBody,/지웠어요/);assert.deepEqual(parseTags(r.modalBody,'button').map(b=>b['data-act']),['close']);
+  g.click('close');assert.equal(g.snap().modalOpen,false);assert.deepEqual(who(reopen(g)),blank);}
+ // 저장소가 아예 막힘(읽기부터): 남았는지 확인할 수 없으니 알린다
+ {const g=enter(createGame({blocked:true}));const r=resetFrom(g);assert.equal(r.modalOpen,true);assert.match(r.modalBody,/기기에 남아 있을 수 있어요/);}
+ // (c) 보통(쓰기 됨): 체크하면 지우고, 체크를 풀면 이름·학번은 남고 진행만 처음으로 — 둘 다 실패 창 없음
+ {const g=createGame({storage:{[KEY]:named()}});enter(g);const r=resetFrom(g);assert.equal(r.modalOpen,false);
+  assert.deepEqual(JSON.parse(g.stored()),E.initial());assert.deepEqual(who(reopen(g)),blank);}
+ {const g=createGame({storage:{[KEY]:named()}});enter(g);const r=resetFrom(g,{checked:false});assert.equal(r.modalOpen,false);
+  const s=JSON.parse(g.stored());assert.deepEqual(s.reporter,{name:'TEST',number:'10203'});assert.equal(s.scene,0);
+  assert.deepEqual(who(reopen(g)),{name:'TEST',number:'10203'});}
+});

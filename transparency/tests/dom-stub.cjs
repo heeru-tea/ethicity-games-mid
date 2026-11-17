@@ -25,11 +25,12 @@ const datasetOf=attrs=>Object.fromEntries(Object.entries(attrs).filter(([k])=>k.
 const cssEscape=v=>String(v).replace(/[^\w-]/g,c=>'\\'+c);
 
 // opts: search(주소 뒤 ?…), storage({키:값} 처음 저장), blocked(저장소 읽기부터 막힘), visualTop(.visual의 화면 위치)
+// env(검사 도중 바꾼다): failSet(쓰기만 실패), failRemove(지우기도 실패), resetChecked(‘이름과 학번도 지우기’ 체크)
 function createGame(opts={}){
  const fx=[]; // 지난 기록 뒤에 일어난 호출(초점·스크롤·창)
  const log=x=>fx.push(x);
  const store=new Map(Object.entries(opts.storage||{}));
- const env={blocked:!!opts.blocked,failSet:false,visualTop:opts.visualTop||0,resetChecked:true};
+ const env={blocked:!!opts.blocked,failSet:false,failRemove:false,visualTop:opts.visualTop||0,resetChecked:true};
  const listeners={document:{},window:{},modal:{}},pending=[];
  const on=where=>(type,fn)=>{(listeners[where][type]||(listeners[where][type]=[])).push(fn);};
  // 첫 <script src>부터 끝까지 뺀다 — 2026-11-14 머리에 글꼴 미리 받기 인라인 <script>가 생겨, 아무 <script에서나 자르면 머리말·창까지 잘린다
@@ -95,7 +96,7 @@ function createGame(opts={}){
  const localStorage={
   getItem(k){if(env.blocked)throw new Error('blocked');return store.has(k)?store.get(k):null;},
   setItem(k,v){if(env.blocked||env.failSet)throw new Error('blocked');store.set(k,String(v));},
-  removeItem(k){store.delete(k);}};
+  removeItem(k){if(env.blocked||env.failRemove)throw new Error('blocked');store.delete(k);}};
  const sb={console,URLSearchParams,document,localStorage,Image,Date:FixedDate,CSS:{escape:cssEscape},location:{search:opts.search||''},
   addEventListener:on('window'),scrollTo:(x,y)=>log('scrollTo '+x+','+y),print:()=>log('print')};
  sb.window=sb;
