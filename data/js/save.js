@@ -290,9 +290,19 @@
   // 화면에 쓰는 임무 이름(사용자 결정 2026-11-09: '1 임무' → '첫 번째 임무')
   var MISSION_ORD = { m1: '첫 번째', m2: '두 번째', m3: '세 번째', m4: '네 번째' };
   function missionName(id) { return (MISSION_ORD[id] || id) + ' 임무'; }
-  // 깬 직후 도시 복구 화면: 칸이 늘었을 때만(다시 깨면 건너뜀). 4 임무 = 도시 재연결, 이야기의 끝이라 늘 →5
+  // 도시 복구 그림의 구간(왼쪽부터 0~4) = 깬 임무(플레이테스트 2026-11-18 P0-2 — 전엔 깬 '수'만큼 왼쪽부터 켜서, 임무 고르기로
+  //   3 임무만 깨도 보호소·분실물 구간이 켜졌다): 보호소 = 튜토리얼, 분실물 = m1, 분리배출 = m2, 역·횡단보도 = m3, 학교 = m4
+  var CITY_SECTIONS = ['tutorial', 'm1', 'm2', 'm3', 'm4'];
+  function citySection(id) { return CITY_SECTIONS.indexOf(id); }
+  function citySections(recs) {
+    recs = recs || {};
+    var out = [];
+    CITY_SECTIONS.forEach(function (id, i) { if (recs[id] && recs[id].cleared) out.push(i); });
+    return out;
+  }
+  // 깬 직후 도시 복구 화면: 칸이 늘었을 때만(다시 깨면 건너뜀). 4 임무 = 도시 재연결, 이야기의 끝이라 늘 뜨지만 숫자는 깬 수 그대로(P0-2 — 전엔 늘 →5)
   function cityStep(id, before, after) {
-    if (id === 'm4') return { from: Math.min(before, 4), to: 5 };
+    if (id === 'm4') return after > before ? { from: before, to: after } : { from: Math.max(0, after - 1), to: after };
     return after > before ? { from: before, to: after } : null;
   }
 
@@ -352,7 +362,7 @@
     });
   }
 
-  var api = { KEY: KEY, onStale: onStale, SOUND_KEY: SOUND_KEY, BGM_KEY: BGM_KEY, HERO_KEY: HERO_KEY, hero: hero, setHero: setHero, checkpoint: checkpoint, load: load, hasSave: hasSave, records: records, setRecord: setRecord, ending: ending, setEnding: setEnding, endingDone: endingDone, chapterOf: chapterOf, markTutorialDone: markTutorialDone, passTutorial: passTutorial, cityCount: cityCount, cityStep: cityStep, nextMission: nextMission, allCleared: allCleared, missionName: missionName, fitsMission: fitsMission, finish: finish, clear: clear, status: status, flush: flush, soundOn: soundOn, setSound: setSound, bgmOn: bgmOn, setBgm: setBgm };
+  var api = { KEY: KEY, onStale: onStale, SOUND_KEY: SOUND_KEY, BGM_KEY: BGM_KEY, HERO_KEY: HERO_KEY, hero: hero, setHero: setHero, checkpoint: checkpoint, load: load, hasSave: hasSave, records: records, setRecord: setRecord, ending: ending, setEnding: setEnding, endingDone: endingDone, chapterOf: chapterOf, markTutorialDone: markTutorialDone, passTutorial: passTutorial, cityCount: cityCount, cityStep: cityStep, CITY_SECTIONS: CITY_SECTIONS, citySection: citySection, citySections: citySections, nextMission: nextMission, allCleared: allCleared, missionName: missionName, fitsMission: fitsMission, finish: finish, clear: clear, status: status, flush: flush, soundOn: soundOn, setSound: setSound, bgmOn: bgmOn, setBgm: setBgm };
   root.DR = root.DR || {};
   root.DR.Save = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

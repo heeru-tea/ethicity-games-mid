@@ -67,11 +67,13 @@ async function toPrepAndRun(page, fill) {
   return peer;
 }
 async function ending(page, w, shots) {
-  // 도시 재연결 5/5(그림이 없으면 점 5칸 + 문구)
+  // 도시 재연결(그림이 없으면 점 5칸 + 문구). 숫자 = 깬 수, 켜진 구간 = 깬 임무(플레이테스트 2026-11-18 P0-2 — 전엔 늘 5/5)
   await page.locator('#screen-city').waitFor({ state: 'visible' });
-  assert.match(await page.locator('#city-line').innerText(), /^도시 5\/5 — 채점 AI까지, 도시가 다시 이어졌다$/);
+  const n = await page.evaluate(() => DR.App.cityCount());
+  assert.match(await page.locator('#city-line').innerText(), new RegExp('^도시 ' + n + '\/5 — 채점 AI까지, 도시가 다시 이어졌다$'));
   await page.waitForTimeout(900);
-  assert.equal(await page.locator('#screen-city .city-dots i.on').count(), 5);
+  assert.equal(await page.locator('#screen-city .city-dots i.on').count(), n);
+  assert.equal(await page.locator('#screen-city .city-dots i').nth(4).getAttribute('class'), 'on', 'the school (m4) cell is lit');
   // 그림이 아직 없으면 그림 자리를 숨기고 점 5칸 + 문구(그림이 들어오면 그림이 보인다)
   const hasArt = await page.evaluate(() => { const i = document.querySelector('#screen-city .city-after'); return !!(i && i.complete && i.naturalWidth); });
   assert.equal(await page.locator('#city-art').isHidden(), !hasArt);

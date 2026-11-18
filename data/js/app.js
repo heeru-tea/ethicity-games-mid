@@ -78,9 +78,12 @@
   // 칸 수 = 튜토리얼 + 1~4 임무 중 깬 것(기록 기준, 0~5) — 타이틀 배지도 이것을 쓴다
   function cityCount() { return DR.Save.cityCount(App.records); }
   // step = DR.Save.cityStep(…) — null이면(칸이 늘지 않음) 건너뛴다
+  //   켜질 구간 = 깬 임무(DR.Save.citySections — 플레이테스트 2026-11-18 P0-2), 숫자 = 지금 기록의 깬 수(고치기 전 저장된 4 임무 {to:5}도 바로잡힘)
   function cityScreen(m, step, done) {
     if (!step) { done(); return; }
-    DR.UI.city({ from: step.from, to: step.to, line: m.cityLine || '' }, done);
+    var to = cityCount(), add = DR.Save.citySection(m.id), sections = DR.Save.citySections(App.records);
+    if (add < 0 || sections.indexOf(add) < 0) { to = step.to; sections = null; add = null; } // 구간이 없는 임무(옛 침수)는 예전처럼 칸 수로
+    DR.UI.city({ from: Math.max(0, Math.min(step.from, to - 1)), to: to, line: m.cityLine || '', sections: sections, add: add }, done);
   }
 
   /* ---------- 튜토리얼 ---------- */

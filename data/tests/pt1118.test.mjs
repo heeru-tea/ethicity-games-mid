@@ -87,3 +87,68 @@ test('P0-1 새 문구는 짧고 이모지·%·— 없음', () => {
   for (const id of ['g1', 'g5', 'g7']) for (const k of ['wrongShort', 'noteShort']) { assert.ok(g(id)[k], id + k); assert.ok(!BAD.test(g(id)[k])); assert.ok(g(id)[k].length <= 60, g(id)[k]); }
   for (const k of ['inconvenienceShort', 'dangerShort']) assert.ok(m3.outcomeText[k] && !OLD.test(m3.outcomeText[k]), k);
 });
+
+/* P0-2 임무 고르기로 중간 임무부터 했을 때 도시 복구 — 구간은 '깬 임무' 기준(tutorial=보호소, m1=분실물, m2=분리배출, m3=역·횡단보도, m4=학교) */
+import { boot, store } from './app-flow-helper.mjs';
+const Save = require('../js/save.js');
+const Look = require('../js/city-look.js');
+const C = { cleared: true };
+
+test('P0-2 구간 = 깬 임무 id, 숫자 = 깬 수/5', () => {
+  assert.deepEqual([...Save.CITY_SECTIONS], ['tutorial', 'm1', 'm2', 'm3', 'm4']);
+  assert.deepEqual(Save.citySections({ m3: C }), [3]);
+  assert.deepEqual(Save.citySections({ tutorial: C, m3: C }), [0, 3]);
+  assert.deepEqual(Save.citySections({ m4: C, m3: C, m2: { cleared: false } }), [3, 4]);
+  assert.deepEqual(Save.citySections({ tutorial: C, m1: C, m2: C, m3: C, m4: C, flood: C }), [0, 1, 2, 3, 4]);
+  assert.equal(Save.citySection('m3'), 3); assert.equal(Save.citySection('flood'), -1);
+  assert.equal(Save.cityCount({ tutorial: C, m3: C }), 2);
+  // 4 임무 = 이야기의 끝이라 화면은 늘 뜨지만, 숫자는 깬 수 그대로(전엔 늘 →5)
+  assert.deepEqual(Save.cityStep('m4', 2, 3), { from: 2, to: 3 });
+  assert.deepEqual(Save.cityStep('m4', 0, 1), { from: 0, to: 1 });
+  assert.deepEqual(Save.cityStep('m4', 5, 5), { from: 4, to: 5 }, 'replaying m4 still shows its cell lighting up');
+  assert.deepEqual(Save.cityStep('m3', 0, 1), { from: 0, to: 1 });
+  assert.equal(Save.cityStep('m3', 2, 2), null);
+});
+
+test('P0-2 그림 겹: 왼쪽부터 차례로 켜진 경우만 예전 그림 두 장(city-from → city-to), 아니면 구간별', () => {
+  assert.equal(Look.inOrder([0, 1, 2], 2), true, 'tutorial, m1, m2 in order');
+  assert.equal(Look.inOrder([0], 0), true);
+  assert.equal(Look.inOrder([3], 3), false, 'm3 only');
+  assert.equal(Look.inOrder([0, 1, 2], 1), false, 'm1 played last after m2');
+  assert.equal(Look.inOrder([0, 1, 2, 3, 4], 3), false);
+  // 구간별: 새 구간(m3 = 4번째 칸)만 열리고, 케이블은 새 구간 왼쪽 끝에서 가운데까지(꺼진 구간 위로 안 지나감)
+  const L = Look.sectionLayout([0, 3], 3, false);
+  assert.ok(Math.abs(L.revealFrom - 0.6) < 1e-9 && Math.abs(L.revealTo - 0.8) < 1e-9);
+  assert.ok(Math.abs(L.cableFrom - 0.6) < 1e-9 && Math.abs(L.cableTo - 0.7) < 1e-9);
+  assert.deepEqual(L.others.map((o) => o.i), [0]);
+  assert.ok(Math.abs(L.others[0].l - 0) < 1e-9 && Math.abs(L.others[0].r - 0.2) < 1e-9);
+  const N = Look.sectionLayout([3], 3, true);
+  assert.ok(N.revealFrom >= 0 && N.revealTo <= 1 && N.revealTo > N.revealFrom, 'new zone inside the narrow box');
+  assert.equal(Look.sectionLayout([0, 1, 2, 3, 4], 3, false).final, true);
+  const css = Look.sectionCss([0, 3], 3);
+  for (const k of ['--city-pos-w', '--city-clip-l-w', '--city-clip-r-w', '--city-cable-left-w', '--city-cable-len-w', '--city-pos-n', '--city-clip-l-n']) assert.ok(css[k], k);
+});
+
+// 실제 흐름: 뒤 활동 이어하기(도시 복구 차례)에서 DR.UI.city에 넘기는 값
+function cityOpts(records, mission, city) {
+  const st = store();
+  for (const [id, r] of Object.entries(records)) Save.setRecord(id, r, st);
+  Save.setEnding({ mission, step: 4, city, peer: 'none', compare: null }, st);
+  const g = boot(st);
+  g.App.resumeEnding(g.Save.ending());
+  assert.ok(g.ui.city, 'city screen shown');
+  return g.ui.city[0];
+}
+test('P0-2 재현: 1·2 임무 없이 3 임무만 → 역·횡단보도 구간만, 도시 1/5 (연습 기록이 있으면 2/5)', () => {
+  const o = cityOpts({ m3: C }, 'm3', { from: 0, to: 1 });
+  assert.equal(o.to, 1); assert.deepEqual([...o.sections], [3]); assert.equal(o.add, 3);
+  const t = cityOpts({ tutorial: C, m3: C }, 'm3', { from: 1, to: 2 });
+  assert.equal(t.to, 2); assert.deepEqual([...t.sections], [0, 3]); assert.equal(t.add, 3);
+});
+test('P0-2 재현: 이어서 4 임무 → 도시 3/5(연습·3·4), 1·2 임무 구간은 꺼진 채', () => {
+  const o = cityOpts({ tutorial: C, m3: C, m4: C }, 'm4', { from: 2, to: 3 });
+  assert.equal(o.to, 3); assert.deepEqual([...o.sections], [0, 3, 4]); assert.equal(o.add, 4);
+  // 고치기 전에 저장된 뒤 활동({from:2,to:5})으로 이어 해도 숫자는 깬 수
+  const old = cityOpts({ tutorial: C, m3: C, m4: C }, 'm4', { from: 2, to: 5 });
+  assert.equal(old.to, 3);
+});
