@@ -350,6 +350,19 @@
     var hit = v.title.filter(function (t) { return E.evalCond(t.if, st); })[0];
     return hit ? hit.title : '';
   }
+  // 2026-11-18 플레이테스트 P0-4: 장면이 열릴 때 그 장면 첫 시각 줄(sys)로 HUD 날짜·시각(#m-time)도 맞춘다(옛: 걷기 때 시각이 남아 'D-2 · 하교 시간' 아래에 'D-1 · 오전 8:05' 대화).
+  //   '축제까지 D-4 · …'은 앞말을 떼고, 날짜 없는 시각('저녁 8:30')은 지금 날짜 칸을 이어 붙인다. 시각 줄이 없는 장면은 그대로 둔다(앞 장면에 이어짐)
+  function hudTime(scene, state) {
+    var line = E.visibleLines(story, scene.lines, state).filter(function (l) { return l.who === 'sys'; })[0];
+    if (!line) return;
+    var t = plain(String(line.text)).replace(/^축제까지\s*/, '').trim();
+    if (!/(오전|오후|저녁|밤|아침|새벽|\d:\d)/.test(t)) return; // 시각이 아닌 sys 줄(알림 등)은 건드리지 않는다
+    if (t.indexOf(' · ') < 0) {
+      var day = String($('m-time').textContent || '').split(' · ')[0];
+      if (day && /^(D-\d+|축제|다음)/.test(day)) t = day + ' · ' + t; // '그날 밤' 뒤 '오전 9:30'(다음 날 아침)에는 붙이지 않는다
+    }
+    $('m-time').textContent = t;
+  }
   function preChoiceState(run) {
     // 반응 표시 중이면, 장면 대사는 선택 전 상태로 판정한다
     return run.reaction && run.history.length ? run.history[run.history.length - 1].snap : run;
@@ -820,6 +833,7 @@
     var run = progress.run;
     var scene = story.scenes[run.scene];
     $('g-chap').textContent = chapterLabel(scene.chapter);
+    hudTime(scene, preChoiceState(run));
     $('btn-undo').disabled = !run.history.length;
     window.PrivacyTalk.close(); // 앞 장면 대화창이 남아 선택지를 가리지 않게
     var device = deviceOf(run.scene);
@@ -979,6 +993,9 @@
   /* ── 맵 ─────────────────────────── */
   function renderMap() {
     var run = progress.run;
+    // 2026-11-18 플레이테스트 P0-4: 걷는 동안에도 장 이름 = 이번 걷기가 이어지는 장면의 장(옛: 앞 장면의 장이 남아 '프롤로그'로 집에 감)
+    var target = story.scenes[run.scene];
+    if (target) $('g-chap').textContent = chapterLabel(target.chapter);
     $('btn-undo').disabled = !run.history.length;
     $('stage').classList.remove('dim');
     window.PrivacyTalk.close();
@@ -1604,7 +1621,12 @@
     });
     $('btn-start-path').addEventListener('click', function () { renderPath('v-start'); });
     $('btn-start-reflect').addEventListener('click', function () { renderReflect('v-start'); });
-    $('btn-chapter-go').addEventListener('click', function () { setRun(E.advance(story, progress.run)); routeRun(true); });
+    $('btn-chapter-go').addEventListener('click', function () {
+      setRun(E.advance(story, progress.run));
+      var next = progress.run && story.scenes[progress.run.scene]; // 2026-11-18 P0-4: 누르는 순간 다음 장 이름으로
+      if (next) $('g-chap').textContent = chapterLabel(next.chapter);
+      routeRun(true);
+    });
     $('c-more').querySelector('summary').addEventListener('click', function () { if (!$('c-more').open) chapterPin(); }); // 열기 직전에 카드 위쪽 고정
     var chapterW = window.innerWidth; // 폭이 바뀌면(회전 등) 고정을 풀어 다시 가운데로. 높이만 조금 바뀌는 것(휴대폰 주소창)은 그대로 — 단, 고정한 위쪽이 화면 절반을 넘으면 풀기
     window.addEventListener('resize', function () {

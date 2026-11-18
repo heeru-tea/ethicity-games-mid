@@ -400,7 +400,7 @@
       bubbles: [{ on: '해 해', who: 'friend', text: 'ㅋㅋㅋ' }, { on: '다음은 내 차례다', who: 'haneul', text: '👀' }] },
     c3_e7_small: { place: 'booth', tint: 'day', card: '그날 오후 · 마당', cast: only(BOOTH, ['haneul']) }, // 민준이 개인톡(민준이는 이 자리에 없다)
     c3_e7_b: { place: 'booth', tint: 'day', card: '그날 오후 · 마당', cast: only(BOOTH, ['haneul']) },
-    c3_e8_a: { place: 'room', tint: 'evening', me: ATDESK, pcOn: true, device: 'monitor', cast: [] },
+    c3_e8_a: { place: 'room', tint: 'night', me: ATDESK, pcOn: true, device: 'monitor', cast: [] }, // 2026-11-18 플레이테스트 P0-4: '축제 당일 · 저녁 7:40' 내 방이 낮처럼 보였다 → 다른 밤 장면과 같은 밤 색
     c3_e8_b: { place: 'room', tint: 'night', cast: [] },
     // 사건 8 현장 「렌즈 안에 갇힌 밤」: CG가 무대를 덮는다(장소는 CG 뒤 배경·컷 카드용)
     c3_e8_c: { place: 'gate', tint: 'night', card: '렌즈 안에 갇힌 밤 — 저녁 9:00 · 학교 정문 앞', cast: [] },
