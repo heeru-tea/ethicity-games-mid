@@ -924,7 +924,9 @@ body[data-view="v-start"] .app { max-width: 80rem; padding: 18px 16px 32px; }
 .peek-line { margin: 0 0 2px; display: none; gap: 8px; align-items: baseline; font-size: .92rem; line-height: 1.45; }
 .peek-who { flex: none; font-weight: 800; }
 .peek-q { margin: 0; font-weight: 800; font-size: .95rem; }
-.peek-choice { margin: 0; display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: var(--radius-in); padding: 4px 9px; font-size: .86rem; line-height: 1.45; }
+/* 2026-11-18 플레이테스트 P2: 미리보기 선택지가 누르는 버튼처럼 보였다 → 테두리·그림자 없이, 글씨를 조금 흐리게(예시) */
+.peek-choice { margin: 0; display: flex; gap: 8px; align-items: flex-start; border: 0; box-shadow: none; border-radius: var(--radius-in); padding: 2px 4px; font-size: .86rem; line-height: 1.45; color: var(--text-mute); cursor: default; }
+.peek-card, .peek-card * { cursor: default; }
 .peek-num { flex: none; width: 19px; height: 19px; margin-top: 1px; border-radius: 50%; border: 1.5px solid var(--accent); color: var(--accent); font-size: .72rem; font-weight: 700; display: grid; place-items: center; }
 
 #v-start .hero-legend { font-size: .95rem; }
@@ -932,7 +934,9 @@ body[data-view="v-start"] .app { max-width: 80rem; padding: 18px 16px 32px; }
 #v-start .hero-pick.fixed { grid-template-columns: minmax(0, 12rem); }
 #v-start .hero-card { grid-template-columns: auto 1fr; justify-items: start; align-items: center; column-gap: 10px; padding: 5px 10px; }
 #v-start .hero-face { width: 60px; }
-#v-start .hero-card:has(input:checked)::after { top: 50%; right: 8px; transform: translateY(-50%); width: 24px; height: 24px; }
+/* 2026-11-18 플레이테스트 P2: 390px에서 ✓가 '다온' 글자를 덮었다 → ✓는 카드 오른쪽 위 모서리, 이름 오른쪽에 그만큼 자리 */
+#v-start .hero-card { padding-right: 26px; }
+#v-start .hero-card:has(input:checked)::after { top: 5px; right: 5px; transform: none; width: 20px; height: 20px; font-size: .78rem; }
 #v-start .name-field { margin: 8px 0 0; }
 #v-start .name-field input { padding: 6px 12px; }
 #v-start .start-actions { margin-top: 12px; }
@@ -1002,7 +1006,7 @@ body[data-view="v-start"] { background: #F3E9E0; }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .start-main { background: #FBF5EE; } }
 .peek-card { background: rgba(255, 255, 255, .58); border-color: rgba(110, 80, 60, .16); }
-.peek-choice { background: rgba(255, 255, 255, .72); border-color: rgba(110, 80, 60, .16); }
+.peek-choice { background: none; }
 #v-start .hero-card { background: rgba(255, 255, 255, .5); border-color: rgba(110, 80, 60, .18); }
 #v-start .hero-card:hover { border-color: var(--accent); }
 #v-start .hero-card:has(input:checked) { background: rgba(217, 238, 235, .88); border-color: var(--accent); }

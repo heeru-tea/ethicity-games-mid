@@ -912,7 +912,7 @@
   // 가리는 상자들의 가장자리로 캔버스를 나눈 사각형 중, 어떤 상자와도 겹치지 않는 가장 넓은 것(넓은 화면: 폰 오른쪽·선택 상자 위 / 휴대폰: 아래 시트 위).
   var OCCLUDERS = ['#g-phone', '#g-dock', '#talk'];
   // 걷기 중 지도를 가리는 것: 위 HUD, 아래 말 걸기 버튼 줄, 조이스틱 받침(기본 자리) — 주인공·끝 줄(출구 매트)이 그 밑에 숨지 않게
-  var WALK_OCCLUDERS = ['#hud', '#v-map .map-controls'];
+  var WALK_OCCLUDERS = ['#hud', '#v-map .map-controls', '#v-map .map-help']; // 2026-11-18 플레이테스트 P2: 조작 안내 띠가 떠 있는 동안(처음 두 장소) 띠 높이만큼 아래 여백 — 첫 지도 출구가 띠에 반쯤 가렸다
   function freeRect(sel, extra) {
     var cr = canvas.getBoundingClientRect(), boxes = [], xs = [0, viewW], ys = [0, viewH];
     function add(r) {
@@ -1481,7 +1481,7 @@
     //   가로만 도형 반지름 + 4px(핀 끝이 화면 옆 끝에서 10px 안, 옆 방향 화살표 T×0.45+6도 화면 안). 위아래는 safeArea가 이미 HUD·버튼 줄에서 8px 떨어져 있어 반지름만
     var pad = iconSize / 2 + 4;
     mx = Math.max(sa.left + pad, Math.min(sa.right - pad, mx));
-    my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - iconSize / 2, my));
+    my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - Math.max(iconSize, ms.h) / 2, my)); // 2026-11-18 플레이테스트 P2: 아래는 핀 전체 높이만큼 — 첫 지도(내 방) 출구 핀이 아래 안내 띠에 반쯤 가렸다
     var jr = joy.rest && !$('joy').hidden ? joy.rest : null; // 조이스틱 받침(기본 자리)에 걸리면 그 위로
     if (jr && mx + ms.w / 2 > jr.x0 && mx - ms.w / 2 < jr.x1 && my + ms.h / 2 > jr.y0 && my - ms.h / 2 < jr.y1) my = jr.y0 - ms.h / 2 - 4;
     var off = Math.abs(mx - tx0) > 2 || Math.abs(my - ty0) > 2;
@@ -1523,7 +1523,7 @@
     my = aboveTags(mx, my, ms.w, ms.h) + bob;
     var tx0 = mx, ty0 = my;
     mx = Math.max(sa.left + iconSize / 2, Math.min(sa.right - iconSize / 2, mx));
-    my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - iconSize / 2, my));
+    my = Math.max(sa.top + iconSize / 2, Math.min(sa.bottom - Math.max(iconSize, ms.h) / 2, my)); // 2026-11-18 플레이테스트 P2: 아래는 핀 전체 높이만큼 — 첫 지도(내 방) 출구 핀이 아래 안내 띠에 반쯤 가렸다
     // 화면 위 끝에 붙어 다시 이름표에 걸리면 이름표 옆으로
     var th = tagHit(mx, my, ms.w, ms.h, markPad());
     if (th) mx = th.x + th.w + ms.w / 2 + 4 <= sa.right ? th.x + th.w + ms.w / 2 + 4 : th.x - ms.w / 2 - 4;

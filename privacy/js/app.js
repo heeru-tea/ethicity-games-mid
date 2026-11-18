@@ -282,6 +282,10 @@
   function needLook() {
     if (playerLook()) return false;
     $('look-msg').hidden = false;
+    // 2026-11-18 플레이테스트 P2: '먼저 주인공을 골라 주세요.'와 아래 '위에서 주인공을 골라 주세요.'가 함께 떴다 → 아래 줄의 같은 말은 뺀다(손상 안내는 남김)
+    var note = $('player-note');
+    if (player.source === 'damaged') note.textContent = '공통 캐릭터 정보를 읽지 못해 이 게임에서 고른 주인공으로 시작해요.';
+    else note.hidden = true;
     var first = document.querySelector('input[name=look]');
     if (first) first.focus();
     return true;
@@ -1091,7 +1095,13 @@
       }
       if (plan) { detail.appendChild(plan); more.hidden = false; }
     } else if (done) {
-      var lines = done.events.map(function (e) { return E.eventOutcomes(story, e, run)[0]; }).filter(Boolean);
+      // 사건마다 첫 결과 문장 + 'recap' 표시가 붙은 결과(예: 사진이 반 단톡방 28명에게 퍼졌다 — 2026-11-18 플레이테스트 P2)
+      var lines = [];
+      done.events.forEach(function (e) {
+        var outs = E.eventOutcomes(story, e, run);
+        if (outs[0]) lines.push(outs[0]);
+        story.events[e].outcomes.forEach(function (o) { if (o.recap && E.evalCond(o.if, run) && lines.indexOf(o.text) < 0) lines.push(o.text); });
+      });
       if (lines.length) {
         sum.appendChild(el('h2', 'c-label', '이번 장에서 달라진 것'));
         var flat = lines.filter(function (t) { return window.PrivacyEmph.has(t); }).length > 2;

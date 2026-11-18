@@ -30,7 +30,8 @@ const DRAFT = {
   4: '축제가 끝나고 맞은 월요일. 선생님이 축제 준비 때 있었던 일을 다 같이 꺼내 보자고 해요.' };
 
 const stageName = (n) => (n === 0 ? '프롤로그' : n === 'sc' ? '특별 수업' : n === 4 ? '에필로그' : n + '장');
-const firstLines = (s, ch) => story.chapters[ch].events.map((e) => E.eventOutcomes(story, e, s)[0]).filter(Boolean).map((t) => EM.plain(t));
+// 사건마다 첫 결과 문장 + recap 표시 결과(2026-11-18 플레이테스트 P2: 사진을 올린 경로는 '28명에게 퍼졌다'도)
+const firstLines = (s, ch) => story.chapters[ch].events.flatMap((e) => { const o = E.eventOutcomes(story, e, s), out = o[0] ? [o[0]] : []; story.events[e].outcomes.forEach((x) => { if (x.recap && E.evalCond(x.if, s) && !out.includes(x.text)) out.push(x.text); }); return out; }).map((t) => EM.plain(t));
 // 장 카드에 선 상태: 무작위 경로 1,500개 중 그 카드의 요약(첫 결과 문장·특별 수업 안)이 가장 긴 것
 function cardRuns() {
   let seed = 11; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
@@ -112,7 +113,7 @@ try {
       } else {
         const want = firstLines(c.run, c.prev);
         ok(L.label === '이번 장에서 달라진 것', `${tag} 소제목 '이번 장에서 달라진 것' (${L.label})`);
-        ok(want.length === 3 && JSON.stringify(L.recap) === JSON.stringify(want), `${tag} 요약 3줄 = 사건마다 첫 결과 문장 ${JSON.stringify(L.recap)}`);
+        ok(want.length >= 3 && JSON.stringify(L.recap) === JSON.stringify(want), `${tag} 요약 = 사건마다 첫 결과 문장(+recap) ${JSON.stringify(L.recap)}`);
         ok(L.strong <= 2, `${tag} 요약 강조 2개 이하 (${L.strong})`);
       }
       const nch = story.chapters[c.next];
