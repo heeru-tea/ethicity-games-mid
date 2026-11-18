@@ -466,13 +466,14 @@ body[data-view="v-map"] .talk { bottom: 64px; }
 .phone[data-device]::-webkit-scrollbar-thumb { background: #B7C1BF; background-clip: content-box; border: 2px solid transparent; border-radius: 4px; }
 @supports not selector(::-webkit-scrollbar) { .phone[data-device] { scrollbar-width: thin; scrollbar-color: #B7C1BF transparent; } }
 
-/* 선택지: 고를 줄에 ▶ */
+/* 선택지: 고를 줄에 ▶
+ *   2026-11-18 플레이테스트 P1-5: ::before 글자(▶)가 버튼의 접근성 이름에 섞여 "▶"로 읽혔다 → aria-hidden span(.choice-mark)으로. 이름은 늘 선택지 문장 */
 #v-game .choice { position: relative; padding-left: 30px; }
-#v-game .choice::before { content: "▶"; position: absolute; left: 10px; top: 14px; font-size: .7rem; color: var(--text); visibility: hidden; }
+#v-game .choice .choice-mark { position: absolute; left: 10px; top: 14px; font-size: .7rem; line-height: 1; color: var(--text); visibility: hidden; }
 /* ▶는 한 줄에만: 평소엔 키보드 포커스 줄, 마우스가 선택지 위에 있으면 마우스 올린 줄(2026-11-02 — 두 곳에 동시에 뜨던 것) */
-#v-game .choice:focus-visible::before, #v-game .choice:focus::before { visibility: visible; }
-#v-game .choices:hover .choice::before { visibility: hidden; }
-#v-game .choices:hover .choice:hover::before { visibility: visible; }
+#v-game .choice:focus-visible .choice-mark, #v-game .choice:focus .choice-mark { visibility: visible; }
+#v-game .choices:hover .choice .choice-mark { visibility: hidden; }
+#v-game .choices:hover .choice:hover .choice-mark { visibility: visible; }
 
 /* 좁은 무대(휴대폰): 폰은 아래에서 올라오는 시트, 위쪽에 맵이 보인다 */
 @container (max-width: 720px) {

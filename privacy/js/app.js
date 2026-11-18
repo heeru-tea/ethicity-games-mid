@@ -913,6 +913,9 @@
         var b = el('button', 'choice');
         b.type = 'button';
         b.setAttribute('data-choice', c.id);
+        var mark = el('span', 'choice-mark', '▶'); // 고를 줄 표시 — 화면 읽기에서 숨김(버튼 이름 = 선택지 문장, 2026-11-18 P1-5)
+        mark.setAttribute('aria-hidden', 'true');
+        b.appendChild(mark);
         var num = el('span', 'num', String(i + 1));
         num.setAttribute('aria-hidden', 'true');
         b.appendChild(num);
