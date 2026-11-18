@@ -21,10 +21,18 @@
     <!-- 시작하자마자 뜨는 주의 화면: 가상 상황 고지·다루는 장면·도움 연락처. 확인을 눌러야 시작(저절로 넘어가지 않음) -->
     <div id="warning" class="warning" role="dialog" aria-modal="true" aria-labelledby="warning-title" hidden>
       <div class="warning-inner">
-        <p id="warning-title" class="warning-title">WARNING</p>
+        <p id="warning-title" class="warning-title">WARNING<span class="warning-sub">시작하기 전에</span></p>
         <p class="warning-lead">본 게임에 나오는 인물·학교·상황은 모두 가상이며, 실제와 관계없습니다.</p>
         <p class="warning-text">친구 사진 유포, 신상 공개, AI로 만든 가짜 영상, 몸싸움과 촬영 같은 장면이 나옵니다.</p>
         <p class="warning-help">비슷한 일로 힘들다면 선생님이나 보호자에게, 또는 청소년상담 <strong>1388</strong> · 학교폭력 <strong>117</strong> · 개인정보 침해 <strong>118</strong>에 도움을 청할 수 있어요.</p>
+        <!-- 2026-11-18 플레이테스트 P0-1: 시작 화면 '게임 안내'에서 옮김(같은 확인 버튼 하나 — 누르는 횟수는 그대로) -->
+        <div class="warning-know" aria-labelledby="warning-know-title" role="group">
+          <p id="warning-know-title" class="warning-know-title">시작 전에 알아 둘 것</p>
+          <ul>
+            <li>선택 뒤에 정답·오답을 보여 주지 않아요. 결과는 이야기로 돌아와요.</li>
+            <li>메시지 알림음은 메뉴 → 효과음에서 끌 수 있어요.</li>
+          </ul>
+        </div>
         <button id="btn-warning-ok" class="btn primary warning-ok" type="button">확인했어요</button>
       </div>
     </div>
@@ -70,8 +78,9 @@
 
       <label id="name-field" class="name-field" hidden>
         <span class="name-label">내 이름(별명)</span>
-        <input id="name-input" type="text" maxlength="10" autocomplete="off" spellcheck="false" placeholder="플레이어">
+        <input id="name-input" type="text" maxlength="10" autocomplete="off" spellcheck="false" placeholder="플레이어" aria-describedby="name-note">
       </label>
+      <p id="name-note" class="small mute name-note" hidden>실제 정보를 적는 곳은 이 이름(선택)과 끝난 뒤 성찰 카드뿐이에요. 이 기기에만 저장돼요.</p>
       <div class="start-actions">
         <button id="btn-continue" class="btn primary" type="button" hidden>이어 하기</button>
         <button id="btn-new" class="btn primary" type="button">시작하기</button>
@@ -90,15 +99,6 @@
           <button id="btn-start-path" class="btn link" type="button">지난 선택 경로</button>
           <button id="btn-start-reflect" class="btn link" type="button">성찰 질문</button>
         </div>
-        <details class="facts-box">
-          <summary>게임 안내</summary>
-          <ul class="facts">
-            <li>약 15~20분 · 프롤로그 → 3개 장 → 에필로그</li>
-            <li>선택 뒤에 정답·오답을 보여 주지 않아요. 결과는 이야기로 돌아와요.</li>
-            <li>게임 속 이름·번호·계좌·학교는 모두 가짜예요. 실제 정보를 적는 곳은 시작 화면의 이름(선택)과, 끝난 뒤 성찰 카드의 학번·이름(선택)뿐이에요. 이 기기에만 저장되고, 메뉴의 ‘이 게임 기록 지우기’로 지울 수 있어요.</li>
-            <li>메시지가 오면 작은 알림음이 나요(메뉴 → 효과음에서 끌 수 있어요). 방향키로 걷고 스페이스 키로 말을 걸어요. 숫자 키 1~4로 고르고 엔터 키로 넘겨요.</li>
-          </ul>
-        </details>
       </div>
       </div>
 

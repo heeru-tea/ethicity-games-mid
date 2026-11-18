@@ -313,6 +313,7 @@
     renderPlayerChip();
     var nameField = $('name-field');
     nameField.hidden = player.source === 'stored';
+    $('name-note').hidden = nameField.hidden; // 실제 정보를 적는 곳 안내 한 줄(2026-11-18 P0-1, 옛 '게임 안내'에서) — 이름 칸이 있을 때만
     if (!nameField.hidden && document.activeElement !== $('name-input')) $('name-input').value = settings.nickname;
 
     var run = progress.run;
