@@ -145,7 +145,7 @@
     trig = WD.triggers[targetId];
     WD.setWarp(trig.warp || null); // 특별 수업 걷기만 마당→교실 문이 특별실로(2026-11-10), 다른 걷기는 되돌림
     cast = trig.cast.slice();
-    passGreeted = {}; talked = {}; talkMarks = []; lastLabel = '';
+    passGreeted = {}; talked = {}; looked = {}; talkMarks = []; lastLabel = '';
     streak = { who: null, n: 0 }; guideUntil = 0;
     arrived = null; stepHold = 0; nudge = null; walkTint = null;
     blocked = {};
@@ -404,7 +404,8 @@
         guideUntil = performance.now() + 6000;
       });
     } else {
-      talk([{ who: null, name: null, text: WD.lookFor(n.ob, trig && trig.time) }]); // 매점처럼 날마다 바뀌는 문구
+      looked[n.ob.id] = true; // 한 번 본 사물(P1-9)
+      talk([{ who: null, name: null, text: WD.lookFor(n.ob, trig && trig.time) }]).then(function () { if (active && mode === 'walk') updateHint(); }); // 매점처럼 날마다 바뀌는 문구
     }
   }
   // 2026-11-03 플레이테스트: 스프라이트 폭이 한 칸보다 넓어(약 1.3칸) 바로 옆 칸 사람과 말하면 몸이 반쯤 겹쳤다 →
@@ -480,7 +481,15 @@
   function pick() {
     var ns = neighbors();
     var tapped = tapWant && ns.filter(function (n) { return tapWant.npc ? n.type === 'npc' && n.c.who === tapWant.npc : n.type === 'obj' && n.ob.id === tapWant.obj; })[0];
-    return tapped || ns.filter(isTarget)[0] || ns.filter(function (n) { return n.type === 'npc' && talkReason(n.c); })[0] || ns[0] || doorNear();
+    return tapped || ns.filter(isTarget)[0] || ns.filter(function (n) { return n.type === 'npc' && talkReason(n.c); })[0] || wayDoor()
+      || ns.filter(function (n) { return n.type !== 'obj' || !looked[n.ob.id]; })[0] || doorNear();
+  }
+  // 2026-11-18 플레이테스트 P1-9: 축제 부스에서 할 일이 '집에 가서 쉬기'인데 큰 버튼이 '옆 반 천막 조사하기'가 되어, 누르면 같은 말만 되풀이 →
+  //   지금 할 일 쪽 출구가 바로 옆이면 사물보다 먼저. 한 번 조사한 사물(looked)은 이 걷기 구간에서 다시 큰 버튼을 차지하지 않는다
+  var looked = {};
+  function wayDoor() {
+    var d = doorNear(), ex = d && exitToward();
+    return d && ex && d.door.to[0] === ex.door.to[0] && d.door.to[1] === ex.door.to[1] ? d : null;
   }
   // 바로 옆(바라보는 쪽 먼저)에 출입구 칸이 있으면 { type:'door', door, dir } — 말 걸기 버튼이 '○○ 가기'가 된다
   //   2026-11-03 플레이테스트: 방금 지나온 출입구(arrived)는 고르지 않는다 — 도착하자마자 큰 버튼이 '교실로 가기'처럼 되돌아가는 문을 가리켜,
