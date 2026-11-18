@@ -398,7 +398,9 @@
   // 노선이 완성되면 생길 일(자동 배치)과 비용을 미리 알린다
   function busNote(r){if(r.autoPlaced||assigned(r.num).length)return '';var b=S.restingFor(st(),r.num);
     return b?' 이으면 '+B(b.id,null).replace(/^대기 버스$/,'대기 중인 버스 한 대')+'가 바로 운행해요(운영·연료 약 '+app().won(S.typicalBusCost(st()))+').':' 대기 버스가 없어 노선만 생겨요.';}
-  UI.plan=function(App,panel){var s=App.s;if(P.session!==s||P.phase!==s.phase)P={session:s,phase:s.phase,editing:s.draft.routes[0]?s.draft.routes[0].num:null,anchor:null,rec:null,preview:false,busy:false,token:P.token+1,message:'',history:[],baseline:null,recSeen:{},pickerOpen:null};
+  UI.plan=function(App,panel){var s=App.s,fresh=P.session!==s||P.phase!==s.phase;if(fresh)P={session:s,phase:s.phase,editing:s.draft.routes[0]?s.draft.routes[0].num:null,anchor:null,rec:null,preview:false,busy:false,token:P.token+1,message:'',history:[],baseline:null,recSeen:{},pickerOpen:null};
+    /* 2026-11-18 P0-3: 지난 단계 운행 중에 고친 것(노선 고치기·버스 옮기기)은 그날만 — 새 단계 계획에 들어온 첫 화면에서 상태 줄로 한 번 알린다 */
+    if(fresh&&s.phase>1&&(s.midChanges||[]).some(function(c){return c.phase===s.phase-1;})){P.message='지난 운행 중 고친 내용은 계획에 남지 않았어요.';/* 간단 화면은 상태 줄이 알림(#minimal-toast)이라 새 단계 첫 화면에서 한 번 직접 띄운다(좁은 화면은 단계 배너가 닫힌 뒤로 App.toast가 미룸) */root.setTimeout(function(){if(st()===s&&s.stage==='plan'&&P.message==='지난 운행 중 고친 내용은 계획에 남지 않았어요.')app().toast(P.message,{ms:5000});},0);}
     if(s.resumedFromRun){s.resumedFromRun=false;P.message='운행 도중 창이 닫혀, 출발 직전 계획으로 돌아왔어요. 같은 계획으로 다시 출발하면 같은 결과로 운행해요(이 단계 정산은 아직 하지 않았어요).';}
     panel.appendChild(el('p',{'class':'eyebrow'},s.phase+'단계 · '+s.config.phases[s.phase-1]));panel.appendChild(el('h2',null,'어느 동네를 이을까요?'));
     if(s.config.day)cast(panel);

@@ -145,4 +145,68 @@ if (only.includes('p02')) {
   console.log('P0-2 PASS');
 }
 
+/* P0-3 운행 중 노선 고치기 — 3단계(1·2단계는 무난한 노선을 엔진으로 정산만), 초록은 산업·일자리 없이. 11:00 창의 안내 한 줄 → 주황 끝에 산업·일자리 더함 → 결과 준 카드 → 4단계 계획 상태 줄 */
+const PLAN3 = [[['F', 'C', 'B', 'A'], 2], [['I', 'D', 'A'], 1], [['E', 'H', 'A'], 1]];
+/* PT1118_SOFT=1 → p03 검사를 실패로 멈추지 않고 적기만(수정 전 HEAD 사본에서 세 증상을 한 번에 보려고) */
+const SOFT = process.env.PT1118_SOFT === '1', check = (c, m) => { if (SOFT) console.log((c ? '  ok ' : '  FAIL ') + m); else assert.ok(c, m); };
+if (only.includes('p03')) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await begin(page);
+  await page.evaluate(([P, P3]) => {
+    const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true;
+    const lay = (plan) => { S.beginPlan(s); s.draft.routes = []; s.draft.buses.forEach((b) => { b.routeNum = null; }); plan.forEach(([nodes, n], i) => { s.draft.routes.push({ num: i + 1, nodes: nodes.slice(), stops: nodes.map(() => true), autoPlaced: true }); for (let k = 0; k < n; k++) { const b = s.draft.buses.filter((x) => x.routeNum == null)[0]; if (b) b.routeNum = i + 1; } }); };
+    for (const ph of [0, 1]) { lay(P[ph]); S.startRun(s); S.finishRun(s); S.nextPhase(s); }
+    lay(P3); PB.Choices.set(s, 'petition', 'choice', 'reflect'); PB.Choices.set(s, 'petition', 'why', '검사'); A.enterPlan(); document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+  }, [PLAN1111, PLAN3]);
+  await page.evaluate(() => { localStorage.setItem('ethicity.publicness.speed', '2'); });
+  await page.locator('#btn-depart').click();
+  await (async () => { if (await page.locator('#confirm-depart').evaluate((d) => d.open)) await page.locator('#confirm-yes').click(); })();
+  await page.waitForFunction(() => document.body.dataset.screen === 'run' && PB.UI.runState());
+  // 11:00 창까지(⏭) — midday-browser와 같은 방법
+  for (let i = 0; i < 14; i++) { const st = await page.evaluate(() => { const r = PB.UI.runState(); return { tf: r.tf, fixAt: r.fixAt, hold: r.hold }; }); if (st.hold && st.tf >= st.fixAt) break; await page.locator('#run-next').click(); await page.waitForFunction(() => PB.UI.runState().hold, null, { timeout: 30000, polling: 20 }); }
+  await page.locator('#run-fix').click(); await page.locator('#emergency-dialog').waitFor();
+  const scope = await page.evaluate(() => { const e = document.querySelector('#fix-scope'); return e && e.getBoundingClientRect().height > 0 ? e.textContent : null; });
+  check(scope === '이번 운행에만 적용돼요. 다음 단계는 출발할 때 계획으로 시작해요.', '고치기 창 한 줄(보임) ' + scope);
+  log('고치기 창: ' + scope);
+  await page.screenshot({ path: shot('p03-fix-1280') });
+  // 주황 끝에 산업·일자리 더하기(엔진 직접 — 창 조작 흐름은 midday-browser가 본다) → 정산 → 결과
+  /* 창에서 주황 노선 끝에 산업·일자리 더하기 → 끝까지(재생 생략) → 결과 */
+  await page.locator('#fix-kind-add').click(); await page.locator('#fix-route').selectOption('3'); await page.locator('#fix-node').selectOption('G');
+  const posOpts = await page.locator('#fix-pos option').evaluateAll((os) => os.map((o) => [o.value, o.textContent])); await page.locator('#fix-pos').selectOption(posOpts[posOpts.length - 1][0]);
+  await page.locator('#fix-apply').click();
+  const fixed = await page.evaluate(() => PB.App.s.midChanges.map((c) => ({ kind: c.kind, routeNum: c.routeNum, node: c.node, route: c.route.nodes.join('') })));
+  assert.deepEqual(fixed, [{ kind: 'add', routeNum: 3, node: 'G', route: 'EHAG' }], '고치기 기록 ' + JSON.stringify(fixed) + ' ' + JSON.stringify(posOpts));
+  await page.evaluate(() => { window.__pbFast = true; }); await page.locator('#run-skip').click();
+  for (let i = 0; i < 40 && !(await page.evaluate(() => PB.App.s.stage === 'result')); i++) { if (await page.locator('#skip-fix-go').isVisible().catch(() => false)) await page.locator('#skip-fix-go').click(); await page.waitForTimeout(300); }
+  await page.locator('li[data-resident="jun"] details.resident-card').waitFor({ state: 'attached', timeout: 30000 });
+  const card = await page.evaluate(() => new Promise((ok) => { const d = document.querySelector('li[data-resident="jun"] details.resident-card'); d.open = true; setTimeout(() => { const cap = d.querySelector('.resident-minimap figcaption'), map = d.querySelector('.resident-minimap svg');
+    ok({ cap: cap && cap.textContent, aria: map && map.getAttribute('aria-label'), focus: map ? map.querySelectorAll('.mm-focus').length : -1, missing: map ? map.querySelectorAll('.mm-missing').length : -1, reason: d.querySelector('.resident-reason').textContent, legs: [...d.querySelectorAll('.journey-leg')].map((p) => p.textContent) }); }, 300); }));
+  check(card.cap && !/잇는 노선 없음/.test(card.cap) && !/잇는 노선 없음/.test(card.aria), '준 카드 작은 지도: 고친 노선으로 이어짐 ' + JSON.stringify(card));
+  check(card.focus > 0 && card.missing === 0, '고친 노선 구간을 굵게(끊긴 선 없음) ' + JSON.stringify(card));
+  check(!/잇는 노선 없음|노선이 없/.test(card.reason), '이유 한 줄도 노선 있음 ' + card.reason);
+  log('준 카드: ' + card.cap + ' · ' + card.reason);
+  // 4단계 계획: 상태 줄 한 번 · 고친 정류장은 계획에 없음(지금 동작 유지)
+  await page.evaluate(() => { const t = PB.App.toast; window.__toasts = []; PB.App.toast = function (m, o) { const r = t.apply(this, arguments); window.__toasts.push([String(m), r, Date.now()]); return r; }; });
+  await page.locator('#btn-next-phase').click();
+  for (let i = 0; i < 40 && await page.locator('#goal-intro').evaluate((d) => d.open); i++) { await page.locator('#btn-goal-start').click().catch(() => {}); await page.waitForTimeout(80); }
+  await page.waitForFunction(() => document.body.dataset.screen === 'plan' && PB.App.s.phase === 4, null, { timeout: 30000 });
+  const p4 = await page.evaluate(() => { const s = PB.App.s;
+    return { phase: s.phase, msg: document.querySelector('#plan-message') && document.querySelector('#plan-message').textContent, map: document.querySelector('#map-plan-message') && document.querySelector('#map-plan-message').textContent, orange: (s.draft.routes.find((r) => r.num === 3) || { nodes: [] }).nodes.join('') }; });
+  assert.equal(p4.phase, 4);
+  check(p4.msg === '지난 운행 중 고친 내용은 계획에 남지 않았어요.', '4단계 계획 상태 줄 ' + JSON.stringify(p4));
+  assert.ok(p4.orange.indexOf('G') < 0, '4단계 주황 노선에 산업·일자리 없음 ' + p4.orange);
+  const toasts = await page.evaluate(() => window.__toasts.filter((x) => /지난 운행 중 고친 내용/.test(x[0])));
+  const toast = await page.waitForFunction(() => { const t = document.querySelector('#minimal-toast'); return t && /지난 운행 중 고친 내용/.test(t.textContent) && t.textContent; }, null, { timeout: 12000 }).then((h) => h.jsonValue()).catch(() => null);
+  check(!!toast || toasts.some((x) => x[1]), '간단 화면: 상태 줄 알림(#minimal-toast)으로 보임 ' + JSON.stringify(toasts));
+  log('4단계 상태 줄: ' + p4.msg + (toast || toasts.some((x) => x[1]) ? ' (미니멀 알림으로도 보임)' : ' (미니멀 알림은 확인 못 함 ' + JSON.stringify(toasts) + ')'));
+  if (process.env.PT1118_DEBUG) { await page.screenshot({ path: shot('p03-plan4-1280') }); console.log(JSON.stringify(await page.evaluate(() => ({ toast: document.querySelector('#minimal-toast')?.textContent, hidden: document.querySelector('#minimal-toast')?.hidden, pm: document.querySelector('#plan-message')?.getBoundingClientRect().height, mpm: document.querySelector('#map-plan-message')?.textContent, mpmH: document.querySelector('#map-plan-message')?.getBoundingClientRect().height, banner: !!document.querySelector('#map-banner'), pending: PB.App._pendingToast })))); }
+  // 다른 일을 하면 사라지고, 같은 단계에서 다시 그려도 다시 나오지 않음
+  await page.evaluate(() => { PB.UI.planAssignBus(PB.App.s.draft.buses[0].id, null); PB.App.render(); });
+  assert.notEqual(await page.locator('#plan-message').textContent(), '지난 운행 중 고친 내용은 계획에 남지 않았어요.', '한 번만');
+  assert.deepEqual(errors, [], '페이지 오류 없음');
+  await page.close();
+  console.log('P0-3 PASS');
+}
+
 await browser.close(); server.close();

@@ -575,6 +575,12 @@
     var errs = Graph.validateRoute(g, next); if (errs.length) return { fail: errs[0] };
     return { route: next };
   }
+  /* 운행 중 고친 노선(2026-11-18 플레이테스트 P0-3): 승객 기록(journey)의 routeId는 고친 뒤 노선 id인데, 운행표(timelines)는 출발 계획의 노선 id 그대로다.
+   * 고친 뒤 노선 id → { fromId: 출발 노선 id, route: 고친 모양, routeNum, at } — 결과 화면이 인물 카드의 연결 판정·노선 이름에 쓴다. 없으면 null */
+  function midRouteFor(s, phase, routeId) {
+    var c = (s.midChanges || []).filter(function (x) { return x.phase === phase && x.kind !== 'move' && x.route && x.from && Graph.routeId(x.route) === routeId; })[0];
+    return c ? { fromId: Graph.routeId(c.from), route: c.route, routeNum: c.routeNum, at: c.at } : null;
+  }
   // 한 가지 고치기를 기록하고 운행을 다시 계산한다(출발 계획·계획 초안은 그대로 — 그날만). 안 되면 false
   function midApply(s, c) {
     if (s.stage !== 'run' || !s.current || !c) return false;
@@ -835,7 +841,7 @@
   var api = {
     checkSave: checkSave, safeRestore: safeRestore,
     elderChoice: elderChoice, petitionAt: petitionAt, petitionZoneAt: petitionZoneAt, rideRequests: rideRequests, aiView: aiView,
-    departChecks:departChecks,residentTransfers:residentTransfers,routeGaps:routeGaps,routeCycle:routeCycle,routeHeadway:routeHeadway,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
+    departChecks:departChecks,residentTransfers:residentTransfers,routeGaps:routeGaps,routeCycle:routeCycle,routeHeadway:routeHeadway,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,midRouteFor:midRouteFor,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, finalCause: finalCause, contractRule: contractRule, contractPhases: contractPhases, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
