@@ -479,6 +479,12 @@
     mission: function () { return App.state ? DR.Missions[App.state.mission] : null; }
   };
   DR.App = App;
+  // 다른 탭에서 '처음부터'를 눌렀다(보안 검토 2026-11-18 #1, js/save.js 맨 위) — 이 탭이 메모리에 든 옛 기록·챕터 끝 답안을
+  //   다시 저장하지 않게 비우고, 새로고침해 새 저장(처음 화면)에서 다시 시작한다. 그 사이의 늦은 쓰기는 save.js가 버린다
+  DR.Save.onStale(function () {
+    App.records = {};
+    if (root.location && typeof root.location.reload === 'function') root.location.reload();
+  });
 
   var params = new URLSearchParams(root.location.search);
   if (params.get('run')) debugRun(params.get('run'));
