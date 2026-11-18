@@ -189,6 +189,8 @@
   /* P2(2026-11-05): 시작 화면의 예정 이동과 결과 건수가 같은 뜻으로 읽히게 ‘기본 139건 + 추가 3건’. 추가 = 도착 뒤 생긴 다음 이동 + 돌발 수요 */
   var q0=m.requests||{planned:m.N,followUps:0,extra:0},more=(q0.followUps||0)+(q0.extra||0);
   head.appendChild(el('p',{id:'result-lead','class':'result-lead'},'이동 요청 '+m.N+'건'+(more?'(기본 '+q0.planned+'건 + 추가 '+more+'건)':'')+' 중 '+m.arrived+'건이 도착했어요.'+(ids.length?' 주요 인물 '+ids.length+'명 중 '+happy+'명이 만족했어요.':'')));
+  /* 2026-11-18 플레이테스트 P1-10: 보고서·점수가 세는 ‘평가 대상’ 건수와 다르면 한 줄(UI.evalCountLine) */
+  var evalLine=PB.UI.evalCountLine&&h.scores&&h.scores.mobility?PB.UI.evalCountLine(m.N,h.scores.mobility):'';if(evalLine)head.appendChild(el('p',{id:'result-eval-count','class':'note'},evalLine));
   /* P1-10: 지난 결과에서 고른 목표를 이번 결과에서 다시 짚는다(계산에는 쓰지 않음) */
   var goalKey=(s.choices||{})[h.phase-1],prev=s.history.filter(function(x){return x.phase===h.phase-1;})[0];
   if(goalKey&&prev){var pm=prev.metrics,goalLine=goalKey==='longest'?'최장 대기 지난 단계 '+App.duration(pm.maxWait)+' → 이번 '+App.duration(m.maxWait):'도착률 지난 단계 '+PB.Metrics.fmtRate(pm.arrivalRate)+' → 이번 '+PB.Metrics.fmtRate(m.arrivalRate);head.appendChild(el('p',{id:'result-goal'},'이번 목표: '+S.CHOICES[goalKey]+' → 결과: '+goalLine));}

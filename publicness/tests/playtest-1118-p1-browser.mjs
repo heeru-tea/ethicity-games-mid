@@ -202,5 +202,31 @@ if (only.includes('p9')) {
   console.log(fails.length ? 'P1-9 FAIL' : 'P1-9 PASS');
 }
 
+/* p10 건수 설명: 1단계 빨강 외곽 마을→…→대학교(버스 1대) = 실제로 생긴 이동 141건 · 평가 대상 142건(돌아오지 못한 이동 1건) → 결과 한 줄, 2~5단계 무난한 노선 뒤 엔딩 한 줄 */
+if (only.includes('p10')) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await begin(page);
+  const r1 = await page.evaluate(() => { const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true; S.beginPlan(s); s.draft.routes = [{ num: 1, nodes: ['F', 'D', 'A', 'B', 'C'], stops: [1, 1, 1, 1, 1].map(Boolean), autoPlaced: true }, { num: 2, nodes: [], stops: [] }]; s.draft.buses.forEach((b) => { b.routeNum = null; }); s.draft.buses[0].routeNum = 1;
+    S.startRun(s); S.finishRun(s); A.go('result'); const h = s.history[0], m = h.scores.mobility; return { N: h.metrics.N, evalN: m.N, pf: (m.reasons.parentFailed || 0) + (m.reasons.lateParent || 0) }; });
+  await page.locator('#result-lead').waitFor({ timeout: 30000 });
+  const lead = await page.locator('#result-lead').innerText(), line = await page.locator('#result-eval-count').innerText().catch(() => null);
+  check(r1.N !== r1.evalN, '재현 조건: 두 건수가 다름 ' + JSON.stringify(r1));
+  check(line === `평가 대상 ${r1.evalN}건(돌아오지 못한 이동 ${r1.pf}건 포함)`, `결과 한 줄 ${line} ${JSON.stringify(r1)}`);
+  log('1단계 결과: ' + lead.split('\n')[0] + ' / ' + line);
+  const e = await page.evaluate((P) => { const A = PB.App, S = PB.Session, s = A.s;
+    const lay = (plan) => { S.beginPlan(s); s.draft.routes = []; s.draft.buses.forEach((b) => { b.routeNum = null; }); plan.forEach(([nodes, n], i) => { s.draft.routes.push({ num: i + 1, nodes: nodes.slice(), stops: nodes.map(() => true), autoPlaced: true }); for (let k = 0; k < n; k++) { const b = s.draft.buses.filter((x) => x.routeNum == null)[0]; if (b) b.routeNum = i + 1; } }); };
+    S.nextPhase(s); for (let ph = 1; ph < 5; ph++) { lay(P[ph]); if (s.phase === 3) PB.Choices.set(s, 'petition', 'choice', 'reflect'); if (s.phase === 4) PB.Choices.set(s, 'elder', 'choice', 'keep'); S.startRun(s); S.finishRun(s); S.nextPhase(s); }
+    A.go('ending'); const o = S.scoresOverall(s); return { stage: s.stage, sum: s.history.reduce((a, h) => a + h.metrics.N, 0), evalN: o.mobility.N }; }, PLAN1111);
+  for (let i = 0; i < 40 && await page.locator('#goal-intro').evaluate((d) => d.open); i++) { await page.locator('#btn-goal-start').click().catch(() => {}); await page.waitForTimeout(80); }
+  await page.locator('#ending-verdict').waitFor({ timeout: 30000 });
+  const eline = await page.evaluate(() => { const n = document.querySelector('#score-eval-count'); return n && n.textContent; });
+  check(!!eline && eline.startsWith('평가 대상 ' + e.evalN.toLocaleString('ko-KR') + '건(') && eline.endsWith('단계 결과의 이동 요청을 더하면 ' + e.sum.toLocaleString('ko-KR') + '건이에요.'), `엔딩 한 줄 ${eline} ${JSON.stringify(e)}`);
+  log('엔딩: ' + eline);
+  check(errors.length === 0, '페이지 오류 ' + errors.join(' | '));
+  await page.close();
+  console.log(fails.length ? 'P1-10 FAIL' : 'P1-10 PASS');
+}
+
 await browser.close(); server.close();
 if (fails.length) process.exitCode = 1;
