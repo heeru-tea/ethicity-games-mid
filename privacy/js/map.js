@@ -596,7 +596,7 @@
     var tx = Math.floor((e.clientX - r.left + cam.x) / T), ty = Math.floor((e.clientY - r.top + cam.y) / T);
     var pin = pinAt(e.clientX - r.left, e.clientY - r.top); // 목적지 핀(사람이 아닌 사물·출입구)을 눌렀으면 그 자리로
     if (pin) { tx = pin.tx; ty = pin.ty; }
-    var npc = cast.filter(function (c) { return c.x === tx && c.y === ty; })[0] || (pin ? null : markAt(e.clientX - r.left, e.clientY - r.top));
+    var npc = cast.filter(function (c) { return c.x === tx && c.y === ty; })[0] || (pin ? null : markAt(e.clientX - r.left, e.clientY - r.top) || bodyAt(e.clientX - r.left, e.clientY - r.top));
     var ob = WD.DOORS[tx + ',' + ty] ? null : WD.objectAt(tx, ty) || WD.OBJECTS.filter(function (b) { return tx >= b.x && tx < b.x + b.w && ty >= b.y && ty < b.y + b.h; })[0];
     var p;
     if (npc || ob) {
@@ -616,6 +616,13 @@
     if (!p.length) { if (actOnArrive) { actOnArrive = false; faceBox(npc ? { x: npc.x, y: npc.y, w: 1, h: 1 } : ob); act(); } return; }
     path = p;
     if (!me.moving) tryStep(path.shift());
+  }
+  // 2026-11-18 플레이테스트 P1-6: 사람 그림(몸 2.24칸)의 윗부분을 누르면 그 사람 칸이 아니라 위 빈 칸으로 걸어 들어가 몸이 겹쳐 섰다 →
+  //   그려진 몸(머리 꼭대기~발, 마지막 화면 기준)을 누르면 그 사람. 여럿이 겹치면 앞(발이 아래)에 선 사람. 나는 빼고, 엎드린 사람(몸 정보 없음)은 칸으로만
+  function bodyAt(x, y) {
+    var hit = lastBodies.filter(function (b) { return b.who !== 'me' && x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1; })
+      .sort(function (a, b) { return b.y1 - a.y1; })[0];
+    return hit ? cast.filter(function (c) { return c.who === hit.who; })[0] || null : null;
   }
   // 물음표 말풍선을 눌러도 그 사람에게 가서 말 걸기(머리 위 그림이라 사람 칸보다 위에 있음)
   //   화면 밖·HUD 밑이라 옮겨 그린(off) 목적지 인물 ?도 그려진 자리를 누르면 그 사람에게(2026-11-02 모바일: 옮긴 ?를 누르면 그 아래 칸으로 걷기만 했다)
@@ -1101,6 +1108,27 @@
     if (fadeUntil > t) { ctx.fillStyle = 'rgba(15,20,18,' + Math.min(1, (fadeUntil - t) / 260) + ')'; ctx.fillRect(0, 0, viewW, viewH); }
     if (mode === 'walk') { drawTalkMarks(t); drawMarker(t); drawGuide(t); }
     drawBubble(t);
+    retagOverTails();
+  }
+  // 2026-11-18 플레이테스트 P1-6: 말 건 사람의 말풍선 꼬리가 바로 옆 내 이름표를 덮었다(말풍선 몸은 이름표를 피해 위로 오르지만 꼬리는 머리까지 내려온다) →
+  //   꼬리가 지나가는 자리의 남의 이름표는 말풍선 뒤에 한 번 더 그려 글자가 보이게(꼬리가 이름표 뒤로 지나간다)
+  function retagOverTails() {
+    lastBubbles.forEach(function (b) {
+      var tl = b.tail;
+      if (!tl) return;
+      var x0 = Math.min(tl.x0, tl.x1) - 8, x1 = Math.max(tl.x0, tl.x1) + 8, y0 = Math.min(tl.y0, tl.y1), y1 = Math.max(tl.y0, tl.y1);
+      lastTags.forEach(function (r) {
+        if (r.who === b.who || !(r.x < x1 && x0 < r.x + r.w && r.y < y1 && y0 < r.y + r.h)) return;
+        ctx.save(); if (r.dim) ctx.globalAlpha = 0.5;
+        ctx.font = '600 ' + r.fs + 'px sans-serif';
+        ctx.fillStyle = r.me ? 'rgba(15,118,110,0.92)' : 'rgba(22,32,31,0.72)';
+        roundRect(r.x, r.y, r.w, r.h, 4); ctx.fill();
+        ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(r.label, r.x + r.w / 2, r.y + r.h / 2);
+        ctx.restore();
+        r.overTail = true;
+      });
+    });
   }
   // ?debug=1 · ?debug=grid: 걷는 칸(초록)·막힘(빨강)·출입구(파랑)·조사 지점(노랑)·사람이 막은 칸(보라)을 그림 위에 겹쳐 본다.
   //   목적지 쪽 출구는 하늘색 테두리, 내 칸은 흰 테두리, 목적지는 분홍 테두리(교사·작업자 눈 확인용)
@@ -1283,7 +1311,7 @@
       ctx.fillText(t.label, r.x + w / 2, r.y + h / 2);
       ctx.restore();
     });
-    lastTags = placed.map(function (r, i) { return { x: r.x, y: r.y, w: r.w, h: r.h, me: !!tags[i].me, label: tags[i].label, who: tags[i].who, cx: tags[i].cx, dim: !!r.dim }; });
+    lastTags = placed.map(function (r, i) { return { x: r.x, y: r.y, w: r.w, h: r.h, me: !!tags[i].me, label: tags[i].label, who: tags[i].who, cx: tags[i].cx, dim: !!r.dim, fs: fs }; });
     lastBodies = tags.filter(function (q) { return q.body; }).map(function (q) { return { who: q.who, x0: q.body.x0, x1: q.body.x1, y0: q.body.y0, y1: q.body.y1 }; });
     tags = [];
   }
