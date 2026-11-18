@@ -270,3 +270,61 @@ test('P1-9 4 임무 종류별 개수 = 붙은 이름표의 보통 종류(이름�
   const fixed = { ...Cards.labelCounts(m4, [{ id: 'a', fakeId: 'x_neat_algo', label: 'algo' }]) };
   assert.equal(fixed.neat_algo, 1);
 });
+
+/* P1-10 임무 완료 요약에 개인정보 가리기 결과 한 줄(판정 그대로, 저장 형식 그대로) */
+const ALL3 = { station_now: 2, station_rain: 2, market_now: 2, market_old: 1, market_eve_old: 2, river_now: 2, river_night: 2, crossing_now: 2, crossing_rain: 2 };
+// 3 임무 한 판: 달리기(가짜)가 grabbed를 돌려주고, 검수에서 fix(bag)로 손본 뒤 통과 → 뒤 활동 → 임무 완료 화면의 요약
+function m3Summary(extra, fix) {
+  let uid = 0;
+  const grabbed = Object.entries(ALL3).flatMap(([key, n]) => Array.from({ length: n }, () => ({ uid: 'c' + (uid++), key }))).concat(extra.map((x) => ({ uid: 'c' + (uid++), ...x })));
+  const g = boot(store(), { run: (c, o) => { o.onEnd({ grabbed, lost: [], knockedOut: false }); return true; } });
+  vm.runInContext(fs.readFileSync(path.join(DATA, 'js/conveyor.js'), 'utf8'), g.ctx, { filename: 'js/conveyor.js' });
+  const set = (n) => (...a) => { g.ui[n] = a; g.log.push(n); };
+  Object.assign(g.DR.UI, { supervisor: set('supervisor'), supervisorBlock: set('supervisorBlock'), guide: set('guide'), result: set('result'),
+    chapter: (m, o, done) => done(), chapterSummary: () => [], gradeCompare: () => null, outro: set('outro') });
+  g.App.startMission('m3');
+  g.ui.dialogue[1](); g.ui.briefing[1]();
+  fix(g.App.state.bag);
+  g.ui.inspect[2](); assert.ok(!g.ui.supervisorBlock, 'privacy handled'); g.ui.supervisor[2]();
+  g.ui.guide[2](); g.ui.result[2]();
+  g.ui.dialogue[1]();               // 정체 공개·마지막 대화
+  g.ui.city[1]();                   // 도시 복구
+  return [...g.ui.outro[2].summary].map((s) => (typeof s === 'string' ? s : s.text));
+}
+test('P1-10 3 임무: 행인 얼굴은 가리고 번호판 카드는 뺌 → "개인정보 가리기: 담은 2장 중 1장 가림 · 1장 뺌"', () => {
+  const sum = m3Summary([{ key: 'river_now', privateId: 'p_river_people' }, { key: 'station_now', privateId: 'p_station_plate' }], (bag) => {
+    bag.find((c) => c.privateId === 'p_river_people').masked = true;
+    bag.splice(bag.findIndex((c) => c.privateId === 'p_station_plate'), 1);
+  });
+  assert.ok(sum.includes('개인정보 가리기: 담은 2장 중 1장 가림 · 1장 뺌'), sum.join(' / '));
+  assert.ok(sum.indexOf('개인정보 가리기: 담은 2장 중 1장 가림 · 1장 뺌') > sum.findIndex((t) => /^보충 달리기/.test(t)), 'after the supplement line');
+});
+test('P1-10 둘 다 가림 → "담은 2장 중 2장 가림" · 하나도 안 담음 → "담은 카드 없음"', () => {
+  const both = m3Summary([{ key: 'river_now', privateId: 'p_river_people' }, { key: 'station_now', privateId: 'p_station_plate' }], (bag) => {
+    for (const c of bag) if (c.privateId) c.masked = true;
+  });
+  assert.ok(both.includes('개인정보 가리기: 담은 2장 중 2장 가림'), both.join(' / '));
+  const none = m3Summary([], () => {});
+  assert.ok(none.includes('개인정보 가리기: 담은 카드 없음'), none.join(' / '));
+});
+test('P1-10 빼기만 되는 임무(2 임무 얼굴) 문구 · 개인정보 카드가 없는 임무는 줄 없음', () => {
+  const Privacy = require('../js/privacy.js'), m2 = require('../missions/m2.js'), tut = require('../missions/tutorial.js');
+  assert.equal(Privacy.summaryLine(m2, { got: 2, masked: 0, removed: 2 }), '개인정보 빼기: 담은 2장 중 2장 뺌');
+  assert.equal(Privacy.summaryLine(tut, { got: 0, masked: 0, removed: 0 }), null);
+  assert.deepEqual({ ...Privacy.tally(m3, [{ id: 'a', key: 'river_now', privateId: 'p_river_people', masked: true }], 2) }, { got: 2, masked: 1, removed: 1 });
+});
+test('P1-10 새로고침 뒤 이어 끝내 첫 달리기 셈이 없고 셀 카드도 없으면 줄을 내지 않는다(없다고 잘못 말하지 않게)', () => {
+  const sum = m3Summary([], (bag) => {});
+  assert.ok(sum.some((t) => /^개인정보 가리기/.test(t)), 'known count (this tab) → line shown');
+  // 같은 흐름에서 privStart를 지운 경우(새로고침 뒤 결과에서 이어 끝낸 것과 같음)
+  let uid = 0;
+  const grabbed = Object.entries(ALL3).flatMap(([key, n]) => Array.from({ length: n }, () => ({ uid: 'c' + (uid++), key })));
+  const g = boot(store(), { run: (c, o) => { o.onEnd({ grabbed, lost: [], knockedOut: false }); return true; } });
+  vm.runInContext(fs.readFileSync(path.join(DATA, 'js/conveyor.js'), 'utf8'), g.ctx, { filename: 'js/conveyor.js' });
+  const set = (n) => (...a) => { g.ui[n] = a; };
+  Object.assign(g.DR.UI, { supervisor: set('supervisor'), guide: set('guide'), result: set('result'), chapter: (m, o, done) => done(), chapterSummary: () => [], gradeCompare: () => null, outro: set('outro') });
+  g.App.startMission('m3'); g.ui.dialogue[1](); g.ui.briefing[1]();
+  delete g.App.state.privStart;
+  g.ui.inspect[2](); g.ui.supervisor[2](); g.ui.guide[2](); g.ui.result[2](); g.ui.dialogue[1](); g.ui.city[1]();
+  assert.ok(![...g.ui.outro[2].summary].some((t) => /개인정보/.test(String(t))), 'no line');
+});

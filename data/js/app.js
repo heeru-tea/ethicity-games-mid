@@ -374,6 +374,11 @@
     var rec = { cleared: true, passed: !!(App.lastJudge && App.lastJudge.allPass), firstTry: App.state.firstTry === true,
       supplements: App.state.supplements, firstFails: App.state.firstFails || [], fixedLabels: fixed };
     var cityBefore = cityCount();
+    // 개인정보 가리기 결과(임무 완료 요약 한 줄 — 플레이테스트 2026-11-18 P1-10). 저장하지 않는 값: 이 탭에서 끝낸 직후에만 보인다
+    //   (뒤 활동을 새로고침 뒤 이어 하면 줄이 없다 — 저장 형식을 바꾸지 않으려고). 담은 장 수 = 첫 달리기 뒤 셈(privStart)과 남은 카드·뺀 가리기 카드 중 큰 쪽
+    var st = App.state, gotAtStart = Math.max(st.privStart || 0, DR.Privacy.left(m, st.bag) + DR.Privacy.wasted(m, st.privCaught, st.bag));
+    //   새로고침 뒤 결과 화면에서 이어 끝냈으면 첫 달리기 뒤 셈이 없다 — 빼기만 되는 카드(2 임무 얼굴)는 셀 길이 없어, 셈이 0이면 줄을 내지 않는다(없다고 잘못 말하지 않게)
+    App.privacyDone = { mission: m.id, t: DR.Privacy.tally(m, st.bag, gotAtStart), known: st.privStart !== undefined };
     // 챕터 끝 답(설계 2026-11-08 ②)은 다시 깨도 이어 간다 — 이전 답을 채운 채 보여 주고, 처음 선택은 처음 값 그대로
     if (m.chapterEnd) rec.chapter = DR.Save.chapterOf(App.records, m.id);
     App.records[m.id] = rec;
@@ -404,6 +409,9 @@
       '보충 달리기: ' + (rec.supplements || 0) + '번'
     ];
     if (m.labels && m.relabel !== false) summary.push('고친 이름표: ' + (rec.fixedLabels || 0) + '장');
+    var pdx = App.privacyDone && App.privacyDone.mission === m.id ? App.privacyDone : null;
+    var pd = pdx && (pdx.known || pdx.t.got) ? DR.Privacy.summaryLine(m, pdx.t) : null;
+    if (pd) summary.push(pd);
     // 마무리 배경: 끝내 통과하지 못하고 끝난 판(rec.passed === false)은 story.outroFailBg가 있으면 그 그림 — 1 임무의 '해결된 장면'이 실패한 판에 깔리지 않게.
     //   마지막 대화(선배)·마무리 대화·임무 완료 화면(어둡게)이 같은 그림을 쓴다(플레이테스트 2026-11-12 — 선배 대사가 어두운 바탕에 대화창만 떴다)
     var obg = rec.passed === false && m.story.outroFailBg ? m.story.outroFailBg : m.story.outroBg;

@@ -159,7 +159,9 @@ async function part3() {
       if (await page.locator('#screen-story .dialog').isVisible()) await page.locator('#screen-story .dialog').click(); else await page.waitForTimeout(200);
     }
     assert.equal(sawCity, false, 'city restore is not replayed');
-    assert.equal(await page.locator('#outro-summary').innerText(), sum, 'same summary again');
+    // 개인정보 가리기 줄(플레이테스트 2026-11-18 P1-10)은 저장하지 않는 값이라 새로고침 뒤 다시 보면 빠진다 — 그 줄을 빼고 견준다
+    const noPriv = (t) => t.split('\n').filter((l) => !/^개인정보 /.test(l.trim())).join('\n');
+    assert.equal(noPriv(await page.locator('#outro-summary').innerText()), noPriv(sum), 'same summary again');
     assert.equal(await page.evaluate(() => JSON.stringify({ ...DR.Save.records().m1, chapter: null })), rec0, 'completion record written once, unchanged');
     assert.deepEqual(await page.evaluate(() => Object.keys(DR.Save.records())), ['m1']);
     assert.equal(await page.evaluate(() => DR.App.cityCount()), 1);
