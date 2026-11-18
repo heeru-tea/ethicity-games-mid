@@ -88,9 +88,12 @@
     return A.clock(rd.depart) + ' ' + A.nodeName(rd.o) + '→' + A.nodeName(rd.d) + ' → (' + A.clock(rd.returnAt) + ' 이후) ' + A.nodeName(rd.d) + '→' + A.nodeName(rd.returnTo) + ', ' + end + ' 전 도착';
   }
   // 칩 한 줄(형식은 지시서대로) + 화면 낭독용 긴 설명
+  /* 2026-11-18 플레이테스트 P2: 칩을 다시 그려도 얼굴 그림은 같은 <img>를 옮겨 쓴다(새로 불러오며 흰 원으로 깜빡이지 않게) */
+  var chipImgs = {};
+  function chipImg(id) { var src = 'assets/art/portrait-' + id + '-calm.webp', img = chipImgs[id]; if (!img || img.getAttribute('src') !== src) { img = el('img', { src: src, alt: '' }); chipImgs[id] = img; } return img; }
   function chip(rd, t, tr) {
     var A = app(), st = PB.Narrative.criterionState(t), b = el('button', { type: 'button', 'class': 'person-chip' + (st === 'impossible' ? ' impossible' : st === 'done' ? ' done' : ''), id: 'person-chip-' + rd.id, 'data-resident': rd.id });
-    var face = el('span', { 'class': 'person-chip-face resident-face ' + rd.id, 'aria-hidden': 'true' }); face.appendChild(el('img', { src: 'assets/art/portrait-' + rd.id + '-calm.webp', alt: '' })); b.appendChild(face);
+    var face = el('span', { 'class': 'person-chip-face resident-face ' + rd.id, 'aria-hidden': 'true' }); face.appendChild(chipImg(rd.id)); b.appendChild(face);
     b.appendChild(el('b', null, rd.name));
     b.appendChild(el('span', { 'class': 'person-chip-time' }, A.clock(rd.depart)));
     b.appendChild(el('span', { 'class': 'person-chip-trip' }, shortName(rd.o) + '→' + shortName(rd.d)));

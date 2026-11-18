@@ -54,3 +54,16 @@ test('P1-9: 엔딩 총평 세 갈래 — 두 점수와 주요 인물 만족 수(
   // 파산·계약 종료는 예전 문장 그대로
   assert.match(N.endingConclusion(R(3, 6), [{ metrics: { costs: { total: -5000 } } }], { cause: 'bankrupt' }, ov(0, 80)).verdict, /파산했어요/);
 });
+
+test('P2: 빈칸 조사 — 받침에 맞는 을·를·이·가로 끝나면 붙이지 않는다', () => {
+  const NT = require('../js/stage-notes.js');
+  assert.equal(NT.particle('노선을', '을를'), ''); assert.equal(NT.particle('버스를', '을를'), ''); assert.equal(NT.particle('나래가', '이가'), ''); assert.equal(NT.particle('기차역이', '이가'), '');
+  assert.equal(NT.particle('외곽 마을', '을를'), '을', '낱말 끝 ‘을’(마을)은 조사가 아님'); assert.equal(NT.particle('아이', '이가'), '가', '아이');
+  assert.equal(NT.particle('노선', '을를'), '을'); assert.equal(NT.particle('버스', '을를'), '를'); assert.equal(NT.particle('기차역', '이가'), '이');
+});
+test('P2: 저장본 버전 읽기(Storage.saveVersion) — 이어할 수 없는 예전 버전 안내용', () => {
+  const St = require('../js/storage.js'), mem = (v) => { const m = new Map(v ? [[St.SAVE_KEY, v]] : []); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, x) => m.set(k, String(x)), removeItem: (k) => m.delete(k) }; };
+  assert.equal(St.saveVersion(mem(JSON.stringify({ version: 'pb-3.0.0', session: {} }))), 'pb-3.0.0');
+  assert.equal(St.saveVersion(mem(null)), null); assert.equal(St.saveVersion(mem('{깨짐')), null);
+  assert.equal(St.saveState([cfg.SCENARIO_VERSION].concat(cfg.SAVE_COMPAT), mem(JSON.stringify({ version: 'pb-3.0.0', session: {} }))).state, 'none', '예전 버전은 지금처럼 none(조용히 버림)');
+});

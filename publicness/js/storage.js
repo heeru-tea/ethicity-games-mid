@@ -80,13 +80,15 @@
     return { state: 'ok', save: o };
   }
   function readSave(version, s, valid) { return saveState(version, s, valid).save; }
+  /* 저장본의 버전만(2026-11-18 플레이테스트 P2 — 이어할 수 없는 예전 버전 저장본을 첫 화면에 한 줄로 알리려고). 없거나 읽을 수 없으면 null */
+  function saveVersion(s) { try { var st = store(s), raw = st && st.getItem(SAVE_KEY); if (!raw) return null; var o = JSON.parse(raw); return plain(o) && typeof o.version === 'string' ? o.version : null; } catch (e) { return null; } }
   // 깨진 저장본 원문을 따로 남긴다(새 게임이 같은 키에 덮어쓰기 전에). 남길 것이 없거나 못 쓰면 false
   var BROKEN_KEY = SAVE_KEY + '.broken';
   function keepBroken(s) { try { var st = store(s), raw = st && st.getItem(SAVE_KEY); if (!raw) return false; st.setItem(BROKEN_KEY, raw); return true; } catch (e) { return false; } }
   function clearSave(s) { try { var st = store(s); if (st) st.removeItem(SAVE_KEY); } catch (e) { /* 무시 */ } }
 
   var api = { readPlayer: readPlayer, writeResult: writeResult, readSound: readSound, writeSound: writeSound, readSpeed: readSpeed, writeSpeed: writeSpeed,
-    readSave: readSave, saveState: saveState, keepBroken: keepBroken, BROKEN_KEY: BROKEN_KEY, writeSave: writeSave, canSave: canSave, clearSave: clearSave, RESULT_KEY: RESULT_KEY, SOUND_KEY: SOUND_KEY, SPEED_KEY: SPEED_KEY, SAVE_KEY: SAVE_KEY, SPEEDS: SPEEDS };
+    readSave: readSave, saveState: saveState, saveVersion: saveVersion, keepBroken: keepBroken, BROKEN_KEY: BROKEN_KEY, writeSave: writeSave, canSave: canSave, clearSave: clearSave, RESULT_KEY: RESULT_KEY, SOUND_KEY: SOUND_KEY, SPEED_KEY: SPEED_KEY, SAVE_KEY: SAVE_KEY, SPEEDS: SPEEDS };
   root.PB = root.PB || {};
   root.PB.Storage = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

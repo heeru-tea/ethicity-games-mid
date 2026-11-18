@@ -639,6 +639,9 @@
       $('#btn-start').textContent = '첫 운행 계획하기'; $('#btn-start').classList.add('btn-primary');
     }
     if (brokenSave) showBroken();
+    /* 2026-11-18 플레이테스트 P2: 받아 주지 않는 버전(SAVE_COMPAT 밖, 예: pb-3.0.0) 저장본은 전처럼 조용히 버리되 첫 화면에 한 줄 */
+    var oldVer = first.state === 'none' ? PB.Storage.saveVersion() : null;
+    if (oldVer && SAVE_VERSIONS.indexOf(oldVer) < 0 && $('#continue-note')) { $('#continue-note').textContent = '이전 버전 기록은 이어할 수 없어요.'; $('#continue-note').classList.add('is-alert'); $('#continue-note').dataset.oldVersion = oldVer; }
     if (saved && cont) {
       var ss = saved.session, total = (ss.config ? ss.config.phases.length : cfg.phases.length);
       cont.hidden = false;

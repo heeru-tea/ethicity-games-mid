@@ -659,6 +659,8 @@ body[data-screen="result"] .resident-cards>li { animation:resident-reveal .35s e
 .net-stop circle:first-child { fill: #fff; stroke: #1A1D24; stroke-width: 2; }
 .net-stop .tick { stroke: #fff; stroke-width: .8; }
 .net-stop.pass circle:first-child { stroke: #6B7280; stroke-width: 1.6; stroke-dasharray: 3 2.6; }
+/* 2026-11-18 플레이테스트 P2: 노선 선 위에 놓였지만 서지 않는 정류장(2단계 종합운동장 등)은 서는 정류장처럼 보이지 않게 흐리게 */
+.net-stop.pass { opacity: .45; }
 .net-stop.selected circle:first-child { stroke: var(--sem-action); stroke-width: 3.5; }
 .net-stop.muted { opacity: .55; }
 .net-stop.flash circle:first-child { stroke: var(--sem-action); stroke-width: 5; }

@@ -189,7 +189,7 @@
     changed();r.nodes[i]=to.node;if(i===0&&r.nodes[r.nodes.length-1]===from.node)r.nodes[r.nodes.length-1]=to.node;
     P.anchor=i;P.message='경유 정류장을 바꿨어요.';render();
   }
-  function removeAt(r,i){changed();var loop=G.isLoop(r);if(loop){r.nodes.pop();r.stops.pop();}r.nodes.splice(i,1);r.stops.splice(i,1);
+  function removeAt(r,i){changed();P.message=PB.Narrative.josa(app().nodeName(r.nodes[i]),'을를')+' 뺐어요.';/* 2026-11-18 플레이테스트 P2: 빼도 이전 문구가 남던 것 */var loop=G.isLoop(r);if(loop){r.nodes.pop();r.stops.pop();}r.nodes.splice(i,1);r.stops.splice(i,1);
     if(loop&&r.nodes.length>=3){r.nodes.push(r.nodes[0]);r.stops.push(true);}P.anchor=null;render();}
   function choose(goal){
     var s=st(),token=++P.token;S.chooseGoal(s,goal);P.busy=true;P.rec=null;P.preview=false;render();
@@ -228,7 +228,7 @@
     t.appendChild(body);return t;
   }
   function ai(panel){
-    var d=el('details',{id:'ai-tools'});if(P.rec||P.busy)d.open=true;d.appendChild(el('summary',null,'AI에게 노선 제안받기'));
+    var d=el('details',{id:'ai-tools'});if(P.rec||P.busy||P.outlookOpen)d.open=true;d.appendChild(el('summary',null,'AI에게 노선 제안받기'));outlook(d);
     var row=el('div',{'class':'goal-row'});[{id:'time',name:'빠른 이동'},{id:'reach',name:'소외 지역 연결'},{id:'profit',name:'수익'}].forEach(function(g){
       var cell=el('div',{'class':'goal-cell'}),b=btn(g.name,'goal-'+g.id,function(){choose(g.id);},'goal-btn');b.dataset.goal=g.id;b.disabled=P.busy;b.setAttribute('aria-pressed',String(!!P.rec&&st().goal===g.id));b.setAttribute('aria-describedby','goal-desc-'+g.id);
       cell.appendChild(b);cell.appendChild(el('p',{id:'goal-desc-'+g.id,'class':'goal-desc note'},goalDesc(g.id)));row.appendChild(cell);});/* 제안이 나오면 비교표가 맨 위(P1-6) — 목표 버튼은 카드 아래로 */if(!P.rec)d.appendChild(row);
@@ -356,7 +356,8 @@
     return (rec._view={rows:rows,resting:pv.draft.buses.filter(function(b){return b.routeNum==null;}).map(function(b){return b.id;}),before:S.expected(s),after:S.expected(pv)});
   }
   function outlook(panel){
-    var toggle=btn(P.outlookOpen?'예상 도움 닫기':'AI에게 예상 물어보기','btn-outlook-help',function(){P.outlookOpen=!P.outlookOpen;render('#btn-outlook-help');});
+    /* 2026-11-18 플레이테스트 P2: 텍스트 모드의 ‘AI에게 예상 물어보기’가 ‘AI 제안’과 따로 있던 진입점 — AI 제안 안(#ai-tools 맨 위)으로 합쳤다. 내용(내 노선 예상)은 그대로 */
+    var toggle=btn(P.outlookOpen?'예상 닫기':'지금 노선 예상 보기','btn-outlook-help',function(){P.outlookOpen=!P.outlookOpen;render('#btn-outlook-help');});
     toggle.setAttribute('aria-expanded',String(!!P.outlookOpen));toggle.setAttribute('aria-controls','plan-outlook');panel.appendChild(toggle);
     if(P.outlookOpen)outlookContent(panel);else panel.appendChild(el('section',{id:'plan-outlook',hidden:true}));
   }
@@ -417,7 +418,7 @@
     var FA=UI.fairness,hooks={rerender:render,nudge:P.nudge||null};if(FA){var pc=FA.petitionCard(App,s,hooks),ec=s.phase===4?FA.elderCard(App,s,hooks):null,fc=pc||ec,fr=fc?null:FA.required(App,s);/* 2026-11-12: 사건 청원 답과 4단계 무임 정책이 같은 단계면 한 카드 안에 차례로(넓은 화면 칸 하나) — ‘골라야 출발’ 줄은 맨 아래 하나만 */if(pc&&ec){var dup=pc.querySelector('#choice-required');if(dup)dup.remove();ec.classList.remove('fair-card');ec.classList.add('fair-sub');pc.appendChild(ec);}/* ‘골라야 출발’ 줄은 카드 안 맨 아래에 있다(2026-11-11) — 카드가 없을 때만 따로 */if(fc)panel.appendChild(fc);if(fr)panel.appendChild(fr);if(FA.profitToggle)panel.appendChild(FA.profitToggle(App,s,hooks));}
     // 노선을 하나라도 완성한 뒤에만 막힌 이유를 띄운다(처음엔 위 안내가 할 일을 알려 줌)
     var blocked=s.draft.routes.some(function(r){return r.nodes.length>=2;})?blockers():[];if(blocked.length)blocker(panel,blocked);
-    routes(panel);buses(panel);outlook(panel);ai(panel);
+    routes(panel);buses(panel);ai(panel);
     var errors=S.validate(s),box=el('div',{id:'plan-errors'});errors.filter(function(e){return !s.draft.routes.some(function(r){return (!r.nodes.length||blocked.indexOf(r)>=0)&&e.indexOf(r.num+'번 노선:')===0;});}).forEach(function(e){box.appendChild(el('p',{'class':'callout warn'},PB.Names.text(e)));});panel.appendChild(box);
     var missing=unassigned();if(missing.length)panel.appendChild(el('p',{id:'unassigned-warning','class':'callout warn'},missing.map(function(r){return C(r.num);}).join(', ')+' 노선은 버스 미배정으로 운행하지 않아요.'));
     var depart=btn('이 노선으로 출발','btn-depart',function(){if(S.validate(s).length)return;if(whyNudge(s))return;P.nudge=null;departCheck();},'btn-primary btn-lg');depart.disabled=errors.length>0||P.busy||PB.Choices.required(s).length>0;if(PB.Choices.required(s).length)depart.setAttribute('aria-describedby','choice-required');
