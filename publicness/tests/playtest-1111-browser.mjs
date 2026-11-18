@@ -206,6 +206,8 @@ try {
     if (p === 1 || p === 3 || p === 4) {
       // ── 7번 출발 확인창 + 6번 운행 화면 ──
       if (p >= 3) { await page.locator('#btn-depart').click(); assert.equal(await page.locator('#confirm-depart[open]').count(), 0, '첫 클릭은 이유 안내'); }
+      /* 2026-11-18 P0-2: 이유가 없으면 출발 버튼 클릭에서 바로 운행이 시작된다 — 그 뒤 확인창 검사에 몇 초가 걸려 2× 단계는 읽기 전에 11:00이 지났다. 운행 첫 상태를 페이지 안에서 미리 기다렸다가 적어 둔다 */
+      await page.evaluate(() => { window.__pt1111st0 = null; const tick = () => { const st = document.body.dataset.screen === 'run' && PB.UI.runState(); if (st) { window.__pt1111st0 = { text: document.querySelector('#run-statusbar-text').textContent, tf: st.tf, fixAt: st.fixAt, speed: st.speed, fixOff: document.querySelector('#run-fix').disabled, clock: PB.App.clock(st.tf) }; return; } setTimeout(tick, 5); }; tick(); });
       await page.locator('#btn-depart').click(); const opened = await page.locator('#confirm-depart').evaluate((d) => d.open); /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */
       const lines = await page.evaluate(() => [...document.querySelectorAll('#confirm-depart-body li')].map((l) => [l.id, l.textContent]));
       if (p === 3) { assert.deepEqual(lines, [['depart-over-gap', '배차 간격이 기준(4시간 3분)을 넘는 노선: 초록(버스 1대 · 약 4시간 30분).']], JSON.stringify(lines)); await page.screenshot({ path: shot('depart3-1280') }); }
@@ -215,7 +217,7 @@ try {
       await (async () => { if (await page.locator('#confirm-depart').evaluate((d) => d.open)) await page.locator('#confirm-yes').click(); })() /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */;
       /* 2026-11-14: 운행 첫 상태는 운행 화면이 뜬 바로 그 순간 페이지 안에서 읽는다 — 헤드리스는 운행 중 프레임이 느려(약 5fps, 3초 중 긴 작업 2.4초) 읽기·클릭 하나에 몇 초씩 걸리고,
        * 2×로 시작하는 단계는 11:00까지 약 5초뿐이라 따로 읽으면 이미 11:00이 지나 있을 수 있다 */
-      const st0 = await (await page.waitForFunction(() => { const st = document.body.dataset.screen === 'run' && PB.UI.runState(); return st && { text: document.querySelector('#run-statusbar-text').textContent, tf: st.tf, fixAt: st.fixAt, speed: st.speed, fixOff: document.querySelector('#run-fix').disabled, clock: PB.App.clock(st.tf) }; }, null, { polling: 10 })).jsonValue();
+      const st0 = await (await page.waitForFunction(() => window.__pt1111st0, null, { polling: 10 })).jsonValue();
       assert.equal(st0.text, p >= 3 ? '운행 시작 · 11:00부터 노선을 한 번 고칠 수 있어요.' : '운행 시작', `${p}단계 운행을 시작한 직후(${st0.clock}) 상태 줄: ${st0.text}`); assert.ok(!st0.text.includes('이제'), '11:00 전에는 ‘이제’라고 하지 않음');
       /* 2×는 노선 고치기가 없는 1단계 운행에서 실제로 눌러 고른다 — 고른 배속은 다음 운행에도 이어진다(Storage.writeSpeed, 설계) */
       if (p === 1) { await page.locator('#speed-2').click(); assert.equal(await page.evaluate(() => PB.UI.runState().speed), 2, '1단계 운행에서 2배속을 고름'); }
