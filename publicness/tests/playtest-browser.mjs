@@ -16,7 +16,7 @@ try{
   for(const speed of [1,2]){
     const page=await browser.newPage({viewport:{width:1366,height:900}});await page.goto(url);
     await page.locator('#btn-start').click();await page.locator('#btn-goal-start').click();await beginPlan(page);await setPlan(page,P1);
-    await page.evaluate(()=>window.__pbFast=true);await page.locator('#btn-depart').click();await (async () => { if (await page.locator('#confirm-depart').evaluate((d) => d.open)) await page.locator('#confirm-yes').click(); })() /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */;await page.locator('#speed-'+speed).click();
+    await page.evaluate(()=>window.__pbFast=true);await page.locator('#btn-depart').click();await (async () => { if (await page.locator('#confirm-depart').evaluate((d) => d.open)) await page.locator('#confirm-yes').click(); })() /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */;if(await page.evaluate(()=>PB.App.s.stage==='run'))await page.locator('#speed-'+speed).click({timeout:5000}).catch(()=>{});/* __pbFast면 확인창 없이 출발한 운행이 벌써 끝났을 수 있다 */
     await page.locator('#resident-summary').waitFor({timeout:60000});
     records.push(await page.evaluate(()=>JSON.stringify({m:PB.App.s.history[0].metrics,r:PB.App.s.history[0].residents})));await page.close();
   }

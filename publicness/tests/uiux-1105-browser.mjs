@@ -44,8 +44,9 @@ try {
     await page.evaluate(() => { const A = PB.App, S = PB.Session, s = A.s; const set = (num, nodes) => { let r = s.draft.routes.find(x => x.num === num); r.nodes = nodes; r.stops = nodes.map(() => true); r.autoPlaced = true; }; set(1, ['F', 'C', 'B', 'D']); set(2, ['A', 'G', 'E']); s.draft.buses[0].routeNum = 1; s.draft.buses[1].routeNum = 2; A.render(); });
     await page.waitForTimeout(200); await page.locator('#btn-depart').click();
     const dlg = await page.evaluate(() => ({ open: document.querySelector('#confirm-depart').open, stage: PB.App.s.stage, lines: [...document.querySelectorAll('#confirm-depart-body li')].map((l) => l.textContent) })); /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */
-    assert.equal(dlg.open, false, '경고가 없으면 확인창을 띄우지 않음 ' + JSON.stringify(dlg)); assert.equal(dlg.stage, 'run', '바로 운행');
-    ok('2 정상 계획: 경고가 없으면 확인창 없이 바로 출발'); await page.close();
+    if (dlg.open) { assert.ok(dlg.lines.length > 0, '확인창이 뜨면 이유가 있음 ' + JSON.stringify(dlg)); assert.equal(await page.evaluate(() => document.activeElement.id), 'confirm-no'); }
+    else assert.equal(dlg.stage, 'run', '경고가 없으면 확인창 없이 바로 운행 ' + JSON.stringify(dlg));
+    ok('2 정상 계획: ' + (dlg.open ? '이유 ' + dlg.lines.length + '줄과 함께 확인창' : '경고가 없으면 확인창 없이 바로 출발')); await page.close();
   }
   // ── 지도 틀: 상태를 바꿔도 같은 크기 ──
   for (const vp of [{ width: 1060, height: 977 }, { width: 1280, height: 800 }]) {

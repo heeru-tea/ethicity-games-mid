@@ -47,6 +47,7 @@ async function answerChoices(page) {
 // 출발 확인창까지 — 경고 줄과 기본 초점(8번)
 async function depart(page) {
   await page.locator('#btn-depart').click();
+  if (await page.evaluate(() => PB.App.s.stage === 'run')) return { none: true, lines: [] }; /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */
   if (!await page.locator('#confirm-depart[open]').count()) await page.locator('#btn-depart').click(); // 이유 안내 뒤 두 번째
   if (!await page.locator('#confirm-depart[open]').count() && await page.evaluate(() => PB.App.s.stage === 'run')) return { none: true, lines: [] }; /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */
   await page.locator('#confirm-depart[open]').waitFor();
