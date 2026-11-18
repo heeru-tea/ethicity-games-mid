@@ -121,9 +121,9 @@
     var m = DR.Missions.tutorial;
     // 도시 복구: 튜토리얼 기록을 남기기 전·후 칸 수(마무리 대화 뒤, 1 임무 도입 전에 0 → 1)
     var before = cityCount();
-    DR.Save.markTutorialDone();
+    // 완료·기록과 다음 재개 지점을 한 번에(튜토리얼 체크포인트는 비움 → 새로고침하면 '첫 번째 임무부터 이어하기'). 연습이면 저장된 임무 진행은 그대로
+    DR.Save.passTutorial();
     App.records.tutorial = { cleared: true };
-    DR.Save.setRecord('tutorial', App.records.tutorial);
     var step = DR.Save.cityStep('tutorial', before, cityCount());
     var r = App.lastJudge, lines = m.story.outro.map(function (l) { return Object.assign({}, l, { text: l.text.replace('{dog}', r.have.dog).replace('{cat}', r.have.cat) }); });
     // 합격 대화 뒤 그림(story.outroBg — {hero} = 고른 주인공의 시험장 장면)
@@ -131,9 +131,7 @@
     DR.UI.dialogue(withBg(lines, tbg), function () {
       cityScreen(m, step, function () {
         if (!App.state.practice) { startMission('m1'); return; }
-        // 연습 끝: 예전 튜토리얼 체크포인트만 남아 있으면 비우고(이어하기가 끝낸 튜토리얼로 돌아가지 않게) 타이틀로
-        var saved = DR.Save.load();
-        if (saved && saved.mission === 'tutorial') DR.Save.finish();
+        // 연습 끝: 타이틀로(예전 튜토리얼 체크포인트는 passTutorial이 이미 비움)
         go('title');
       });
     });
