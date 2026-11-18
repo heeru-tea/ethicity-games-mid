@@ -128,5 +128,29 @@ if (only.includes('p6')) {
   console.log(fails.length ? 'P1-6 FAIL' : 'P1-6 PASS');
 }
 
+/* p7 청원 카드: 3단계 계획(2단계 고정 청원에 답) — 바라는 것 한 줄 · 3단계 결과 — 사건 청원은 ‘답하지 않은 청원’으로 남음 */
+if (only.includes('p7')) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await begin(page);
+  await page.evaluate((P) => { const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true;
+    const lay = (plan) => { S.beginPlan(s); s.draft.routes = []; s.draft.buses.forEach((b) => { b.routeNum = null; }); plan.forEach(([nodes, n], i) => { s.draft.routes.push({ num: i + 1, nodes: nodes.slice(), stops: nodes.map(() => true), autoPlaced: true }); for (let k = 0; k < n; k++) { const b = s.draft.buses.filter((x) => x.routeNum == null)[0]; if (b) b.routeNum = i + 1; } }); };
+    for (const ph of [0, 1]) { lay(P[ph]); S.startRun(s); S.finishRun(s); S.nextPhase(s); } lay(P[2]); A.enterPlan(); document.querySelectorAll('dialog[open]').forEach((d) => d.close()); }, PLAN1111);
+  await page.locator('#petition-card').waitFor(); await frames(page, 4); await page.waitForTimeout(500);
+  const card = await page.evaluate(() => { const fp = PB.App.s.fixedPetition, c = document.querySelector('.fair-card'); return { text: document.querySelector('#petition-text').textContent, to: fp.to && PB.App.nodeName(fp.to), zone: PB.App.nodeName(fp.zone), count: fp.count, scroll: c ? c.scrollHeight > c.clientHeight + 1 : null }; });
+  check(card.text.includes('“' + card.zone + '에서 ' + (card.to ? card.to + ' 쪽으로 ' : '') + '가는 버스를 늘려 주세요”') && card.text.includes('못 간 이동 ' + card.count + '건'), '청원 카드에 바라는 것 ' + JSON.stringify(card));
+  check(!!card.to, '바라는 곳이 있음 ' + JSON.stringify(card));
+  log('3단계 청원 카드: ' + card.text + ' · 카드 스크롤 ' + card.scroll);
+  await page.locator('#petition-card').screenshot({ path: shot('p7-petition-1280') });
+  const res = await page.evaluate(() => { const A = PB.App, S = PB.Session, s = A.s; PB.Choices.set(s, 'petition', 'choice', 'reflect'); S.startRun(s); S.finishRun(s); A.go('result'); const h = s.history.find((x) => x.phase === 3); return { petition: h.petition }; });
+  await page.locator('#result-ai-rows').waitFor({ state: 'attached', timeout: 90000 });
+  const txt = await page.evaluate(() => document.querySelector('#panel').innerText);
+  check(!!res.petition && txt.includes('‘답하지 않은 청원’으로 남아요'), '3단계 결과: 사건 청원이 답하지 않은 청원으로 남음 ' + JSON.stringify(res.petition));
+  log('3단계 결과: ' + (txt.split('\n').find((l) => l.includes('답하지 않은 청원')) || '(없음)'));
+  check(errors.length === 0, '페이지 오류 ' + errors.join(' | '));
+  await page.close();
+  console.log(fails.length ? 'P1-7 FAIL' : 'P1-7 PASS');
+}
+
 await browser.close(); server.close();
 if (fails.length) process.exitCode = 1;

@@ -55,7 +55,7 @@
     var cs = el('section', { id: 'report-choices', 'class': 'report-stage' });
     cs.appendChild(el('h3', null, '내가 고른 것'));
     /* 2026-11-12 랜덤 검토 4번: 청원마다 한 줄(고정 청원 + 사건 청원) */
-    if (r.choices.petitions && r.choices.petitions.length) r.choices.petitions.forEach(function (p) { cs.appendChild(row(p.phase + '단계 청원', p.text)); });
+    if (r.choices.petitions && r.choices.petitions.length) r.choices.petitions.forEach(function (p) { cs.appendChild(row(p.phase + '단계 ' + (p.kind === 'unanswered' ? '답하지 않은 청원' : '청원'), p.text)); });
     else cs.appendChild(row('2단계 청원', r.choices.petition || '(해당 없음)'));
     cs.appendChild(row('4단계 무임승차', r.choices.elder || '(해당 없음)'));
     art.appendChild(cs);

@@ -441,11 +441,18 @@
     (passengers || []).forEach(function (p) { if (p.t > t || p.o !== zone) return; total++; if (p.arriveT == null || p.arriveT > t) open++; });
     return { zone: zone, t: t, count: open, total: total };
   }
+  /* 청원이 바라는 것(2026-11-18 플레이테스트 P1-7): 청원 시각까지 그 동네에서 생겨 아직 도착하지 못한 이동의 목적지 중 가장 많은 곳(같으면 정류장 순). 청원 판정·건수는 그대로, 설명용 to만 */
+  function petitionTo(passengers, t, zone) {
+    var n = {}, best = null;
+    (passengers || []).forEach(function (p) { if (p.t > t || p.o !== zone || !(p.arriveT == null || p.arriveT > t)) return; n[p.d] = (n[p.d] || 0) + 1; });
+    Object.keys(n).sort().forEach(function (d) { if (!best || n[d] > n[best]) best = d; });
+    return best;
+  }
   function fixPetition(s, result) {
     var cp = s.config.petition;
     if (!cp || s.phase !== cp.phase) return;
     var p = petitionAt(result.passengers, cp.t);
-    p.fixed = true; p.noRecord = rideRatios(s)[p.zone] === 0;
+    p.fixed = true; p.noRecord = rideRatios(s)[p.zone] === 0; p.to = petitionTo(result.passengers, p.t, p.zone);
     result.petition = p;
     result.log = result.log.filter(function (e) { return e.type !== 'petition'; });
     var at = result.log.length;
@@ -658,6 +665,7 @@
     if (s.stage !== 'run' || !s.current) return null;
     if (s.history.some(function (h) { return h.phase === s.phase; })) { s.stage = 'result'; return null; } // 같은 단계를 두 번 정산하지 않는다
     var c = s.current, D = {}, before = clone(s.trust);
+    if (c.result.petition && c.result.petition.to === undefined) c.result.petition.to = petitionTo(c.result.passengers, c.result.petition.t, c.result.petition.zone); /* 사건 청원도 바라는 곳(P1-7) */
     Object.keys(c.metrics.zones).forEach(function (z) {
       D[z] = c.metrics.zones[z].D;
       s.trust[z] = Metrics.nextTrust(s.trust[z] != null ? s.trust[z] : s.config.trust.initial, D[z], s.config);
@@ -676,7 +684,7 @@
       if (pp) entry.petitionCheck = petitionZoneAt(c.result.passengers, pp.t, pp.zone);
     }
     s.history.push(entry);
-    if (s.config.petition && s.phase === s.config.petition.phase && c.result.petition) { var fp = c.result.petition; s.fixedPetition = { phase: s.phase, zone: fp.zone, t: fp.t, count: fp.count, total: fp.total, noRecord: !!fp.noRecord }; }
+    if (s.config.petition && s.phase === s.config.petition.phase && c.result.petition) { var fp = c.result.petition; s.fixedPetition = { phase: s.phase, zone: fp.zone, t: fp.t, count: fp.count, total: fp.total, noRecord: !!fp.noRecord, to: fp.to || null }; }
     settle(s, entry);
     // 두 점수(재정 건전성·이동 수요 충족) — 정산 직후 한 번 기록해 저장본에 남긴다(js/scores.js)
     entry.scores = Scores.phaseScores(s.config, graph(s), s.phase, s.seed, c.event, c.plan, c.result.passengers, ledgerBalance(s, s.phase), c.stayed);
@@ -847,7 +855,7 @@
 
   var api = {
     checkSave: checkSave, safeRestore: safeRestore,
-    elderChoice: elderChoice, petitionAt: petitionAt, petitionZoneAt: petitionZoneAt, rideRequests: rideRequests, aiView: aiView,
+    elderChoice: elderChoice, petitionAt: petitionAt, petitionZoneAt: petitionZoneAt, petitionTo: petitionTo, rideRequests: rideRequests, aiView: aiView,
     departChecks:departChecks,residentTransfers:residentTransfers,routeGaps:routeGaps,routeCycle:routeCycle,routeHeadway:routeHeadway,dayInputs:dayInputs,midStatus:midStatus,midRoute:midRoute,midApply:midApply,midRouteFor:midRouteFor,runningRoutes:runningRoutes,routeBuses:routeBuses,emergencyDecision:emergencyDecision,EMERGENCY_AT:EMERGENCY_AT,busRouteAt:busRouteAt,emergencyPreview:emergencyPreview,emergencyImpact:emergencyImpact,routeNumOf:routeNumOf,
     serialize: serialize, restore: restore, migrateTransition: migrateTransition, CHOICES: CHOICES, choiceKey: choiceKey, scoresOverall: scoresOverall, rescore: rescore, financeRule: financeRule, finalCause: finalCause, contractRule: contractRule, contractPhases: contractPhases, financeStatus: financeStatus, balance: balance, DEFICIT_LIMIT: DEFICIT_LIMIT, NEGATIVE_LIMIT: NEGATIVE_LIMIT, residentVerdict: residentVerdict, tripLimit: tripLimit, expectedRun: expectedRun,
     parseSeedParam: parseSeedParam, create: create, graph: graph, visibleNodeIds: visibleNodeIds, routeByNum: routeByNum,
