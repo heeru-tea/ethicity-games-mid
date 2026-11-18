@@ -170,6 +170,7 @@
     mode = 'walk'; stageInfo = null; focus = null; gen++; camS = null;
     lastArea = '';
     updateArea();
+    updateLabel(); // 지도 설명도 새 걷기의 목적지로 바로(P1-10)
     // 첫 안내: 터치 기기에서 조이스틱이 보이면 조이스틱으로 안내(world.js 글은 키보드·탭 기준)
     curHint = trig.hint && joyShown() ? '왼쪽 아래 조이스틱이나 화면을 눌러 걸어요' : trig.hint || '';
     say(curHint);
@@ -186,6 +187,7 @@
     opts = opts || {};
     WD.setWarp(null); // 장면 무대에선 워프 없음
     mode = 'stage'; stageInfo = st; trig = null; targetId = null; focus = opts.focus || null; gen++; camS = null;
+    stageLabel(opts.device); // 장면 중 지도 설명 = 지금 보는 화면(P1-10)
     stageTint = st.tint || WD.timeTint(opts.time); // tint가 없는 무대는 장면 첫 시각 줄(아침·오후·저녁·밤)로
     cast = st.cast.slice(); blocked = {}; nudge = null; walkTint = null; arrived = null; stepHold = 0;
     cast.forEach(function (c) { loadSprite(c.who, 'char_' + c.who + '.png', window.PrivacyCast.walk(c.who)); });
@@ -304,7 +306,7 @@
   function updateArea() {
     var a = WD.areaName(me.x, me.y);
     if (a !== lastArea) { lastArea = a; $('m-area').textContent = a ? '📍 ' + a : ''; if ($('m-say').textContent) sayLayout(); } // HUD 높이가 바뀌면 안내 한 줄도 따라 내려감
-    if (mode === 'walk' && trig) { var mt = missionText(); if (mt !== lastMission) { lastMission = mt; $('m-mission').textContent = mt; if ($('m-say').textContent) sayLayout(); } }
+    if (mode === 'walk' && trig) { var mt = missionText(); if (mt !== lastMission) { lastMission = mt; $('m-mission').textContent = mt; updateLabel(); if ($('m-say').textContent) sayLayout(); } } // 지도 설명도 같이(P1-10)
     // 걸어서 들어간 장소(장면 그림) — 조작 안내를 처음 두 장소에서만 보이게(app.js onPlace, 2026-11-09 지시서 C5)
     var sc = mode === 'walk' ? WD.sceneAt(me.x) : null;
     if (sc && sc.id !== lastPlace) { lastPlace = sc.id; if (o.onPlace) o.onPlace(sc.id); }
@@ -539,8 +541,14 @@
   }
   // 지도 설명(aria-label): 목적지와 ?가 뜬 사람을 글로
   var lastLabel = '';
+  // 2026-11-18 플레이테스트 P1-10: 학교 가는 중 '목적지: 새봄', 밤에 집에서 '목적지: 민준'처럼 설명이 늦게 바뀌었다 →
+  //   걷기를 시작할 때·할 일이 바뀔 때 바로 다시 쓰고, 장면 무대(stage)에서는 목적지 대신 지금 보는 화면(stageLabel)
+  function stageLabel(device) {
+    var label = '학교와 마을 지도. ' + (device === 'phone' ? '휴대폰 화면을 보는 중' : device === 'monitor' ? '컴퓨터 화면을 보는 중' : '이야기 장면을 보는 중') + '이에요.';
+    if (canvas && label !== lastLabel) { lastLabel = label; canvas.setAttribute('aria-label', label); }
+  }
   function updateLabel() {
-    if (!trig || !canvas) return;
+    if (!trig || !canvas || mode !== 'walk') return;
     var sc = WD.sceneAt(me.x);
     var names = cast.filter(function (c) { return WD.sceneAt(c.x) === sc && c.who !== trig.target.npc && talkReason(c); })
       .map(function (c) { return o.story.characters[c.who].name; });

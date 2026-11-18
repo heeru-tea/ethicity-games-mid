@@ -870,7 +870,7 @@
       if (animate && st.card) cgShow(null); // 컷 카드 뒤로 앞 장면 그림이 비치지 않게
       stagedScene = run.scene;
       cutPending = true;
-      ready = window.PrivacyMap.stage(st, { card: animate && st.card ? st.card : null, focus: function () { return stageFocus(device); },
+      ready = window.PrivacyMap.stage(st, { device: device, card: animate && st.card ? st.card : null, focus: function () { return stageFocus(device); },
         time: (E.visibleLines(story, scene.lines, preChoiceState(run)).filter(function (l) { return l.who === 'sys'; })[0] || {}).text || st.card }); // tint 없는 무대의 시간대
     }
     ready.then(function () {
