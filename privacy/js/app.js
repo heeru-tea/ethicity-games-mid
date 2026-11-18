@@ -994,7 +994,7 @@
   function renderMap() {
     var run = progress.run;
     // 2026-11-18 플레이테스트 P0-4: 걷는 동안에도 장 이름 = 이번 걷기가 이어지는 장면의 장(옛: 앞 장면의 장이 남아 '프롤로그'로 집에 감)
-    var target = story.scenes[run.scene];
+    var target = story.scenes[run.mapTarget || run.scene]; // 걷기 상태의 scene은 앞 장면 그대로 — 갈 곳은 mapTarget
     if (target) $('g-chap').textContent = chapterLabel(target.chapter);
     $('btn-undo').disabled = !run.history.length;
     $('stage').classList.remove('dim');
@@ -1623,7 +1623,7 @@
     $('btn-start-reflect').addEventListener('click', function () { renderReflect('v-start'); });
     $('btn-chapter-go').addEventListener('click', function () {
       setRun(E.advance(story, progress.run));
-      var next = progress.run && story.scenes[progress.run.scene]; // 2026-11-18 P0-4: 누르는 순간 다음 장 이름으로
+      var next = progress.run && story.scenes[(progress.run.screen === 'map' && progress.run.mapTarget) || progress.run.scene]; // 2026-11-18 P0-4: 누르는 순간 다음 장 이름으로
       if (next) $('g-chap').textContent = chapterLabel(next.chapter);
       routeRun(true);
     });
