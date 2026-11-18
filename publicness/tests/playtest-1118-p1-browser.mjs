@@ -181,5 +181,26 @@ if (only.includes('p8')) {
   console.log(fails.length ? 'P1-8 FAIL' : 'P1-8 PASS');
 }
 
+/* p9 엔딩 총평: 무난한 노선 1~5단계(엔진 정산) → 엔딩 #ending-verdict = 두 점수·인물 만족 수에 맞는 갈래 */
+if (only.includes('p9')) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await begin(page);
+  const info = await page.evaluate((P) => { const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true;
+    const lay = (plan) => { S.beginPlan(s); s.draft.routes = []; s.draft.buses.forEach((b) => { b.routeNum = null; }); plan.forEach(([nodes, n], i) => { s.draft.routes.push({ num: i + 1, nodes: nodes.slice(), stops: nodes.map(() => true), autoPlaced: true }); for (let k = 0; k < n; k++) { const b = s.draft.buses.filter((x) => x.routeNum == null)[0]; if (b) b.routeNum = i + 1; } }); };
+    for (let ph = 0; ph < 5; ph++) { lay(P[ph]); if (s.phase === 3) PB.Choices.set(s, 'petition', 'choice', 'reflect'); if (s.phase === 4) PB.Choices.set(s, 'elder', 'choice', 'keep'); S.startRun(s); S.finishRun(s); S.nextPhase(s); }
+    const o = S.scoresOverall(s), r = PB.Narrative.endingReactions(s.config, s.history); A.go('ending');
+    return { stage: s.stage, fin: o.finance && o.finance.score, mob: o.mobility.score, happy: r.filter((x) => x.satisfied).length, n: r.length }; }, PLAN1111);
+  for (let i = 0; i < 40 && await page.locator('#goal-intro').evaluate((d) => d.open); i++) { await page.locator('#btn-goal-start').click().catch(() => {}); await page.waitForTimeout(80); }
+  await page.locator('#ending-verdict').waitFor({ timeout: 30000 });
+  const verdict = await page.locator('#ending-verdict').innerText();
+  const want = info.happy === info.n && info.fin >= 70 && info.mob >= 70 ? '다양한 사람들을 만족시켰어요.' : info.happy * 2 > info.n && info.fin >= 50 && info.mob >= 50 ? '도시 노선을 나름 잘 설계했어요. 하지만 이게 최선이었을까요?' : null;
+  check(want ? verdict === want : /다시 설계해 봐요\.$/.test(verdict), `엔딩 총평 갈래 ${JSON.stringify(info)} → ${verdict}`);
+  log('엔딩: ' + JSON.stringify(info) + ' → ' + verdict);
+  check(errors.length === 0, '페이지 오류 ' + errors.join(' | '));
+  await page.close();
+  console.log(fails.length ? 'P1-9 FAIL' : 'P1-9 PASS');
+}
+
 await browser.close(); server.close();
 if (fails.length) process.exitCode = 1;

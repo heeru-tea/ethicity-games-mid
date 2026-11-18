@@ -39,3 +39,18 @@ test('P1-7: 청원이 바라는 곳(to)과 답하지 않은 청원 — 기본 �
   // 고정 청원이 답할 목록은 그대로
   assert.deepEqual(Ch.list(s).map((p) => [p.kind, p.phase, p.answer]), [['fixed', 2, 3]]);
 });
+
+test('P1-9: 엔딩 총평 세 갈래 — 두 점수와 주요 인물 만족 수(계산식 그대로, 문장만)', () => {
+  const N = require('../js/narrative.js'), hist = [{ metrics: { costs: { total: 10000 } } }], R = (k, n) => Array.from({ length: n }, (_, i) => ({ satisfied: i < k }));
+  const ov = (f, m) => ({ finance: { score: f }, mobility: { score: m } }), v = (k, n, f, m) => N.endingConclusion(R(k, n), hist, { cause: 'complete' }, ov(f, m)).verdict;
+  // 재현: 재정 21점 · 6명 중 3명 불만족 — 예전에는 ‘나름 잘 설계했어요’
+  assert.equal(N.endingConclusion(R(3, 6), hist, { cause: 'complete' }).verdict, '도시 노선을 나름 잘 설계했어요. 하지만 이게 최선이었을까요?', '점수 없이 부르면 예전 그대로');
+  assert.equal(v(3, 6, 21, 80), '주요 인물 6명 중 3명이 만족하지 못했어요. 재정 건전성은 21점이에요. 누구의 이동과 어떤 비용을 먼저 챙길지 다시 설계해 봐요.');
+  assert.equal(v(6, 6, 100, 82), '다양한 사람들을 만족시켰어요.');
+  assert.equal(v(6, 6, 60, 82), '도시 노선을 나름 잘 설계했어요. 하지만 이게 최선이었을까요?', '모두 만족해도 재정이 70 아래면 보통');
+  assert.equal(v(4, 6, 100, 82), '도시 노선을 나름 잘 설계했어요. 하지만 이게 최선이었을까요?');
+  assert.equal(v(6, 6, 100, 40), '이동 수요 충족은 40점이에요. 누구의 이동과 어떤 비용을 먼저 챙길지 다시 설계해 봐요.');
+  assert.equal(N.endingConclusion(R(6, 6), hist, { cause: 'complete' }, { finance: null, mobility: { score: 90 } }).verdict, '다양한 사람들을 만족시켰어요.', '재정 보류(null)는 따지지 않음');
+  // 파산·계약 종료는 예전 문장 그대로
+  assert.match(N.endingConclusion(R(3, 6), [{ metrics: { costs: { total: -5000 } } }], { cause: 'bankrupt' }, ov(0, 80)).verdict, /파산했어요/);
+});

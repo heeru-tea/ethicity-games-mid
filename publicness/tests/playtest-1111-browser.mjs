@@ -252,7 +252,7 @@ try {
   await page.locator('#ending-verdict').waitFor();
   const end = await page.evaluate(() => { const T = (q) => document.querySelector(q).textContent, s = PB.App.s, o = PB.Session.scoresOverall(s); return { verdict: T('#ending-verdict'), profit: T('#ending-profit'), seed: T('#end-seed'), cards: [...document.querySelectorAll('.resident-card')].map((c) => c.dataset.id + ': ' + c.querySelector('p:not(.note)').textContent), v: PB.config.SCENARIO_VERSION, balance: PB.App.won(PB.Session.balance(s)), fin: o.finance.score, mob: o.mobility.score, reserve: o.finance.reserve.amount, cause: s.end.cause,
     cut: PB.Narrative.endingReactions(s.config, s.history).map((r) => r.text.split('\n')[1]) }; });
-  assert.ok(['도시 노선을 나름 잘 설계했어요. 하지만 이게 최선이었을까요?', '다양한 사람들을 만족시켰어요.'].includes(end.verdict), end.verdict);
+  assert.ok(['도시 노선을 나름 잘 설계했어요. 하지만 이게 최선이었을까요?', '다양한 사람들을 만족시켰어요.'].includes(end.verdict) || /누구의 이동과 어떤 비용을 먼저 챙길지 다시 설계해 봐요.$/.test(end.verdict), end.verdict); /* 2026-11-18 P1-9: 총평 세 갈래 */
   assert.equal(end.profit, `누적 잔액 ${end.balance} · 지원금·운임에서 비용을 뺀 5단계 합계`); assert.ok(!/총 수익|누적 손익/.test(await page.locator('#panel').innerText()));
   assert.ok(end.seed.endsWith('시나리오 ' + end.v) && end.v !== 'pb-3.0.0', end.seed);
   end.cards.concat(end.cut).forEach((t) => assert.ok(!/\d일 중|\d일이에요|\d일 이상/.test(t), '엔딩 단위는 회: ' + t));
