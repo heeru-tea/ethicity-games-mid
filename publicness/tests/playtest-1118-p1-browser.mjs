@@ -152,5 +152,34 @@ if (only.includes('p7')) {
   console.log(fails.length ? 'P1-7 FAIL' : 'P1-7 PASS');
 }
 
+/* p8 결과 카드 작은 지도 라벨: 1단계 빨강 외곽 마을→병원→기차역→밀집 주거지→대학교(버스 1대) 결과 — 하늘(밀집 주거지→대학교) 카드를 펼쳐 라벨끼리·라벨과 정류장 이름이 겹치지 않는지 */
+const mmLabels = (page, who) => page.evaluate((who) => new Promise((ok) => { const d = document.querySelector(`li[data-resident="${who}"] details.resident-card`); d.open = true; setTimeout(() => {
+  const svg = d.querySelector('.resident-minimap svg'); if (!svg) return ok(null);
+  const ts = [...svg.querySelectorAll('text')].map((t) => { const b = t.getBoundingClientRect(), n = t.getNumberOfChars(), adv = []; for (let i = 1; i < n; i++) adv.push((t.getStartPositionOfChar(i).x - t.getStartPositionOfChar(i - 1).x) / (b.height || 1) * (svg.getScreenCTM().a || 1)); return { text: t.textContent, x: b.left, y: b.top, r: b.right, b: b.bottom, minAdv: Math.round(Math.min(...adv) * 100) / 100 }; });
+  const squeezed = ts.filter((t) => !(t.minAdv > 0.2)).map((t) => t.text + ':' + t.minAdv);
+  const hit = []; ts.forEach((a, i) => ts.slice(i + 1).forEach((c) => { const ox = Math.min(a.r, c.r) - Math.max(a.x, c.x), oy = Math.min(a.b, c.b) - Math.max(a.y, c.y); if (ox > 1 && oy > 1) hit.push([a.text, c.text]); }));
+  const box = svg.getBoundingClientRect(), out = ts.filter((t) => t.x < box.left - 1 || t.r > box.right + 1 || t.y < box.top - 1 || t.b > box.bottom + 1).map((t) => t.text);
+  ok({ ts: ts.map((t) => t.text), hit, out, squeezed, fs: getComputedStyle(svg.querySelector('text') || svg).fontSize }); }, 400); }), who);
+if (only.includes('p8')) {
+  for (const [w, hgt] of [[1280, 800], [390, 844]]) {
+    const page = await browser.newPage({ viewport: { width: w, height: hgt } });
+    const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+    await begin(page);
+    await page.evaluate(() => { const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true; S.beginPlan(s); s.draft.routes = [{ num: 1, nodes: ['F', 'D', 'A', 'B', 'C'], stops: [1, 1, 1, 1, 1].map(Boolean), autoPlaced: true }, { num: 2, nodes: [], stops: [] }]; s.draft.buses.forEach((b) => { b.routeNum = null; }); s.draft.buses[0].routeNum = 1; S.startRun(s); S.finishRun(s); A.go('result'); });
+    await page.locator('li[data-resident="haneul"] details.resident-card').waitFor({ state: 'attached', timeout: 60000 });
+    for (const who of ['haneul', 'narae', 'jun']) {
+      const m = await mmLabels(page, who);
+      check(m && m.hit.length === 0, `${w} ${who}: 작은 지도 글자끼리 겹치지 않음 ${JSON.stringify(m)}`);
+      check(m && m.squeezed.length === 0, `${w} ${who}: 글자 하나하나가 겹치지 않음(글자 간격) ${JSON.stringify(m && m.squeezed)}`);
+      check(m && m.out.length === 0, `${w} ${who}: 글자가 지도 틀 안 ${JSON.stringify(m && m.out)}`);
+      log(`${w} ${who}: ${JSON.stringify(m && m.ts)}`);
+    }
+    await page.locator('li[data-resident="haneul"] .resident-minimap').screenshot({ path: shot(`p8-minimap-${w}`) });
+    check(errors.length === 0, '페이지 오류 ' + errors.join(' | '));
+    await page.close();
+  }
+  console.log(fails.length ? 'P1-8 FAIL' : 'P1-8 PASS');
+}
+
 await browser.close(); server.close();
 if (fails.length) process.exitCode = 1;
