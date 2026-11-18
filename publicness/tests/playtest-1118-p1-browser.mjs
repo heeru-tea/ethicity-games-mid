@@ -103,5 +103,30 @@ if (only.includes('p5')) {
   console.log(fails.length ? 'P1-5 FAIL' : 'P1-5 PASS');
 }
 
+/* p6 AI라면? 숫자: 2단계(무난한 노선 + 빌린 버스 한 대를 주황에) 결과 — 화살표 앞 숫자의 뜻 + 빌린 버스 반납 반영 / 1단계(빌리지 않음)는 덧붙임 없음 */
+const toResult = (page, phase, lease) => page.evaluate(([P, phase, lease]) => {
+  const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true;
+  const lay = (plan) => { S.beginPlan(s); s.draft.routes = []; s.draft.buses.forEach((b) => { b.routeNum = null; }); plan.forEach(([nodes, n], i) => { s.draft.routes.push({ num: i + 1, nodes: nodes.slice(), stops: nodes.map(() => true), autoPlaced: true }); for (let k = 0; k < n; k++) { const b = s.draft.buses.filter((x) => x.routeNum == null && !x.leased)[0]; if (b) b.routeNum = i + 1; } }); };
+  for (;;) { lay(P[s.phase - 1]); if (s.phase === phase && lease) { const b = S.lease(s); b.routeNum = 3; } if (s.phase === 3) PB.Choices.set(s, 'petition', 'choice', 'reflect'); if (s.phase === 4) PB.Choices.set(s, 'elder', 'choice', 'keep'); S.startRun(s); S.finishRun(s); if (s.phase >= phase) break; S.nextPhase(s); }
+  A.go('result'); return { phase: s.phase, rate: s.history[s.history.length - 1].metrics.arrivalRate };
+}, [PLAN1111, phase, lease]);
+const aiRows = (page) => page.evaluate(() => [...document.querySelectorAll('#result-ai-rows li')].map((li) => li.textContent));
+if (only.includes('p6')) {
+  for (const [phase, lease] of [[2, true], [1, false]]) {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+    await begin(page); const info = await toResult(page, phase, lease);
+    await page.locator('#result-ai-rows').waitFor({ state: 'attached', timeout: 90000 });
+    const rows = await aiRows(page), sum = await page.locator('#result-ai-summary').innerText();
+    rows.concat([sum]).forEach((t) => check(/다음 단계에 지금 노선을 그대로 두면(\(빌린 버스 반납 반영\))? 도착률 \d+% → AI 제안 \d+%/.test(t), `${phase}단계: 화살표 앞 숫자의 뜻 ${t}`));
+    rows.forEach((t) => check(lease === /\(빌린 버스 반납 반영\)/.test(t), `${phase}단계: 빌린 버스 반납 반영 ${lease ? '있음' : '없음'} ${t}`));
+    log(`${phase}단계(이번 도착률 ${Math.round(info.rate * 100)}%): ${sum}`);
+    if (lease) await page.locator('#result-ai').screenshot({ path: shot('p6-ai-2') }).catch(() => {});
+    check(errors.length === 0, '페이지 오류 ' + errors.join(' | '));
+    await page.close();
+  }
+  console.log(fails.length ? 'P1-6 FAIL' : 'P1-6 PASS');
+}
+
 await browser.close(); server.close();
 if (fails.length) process.exitCode = 1;

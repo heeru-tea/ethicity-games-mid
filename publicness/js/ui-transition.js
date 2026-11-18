@@ -65,12 +65,14 @@
   /* 2026-11-18 P1-5: 소외 지역 이름은 Session.underserved와 같은 목록(rec.targets) — 다음 단계 것임을 밝힌다(‘다음 운행 목표’의 같은 줄과 같은 이름) */
   var next=base.phase>App.s.phase?'다음 단계 ':'';
   var aim=g.id==='time'?'도착 시간을 줄이려고':g.id==='reach'?(names?next+'‘소외 지역’('+names+')의 도착률을 높이려고':'소외 지역의 도착률을 높이려고'):'수지를 키우려고';
-  var total='예상 도착률 '+F(before.arrivalRate)+' → '+F(after.arrivalRate);
+  /* 2026-11-18 P1-6: 화살표 앞 숫자의 뜻을 문장에 — 결과 카드의 이번 단계 도착률과 다른 숫자(다음 단계에 지금 노선 그대로)라 헷갈렸다. 이번 단계에 빌린 버스는 다음 단계에 반납돼 빠지므로 그때는 덧붙임 */
+  var leased=next&&App.s.current&&App.s.current.plan&&App.s.current.plan.buses.some(function(b){return b.leased;});
+  var total=(next?'다음 단계에 지금 노선을 그대로 두면':'지금 노선을 그대로 두면')+(leased?'(빌린 버스 반납 반영)':'')+' 도착률 '+F(before.arrivalRate)+' → AI 제안 '+F(after.arrivalRate);
   var extra=g.id==='reach'&&names?names+' 도착률 '+F(aiRate(before,tg))+' → '+F(aiRate(after,tg)):g.id==='profit'?'예상 수지 '+App.won(before.costs.total)+' → '+App.won(after.costs.total):'';
   var nodes=[];rec.plan.buses.forEach(function(b){if(b.route)b.route.nodes.forEach(function(n){if(nodes.indexOf(n)<0)nodes.push(n);});});
   return {goal:g.id,name:g.name,sig:planSig(rec.plan),aim:aim,change:change,num:total+(extra?' · '+extra:''),total:total,base:F(before.arrivalRate),nodes:nodes.sort(),targets:tg.slice()};
  }
- var AI_CARD_V=3;/* 3 = 2026-11-18 소외 지역 문장 *//* 저장된 카드 모양(s.aiCards) — 다르면 다시 계산 */
+ var AI_CARD_V=4;/* 3 = 2026-11-18 소외 지역 문장, 4 = 화살표 앞 숫자의 뜻 *//* 저장된 카드 모양(s.aiCards) — 다르면 다시 계산 */
  function aiCompute(App,s,h,key){
   return new Promise(function(go){setTimeout(go,0);}).then(function(){
    /* 수요는 다음 단계 것(plannedNext)이지만 후보 노선은 이번 단계에 보이는 정류장으로만 — 아직 지도에 없는 정류장을 추천하지 않는다 */

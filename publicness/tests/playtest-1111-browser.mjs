@@ -92,7 +92,7 @@ async function resultChecks(page, p) {
   assert.deepEqual(r.card.visible, r.visible, p + '단계: 카드에 남긴 보이는 정류장');
   r.card.rows.forEach((x) => assert.deepEqual(x.nodes.filter((n) => r.visible.indexOf(n) < 0), [], `${p}단계 ${x.goal}: 추천 노선의 정류장이 모두 이 단계에 보이는 정류장`));
   const bases = [...new Set(r.card.rows.map((x) => x.base))]; assert.equal(bases.length, 1, `${p}단계: 화살표 앞 숫자가 기준과 무관하게 같음 ${JSON.stringify(r.card.rows.map((x) => x.num))}`);
-  r.rows.forEach((x) => { assert.ok(x.text.includes('(예상 도착률 ' + bases[0] + ' → '), `${p}단계 ${x.goal}: ${x.text}`); });
+  r.rows.forEach((x) => { assert.ok(x.text.includes(' 도착률 ' + bases[0] + ' → AI 제안 ') /* 2026-11-18 P1-6: ‘다음 단계에 지금 노선을 그대로 두면 도착률 A → AI 제안 B’ */, `${p}단계 ${x.goal}: ${x.text}`); });
   const hiddenNames = await page.evaluate(() => PB.App.s.config.nodes.filter((n) => n.fromPhase > PB.App.s.phase).map((n) => n.name));
   [r.summary].concat(r.rows.map((x) => x.text)).forEach((t) => hiddenNames.forEach((n) => assert.ok(!t.includes(n), `${p}단계: 아직 지도에 없는 ${n}을 말하지 않음 — ${t}`)));
   const reach = r.rows.find((x) => x.goal === 'reach'), profit = r.rows.find((x) => x.goal === 'profit');
