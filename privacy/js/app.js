@@ -1662,6 +1662,9 @@
         var storedSet = S.readJSON(S.KEYS.settings).value;
         var hadName = !!settings.nickname || !!(storedSet && typeof storedSet === 'object' && storedSet.nickname);
         if (hadName) { settings.nickname = ''; $('name-input').value = ''; refreshName(); S.scrub(S.KEYS.settings, settings); }
+        // 2026-11-18 보안 검토: 저장소를 읽지 못해(처음 열 때부터 막힘 등) 적힌 이름을 모르더라도 이름 정리는 늘 예약한다 — 읽히게 되면 설정의 별명 칸만 비우고 확인한다
+        //   (소리·속도·주인공 모습 설정과 공통 ethicity.player는 그대로). 확인 전에는 밀린 것으로 남아 '지웠다'고 하지 않는다(checkRemoveFailure)
+        S.forget(S.KEYS.settings, 'nickname');
         checkRemoveFailure(true);
         progress = { v: 1, run: null, explored: {}, endingsSeen: [], pos: null };
         renderStart();

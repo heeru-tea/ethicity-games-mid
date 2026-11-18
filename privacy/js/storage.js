@@ -15,6 +15,10 @@
  *   status.removeFailed = 지우지 못한 것이 "확인된" 값이 있다 = 밀린 지움(gone·stale)이 있고 지금 읽기가 된다. 읽기조차 안 되면 남았는지 알 수 없으니 removeFailed가 아니라 readable=false.
  *   다시 해 보는 때(flush): 쓰기·지우기가 성공한 뒤 · 읽을 때(밀린 것이 있으면 먼저) · 창에 초점이 오거나 다시 보일 때(focus·visibilitychange·pageshow) · 창을 떠날 때(pagehide — 되살아난 직후 새로 고쳐도 남지 않게).
  *   밀린 것은 이 탭의 메모리에만 있다 — 막힌 채로 창을 닫으면(저장소가 막혀 표시를 적어 둘 곳이 없다) 다음에 열 때는 모른다. 그때는 app.js가 "확인하지 못했어요"라고 이미 말했다.
+ * 2026-11-18(보안 검토): 읽기가 막힌 채 처음 열면 설정에 적힌 별명을 알 수 없어, 「기록 지우기」가 이름 정리를 예약하지 못했다(다른 기록은 되살아난 뒤 지워지는데 별명만 남음).
+ *   forget(키, 칸) = 저장소의 그 키(JSON 객체)에서 그 칸만 비운다(나머지 — 소리·속도·주인공 모습 — 는 그대로). 지금 읽을 수 없으면 표시(strip)를 남겨 두고,
+ *   읽히게 되면 비운 값을 쓰고 다시 읽어 확인한다. 못 쓰면 그 키를 지운다(이름이 남지 않는 것이 먼저 — scrub과 같은 순서). 확인 전에는 밀린 것(pending())으로 남고,
+ *   읽히는데 못 비웠으면 removeFailed. 그 키에 새 값이 써지면(이 탭이 지운 뒤 적은 것) 표시를 푼다. 공통 ethicity.player는 여기서도 건드리지 않는다.
  *
  * 키 규약
  *   ethicity.player              공통 플레이어 정보 — 읽기만 한다(절대 쓰지 않음)
@@ -36,16 +40,18 @@
   var memory = {};
   var pending = {}; // pending[키] = 'set'(못 쓴 최신 값이 memory에) | 'gone'(이 탭에서 지웠는데 저장소에서 지워진 것을 확인하지 못함) — 저장소가 이 탭을 따라오지 못한 키
   var stale = {};   // stale[키] = true: 새 값을 못 썼고 저장소의 옛 값도 지워진 것을 확인하지 못했다(scrub, 지운 뒤 다시 쓰기 실패) — 옛 값이 기기에 남았을 수 있다
+  var strip = {};   // strip[키] = 칸 이름: 저장소의 그 키(JSON 객체)에서 이 칸을 비워야 하는데 아직 확인하지 못했다(forget — 읽기가 막혀 옛 값을 몰랐던 경우 등)
   var status = { available: false, readable: false, writeFailed: false, removeFailed: false };
   var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
   function refresh() {
     var w = false, r = false, k;
     for (k in pending) if (has(pending, k)) { if (pending[k] === 'set') w = true; else r = true; }
     for (k in stale) if (has(stale, k)) r = true;
+    for (k in strip) if (has(strip, k)) r = true;
     status.writeFailed = w;
     status.removeFailed = r && status.readable; // 읽을 수 없으면 남았는지 모른다 — "지우지 못했다"고 단정하지 않는다(표시는 그대로 남아 다시 해 본다)
   }
-  function dirty() { var k; for (k in pending) if (has(pending, k)) return true; for (k in stale) if (has(stale, k)) return true; return false; }
+  function dirty() { var k; for (k in pending) if (has(pending, k)) return true; for (k in stale) if (has(stale, k)) return true; for (k in strip) if (has(strip, k)) return true; return false; }
 
   var PROBE = '__ethicity_privacy_probe__';
   function ls() { return root.localStorage; }
@@ -56,6 +62,30 @@
     try { ls().removeItem(key); } catch (e) { if (ls().getItem(key) == null) { status.readable = true; return; } throw e; }
     if (ls().getItem(key) != null) throw new Error('still stored');
     status.readable = true;
+  }
+  // JSON 글자에서 그 칸을 비운 글자(객체가 아니면 그대로). 읽을 수 없는(손상된) 글자는 null — 이름이 들었는지 알 수 없다
+  function unname(raw, field) {
+    var v;
+    try { v = JSON.parse(raw); } catch (e) { return null; }
+    if (!v || typeof v !== 'object' || Array.isArray(v) || !v[field]) return raw;
+    v[field] = '';
+    return JSON.stringify(v);
+  }
+  // 저장소의 그 키에서 strip[키] 칸을 비우고, 다시 읽어 비워진 것까지 확인한다. 못 쓰면 키를 지운다. 확인하지 못하면 던진다(표시는 그대로)
+  function stripNow(key) {
+    var field = strip[key];
+    var raw = ls().getItem(key); // 던지면 아직 모른다
+    status.readable = true;
+    if (raw != null) {
+      var text = unname(raw, field);
+      if (text !== raw) {
+        if (text == null) erase(key); // 손상된 값 — 게임은 어차피 못 읽는다. 이름이 들었을 수 있으니 지운다
+        else { try { ls().setItem(key, text); status.available = true; } catch (e) { erase(key); } }
+        var back = ls().getItem(key);
+        if (back != null && unname(back, field) !== back) throw new Error('still named');
+      }
+    }
+    delete strip[key];
   }
   (function probe() {
     status.readable = canRead();
@@ -74,12 +104,14 @@
     for (k in pending) {
       if (!has(pending, k)) continue;
       if (pending[k] === 'set') {
-        try { ls().setItem(k, memory[k]); delete pending[k]; delete stale[k]; status.available = true; continue; } catch (e) { /* 아래 */ }
+        try { ls().setItem(k, memory[k]); delete pending[k]; delete stale[k]; delete strip[k]; status.available = true; continue; } catch (e) { /* 아래 */ }
         if (stale[k]) { try { erase(k); delete stale[k]; } catch (e) { /* 다음에 */ } }
       } else {
-        try { erase(k); delete pending[k]; delete stale[k]; } catch (e) { /* 다음에 */ }
+        try { erase(k); delete pending[k]; delete stale[k]; delete strip[k]; } catch (e) { /* 다음에 */ }
       }
     }
+    // 이름 칸 비우기: 지울 키('gone')는 위에서 통째로 지우니 건너뛴다. 못 쓴 새 값('set')이 밀려 있어도 저장소의 옛 이름은 지금 비워 본다
+    for (k in strip) { if (has(strip, k) && pending[k] !== 'gone') { try { stripNow(k); } catch (e) { /* 다음에 */ } } }
     for (k in stale) { if (has(stale, k) && !has(pending, k)) { try { erase(k); delete stale[k]; } catch (e) { /* 다음에 */ } } }
     if (dirty()) failed(); else refresh();
     return !dirty();
@@ -89,14 +121,14 @@
     if (dirty()) flush(); // 밀린 것이 있으면 읽기 전에 다시 해 본다(저장소가 되살아났으면 여기서 따라잡는다)
     if (pending[key] === 'gone') return null;
     if (pending[key] === 'set') return memory[key];
-    try { var v = ls().getItem(key); status.readable = true; refresh(); return v; } catch (e) { status.readable = false; refresh(); }
+    try { var v = ls().getItem(key); status.readable = true; refresh(); return v != null && has(strip, key) ? unname(v, strip[key]) : v; } catch (e) { status.readable = false; refresh(); } // 비우지 못한 이름 칸은 이 탭에서 빈 것으로 읽는다
     return has(memory, key) ? memory[key] : null;
   }
   function set(key, value) {
     var old = pending[key] === 'gone' || stale[key]; // 지웠는데 저장소에서 사라진 것을 확인 못 한 키 — 새 값도 못 쓰면 옛 값이 남았을 수 있다
     memory[key] = value;
     try { ls().setItem(key, value); } catch (e) { pending[key] = 'set'; if (old) stale[key] = true; failed(); return false; }
-    delete pending[key]; delete stale[key]; status.available = true;
+    delete pending[key]; delete stale[key]; delete strip[key]; status.available = true; // 새 값을 썼다 = 옛 이름은 덮였다(지운 뒤 이 탭에서 새로 적은 이름은 지킨다)
     flush();
     return true;
   }
@@ -107,7 +139,7 @@
     delete memory[key];
     pending[key] = 'gone';
     try { erase(key); } catch (e) { failed(); return false; }
-    delete pending[key]; delete stale[key]; status.readable = true;
+    delete pending[key]; delete stale[key]; delete strip[key]; status.readable = true;
     flush();
     return true;
   }
@@ -119,6 +151,15 @@
     try { text = JSON.stringify(value); } catch (e) { return false; }
     if (set(key, text)) return true;
     try { erase(key); delete stale[key]; refresh(); return true; } catch (e) { stale[key] = true; failed(); return false; }
+  }
+
+  // 저장소의 그 키(JSON 객체)에서 그 칸(별명)만 비운다 — 나머지 칸은 그대로. 돌려주는 값 = 비워진 것이 확인됐나(저장된 값이 없거나 칸이 이미 비었어도 true).
+  //   지금 읽을 수 없으면(옛 값을 모름) 표시를 남겨 두고 읽히게 되면 다시 해 본다(flush·창 이벤트). 이 탭의 못 쓴 새 값(memory)에서도 그 칸을 비운다
+  function forget(key, field) {
+    if (has(memory, key) && memory[key] != null) { var m = unname(memory[key], field); memory[key] = m == null ? memory[key] : m; }
+    strip[key] = field;
+    if (pending[key] === 'gone') { refresh(); return false; } // 통째로 지우는 중 — 그 지우기가 확인될 때 함께 풀린다
+    try { stripNow(key); refresh(); return true; } catch (e) { failed(); return false; }
   }
 
   // 창에 다시 초점이 오거나 보일 때, 창을 떠날 때 밀린 것을 다시 해 본다(브라우저 설정을 바꾸고 돌아온 경우 등). 다시 해 본 뒤 app이 안내를 고칠 수 있게 onRetry를 부른다
@@ -174,6 +215,7 @@
     writeJSON: writeJSON,
     remove: remove,
     scrub: scrub,
+    forget: forget,
     flush: flush,
     pending: dirty, // 밀린 쓰기·지우기가 남았나(검사·안내용)
     onRetry: null,  // app.js가 넣는다: 창 초점·보임·떠남 때 다시 해 본 뒤 부름
