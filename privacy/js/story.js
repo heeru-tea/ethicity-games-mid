@@ -1766,7 +1766,9 @@
           { who: 'teacher', text: '그날 밤 일과 그 영상은 혼자 감당할 일이 아니었어. 보호자분과 상담 선생님까지 함께 이어 둘게.', if: 'e8_unresolved_threat' },
           { who: 'teacher', text: '영상 일로 힘들었을 텐데, 숨기지 않고 도움을 청해 줘서 고마워.', if: 'e8_response=support || e8_fix=tidy || e8_reach=accept' },
           // 2026-11-10 플레이테스트: 번호 장난이 실제로 진행된 경로(e7=silent|join)에는 "더 커지기 전에 멈췄다"가 맞지 않는다 → 나눔
-          { who: 'teacher', text: '도움을 청한 건 잘한 일이야. 그 덕분에 더 커지기 전에 멈출 수 있었어.', if: ['help>=2', '!e8_video_spread', 'e7!=silent|join'] },
+          // 2026-11-18 플레이테스트 P0-2: 이미 많이 퍼진 경로(spread>=3, 또는 가짜 춤 영상을 전달해 "몇 개의 방을 더 돌았다")에 "더 커지기 전에 멈췄다"가 맞지 않는다 → 퍼짐이 적을 때만, 나머지는 퍼진 것을 인정하는 말로
+          { who: 'teacher', text: '도움을 청한 건 잘한 일이야. 그 덕분에 더 커지기 전에 멈출 수 있었어.', if: ['help>=2', '!e8_video_spread', 'e7!=silent|join', 'spread<=2', 'e4!=forward'] },
+          { who: 'teacher', text: '도움을 청한 건 잘한 일이야. 이미 퍼진 건 되돌릴 수 없지만, 거기서 더 번지는 건 막았어.', if: ['help>=2', '!e8_video_spread', 'e7!=silent|join', 'spread>=3 || e4=forward'] },
           { who: 'teacher', text: '도움을 청한 건 잘한 일이야. 다만 멈추지 못한 일도 있었어. 민준이 번호처럼, 이미 퍼진 건 되돌리지 못했으니까.', if: ['help>=2', '!e8_video_spread', 'e7=silent|join'] },
           { who: 'teacher', text: '이미 퍼진 영상을 되돌릴 수는 없어. 그래도 더 퍼지지 않게 멈출 수 있었던 건, 혼자 끌어안지 않았기 때문이야.', if: 'help>=2 && e8_video_spread' },
           // 2026-11-10 플레이테스트: 사진을 지운 경로(e2fix)는 모두 내가 올린 경로다 → 고맙다는 말 대신 양쪽을 다 말한다. 그 뒤 번호 장난으로 또 해쳤으면(e7·e7b) 이 말도 없다
