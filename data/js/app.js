@@ -285,15 +285,19 @@
     var sc = m.scenes.filter(function (s) { return s.id === m.showdownScene; })[0];
     var dangerMissing = sc.combos.some(function (c) { return s4.missing.indexOf(c.id) >= 0 && c.danger; });
     var read = ok ? true : (dangerMissing ? false : 'hold');
+    // 못 읽음: 선배 글씨 같은 카드를 뺀 적이 있으면 "또 지웠잖아", 모자라기만 했으면 failKept "또 못 읽잖아"(플레이테스트 2026-11-18 P0-4)
+    var failLines = DR.Showdown.erasedMine(m, App.state.erased) || !sd.failKept ? sd.fail : sd.failKept;
     var lines = sd.ask.map(function (l) { return sheetLine(m, l, null, sd.bg); })
       .concat([sheetLine(m, ok ? sd.readPass : read === 'hold' ? sd.readHold : sd.readFail, read, sd.bg)])
-      .concat((ok ? sd.pass : sd.fail).map(function (l) { return sheetLine(m, l, read, sd.bg); }));
+      .concat((ok ? sd.pass : failLines).map(function (l) { return sheetLine(m, l, read, sd.bg); }));
     var mode = null;
     if (ok) {
       if (!r.allPass && App.state.supplements < DR.config.maxSupplements) lines.push(Object.assign({ bg: sd.bg }, sd.passOthers));
     } else {
       mode = DR.Showdown.peerMode(App.state, DR.config);
-      if (App.state.peer === 'none') sd.peerJoin.forEach(function (l) { lines.push(Object.assign({ bg: sd.bg }, l)); });
+      // 동기 카드로 다 채워져 보충 달리기 없이 다시 제출로 가면 마지막 줄을 peerJoinNoRun으로(P0-3 — 보충 준비 화면과 말이 맞게)
+      var noRun = sd.peerJoinNoRun && DR.Showdown.peerNoRun(m, App.state, DR.config, DR.Judge.shortfall);
+      if (App.state.peer === 'none') sd.peerJoin.forEach(function (l, i) { lines.push(Object.assign({ bg: sd.bg }, noRun && i === sd.peerJoin.length - 1 ? sd.peerJoinNoRun : l)); });
       if (mode !== 'removable') lines.push(Object.assign({ bg: sd.bg }, sd.peerFixed));
     }
     DR.UI.dialogue(lines, function () {
@@ -476,8 +480,17 @@
     if (started === false) { App.course = null; DR.UI.no3d(function () { go('title'); }, '처음 화면으로'); }
   }
 
+  // 검수·보충 준비에서 카드를 뺐다/되돌렸다(js/ui-inspect.js removeWithUndo) — 이번 임무에서 뺀 종류(App.state.erased, 저장하지 않는 값).
+  //   4 임무 결판의 선배 대사가 읽는다(P0-4). 새로고침 뒤에는 비어 있다 = "또 못 읽잖아" 쪽
+  function noteRemoved(card, undo) {
+    if (!App.state || !card || !card.key) return;
+    var e = App.state.erased = App.state.erased || [];
+    if (!undo) e.push(card.key);
+    else { var at = e.indexOf(card.key); if (at >= 0) e.splice(at, 1); }
+  }
+
   var App = {
-    screen: 'title', state: null, lastJudge: null, course: null, records: DR.Save.records(),
+    screen: 'title', state: null, lastJudge: null, course: null, records: DR.Save.records(), noteRemoved: noteRemoved,
     go: go, cityCount: cityCount, startTutorial: startTutorial, practiceTutorial: practiceTutorial, startMission: startMission, afterRun: afterRun, debugFill: debugFill, resume: resume, resumeEnding: resumeEnding,
     mission: function () { return App.state ? DR.Missions[App.state.mission] : null; }
   };

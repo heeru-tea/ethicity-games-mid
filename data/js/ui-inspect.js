@@ -111,9 +111,11 @@
     var at = bag.indexOf(card);
     if (at < 0 || card.fixed) return; // 동기와 함께 넣은 카드는 빼지 않는다
     bag.splice(at, 1);
+    if (DR.App && DR.App.noteRemoved) DR.App.noteRemoved(card); // 뺀 종류(4 임무 결판 선배 대사 — 플레이테스트 2026-11-18 P0-4)
     saveBag(bag);
     rerender();
     DR.UI.undoToast('뺐어요: ' + cardLabel(mission, card), function () {
+      if (DR.App && DR.App.noteRemoved) DR.App.noteRemoved(card, true);
       bag.splice(Math.min(at, bag.length), 0, card);
       saveBag(bag);
       rerender();

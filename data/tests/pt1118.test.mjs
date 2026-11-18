@@ -152,3 +152,75 @@ test('P0-2 재현: 이어서 4 임무 → 도시 3/5(연습·3·4), 1·2 임무 
   const old = cityOpts({ tutorial: C, m3: C, m4: C }, 'm4', { from: 2, to: 5 });
   assert.equal(old.to, 3);
 });
+
+/* P0-3·P0-4 4 임무 결판 뒤 대사 — 실제 app.js 흐름(검수 → 감독관 → 채점 시연 → 결과 → 결판 대화) */
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { root as DATA } from './app-flow-helper.mjs';
+const m4 = require('../missions/m4.js');
+// 모든 조합을 채우는 가방(종류마다 그 종류가 첫 열쇠인 조합들의 가장 큰 need)
+function fullBag4() {
+  const counts = {};
+  for (const s of m4.scenes) for (const c of s.combos) counts[c.keys[0]] = Math.max(counts[c.keys[0]] || 0, c.need);
+  return counts;
+}
+function toShowdown(counts, opts = {}) {
+  const g = boot(store());
+  vm.runInContext(fs.readFileSync(path.join(DATA, 'js/conveyor.js'), 'utf8'), g.ctx, { filename: 'js/conveyor.js' });
+  const set = (n) => (...a) => { g.ui[n] = a; g.log.push(n); };
+  Object.assign(g.DR.UI, { supervisor: set('supervisor'), supervisorBlock: set('supervisorBlock'), grade: set('grade'), result: set('result') });
+  g.App.startMission('m4');
+  g.ui.dialogue[1]();               // 도입 대화 끝
+  g.ui.briefing[1]();               // 출발 → (가짜 달리기 바로 끝) → 검수
+  assert.ok(g.ui.inspect, 'inspect');
+  g.App.state.bag = Object.entries(counts).flatMap(([key, n]) => Array.from({ length: n }, (_, i) => ({ id: key + '_' + i, key })));
+  if (opts.supplements !== undefined) g.App.state.supplements = opts.supplements;
+  if (opts.removed) for (const c of opts.removed) g.App.noteRemoved(c);
+  if (opts.undone) for (const c of opts.undone) g.App.noteRemoved(c, true);
+  g.ui.inspect[2]();                // 제출
+  g.ui.supervisor[2]();             // 감독관 → 판정
+  g.ui.grade[2]();                  // 채점 시연 끝
+  g.ui.result[2]();                 // 장면 결과 끝 → 결판
+  return { g, lines: g.ui.dialogue[0].map((l) => l.text) };
+}
+const sd = m4.story.showdown;
+test('P0-3 동기 카드로 다 채워지면(보충 달리기 없음) "다시 제출하기 전에 가방에 넣을게."', () => {
+  const c = fullBag4(); delete c.scrawl_ml; delete c.alt_ml;
+  const { g, lines } = toShowdown(c);
+  assert.ok(lines.includes(sd.peerJoin[0].text));
+  assert.ok(lines.includes(sd.peerJoinNoRun.text), lines.join(' / '));
+  assert.ok(!lines.some((t) => /보충 달리기가 끝나면/.test(t)));
+  g.ui.dialogue[1]();               // → 보충 준비
+  const prep = g.ui.supplementPrep;
+  const extra = prep[4].extra;
+  assert.deepEqual({ ...g.DR.Judge.shortfall(m4, g.App.state.bag.concat(extra), g.DR.config) }, {}, 'prep will offer only resubmit');
+});
+test('P0-3 보충 달리기가 필요하면 예전 대사 그대로', () => {
+  const c = fullBag4(); delete c.scrawl_ml; c.neat_data = 0; // 다른 장면도 모자람 → 달려야 함
+  const { lines } = toShowdown(c);
+  assert.ok(lines.includes(sd.peerJoin[1].text), lines.join(' / '));
+  assert.ok(!lines.includes(sd.peerJoinNoRun.text));
+});
+test('P0-3 남은 보충이 없으면(다시 제출로만) 달리기 없는 대사', () => {
+  const c = fullBag4(); delete c.scrawl_ml; c.neat_data = 0;
+  const { lines } = toShowdown(c, { supplements: 2 });
+  assert.ok(lines.includes(sd.peerJoinNoRun.text), lines.join(' / '));
+});
+test('P0-4 아주 흘려 쓴 머신러닝을 뺀 적 없이 모자라기만 하면 "봐, 또 못 읽잖아."', () => {
+  const c = fullBag4(); c.scrawl_ml = 1;
+  const { lines } = toShowdown(c);
+  assert.ok(lines.includes(sd.failKept[0].text), lines.join(' / '));
+  assert.ok(!lines.includes('봐, 또 지웠잖아.'));
+});
+test('P0-4 검수에서 그 카드(아주 흘려 쓴·띄어 쓴 머신러닝)를 뺐으면 "봐, 또 지웠잖아." · 되돌렸으면 아님', () => {
+  const c = fullBag4(); c.scrawl_ml = 1;
+  const a = toShowdown(c, { removed: [{ id: 'x1', key: 'scrawl_ml' }] });
+  assert.ok(a.lines.includes('봐, 또 지웠잖아.'), a.lines.join(' / '));
+  const b = toShowdown(c, { removed: [{ id: 'x1', key: 'scrawl_ml' }], undone: [{ id: 'x1', key: 'scrawl_ml' }] });
+  assert.ok(b.lines.includes(sd.failKept[0].text));
+  const o = toShowdown(c, { removed: [{ id: 'y1', key: 'neat_data' }] });
+  assert.ok(o.lines.includes(sd.failKept[0].text), 'removing an unrelated card is not "erasing"');
+  const sp = toShowdown(c, { removed: [{ id: 'z1', key: 'alt_ml' }] });
+  assert.ok(sp.lines.includes('봐, 또 지웠잖아.'), 'spaced 머신 러닝 is the same answer');
+});
