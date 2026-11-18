@@ -195,7 +195,8 @@ async function part3() {
     await page4.locator('#btn-submit').click(); await page4.locator('#btn-confirm').click();
     await until(page4, '#screen-city');
     assert.equal((await ending(page4)).step, 0);
-    assert.deepEqual((await ending(page4)).city, { from: 0, to: 5 });
+    // 4 임무만 깬 기록 → 도시 1/5(플레이테스트 2026-11-18 P0-2 — 전엔 4 임무면 늘 5/5)
+    assert.deepEqual((await ending(page4)).city, { from: 0, to: 1 });
     await page4.locator('#btn-city-next').click();
     await page4.locator('#screen-chapter').waitFor({ state: 'visible', timeout: 10000 });
     await page4.locator('.ch-choice').first().click();
