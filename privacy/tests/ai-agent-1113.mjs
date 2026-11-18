@@ -86,6 +86,74 @@ if (on('migrate')) {
   }
 }
 
+/* ── migrateVisited: 옛 사건 5(jiho|anon)를 고르고 더 나아간 저장 — 옮긴 뒤 '고른 경로'와 '지나지 않은 장면'이 겹치지 않는다(외부 검토 2026-11-18 7번)
+ *   선택 경로 화면(app.js renderPath)은 기록(history) 장면을 '내 선택'으로, 사건에 속한 장면 중 visited에 없는 것을 '이번에 지나지 않은 장면'으로 보인다.
+ *   옛 저장은 새 흐름을 실제로 끝까지 놀고(c2_e5_a#min → c2_e5_j#j) 옛 모양으로 되돌려 만든다: 두 기록을 c2_e5_a#j 하나로, visited·뒤 snap에서 c2_e5_j를 빼고 e5j → e5 */
+if (on('migrate')) {
+  const missedChosen = (s) => s.history.map((h) => h.scene).filter((id) => story.scenes[id].event && !s.visited.includes(id));
+  const toOld = (s) => {
+    const o = E.clone(s);
+    const ia = o.history.findIndex((h) => h.scene === 'c2_e5_a'), ij = o.history.findIndex((h) => h.scene === 'c2_e5_j');
+    const j = o.history[ij].choice;
+    const oldFlags = (f) => { delete f.e5; if (f.e5j) { f.e5 = f.e5j; delete f.e5j; } };
+    o.history[ia] = { scene: 'c2_e5_a', choice: j, snap: o.history[ia].snap };
+    o.history.splice(ij, 1);
+    o.history.forEach((h, i) => { if (i > ia) { oldFlags(h.snap.flags); h.snap.visited = h.snap.visited.filter((x) => x !== 'c2_e5_j'); } });
+    oldFlags(o.flags);
+    o.visited = o.visited.filter((x) => x !== 'c2_e5_j');
+    return o;
+  };
+  const playNew = (j, stop, seed) => {
+    const rnd = mulberry32(seed);
+    let s = walkTo('c2_e5_a');
+    for (let step = 0; step < 800; step++) {
+      if (stop(s)) return s;
+      if (s.screen === 'ending') return null;
+      if (s.screen === 'scene' && E.needsChoice(story, s)) {
+        const cs = E.visibleChoices(story, story.scenes[s.scene], s);
+        s = E.choose(story, s, s.scene === 'c2_e5_a' ? 'min' : s.scene === 'c2_e5_j' ? j : cs[Math.floor(rnd() * cs.length)].id);
+      }
+      s = E.advance(story, s);
+    }
+    return null;
+  };
+  const atE6 = (s) => s.screen === 'scene' && !s.reaction && story.scenes[s.scene].event === 'e6' && s.history.some((h) => story.scenes[h.scene].event === 'e6');
+  const atEnd = (s) => s.screen === 'ending';
+  [['jiho', '사건 6', atE6, 11], ['anon', '사건 6', atE6, 12], ['jiho', '엔딩', atEnd, 13], ['anon', '엔딩', atEnd, 14]].forEach(([j, where, stop, seed]) => {
+    const tag = `옛 ${j} → ${where}`;
+    const fresh = playNew(j, stop, seed);
+    if (!fresh) { ok(tag + ' 경로를 만들 수 있다', false); return; }
+    const old = toOld(fresh);
+    ok(tag + ': 옛 모양(기록 c2_e5_a#' + j + ', c2_e5_j 없음)', old.history.some((h) => h.scene === 'c2_e5_a' && h.choice === j) && !old.visited.includes('c2_e5_j') && old.flags.e5 === j && !old.history.some((h) => h.scene === 'c2_e5_j'));
+    const m = E.migrate(story, old);
+    ok(tag + ': 옮긴 뒤 유효', E.isValidState(story, m));
+    ok(tag + ': 고른 경로 장면이 "지나지 않은 장면"에 없음', missedChosen(m).length === 0, missedChosen(m));
+    ok(tag + ': c2_e5_j가 visited에 한 번', m.visited.filter((x) => x === 'c2_e5_j').length === 1, m.visited);
+    ok(tag + ': 다시 옮겨도 그대로(한 번만)', same(E.migrate(story, m), m));
+    // 되돌리기: 매 단계 겹침 없음, c2_e5_j 기록이 남아 있는 동안만 visited에 c2_e5_j
+    const ij = m.history.findIndex((h) => h.scene === 'c2_e5_j');
+    let u = m, bad = [];
+    while (u.history.length > ij) {
+      u = E.undo(u);
+      const hasJ = u.history.some((h) => h.scene === 'c2_e5_j');
+      if (missedChosen(u).length) bad.push(['겹침', u.history.length, missedChosen(u)]);
+      if (hasJ !== u.visited.includes('c2_e5_j')) bad.push(['visited 어긋남', u.history.length, u.scene, hasJ]);
+    }
+    ok(tag + ': 되돌리는 매 단계 두 목록이 맞음', bad.length === 0, bad.slice(0, 3));
+    ok(tag + ': 고르기 전까지 되돌리면 c2_e5_a, c2_e5_j는 아직 안 지남', u.scene === 'c2_e5_a' && !u.reaction && !u.visited.includes('c2_e5_j'), { scene: u.scene, visited: u.visited.slice(-3) });
+  });
+  // 고치기 전 migrate가 이미 옮겨 저장한 진행(기록엔 c2_e5_j, visited·뒤 snap엔 없음)도 맞춘다 — 새 흐름에서는 생길 수 없는 모양
+  const fresh = playNew('anon', atE6, 21);
+  const halfDone = E.clone(fresh);
+  const ij = halfDone.history.findIndex((h) => h.scene === 'c2_e5_j');
+  halfDone.visited = halfDone.visited.filter((x) => x !== 'c2_e5_j');
+  halfDone.history.forEach((h, i) => { if (i > ij) h.snap.visited = h.snap.visited.filter((x) => x !== 'c2_e5_j'); });
+  const mh = E.migrate(story, halfDone);
+  ok('이미 옮긴(어긋난) 저장도 visited·뒤 snap에 c2_e5_j', missedChosen(mh).length === 0 && mh.visited.includes('c2_e5_j') && mh.history.every((h, i) => i <= ij || h.snap.visited.includes('c2_e5_j')));
+  ok('어긋남을 맞춘 것 말고는 그대로(장면 순서 = 새 흐름과 같음)', same(mh, fresh), { a: mh.visited.slice(-6), b: fresh.visited.slice(-6) });
+  ok('맞는 새 흐름 저장은 그대로', same(E.migrate(story, fresh), fresh));
+}
+
 /* ── wish: overrode_wish ── */
 if (on('wish')) {
   const f = (flags) => E.evalCond('overrode_wish', { stats: {}, trust: {}, flags });

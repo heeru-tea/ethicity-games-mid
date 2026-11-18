@@ -353,29 +353,54 @@
    *   옛 흐름은 c2_e5_a 한 장면에서 all|min|jiho|anon 중 하나 → 지호 일(jiho|anon)은 새 플래그 e5j와 새 장면 c2_e5_j로.
    *   ① state·기록 snap의 flags.e5 = jiho|anon → flags.e5j로 옮기고 e5는 지움(안내문 일은 안 한 것으로)
    *   ② 기록의 c2_e5_a#jiho|anon → c2_e5_j(선택 경로 화면이 '내 선택'을 찾게) ③ c2_e5_a에서 jiho|anon 반응 중이면 c2_e5_j 반응으로
+   *   ④ 지나온 장면(visited)을 ②로 바뀐 기록에 맞춘다: 기록에 c2_e5_j 선택이 있으면 state.visited와 그 뒤 기록의 snap.visited에 c2_e5_j를
+   *      (c2_e5_a 바로 뒤에, 한 번). 그 선택 자신의 snap(고르기 전)에는 넣지 않는다 — 되돌려 고르기 전으로 가면 아직 안 지난 장면.
+   *      (선택 경로 화면은 기록을 '내 선택'으로, visited에 없는 장면을 '이번에 지나지 않은 장면'으로 따로 보인다 — 둘이 겹치지 않게, 외부 검토 2026-11-18 7번)
+   *      고치기 전 migrate가 이미 옮겨 저장한 진행(기록엔 c2_e5_j, visited엔 없음)도 같은 규칙으로 맞춘다 — 새 흐름에서는 생길 수 없는 모양이라 안전.
    *   수치는 옛 선택 때 이미 더해졌으므로 건드리지 않는다(새 흐름의 지호 일 보정은 고를 때만 일어난다). 이야기에 c2_e5_j가 없으면 아무것도 안 함 */
   var LEGACY_E5J = { jiho: 1, anon: 1 };
+  function e5jIndex(history) {
+    if (!Array.isArray(history)) return -1;
+    for (var i = 0; i < history.length; i++) if (history[i] && history[i].scene === 'c2_e5_j') return i;
+    return -1;
+  }
+  function lacksE5j(list) { return Array.isArray(list) && list.indexOf('c2_e5_j') < 0; }
+  // 기록에 c2_e5_j 선택이 있는데 지금 visited 또는 그 뒤 snap.visited에 c2_e5_j가 없는가
+  function visitGap(s) {
+    var ji = e5jIndex(s.history);
+    if (ji < 0) return false;
+    return lacksE5j(s.visited) || s.history.some(function (h, i) { return i > ji && h && h.snap && lacksE5j(h.snap.visited); });
+  }
+  function addE5j(list) {
+    if (!lacksE5j(list)) return;
+    var a = list.indexOf('c2_e5_a');
+    if (a < 0) list.push('c2_e5_j'); else list.splice(a + 1, 0, 'c2_e5_j');
+  }
   function migrate(story, state) {
     if (!state || typeof state !== 'object' || !story.scenes || !story.scenes.c2_e5_j) return state;
     function moveFlag(s) {
       if (s && s.flags && LEGACY_E5J[s.flags.e5]) { s.flags.e5j = s.flags.e5; delete s.flags.e5; return true; }
       return false;
     }
-    var touched = !!(state.flags && LEGACY_E5J[state.flags.e5]) ||
+    var legacy = !!(state.flags && LEGACY_E5J[state.flags.e5]) ||
       (Array.isArray(state.history) && state.history.some(function (h) {
         return h && ((h.scene === 'c2_e5_a' && LEGACY_E5J[h.choice]) || (h.snap && h.snap.flags && LEGACY_E5J[h.snap.flags.e5]));
       }));
-    if (!touched) return state;
+    if (!legacy && !visitGap(state)) return state;
     var next = clone(state);
-    moveFlag(next);
-    if (next.scene === 'c2_e5_a' && LEGACY_E5J[next.reaction]) next.scene = 'c2_e5_j';
-    // 지나온 장면에도 c2_e5_j를(선택 경로 화면이 '이번에 지나지 않은 장면'으로 함께 보이지 않게, 최종 검토 2026-11-14)
-    if (Array.isArray(next.visited) && next.visited.indexOf('c2_e5_j') < 0 && (next.scene === 'c2_e5_j' || (next.history || []).some(function (h) { return h && h.scene === 'c2_e5_j'; }))) next.visited.push('c2_e5_j');
-    (next.history || []).forEach(function (h) {
-      if (!h) return;
-      if (h.scene === 'c2_e5_a' && LEGACY_E5J[h.choice]) h.scene = 'c2_e5_j';
-      moveFlag(h.snap);
-    });
+    if (legacy) {
+      moveFlag(next);
+      if (next.scene === 'c2_e5_a' && LEGACY_E5J[next.reaction]) next.scene = 'c2_e5_j';
+      (next.history || []).forEach(function (h) {
+        if (!h) return;
+        if (h.scene === 'c2_e5_a' && LEGACY_E5J[h.choice]) h.scene = 'c2_e5_j';
+        moveFlag(h.snap);
+      });
+    }
+    // ④ 바뀐 기록을 기준으로 visited를 맞춘다(기록을 먼저 바꾼 뒤에 — 옛 코드는 바꾸기 전에 검사해 사건 5를 지난 저장에서 빠뜨렸다)
+    var ji = e5jIndex(next.history);
+    if (ji >= 0 || next.scene === 'c2_e5_j') addE5j(next.visited);
+    if (ji >= 0) next.history.forEach(function (h, i) { if (i > ji && h && h.snap) addE5j(h.snap.visited); });
     return next;
   }
 
