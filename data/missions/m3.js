@@ -82,7 +82,9 @@
       inconvenience: '{what:을} 알아보지 못해 엉뚱한 길로 안내했다. 택배 기사가 멀리 돌아간다.',
       danger: '{what:을} 알아보지 못해 차도 쪽으로 안내했다. 감독관이 안내를 멈췄다.'
     },
-    outcomeText: { pass: '제대로 안내했다', inconvenience: '옛길로 안내했다 · 불편', danger: '없는 육교로 안내했다 · 위험' },
+    // …Short = 그 장면이 옛 사진 없이 모자람만으로 실패했을 때(플레이테스트 2026-11-18 P0-1, DR.Conveyor.outcomeKey) — '옛 사진 탓'으로 읽히지 않게. ⚠️ 교사 검수 대기
+    outcomeText: { pass: '제대로 안내했다', inconvenience: '옛길로 안내했다 · 불편', danger: '없는 육교로 안내했다 · 위험',
+      inconvenienceShort: '길을 헷갈렸다 · 불편', dangerShort: '차도 쪽으로 안내했다 · 위험' },
     counts: {
       station_now: 8, station_rain: 3, market_now: 2, market_old: 5, market_eve_old: 3,
       river_now: 6, river_night: 3, crossing_now: 5, crossing_rain: 3
@@ -138,13 +140,16 @@
         } }
     ],
     // 결과 화면의 '길 안내 시연' — 시민 질문 순서대로. 위험(hazard)인 질문이 틀리면 감독관이 안내를 멈춘다
+    //   wrongShort·noteShort = 옛 사진 없이 지금 사진이 모자라서 틀렸을 때(DR.Conveyor.guideText, P0-1). wrong·note = 옛 사진이 남아 오염됐을 때. ⚠️ 교사 검수 대기
     guide: [
       { id: 'g1', scene: 'S1', bin: 'right', wrongBin: 'wrong', causes: ['S1_station_now', 'o_station', 'contaminated:S1'],
-        q: '역에서 버스 정류장까지 어떻게 가요?', right: '광장을 가로질러 곧장 가세요.', wrong: '역 앞 빌딩 앞에서 왼쪽으로 꺾으세요.', note: '그 빌딩은 2024년에 철거됐다.' },
+        q: '역에서 버스 정류장까지 어떻게 가요?', right: '광장을 가로질러 곧장 가세요.', wrong: '역 앞 빌딩 앞에서 왼쪽으로 꺾으세요.', note: '그 빌딩은 2024년에 철거됐다.',
+        wrongShort: '광장이 어떻게 바뀌었는지 잘 모르겠습니다. 예전 지도대로라면 빌딩 앞에서 왼쪽입니다.', noteShort: '지금 광장 사진이 적어서, 예전에 배운 길을 그대로 말했다.' },
       { id: 'g3', scene: 'S2', bin: 'right', wrongBin: 'wrong', causes: ['S2_market'],
         q: '시장 골목 입구가 어디예요?', right: '약국 옆 좁은 골목으로 들어가세요.', wrong: '이 근처에는 시장이 없습니다. 큰길로 돌아가세요.', note: '시장 골목은 그대로인데 알아보지 못했다.' },
       { id: 'g5', scene: 'S3', bin: 'right', wrongBin: 'wrong', causes: ['S3_river_now', 'o_river', 'contaminated:S3'],
-        q: '강변으로 자전거 타러 가려면요?', right: '새로 난 강변길을 따라 쭉 가세요.', wrong: '강변으로 가는 길이 없습니다. 큰길로 돌아가세요.', note: '강변길은 2025년에 새로 열렸다.' },
+        q: '강변으로 자전거 타러 가려면요?', right: '새로 난 강변길을 따라 쭉 가세요.', wrong: '강변으로 가는 길이 없습니다. 큰길로 돌아가세요.', note: '강변길은 2025년에 새로 열렸다.',
+        wrongShort: '강변이 어떻게 바뀌었는지 잘 모르겠습니다. 예전 지도대로라면 큰길로 돌아가세요.', noteShort: '지금 강변길 사진이 적어서, 예전에 배운 길을 그대로 말했다.' },
       { id: 'g2', scene: 'S1', bin: 'right', wrongBin: 'wrong', causes: ['S1_station_rain'],
         q: '비 오는 밤, 역 앞 택시 타는 곳은요?', right: '광장 오른쪽 지붕 아래예요.', wrong: '역 앞이 어디인지 모르겠습니다.', note: '비 오는 밤의 역 앞을 본 적이 없다.' },
       { id: 'g4', scene: 'S2', bin: 'right', wrongBin: 'wrong', causes: ['S2_market_eve'],
@@ -154,7 +159,8 @@
       { id: 'g8', scene: 'S4', bin: 'right', wrongBin: 'wrong', causes: ['S4_crossing_rain', 'contaminated:S4'],
         q: '비 오는 날 학교 앞 버스 정류장은요?', right: '횡단보도 건너 오른쪽이에요.', wrong: '학교 앞을 알아보지 못해 큰길로 돌아가게 했습니다.', note: '비 오는 날의 학교 앞을 본 적이 없다.' },
       { id: 'g7', scene: 'S4', bin: 'right', wrongBin: 'wrong', hazard: true, causes: ['S4_crossing_now', 'o_crossing', 'danger:S4'],
-        q: '학교 앞에서 길 건너 문구점에 가려면요?', right: '횡단보도에서 신호를 기다렸다 건너세요.', wrong: '육교로 건너세요.', note: '그 육교는 2023년에 철거됐다.' }
+        q: '학교 앞에서 길 건너 문구점에 가려면요?', right: '횡단보도에서 신호를 기다렸다 건너세요.', wrong: '육교로 건너세요.', note: '그 육교는 2023년에 철거됐다.',
+        wrongShort: '횡단보도가 어떻게 생겼는지 잘 모르겠습니다. 예전 지도대로라면 육교로 건너세요.', noteShort: '지금 횡단보도 사진이 적어서, 예전에 배운 길을 그대로 말했다.' }
     ],
     // 챕터 끝(설계 2026-11-08 ②, js/ui-chapter.js): 다른 용도 요청(메시지) → 개념 질문 → 짧은 생각. ⚠️ 문장은 교사 검수 전 초안
     // 방향은 늘 '가장 지키는 쪽'(거절 = best). 다른 선택지는 왜 그것만으로 지켜지지 않는지 쉬운 말로
