@@ -95,12 +95,15 @@
    +`<div class="menu">${btn('지우고 처음부터','reset','','primary')}${btn('취소','close')}</div>`);
  }
 
- // 이름·학번을 지우기로 했는데 저장소가 막혀 이전 기록을 지우지 못했을 때(2026-11-18 검토).
- function wipeFailed(){
+ // 처음부터 다시 하기에서 저장소가 막혀 이전 기록을 지우지 못했을 때(2026-11-18 검토).
+ // keep = 이름·학번을 남기기로 했다(보안 검토 2026-11-18) — 남을 수 있는 것은 이전 수첩·답안이고, 다시 지우기도 같은 선택으로.
+ function wipeFailed(keep){
   open('기록을 지우지 못했어요',
-   '<p>이 기기에 저장된 이전 기록을 지우지 못했어요. 이름과 학번이 이 기기에 남아 있을 수 있어요.</p>'
+   (keep
+    ?'<p>이 기기에 저장된 이전 기록을 지우지 못했어요. 이전 수첩 기록과 답안이 이 기기에 남아 있을 수 있어요. 이름과 학번은 남겨 두기로 했어요.</p>'
+    :'<p>이 기기에 저장된 이전 기록을 지우지 못했어요. 이름과 학번이 이 기기에 남아 있을 수 있어요.</p>')
    +'<p class="hint">다른 사람이 이 기기를 쓰기 전에 ‘다시 지우기’를 눌러 보세요. 그래도 안 되면 선생님께 알려 주세요.</p>'
-   +`<div class="menu">${btn('다시 지우기','reset-retry','','primary')}${btn('닫기','close')}</div>`);
+   +`<div class="menu">${btn('다시 지우기','reset-retry',keep?'data-keep="1"':'','primary')}${btn('닫기','close')}</div>`);
  }
 
  actions.close=()=>close();
@@ -112,14 +115,17 @@
  actions.reset=()=>{
   const keep=$('#reset-reporter')?.checked===false;
   close();
-  if(!reset(keep))wipeFailed();
+  if(!reset(keep))wipeFailed(keep);
  };
  // 창 안에서 내용만 바꾸므로, 닫을 때 초점은 처음 창을 열기 전 자리로 그대로 돌아가게 둔다.
- actions['reset-retry']=()=>{
-  const back=S.lastFocus;
-  if(!UI.forget())wipeFailed();
+ // 다시 지우기는 처음 고른 그대로(이름 유지면 지금 상태 = 이름·학번만 든 새 기록을 다시 저장해 본다).
+ actions['reset-retry']=b=>{
+  const back=S.lastFocus,keep=b?.dataset.keep==='1';
+  if(!UI.forget())wipeFailed(keep);
   else open('기록을 지웠어요',
-   '<p>이 기기에 남아 있던 이름과 학번을 지웠어요.</p>'
+   (keep
+    ?'<p>이 기기에 남아 있던 이전 수첩 기록과 답안을 지웠어요. 이름과 학번은 남겨 두었어요.</p>'
+    :'<p>이 기기에 남아 있던 이름과 학번을 지웠어요.</p>')
    +`<div class="menu">${btn('닫기','close')}</div>`);
   S.lastFocus=back;
  };

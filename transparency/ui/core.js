@@ -100,28 +100,29 @@
   S.revealCue=false;
   S.fresh=false;
  }
- // 이름·학번을 지우기로 했을 때: 새 기록으로 덮어쓰고, 덮어쓰지 못하면 이 게임의 저장을 통째로 지운다.
- // 이 기기에 이전 기록이 남지 않았다고 확인되면 true(2026-11-18 검토 — 쓰기만 실패하면 다시 열 때 이전 이름이 돌아왔다).
+ // 처음부터 다시 하기 뒤: 새 기록(이름·학번을 남기기로 했으면 그것만 든 기록)으로 덮어쓰고, 덮어쓰지 못하면 이 게임의 저장을 통째로 지운 뒤 한 번 더 써 본다.
+ // 이 기기에 이전 기록이 남지 않았다고 확인되면 true — 다시 읽어 비었거나 새 기록 그대로일 때만.
+ // (2026-11-18 검토 — 쓰기만 실패하면 다시 열 때 이전 이름이 돌아왔다 / 보안 검토 — 이름을 남기기로 하면 저장 결과를 보지 않아 이전 수첩·답안이 남았다)
  function forget(){
   save();
   if(preview||S.saveOK)return true;
   try{
    localStorage.removeItem(KEY);
-   return localStorage.getItem(KEY)===null;
+   save();
+   const left=localStorage.getItem(KEY);
+   return left===null||left===JSON.stringify(S.state);
   }catch{
    return false;
   }
  }
- // 돌려주는 값: 이전 이름·학번이 기기에 남지 않았는지(남기기로 했으면 늘 true).
+ // 돌려주는 값: 이전 기록이 기기에 남지 않았는지. 이름·학번을 남기기로 했어도 확인한다(남는 것은 이름·학번뿐이어야 한다).
  function reset(keepReporter){
   S.state=E.restart(S.state,{keepReporter});
   arrive();
   // 시작 화면에서 ‘처음부터 하기’를 골랐을 때도 지운 뒤 프롤로그로 들어간다.
   S.title=false;
   S.skipFocusReturn=true;
-  let gone=true;
-  if(keepReporter)save();
-  else gone=forget();
+  const gone=forget();
   UI.render(true);
   return gone;
  }

@@ -735,3 +735,46 @@ test('review 2026-11-18 [P1]: 이름과 학번도 지우기 really removes the o
   const s=JSON.parse(g.stored());assert.deepEqual(s.reporter,{name:'TEST',number:'10203'});assert.equal(s.scene,0);
   assert.deepEqual(who(reopen(g)),{name:'TEST',number:'10203'});}
 });
+
+// 2026-11-18 보안 검토: ‘이름과 학번 유지’(체크를 풂)를 고르면 새 기록 저장이 실패해도 초기화 성공으로 끝나, 이전 수첩·서술 답안이 기기에 남았다.
+// 이름을 남길 때도 저장 결과를 확인한다. 못 덮어쓰면 이 게임 저장 키를 지우고 다시 써 본 뒤 읽어 확인하고, 지우기도 막히면 알리고 같은 선택(이름 유지)으로 다시 지운다.
+test('security review 2026-11-18: keeping the name still makes sure the old notes and answers are gone, or says they may remain and retries with the same choice',()=>{
+ const old=()=>{const s=stateAt('share','reflect');s.reporter={name:'TEST',number:'10203'};s.finalNote='OLDNOTE';Object.values(s.reflections)[0].q1='OLDANSWER';return s;};
+ const named=()=>JSON.stringify(old());
+ const reopen=g=>{const v=g.stored();return enter(createGame({storage:v===null?{}:{[KEY]:v}}));};
+ const resetKeep=g=>{g.click('settings');g.click('reset-ask');g.env.resetChecked=false;g.click('reset');return g.snap();};
+ const leftover=g=>/OLDNOTE|OLDANSWER/.test(String(g.stored()));
+ const fresh=JSON.parse(JSON.stringify(E.restart(old(),{keepReporter:true})));
+ const now=g=>JSON.parse(JSON.stringify(g.state()));
+ // 저장된 처음 기록에 이전 답안이 정말 들어 있다(검사가 헛돌지 않게)
+ {const g=createGame({storage:{[KEY]:named()}});enter(g);assert.equal(leftover(g),true);assert.equal(now(g).finalNote,'OLDNOTE');}
+ // (a) 쓰기만 실패(지우기는 됨): 이전 답안이 기기에 남지 않는다. 쓰기가 막혀 이름도 저장되지 않으니 ‘이 창에서만’ 안내
+ {const g=createGame({storage:{[KEY]:named()}});enter(g);g.env.failSet=true;const r=resetKeep(g);
+  assert.deepEqual(now(g),fresh,'화면은 이름만 남기고 처음으로');
+  assert.equal(leftover(g),false,'저장소에 이전 답안이 남지 않음: '+g.stored());
+  assert.equal(r.modalOpen,false,'지웠으면 실패 창 없음');assert.match(r.save,/저장할 수 없어/);
+  const s=now(reopen(g));assert.equal(s.finalNote,'');assert.equal(s.scene,0);}
+ // (b) 지우기도 막힘: 이전 답안이 남을 수 있다고 알리고, 같은 선택(이름 유지)으로 다시 지우기
+ {const g=createGame({storage:{[KEY]:named()}});enter(g);g.env.failSet=true;g.env.failRemove=true;let r=resetKeep(g);
+  assert.equal(r.modalOpen,true,'실패를 알리는 창');assert.equal(r.modalTitle,'기록을 지우지 못했어요');
+  assert.match(r.modalBody,/수첩 기록과 답안이 이 기기에 남아 있을 수 있어요/);assert.match(r.modalBody,/이름과 학번은 남겨 두기로 했어요/);
+  assert.doesNotMatch(r.modalBody,/이름과 학번이 이 기기에 남아 있을 수 있어요/,'이름을 지우는 경우의 문장과 다름');
+  const btns=parseTags(r.modalBody,'button');assert.deepEqual(btns.map(b=>b['data-act']),['reset-retry','close']);assert.equal(btns[0]['data-keep'],'1','다시 지우기도 이름 유지');
+  assert.equal(leftover(g),true,'(흉내) 정말로 남아 있음');
+  g.click('reset-retry');r=g.snap();assert.equal(r.modalOpen,true);assert.match(r.modalBody,/답안이 이 기기에 남아 있을 수 있어요/,'아직 막혀 있으면 다시 알림');
+  // 막힘이 모두 풀림: 다시 지우기 → 이름·학번만 든 새 기록. 다시 열면 이름·학번만 돌아오고 답안은 비어 있다
+  g.env.failRemove=false;g.env.failSet=false;g.click('reset-retry');r=g.snap();
+  assert.equal(leftover(g),false);assert.deepEqual(JSON.parse(g.stored()),fresh,'이름·학번만 든 새 기록');
+  assert.match(r.modalBody,/지웠어요/);assert.match(r.modalBody,/이름과 학번은 남겨 두었어요/);assert.deepEqual(parseTags(r.modalBody,'button').map(b=>b['data-act']),['close']);
+  assert.match(r.save,/자동 저장/);
+  g.click('close');assert.equal(g.snap().modalOpen,false);
+  const s=now(reopen(g));assert.deepEqual(s.reporter,{name:'TEST',number:'10203'});assert.equal(s.finalNote,'');assert.deepEqual(s,fresh);}
+ // (b') 지우기만 풀리고 쓰기는 여전히 막힘: 이전 답안은 지워졌으니 지웠다고 알린다(이름은 저장되지 못함)
+ {const g=createGame({storage:{[KEY]:named()}});enter(g);g.env.failSet=true;g.env.failRemove=true;resetKeep(g);
+  g.env.failRemove=false;g.click('reset-retry');const r=g.snap();assert.equal(g.stored(),null);assert.match(r.modalBody,/지웠어요/);}
+ // 저장소가 아예 막힘(읽기부터): 남았는지 확인할 수 없으니 알린다
+ {const g=enter(createGame({blocked:true}));const r=resetKeep(g);assert.equal(r.modalOpen,true);assert.match(r.modalBody,/답안이 이 기기에 남아 있을 수 있어요/);}
+ // (c) 보통(쓰기 됨): 실패 창 없이 이름·학번만 남는다
+ {const g=createGame({storage:{[KEY]:named()}});enter(g);const r=resetKeep(g);assert.equal(r.modalOpen,false);
+  assert.deepEqual(JSON.parse(g.stored()),fresh);assert.equal(leftover(g),false);}
+});
