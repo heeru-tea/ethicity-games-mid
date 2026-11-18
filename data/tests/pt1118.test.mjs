@@ -224,3 +224,34 @@ test('P0-4 검수에서 그 카드(아주 흘려 쓴·띄어 쓴 머신러닝)�
   const sp = toShowdown(c, { removed: [{ id: 'z1', key: 'alt_ml' }] });
   assert.ok(sp.lines.includes('봐, 또 지웠잖아.'), 'spaced 머신 러닝 is the same answer');
 });
+
+/* P1-5·P1-6 챕터 끝 문장(선택지 id·정답·저장 형식 그대로) */
+const Save5 = require('../js/save.js');
+test('P1-5 3·4 임무 다른 용도 요청: 세 선택지가 같은 꼴(행동만) — 이유는 고른 뒤 피드백에서만', () => {
+  const m3c = m3.chapterEnd.choices, m4c = m4.chapterEnd.choices;
+  assert.deepEqual(m3c.map((c) => c.text), ['동의한 사람 것만 준다', '이름을 지우고 준다', '주지 않는다']);
+  assert.deepEqual(m4c.map((c) => c.text), ['이름만 지우고 판다', '학생들에게 동의를 받고 판다', '팔지 않는다']);
+  for (const list of [m3c, m4c]) {
+    assert.deepEqual(list.map((c) => c.id).sort(), ['consent', 'erase', 'refuse'], 'ids kept (saved answers stay valid)');
+    assert.equal(list.filter((c) => c.best).map((c) => c.id)[0], 'refuse');
+    for (const c of list) assert.ok(!/[.,]|거절|하려고|목적/.test(c.text), 'no reason in the option: ' + c.text);
+  }
+  // 이유는 피드백에서: 거절 피드백에 목적, 동의 피드백은 동의의 뜻을 인정하고 목적이 달라서 주지 않는 쪽이 가장 안전
+  assert.match(m3c.find((c) => c.id === 'refuse').feedback, /길을 안내하려고/);
+  assert.match(m4c.find((c) => c.id === 'refuse').feedback, /채점하려고/);
+  for (const c of [m3c.find((x) => x.id === 'consent'), m4c.find((x) => x.id === 'consent')]) {
+    assert.match(c.feedback, /^동의를 받는 방법도 있어\. 다만 .+ 목적이 달라서, .+ 쪽이 가장 안전해\.$/, c.feedback);
+    assert.ok(!/아예 주지 않아야/.test(c.feedback));
+  }
+  // 저장된 옛 답(id)은 그대로 읽힌다
+  const recs = { m3: { cleared: true, chapter: { req: { first: 'consent', last: 'refuse' }, concept: { first: 'b', last: 'c' }, note: '' } } };
+  assert.deepEqual(Save5.chapterOf(recs, 'm3').req, { first: 'consent', last: 'refuse' });
+});
+test('P1-6 3 임무 개념 질문: 보기가 모두 "결과" — 다 빼면 안 된다는 말은 정답 피드백에', () => {
+  const q = m3.chapterEnd.concept;
+  assert.deepEqual(q.choices.map((c) => c.id), ['a', 'b', 'c']);
+  assert.deepEqual(q.choices.map((c) => c.text), ['사진이 많을수록 더 정확해진다', '아무 문제 없다. 같은 장소니까', '없는 육교로 안내할 수 있다']);
+  assert.equal(q.choices.find((c) => c.correct).id, 'c');
+  assert.ok(!q.choices.some((c) => /빼야/.test(c.text)), 'no "what to do" option');
+  assert.match(q.choices.find((c) => c.id === 'c').feedback, /다 빼면 안 돼, 시장 골목은 그대로야/);
+});
