@@ -324,6 +324,19 @@
     pv.draft.routes = pv.draft.routes.filter(function (r) { return used.indexOf(r.num) >= 0; });
     return pv;
   }
+  /* AI 제안 지도 미리보기(2026-11-18 플레이테스트 P0-1): 지금 초안(before)에서 제안 초안(after)으로 가면 빠지는 구간과 더는 서지 않는 정류장.
+   * 구간은 방향 없이 두 정류장 쌍으로 비교(제안의 어느 노선이든 그 쌍을 지나면 남는 구간), 정류장 2곳 이상 이은 노선만 본다(지도에 그려지는 노선) */
+  function previewDiff(before, after) {
+    function live(s) { return s.draft.routes.filter(function (r) { return r.nodes.length >= 2; }); }
+    function key(a, b) { return a < b ? a + '-' + b : b + '-' + a; }
+    var segs = {}, stops = {}, seen = {}, out = { segs: [], stops: [] };
+    live(after).forEach(function (r) { for (var i = 1; i < r.nodes.length; i++) segs[key(r.nodes[i - 1], r.nodes[i])] = true; r.nodes.forEach(function (id, i) { if (r.stops[i]) stops[id] = true; }); });
+    live(before).forEach(function (r) {
+      for (var i = 1; i < r.nodes.length; i++) { var k = key(r.nodes[i - 1], r.nodes[i]); if (!segs[k] && !seen[k]) { seen[k] = true; out.segs.push({ a: r.nodes[i - 1], b: r.nodes[i], key: k }); } }
+      r.nodes.forEach(function (id, i) { if (r.stops[i] && !stops[id] && out.stops.indexOf(id) < 0) out.stops.push(id); });
+    });
+    return out;
+  }
   // 두 초안의 가장 큰 변화 하나: 노선 추가 > 노선 삭제 > 정류장 추가 > 정류장 삭제 > 버스 이동 > 버스 빌리기
   function planChange(a, b) {
     function rows(s) {
@@ -826,7 +839,7 @@
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
     assign: assign, lease: lease, unlease: unlease, leaseLimit: leaseLimit, leasedBuses: leasedBuses, LEASE_BASE: LEASE_BASE, restingFor: restingFor, autoPlace: autoPlace, busCost: busCost, typicalBusCost: typicalBusCost, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,
     chooseGoal: chooseGoal, markGoalAction: markGoalAction, applyRecommendation: applyRecommendation, applyFourth: applyFourth,
-    revealed: revealed, plannedNext: plannedNext, previewRec: previewRec, planChange: planChange, expected: expected, startRun: startRun, finishRun: finishRun, nextPhase: nextPhase, endingSummary: endingSummary
+    revealed: revealed, plannedNext: plannedNext, previewRec: previewRec, previewDiff: previewDiff, planChange: planChange, expected: expected, startRun: startRun, finishRun: finishRun, nextPhase: nextPhase, endingSummary: endingSummary
   };
   root.PB = root.PB || {};
   root.PB.Session = api;

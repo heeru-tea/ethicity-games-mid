@@ -233,7 +233,7 @@ try {
     const geo = await page.evaluate(() => {
       const r = e => { const b = document.querySelector(e).getBoundingClientRect(); return { x: b.x, y: b.y, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
       const pop = r('#plan-ai-popover'), st = r('#stage'), acts = ['#rec-preview', '#rec-reject', '#rec-accept'].map(r), cs = getComputedStyle(document.querySelector('#plan-ai-popover'));
-      const lines = [...document.querySelectorAll('.net-lines line[stroke-dasharray]')].map(l => l.getBoundingClientRect());
+      const lines = [...document.querySelectorAll('.net-route[data-ai] .net-lines line')].map(l => l.getBoundingClientRect()); /* 2026-11-18 P0-1: 미리보기 = 제안 노선만 실선(예전 점선) */
       return { pop, st, acts, pos: cs.position, H: innerHeight, W: innerWidth, crit: document.querySelector('#rec-criterion').textContent, people: document.querySelector('#rec-people')?.className, peopleText: document.querySelector('#rec-people')?.textContent, dashed: lines.length, dashedIn: lines.every(b => b.left >= st.x - 2 && b.right <= st.r + 2 && b.top >= st.y - 2 && b.bottom <= st.b + 2) };
     });
     assert.ok(geo.acts.every(a => a.y >= 0 && a.b <= geo.H && a.x >= 0 && a.r <= geo.W && a.h > 0), '세 버튼이 스크롤 없이 화면 안: ' + JSON.stringify(geo.acts));
@@ -242,7 +242,7 @@ try {
     if (w > 850) {
       const overlapX = Math.min(geo.pop.r, geo.st.r) - Math.max(geo.pop.x, geo.st.x), overlapY = Math.min(geo.pop.b, geo.st.b) - Math.max(geo.pop.y, geo.st.y);
       // 2026-11-02 P1-1: 넓은 화면도 지도를 줄이지 않고 지도 오른쪽 가장자리 위에 겹쳐 뜸(지도 틀 안)
-      assert.equal(geo.pos, 'fixed'); assert.ok(geo.pop.x >= geo.st.x && geo.pop.r <= geo.st.r + 1 && geo.st.r - geo.pop.r <= 12, 'AI 패널은 지도 오른쪽 가장자리 위 ' + JSON.stringify(geo.pop)); assert.ok(overlapX > 0 && overlapY > 0); assert.ok(geo.dashed > 0 && geo.dashedIn, '제안 노선(점선)이 지도 안');
+      assert.equal(geo.pos, 'fixed'); assert.ok(geo.pop.x >= geo.st.x && geo.pop.r <= geo.st.r + 1 && geo.st.r - geo.pop.r <= 12, 'AI 패널은 지도 오른쪽 가장자리 위 ' + JSON.stringify(geo.pop)); assert.ok(overlapX > 0 && overlapY > 0); assert.ok(geo.dashed > 0 && geo.dashedIn, '제안 노선이 지도 안');
     } else { assert.equal(geo.pos, 'fixed'); assert.ok(geo.pop.b >= geo.H - 1 && geo.pop.h <= geo.H * 0.5, '아래 시트 ' + JSON.stringify(geo.pop)); }
     await page.screenshot({ path: `${SHOT}/_shot-playtest-ai-${w}.png` });
     await page.locator('#rec-accept').click(); await page.waitForTimeout(300);

@@ -662,6 +662,11 @@ body[data-screen="result"] .resident-cards>li { animation:resident-reveal .35s e
 .net-stop.selected circle:first-child { stroke: var(--sem-action); stroke-width: 3.5; }
 .net-stop.muted { opacity: .55; }
 .net-stop.flash circle:first-child { stroke: var(--sem-action); stroke-width: 5; }
+/* AI 제안 미리보기(2026-11-18 P0-1): 내 계획에서 빠지는 구간 = 회색 점선 + ‘빠짐’, 더는 서지 않는 정류장 = 주의색 테두리 */
+#stage.previewing #route-buses { visibility: hidden; } /* 노선 가운데 버스 수 칩은 내 노선 자리라 미리보기 동안 숨김 */
+.net-drop line { stroke: #8A9099; stroke-width: 3; stroke-linecap: round; }
+.net-stop.dropped circle:first-child { stroke: var(--sem-caution); stroke-width: 3.5; stroke-dasharray: none; }
+.net-drop-label { position: absolute; padding: 0 6px; border-radius: 8px; background: #fff; color: #4B5160; border: 1px solid #8A9099; font: 700 var(--fs-label)/1.5 var(--font); white-space: nowrap; }
 .net-cap circle { stroke: #fff; stroke-width: 2; }
 .net-cap text { font: 700 var(--fs-label)/1 var(--font); }
 .net-labels { position: absolute; inset: 0; }
