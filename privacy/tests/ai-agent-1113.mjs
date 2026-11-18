@@ -233,7 +233,7 @@ if (on('outcomes') && story.scenes.c2_e5_j) {
 
 /* ── 에이전트 장면 ── */
 const AGENTS = ['give', 'draft', 'scoped', 'ask'];
-const NOTE = '이 선택으로 엔딩이 바뀌지는 않아요.';
+const NOTE = '이 선택은 결과 화면에 따로 기록돼요.'; // 2026-11-18 플레이테스트 P1-8(옛: '이 선택으로 엔딩이 바뀌지는 않아요.')
 const BRANDS = ['카카오', '네이버', '코레일', '토스', '쿠팡', '구글', '애플', '삼성', '배민', '당근', '피클', 'pickle', 'naver', 'kakao', 'korail', 'google'];
 const ag = story.scenes.c2_e5_agent;
 if (on('agentScene')) {
