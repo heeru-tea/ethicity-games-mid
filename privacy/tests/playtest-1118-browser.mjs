@@ -330,7 +330,7 @@ try {
       await p.waitForTimeout(500);
       const body = await p.evaluate(() => document.getElementById('e-body').textContent);
       ok(/지우고 사과했지만, 이미 본 사람들의 기억까지/.test(body) && !/아무 말도 하지 않았던 순간들/.test(body), `h ${sz.name} 엔딩 C 본문: 수습 경로 문장`);
-      for (let k = 0; k < 4 && await p.evaluate(() => { const f = document.querySelector('.finale'); return !!(f && f.offsetParent !== null); }); k++) { await p.keyboard.press('Escape'); await p.waitForTimeout(300); } // 엔딩 연출을 닫고 본문을 찍는다
+      for (let k = 0; k < 4 && await p.evaluate(() => { const f = document.getElementById('finale'); return !!(f && !f.hidden); }); k++) { await p.keyboard.press('Escape'); await p.waitForTimeout(300); } // 엔딩 연출을 닫고 본문을 찍는다
       await p.evaluate(() => document.getElementById('e-body').scrollIntoView({ block: 'start' }));
       await p.waitForTimeout(200);
       await p.screenshot({ path: shot(`ending-c-${sz.name}`) });
