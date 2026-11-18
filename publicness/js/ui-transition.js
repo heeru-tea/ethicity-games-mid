@@ -62,13 +62,15 @@
   *  · nodes = 추천 계획이 지나는 정류장(검사용) — 모두 이번 단계에 보이는 정류장이어야 한다(aiCompute가 allowNodes로 좁힘) */
  function aiRow(App,base,before,rec,g){
   var pv=S.previewRec(base,rec),after=S.expected(pv),change=changeText(App,S.planChange(base,pv)),tg=rec.targets||[],names=tg.map(App.nodeName).join('·'),F=PB.Metrics.fmtRate;
-  var aim=g.id==='time'?'도착 시간을 줄이려고':g.id==='reach'?(names?names+'의 도착률을 높이려고':'소외 지역의 도착률을 높이려고'):'수지를 키우려고';
+  /* 2026-11-18 P1-5: 소외 지역 이름은 Session.underserved와 같은 목록(rec.targets) — 다음 단계 것임을 밝힌다(‘다음 운행 목표’의 같은 줄과 같은 이름) */
+  var next=base.phase>App.s.phase?'다음 단계 ':'';
+  var aim=g.id==='time'?'도착 시간을 줄이려고':g.id==='reach'?(names?next+'‘소외 지역’('+names+')의 도착률을 높이려고':'소외 지역의 도착률을 높이려고'):'수지를 키우려고';
   var total='예상 도착률 '+F(before.arrivalRate)+' → '+F(after.arrivalRate);
   var extra=g.id==='reach'&&names?names+' 도착률 '+F(aiRate(before,tg))+' → '+F(aiRate(after,tg)):g.id==='profit'?'예상 수지 '+App.won(before.costs.total)+' → '+App.won(after.costs.total):'';
   var nodes=[];rec.plan.buses.forEach(function(b){if(b.route)b.route.nodes.forEach(function(n){if(nodes.indexOf(n)<0)nodes.push(n);});});
   return {goal:g.id,name:g.name,sig:planSig(rec.plan),aim:aim,change:change,num:total+(extra?' · '+extra:''),total:total,base:F(before.arrivalRate),nodes:nodes.sort(),targets:tg.slice()};
  }
- var AI_CARD_V=2;/* 저장된 카드 모양(s.aiCards) — 다르면 다시 계산 */
+ var AI_CARD_V=3;/* 3 = 2026-11-18 소외 지역 문장 *//* 저장된 카드 모양(s.aiCards) — 다르면 다시 계산 */
  function aiCompute(App,s,h,key){
   return new Promise(function(go){setTimeout(go,0);}).then(function(){
    /* 수요는 다음 단계 것(plannedNext)이지만 후보 노선은 이번 단계에 보이는 정류장으로만 — 아직 지도에 없는 정류장을 추천하지 않는다 */
@@ -83,7 +85,10 @@
   * 아무것도 고르지 않았으면 표시 없이 요약 줄만 ‘빠른 이동’ 기준으로 보인다 */
  function aiMark(sec,choice){
   if(!sec._aiCard)return;
-  var s=sec._aiSession,card=sec._aiCard,near=AI_PICK[choice]||AI_PICK[(s.choices||{})[sec._aiPhase-1]]||null,applied=card.applied||null,goal=near||applied||'time';
+  var s=sec._aiSession,card=sec._aiCard,near=AI_PICK[choice]||AI_PICK[(s.choices||{})[sec._aiPhase-1]]||null,applied=card.applied||null;
+  /* 2026-11-18 P1-5: ‘내 목표와 가까운 기준’은 실제 목표 지역(다음 운행 목표의 살펴볼 곳)을 다루는 소외 지역 제안에만 — 그곳이 그 제안의 소외 지역에 없으면 표시하지 않는다 */
+  if(near==='reach'){var pick=thinkPick(s,sec._aiPhase),rr=card.rows.filter(function(r){return r.goal==='reach';})[0];if(!pick||!rr||(rr.targets||[]).indexOf(pick)<0)near=null;}
+  var goal=near||applied||'time';
   var r=card.rows.filter(function(r){return r.goal===goal;})[0]||card.rows[0];q(sec,'#result-ai-summary').textContent='['+r.name+'] AI는 '+r.change+' 추천해요. ('+r.num+')';
   sec.querySelectorAll('[data-goal]').forEach(function(li){var on=li.dataset.goal===near,mine=li.dataset.goal===applied,t1=li.querySelector('.ai-picked-tag'),t2=li.querySelector('.ai-applied-tag');li.classList.toggle('ai-picked',on);li.classList.toggle('ai-applied',mine);if(t1)t1.hidden=!on;if(t2)t2.hidden=!mine;});
  }
@@ -97,6 +102,7 @@
   box.appendChild(el('p',{'class':'note',id:'result-ai-note'},'AI 추천은 정답이 아니라, 무엇을 중요하게 보느냐에 따라 달라져요. 예상 수치는 '+(last?'이번':'다음')+' 단계 기본 수요 기준이고, 화살표 앞은 내 계획을 그대로 둘 때예요.'+(last?'':' AI는 지금 지도에 있는 정류장만 썼어요.')));
   aiMark(sec,(s.choices||{})[h.phase]);
  }
+ function thinkPick(s,phase){var h=(s.history||[]).filter(function(x){return x.phase===phase;})[0];if(!h||!s.current||!s.current.result)return null;try{return PB.Narrative.thinkFocus(s.config,h.phase,s.current.result.passengers,h.scores&&h.scores.mobility,{}).pick;}catch(e){return null;}}
  function aiCard(App,s,h,last){
   var sec=el('section',{id:'result-ai','class':'result-ai','aria-labelledby':'result-ai-h'});sec.appendChild(el('h3',{id:'result-ai-h'},'AI라면?'));
   var box=el('div',{id:'result-ai-body'});sec.appendChild(box);sec.appendChild(aiNote(s,h));
@@ -114,7 +120,9 @@
   var sec=el('section',{id:'result-think','class':'result-think','aria-labelledby':'result-think-h','data-phase':h.phase});
   sec.appendChild(el('h3',{id:'result-think-h'},'다음 운행 목표'));
   var unseen=null;try{unseen=PB.UI.fairness&&PB.UI.fairness.seenStats?PB.UI.fairness.seenStats(s,h):null;}catch(e){unseen=null;}/* AI가 못 본 곳(2026-11-11): ‘AI가 본 이동과 실제 이동’ 카드와 같은 값 */
-  var focus=PB.Narrative.thinkFocus(s.config,h.phase,s.current.result.passengers,h.scores&&h.scores.mobility,{unseen:unseen});if(focus.bridge)sec.appendChild(el('p',{'class':'think-bridge',id:'think-bridge'},focus.bridge));/* P0-4·11-05 P0-3: 이번 결과로 고른 연결 문장(첫 줄 = 자세히의 가장 많이 남은 곳) */
+  var focus=PB.Narrative.thinkFocus(s.config,h.phase,s.current.result.passengers,h.scores&&h.scores.mobility,{unseen:unseen});if(focus.bridge)sec.appendChild(el('p',{'class':'think-bridge',id:'think-bridge'},focus.bridge));
+  /* 2026-11-18 P1-5: AI가 다음 단계에 챙기는 ‘소외 지역’ — 계획 화면 AI 패널·‘AI라면?’과 같은 목록(Session.underserved) */
+  var zs=[];try{zs=S.underserved(s);}catch(e){zs=[];}if(zs.length)sec.appendChild(el('p',{'class':'note',id:'think-underserved'},(last?'':'다음 단계 ')+'AI의 ‘소외 지역’은 '+PB.Narrative.josa(zs.map(App.nodeName).join('·'),'이에요')+'. 사람이 정해 둔 지역과 탑승 기록이 가장 적은 지역이에요.'));/* P0-4·11-05 P0-3: 이번 결과로 고른 연결 문장(첫 줄 = 자세히의 가장 많이 남은 곳) */
   // 두 가지 선택형 답 — 자유 서술(reflections)과 따로 저장(고르면 글이 지워지던 문제 고침)
   var box=el('fieldset',{id:'think-choice','class':'think-choice'});box.appendChild(el('legend',null,last?'다음 학기라면 누구의 이동을 먼저 살필까요?':'다음에는 누구의 이동을 살필까요?'));
   var row=el('div',{'class':'think-options'});

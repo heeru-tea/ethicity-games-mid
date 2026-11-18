@@ -73,5 +73,35 @@ if (only.includes('p4')) {
   console.log(fails.length ? 'P1-4 FAIL ' + fails.length : 'P1-4 PASS');
 }
 
+/* p5 소외 지역 한 목록: 1단계 빨강 외곽 마을→병원→기차역→밀집 주거지→대학교(버스 1대) → 결과(엔진 정산) → ‘오래 기다린 사람부터’ → 2단계 계획 AI 패널 */
+if (only.includes('p5')) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await begin(page);
+  const info = await page.evaluate(() => { const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true; S.beginPlan(s); s.draft.routes = [{ num: 1, nodes: ['F', 'D', 'A', 'B', 'C'], stops: [1, 1, 1, 1, 1].map(Boolean), autoPlaced: true }, { num: 2, nodes: [], stops: [] }]; s.draft.buses.forEach((b) => { b.routeNum = null; }); s.draft.buses[0].routeNum = 1;
+    S.startRun(s); S.finishRun(s); A.go('result'); return { names: PB.Advisor.targets(S.revealed(S.plannedNext(s), { allowNodes: S.visibleNodeIds(s) })).map(A.nodeName) }; /* = Session.underserved(결과 화면) */ });
+  await page.locator('#result-ai-rows').waitFor({ state: 'attached', timeout: 90000 });
+  await page.locator('#result-think .think-option[data-choice="longest"]').click(); await frames(page, 2);
+  const r = await page.evaluate(() => { const li = document.querySelector('#result-ai-rows li[data-goal="reach"]'), s = PB.App.s, h = s.history[s.history.length - 1];
+    return { think: document.querySelector('#think-underserved') && document.querySelector('#think-underserved').textContent, bridge: document.querySelector('#think-bridge') && document.querySelector('#think-bridge').textContent, reach: li && li.textContent, tag: li && !li.querySelector('.ai-picked-tag').hidden,
+      targets: s.aiCards[h.phase].rows.find((x) => x.goal === 'reach').targets, pick: PB.Narrative.thinkFocus(s.config, h.phase, s.current.result.passengers, h.scores.mobility, {}).pick, summary: document.querySelector('#result-ai-summary').textContent }; });
+  const names = info.names.join('·');
+  check(r.think && r.think.indexOf(names) >= 0, `다음 운행 목표에 소외 지역 ${names} ${JSON.stringify(r.think)}`);
+  check(r.reach && r.reach.indexOf('다음 단계 ‘소외 지역’(' + names + ')') >= 0, `AI라면? 소외 지역 줄이 같은 이름 ${r.reach}`);
+  check(!r.targets.includes(r.pick), '재현 조건: 살펴볼 곳이 소외 지역 제안 대상에 없음 ' + JSON.stringify(r));
+  check(r.tag === false, `‘내 목표와 가까운 기준’은 살펴볼 곳(${r.pick})을 다루지 않는 소외 지역 제안에 붙지 않음 ${JSON.stringify(r)}`);
+  log('결과 1단계: ' + r.think + ' / ' + r.reach.slice(0, 80) + ' · 표시 ' + r.tag);
+  await page.screenshot({ path: shot('p5-result1-1280') });
+  await page.evaluate(() => { const A = PB.App, S = PB.Session; S.nextPhase(A.s); A.enterPlan(); document.querySelectorAll('dialog[open]').forEach((d) => d.close()); });
+  await page.locator('#plan-ai-toggle').click(); await page.locator('#goal-reach').click(); await page.locator('#rec-card').waitFor({ timeout: 60000 });
+  const crit = await page.locator('#rec-criterion').innerText();
+  check(crit.indexOf(names) >= 0, `2단계 AI 패널 소외 지역이 같은 이름 ${crit}`);
+  check(!/[가-힣]이이에요|교이에요|리이에요/.test(crit), '조사: ' + crit);
+  log('2단계 AI 패널: ' + crit);
+  check(errors.length === 0, '페이지 오류 ' + errors.join(' | '));
+  await page.close();
+  console.log(fails.length ? 'P1-5 FAIL' : 'P1-5 PASS');
+}
+
 await browser.close(); server.close();
 if (fails.length) process.exitCode = 1;

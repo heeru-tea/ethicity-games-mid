@@ -211,7 +211,7 @@
   function goalDesc(id){return GOAL_DESC[id];}
   function goalCriterion(rec){var first=st().phase===1||!st().history.length;
     var zs=(rec.targets||[]).map(function(z){return app().nodeName(z);}).join('·');
-    return rec.goal==='reach'?(zs?'이 제안의 ‘소외 지역’은 '+(first?'사람이 정해 둔 지역('+zs+')이에요.':zs+'이에요. 사람이 정해 둔 지역과 탑승 기록이 가장 적은 지역이에요.'):'이 제안의 ‘소외 지역’은 사람이 정해 둔 지역'+(first?'이에요.':'과 탑승 기록이 가장 적은 지역이에요.'))
+    return rec.goal==='reach'?(zs?'이 제안의 ‘소외 지역’은 '+(first?'사람이 정해 둔 지역('+zs+')이에요.':PB.Narrative.josa(zs,'이에요')+'. 사람이 정해 둔 지역과 탑승 기록이 가장 적은 지역이에요.'):'이 제안의 ‘소외 지역’은 사람이 정해 둔 지역'+(first?'이에요.':'과 탑승 기록이 가장 적은 지역이에요.'))
       :rec.goal==='time'?'이 제안의 ‘빠른 이동’은 모든 이동의 도착 시간 합이에요. 주요 인물을 따로 챙기지는 않아요.'
       :'이 제안의 ‘수익’은 이번 단계 수지예요. 도착 건수는 수지가 같을 때만 따져요.';}
   /* AI 비교(2026-11-05 P1-6): ‘내 노선 | AI 제안’ 두 열 표를 맨 위에. 좋아짐·나빠짐은 색과 글자 둘 다. 값은 모두 같은 예상 함수(Session.expected) */

@@ -316,6 +316,13 @@
     if (s.stage === 'result' && s.phase < s.config.phases.length && !(s.end && s.end.cause === 'contract')) { nextPhase(c); beginPlan(c); }
     return c;
   }
+  /* ‘소외 지역’은 한 곳에서(2026-11-18 플레이테스트 P1-5): AI ‘소외 지역 연결’이 챙기는 지역 = Advisor.targets(그 단계 AI 입력) — 1단계는 사람이 정해 둔 지역(config.reachInitial),
+   * 그다음은 탑승 기록이 없는 외곽 마을·새 동네(신도시 단계)·탑승 기록 비율이 가장 낮은 곳. 계획 화면이면 지금 단계, 결과 화면이면 다음 단계(지금 지도에 보이는 정류장만 — ‘AI라면?’과 같은 입력).
+   * 계획 화면 AI 패널·결과 ‘AI라면?’·‘다음 운행 목표’가 모두 이 목록을 쓴다 */
+  function underserved(s) {
+    if (s.stage === 'result') return Advisor.targets(revealed(plannedNext(s), { allowNodes: visibleNodeIds(s) }));
+    return Advisor.targets(revealed(s));
+  }
   // AI 제안을 적용한 초안 사본(계획 화면 미리보기·결과 화면 카드가 같은 함수)
   function previewRec(s, rec) {
     var pv = Object.assign({}, s, { draft: clone(s.draft), goalHistory: clone(s.goalHistory), _g: null });
@@ -847,7 +854,7 @@
     toPlan: toPlan, validate: validate, routeLimit: routeLimit, routesInOrder: routesInOrder, stopLimit:stopLimit, routeFits:routeFits, routeRule:routeRule, canAssign:canAssign, addRoute: addRoute, updateRoute: updateRoute, deleteRoute: deleteRoute,
     assign: assign, lease: lease, unlease: unlease, leaseLimit: leaseLimit, leasedBuses: leasedBuses, LEASE_BASE: LEASE_BASE, restingFor: restingFor, autoPlace: autoPlace, busCost: busCost, typicalBusCost: typicalBusCost, setOffset: setOffset, beginPlan: beginPlan, introduceFourth: introduceFourth,
     chooseGoal: chooseGoal, markGoalAction: markGoalAction, applyRecommendation: applyRecommendation, applyFourth: applyFourth,
-    revealed: revealed, plannedNext: plannedNext, previewRec: previewRec, previewDiff: previewDiff, planChange: planChange, expected: expected, startRun: startRun, finishRun: finishRun, nextPhase: nextPhase, endingSummary: endingSummary
+    revealed: revealed, plannedNext: plannedNext, underserved: underserved, previewRec: previewRec, previewDiff: previewDiff, planChange: planChange, expected: expected, startRun: startRun, finishRun: finishRun, nextPhase: nextPhase, endingSummary: endingSummary
   };
   root.PB = root.PB || {};
   root.PB.Session = api;
