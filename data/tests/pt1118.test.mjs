@@ -255,3 +255,18 @@ test('P1-6 3 임무 개념 질문: 보기가 모두 "결과" — 다 빼면 안 
   assert.ok(!q.choices.some((c) => /빼야/.test(c.text)), 'no "what to do" option');
   assert.match(q.choices.find((c) => c.id === 'c').feedback, /다 빼면 안 돼, 시장 골목은 그대로야/);
 });
+
+/* P1-9 확인 요청: 4 임무 '가방 속 종류별 개수'는 붙은 이름표 기준(진짜 종류를 드러내지 않음) — 바꿀 것 없음을 고정 */
+test('P1-9 4 임무 종류별 개수 = 붙은 이름표의 보통 종류(이름표를 안 고친 가짜는 진짜 종류로 세지 않는다)', () => {
+  const Cards = require('../js/cards.js');
+  const bag = [{ id: 'a', fakeId: 'x_neat_algo' }, { id: 'b', fakeId: 'x_ai_algo' }, { id: 'c', key: 'neat_algo' }];
+  const counts = { ...Cards.labelCounts(m4, bag) };
+  // x_neat_algo = 진짜 '또박또박 쓴 알고리즘'인데 '인공지능' 이름표 → '또박또박 쓴 인공지능'으로 셈
+  assert.equal(counts.neat_ai, 1);
+  // x_ai_algo = 진짜 '흘려 쓴 인공지능'인데 '알고리즘' 이름표 → '또박또박 쓴 알고리즘'(진짜 neat_algo 1장과 같은 줄)
+  assert.equal(counts.neat_algo, 2);
+  assert.equal(counts.cur_ai, undefined, 'true kind of an unfixed fake never shows');
+  // 이름표를 진짜로 고치면 그때 진짜 종류
+  const fixed = { ...Cards.labelCounts(m4, [{ id: 'a', fakeId: 'x_neat_algo', label: 'algo' }]) };
+  assert.equal(fixed.neat_algo, 1);
+});
