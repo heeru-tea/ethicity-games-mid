@@ -506,7 +506,7 @@
   App.startGame = function () {
     var chosen = document.querySelector('input[name=setting]:checked');
     var opt = App.seedParam.mode === 'fixed' ? { mode: 'fixed', seed: App.seedParam.seed } : { mode: chosen ? chosen.value : 'default' };
-    PB.Storage.clearSave();
+    PB.Storage.clearSave(null, { keepDiag: !!App._keepDiag }); App._keepDiag = false; /* 깨진 저장본에서 새 게임: 방금 남긴 진단(버전·오류 분류)만 두고 */
     App.s = S.create(cfg, opt);
     App._sceneKey = null;
     App.enterPlan();
@@ -652,7 +652,7 @@
     }
     $('#btn-start').addEventListener('click', function () {
       if (!brokenSave && readState().save) { App.restartToNew = true; $('#confirm-restart').showModal(); return; }
-      if (brokenSave) PB.Storage.keepBroken();
+      if (brokenSave) App._keepDiag = PB.Storage.keepBroken();
       newGame();
     });
     App.newGame = newGame;
