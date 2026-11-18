@@ -31,3 +31,16 @@ test('P0-1: AI 제안 미리보기 — 내 계획에서 빠지는 구간과 더�
   const rev = phase1([[['C', 'B', 'A'], 1]]), fwd = phase1([[['A', 'B', 'C'], 1]]);
   assert.deepEqual(S.previewDiff(rev, fwd), { segs: [], stops: [] });
 });
+
+test('P0-2: 출발 확인 — 노선을 달리는 빌린 버스는 임차료 이유(Session.departChecks.leasedRunning)', () => {
+  const T = require('./playtest-1111-plan.cjs'), s = T.playTo(1); S.nextPhase(s); T.lay(s);
+  let c = S.departChecks(s);
+  assert.equal(c.leasedRunning, 0); assert.equal(c.leaseRunningCost, 0);
+  const b = S.lease(s); c = S.departChecks(s);
+  assert.equal(c.restingLeased, 1, '빌리기만 하면 쉬는 빌린 버스'); assert.equal(c.leasedRunning, 0);
+  b.routeNum = 3; c = S.departChecks(s);
+  assert.equal(c.restingLeased, 0); assert.equal(c.leasedRunning, 1); assert.equal(c.leaseRunningCost, cfg.finance.lease.fee);
+  // 재현: 이 계획(2단계 무난한 노선 + 빌린 버스를 주황 노선에)은 예상 수지가 마이너스인데 예전 점검 목록은 모두 비어 있었다
+  assert.ok(S.expectedRun(s).metrics.costs.total < 0, '예상 수지 마이너스');
+  assert.equal(c.overGap.length + c.idleRoutes.length + c.unserved.length + c.resting + c.residents.length + c.transfers.length + (c.noBus ? 1 : 0), 0, '다른 이유는 없음');
+});

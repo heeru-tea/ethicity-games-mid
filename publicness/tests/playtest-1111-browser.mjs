@@ -206,13 +206,13 @@ try {
     if (p === 1 || p === 3 || p === 4) {
       // ── 7번 출발 확인창 + 6번 운행 화면 ──
       if (p >= 3) { await page.locator('#btn-depart').click(); assert.equal(await page.locator('#confirm-depart[open]').count(), 0, '첫 클릭은 이유 안내'); }
-      await page.locator('#btn-depart').click(); await page.locator('#confirm-depart[open]').waitFor();
+      await page.locator('#btn-depart').click(); const opened = await page.locator('#confirm-depart').evaluate((d) => d.open); /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */
       const lines = await page.evaluate(() => [...document.querySelectorAll('#confirm-depart-body li')].map((l) => [l.id, l.textContent]));
       if (p === 3) { assert.deepEqual(lines, [['depart-over-gap', '배차 간격이 기준(4시간 3분)을 넘는 노선: 초록(버스 1대 · 약 4시간 30분).']], JSON.stringify(lines)); await page.screenshot({ path: shot('depart3-1280') }); }
       else if (p === 1) assert.deepEqual(lines, [['depart-unserved', '노선이 없는 정류장 1곳: 구도심 시장.']], JSON.stringify(lines));
-      else assert.deepEqual(lines, [], p + '단계: 문제가 없으면 제목 한 줄만 ' + JSON.stringify(lines));
-      assert.equal(await page.locator('#confirm-depart-h').innerText(), '이대로 출발할까요?');
-      await page.locator('#confirm-yes').click();
+      else assert.equal(opened, false, p + '단계: 문제가 없으면 확인창 없이 바로 출발 ' + JSON.stringify(lines));
+      if (opened) assert.equal(await page.locator('#confirm-depart-h').innerText(), '이대로 출발할까요?');
+      await (async () => { if (await page.locator('#confirm-depart').evaluate((d) => d.open)) await page.locator('#confirm-yes').click(); })() /* 2026-11-18 P0-2: 이유가 없으면 확인창 없이 바로 출발 */;
       /* 2026-11-14: 운행 첫 상태는 운행 화면이 뜬 바로 그 순간 페이지 안에서 읽는다 — 헤드리스는 운행 중 프레임이 느려(약 5fps, 3초 중 긴 작업 2.4초) 읽기·클릭 하나에 몇 초씩 걸리고,
        * 2×로 시작하는 단계는 11:00까지 약 5초뿐이라 따로 읽으면 이미 11:00이 지나 있을 수 있다 */
       const st0 = await (await page.waitForFunction(() => { const st = document.body.dataset.screen === 'run' && PB.UI.runState(); return st && { text: document.querySelector('#run-statusbar-text').textContent, tf: st.tf, fixAt: st.fixAt, speed: st.speed, fixOff: document.querySelector('#run-fix').disabled, clock: PB.App.clock(st.tf) }; }, null, { polling: 10 })).jsonValue();

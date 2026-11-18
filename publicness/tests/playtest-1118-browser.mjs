@@ -11,6 +11,7 @@ const base = `http://127.0.0.1:${server.address().port}/publicness/`, SHOT = pro
 const only = (process.argv[2] || 'p01,p02,p03').split(','), log = (m) => console.log('  ok ' + m);
 
 async function begin(page) {
+  page.setDefaultNavigationTimeout(120000); /* 이 PC는 부하가 크면 첫 화면 load가 30초를 넘는다 */
   await page.goto(base + '?no3d=1', { waitUntil: 'domcontentloaded' }); await page.evaluate(() => localStorage.clear()); await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('#btn-start').click();
   while (await page.locator('#goal-intro').evaluate((d) => d.open)) { if (await page.locator('#goal-intro').getAttribute('data-stage') === 'true') await page.keyboard.press('Enter'); else await page.locator('#btn-goal-start').click(); }
@@ -89,5 +90,59 @@ if (only.includes('p01')) for (const C of CASES) {
   console.log('P0-1 PASS ' + g);
 }
 function document_drop(st) { return Object.keys(st).filter((k) => st[k] && st[k].drop).reduce((n, k) => n + st[k].drop.length, 0); }
+
+/* P0-2 출발 확인창 — 2단계(무난한 노선 tests/playtest-1111-plan.cjs) + 빌린 버스 한 대를 주황 노선에. 1단계는 페이지 안에서 엔진으로 정산만(재생 생략) */
+const { PLAN: PLAN1111 } = require('./playtest-1111-plan.cjs');
+const toPhase2 = (page, lease, poor) => page.evaluate(([P, lease, poor]) => {
+  const A = PB.App, S = PB.Session, s = A.s; s.tutorialSeen = true;
+  const lay = (plan) => { S.beginPlan(s); s.draft.routes = []; s.draft.buses.forEach((b) => { b.routeNum = null; }); plan.forEach(([nodes, n], i) => { s.draft.routes.push({ num: i + 1, nodes: nodes.slice(), stops: nodes.map(() => true), autoPlaced: true }); for (let k = 0; k < n; k++) { const b = s.draft.buses.filter((x) => x.routeNum == null && !x.leased)[0]; if (b) b.routeNum = i + 1; } }); };
+  if (s.phase === 1) { lay(P[0]); S.startRun(s); S.finishRun(s); if (poor) s.history[0].metrics.costs.total = 5000; S.nextPhase(s); }
+  lay(P[1]); if (lease) { const b = S.lease(s); b.routeNum = 3; }
+  A.enterPlan(); document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+  return { phase: s.phase, balance: S.balance(s), profit: Math.round(PB.UI.Econ.plan(s).k.total) };
+}, [PLAN1111, lease, poor]);
+const confirmState = (page) => page.evaluate(() => ({ open: document.querySelector('#confirm-depart').open, h: document.querySelector('#confirm-depart-h').textContent, lines: [...document.querySelectorAll('#confirm-depart-body li')].map((li) => ({ id: li.id, text: li.textContent })),
+  stage: PB.App.s.stage, hud: document.querySelector('#minimal-profit') && document.querySelector('#minimal-profit').dataset.profit, focus: document.activeElement && document.activeElement.id }));
+if (only.includes('p02')) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await begin(page);
+  const info = await toPhase2(page, true, false); await frames(page, 3);
+  assert.equal(info.phase, 2); assert.ok(info.profit < 0, '재현 조건: 빌린 버스를 주황 노선에 붙이면 예상 수지 마이너스 ' + JSON.stringify(info));
+  await page.locator('#btn-depart').click();
+  let c = await confirmState(page);
+  assert.ok(c.open, '이유가 있으니 확인창이 뜸');
+  assert.ok(c.lines.length > 0, '확인창 이유 목록이 비어 있지 않음 ' + JSON.stringify(c));
+  const W = (n) => (n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocaleString('ko-KR') + '원';
+  const def = c.lines.find((l) => l.id === 'depart-deficit'), lease = c.lines.find((l) => l.id === 'depart-lease');
+  assert.ok(def && def.text === `이번 단계 예상 수지가 ${W(info.profit)}이에요 · 누적 잔액 ${W(info.balance)} → 약 ${W(info.balance + info.profit)}.`, '예상 수지 줄 ' + JSON.stringify(def));
+  assert.equal(Number(c.hud), info.profit, '확인창 숫자 = 지도 위 예상 수지와 같은 값');
+  assert.ok(lease && lease.text === '빌린 버스 임차료 25,000원이 이번 단계에 나가요.', '임차료 줄 ' + JSON.stringify(lease));
+  assert.equal(c.focus, 'confirm-no', '이유가 있으면 기본 초점은 노선 고치기');
+  log('2단계 빌린 버스 → 확인창 이유: ' + c.lines.map((l) => l.text).join(' / '));
+  await page.screenshot({ path: shot('p02-depart-1280') });
+  await page.locator('#confirm-no').click();
+  // 1단계 잔액이 적어 0원 밑으로 내려가는 경우의 문장(1단계 수지를 5,000원으로 바꿔 둔 새 판)
+  const page2 = await browser.newPage({ viewport: { width: 1280, height: 800 } }); page2.on('pageerror', (e) => errors.push(e.message));
+  await begin(page2); const poor = await toPhase2(page2, true, true); await frames(page2, 3);
+  await page2.locator('#btn-depart').click(); c = await confirmState(page2);
+  const def2 = c.lines.find((l) => l.id === 'depart-deficit');
+  assert.ok(poor.balance + poor.profit < 0, '재현 조건: 잔액 ' + JSON.stringify(poor));
+  assert.equal(def2 && def2.text, `이번 단계 예상 수지가 ${W(poor.profit)}이라 누적 잔액이 0원 밑으로 내려가요(약 ${W(poor.balance + poor.profit)}).`, '0원 밑 문장');
+  log('잔액이 0원 밑으로: ' + def2.text);
+  await page2.close();
+  // 빌린 버스를 반납하면 이유가 없다 → 확인창 없이 바로 운행
+  await page.evaluate(() => { const A = PB.App, S = PB.Session, s = A.s; s.draft.buses.filter((b) => b.leased).forEach((b) => { b.routeNum = null; S.unlease(s, b.id); }); A.render(); });
+  await frames(page, 2);
+  const none = await page.evaluate(() => PB.UI.Econ.plan(PB.App.s).k.total); assert.ok(none >= 0, '반납하면 흑자 ' + none);
+  await page.locator('#btn-depart').click(); await frames(page, 2);
+  c = await confirmState(page);
+  assert.equal(c.open, false, '이유가 없으면 확인창을 띄우지 않음 ' + JSON.stringify(c));
+  assert.equal(c.stage, 'run', '바로 운행 시작');
+  log('이유가 없으면 확인창 없이 바로 출발');
+  assert.deepEqual(errors, [], '페이지 오류 없음');
+  await page.close();
+  console.log('P0-2 PASS');
+}
 
 await browser.close(); server.close();

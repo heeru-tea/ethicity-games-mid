@@ -499,6 +499,8 @@
     return {
       noBus: !buses.some(function (b) { return b.routeNum != null; }),
       resting: owned.length, restingCost: owned.length * F.holding, restingLeased: leased.length, restingLeaseCost: leased.length * F.lease.fee,
+      /* 2026-11-18 P0-2: 노선을 달리는 빌린 버스 — 임차료는 운행해도 그대로 나간다(출발 확인창 이유 줄) */
+      leasedRunning: buses.filter(function (b) { return b.leased && b.routeNum != null; }).length, leaseRunningCost: buses.filter(function (b) { return b.leased && b.routeNum != null; }).length * F.lease.fee,
       overGap: gaps.filter(function (x) { return x.over; }), idleRoutes: gaps.filter(function (x) { return x.valid && !x.buses; }).map(function (x) { return x.num; }),
       unserved: unserved.filter(isNew).concat(unserved.filter(function (id) { return !isNew(id); })), newStops: fresh,
       residents: Demand.residents(s.config, phase).filter(function (rd) { return !serves(rd.o) || !serves(rd.d); }).map(function (rd) { return { id: rd.id, name: rd.name, o: rd.o, d: rd.d }; }),

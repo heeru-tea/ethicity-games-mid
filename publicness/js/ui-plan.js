@@ -427,7 +427,9 @@
     P.baseline=snapshot();var r=active();return{selectable:P.preview?[]:nextStops(),selected:P.preview?[]:(r?r.nodes:[]),activeRoute:P.editing,preview:P.preview&&P.rec?P.rec.plan:null};
   };
   /* 출발 확인(2026-11-05 지시서 P0-2 — 11-02 "이대로 출발할까요?만 묻는다" 결정을 사용자 지시서가 뒤집음, 이 커밋만 되돌리면 복구):
-   * 점검 목록 = 운행 버스 0대 · 쉬는 버스와 보유비 · 노선이 없는 정류장(새 정류장 먼저) · 출발지나 목적지가 노선에 없는 인물. 예상 수지는 넣지 않는다(2026-11-06 사용자 결정, 계획 화면에 있음).
+   * 점검 목록 = 운행 버스 0대 · 쉬는 버스와 보유비 · 노선이 없는 정류장(새 정류장 먼저) · 출발지나 목적지가 노선에 없는 인물.
+   * 2026-11-18 플레이테스트 P0-2: 이번 단계 예상 수지가 마이너스면 그 금액과 누적 잔액(0원 밑으로 내려가는지) · 노선을 달리는 빌린 버스의 임차료도 이유로 쓴다(예전 2026-11-06 ‘예상 수지는 넣지 않음’을 사용자 지시가 뒤집음).
+   *   숫자는 지도 위 ‘예상’과 같은 계산(UI.Econ.plan — 기본 수요 기준). 이유가 하나도 없으면 확인창 없이 바로 출발(departCheck).
    * 막는 문제(운행 버스 0대)면 제목을 바꾸고 기본 포커스를 ‘노선 고치기’에. 경고는 접지 않고 본문에 최대 3줄, 더 있을 때만 ‘자세히’ — 경고가 없으면 ‘자세히’를 만들지 않는다 */
   function departLines(s){
     var c=S.departChecks(s),out=[],W=app().won,N=app().nodeName,F=s.config.finance;
@@ -441,6 +443,9 @@
     if(c.unserved.length)out.push({id:'depart-unserved',text:'노선이 없는 정류장 '+c.unserved.length+'곳: '+list(c.unserved,function(id){return N(id)+(c.newStops.indexOf(id)>=0?'(새)':'');})+'.'});
     if(c.resting)out.push({id:'depart-resting',text:'쉬는 버스 '+c.resting+'대 · 이번 단계 보유비 '+c.resting+' x '+W(F.holding)+' = '+W(c.restingCost)+'이 그대로 나가요.'});
     if(c.restingLeased)out.push({id:'depart-resting-leased',text:'빌린 버스 '+c.restingLeased+'대가 쉬어요 · 임차료 '+W(c.restingLeaseCost)+'이 그대로 나가요.'});
+    var E=UI.Econ,k=!c.noBus&&E?E.plan(s).k:null,bal=S.balance(s);
+    if(k&&k.total<0)out.push({id:'depart-deficit',text:'이번 단계 예상 수지가 '+W(k.total)+(bal+k.total<0?'이라 누적 잔액이 0원 밑으로 내려가요(약 '+W(bal+k.total)+').':'이에요 · 누적 잔액 '+W(bal)+' → 약 '+W(bal+k.total)+'.')});
+    if(c.leasedRunning)out.push({id:'depart-lease',text:'빌린 버스 임차료 '+W(c.leaseRunningCost)+(c.leasedRunning>1?'('+c.leasedRunning+'대)':'')+'이 이번 단계에 나가요.'});
     if(c.residents.length)out.push({id:'depart-residents',text:'출발지나 목적지에 노선이 없는 사람: '+c.residents.map(function(r){return r.name+'('+N(r.o)+'→'+N(r.d)+')';}).join(', ')+'.'});
     return {noBus:c.noBus,lines:out};
   }
@@ -448,6 +453,8 @@
   function whyNudge(s){var k=UI.fairness&&UI.fairness.kindOf(s);if(!k)return false;var f=PB.Choices.get(s,k);P.nudged=P.nudged||{};if(!f||!f.choice||f.why||P.nudged[k])return false;P.nudged[k]=true;P.nudge=k;render('#'+k+'-why');return true;}
   function departCheck(){
     var s=st(),body=document.querySelector('#confirm-depart-body'),c=departLines(s),show=c.lines.slice(0,3),rest=c.lines.slice(3);body.textContent='';
+    /* 2026-11-18 P0-2: 이유가 없으면 빈 확인창(제목·버튼만)을 띄우지 않고 바로 출발 */
+    if(!c.lines.length){if(S.startRun(s))app().go('run');return;}
     document.querySelector('#confirm-depart-h').textContent=c.noBus?'운행하는 버스가 없어요':'이대로 출발할까요?';
     function put(box,l){box.appendChild(el('li',{id:l.id},l.text));}
     if(show.length){var ul=el('ul',{id:'depart-checks','class':'callout warn depart-checks'});show.forEach(function(l){put(ul,l);});body.appendChild(ul);}
